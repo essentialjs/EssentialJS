@@ -1,4 +1,4 @@
-@describe "resolver and generator" {
+@describe "resolver and generator" { 
     it "should do default resolves" {
         
 		var shapes = Resolver()("my.shapes");
