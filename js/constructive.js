@@ -302,6 +302,7 @@ function Generator(mainConstr,options)
 			var bases = variantConstr.bases;
 			this.variants[name] = { 
 				func: variantConstr,
+				generator: Generator(variantConstr),
 				handlers: handlers || {},
 				bases: bases || [],
 				additional: [v1,v2,v3,v4] 
