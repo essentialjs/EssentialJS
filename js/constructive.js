@@ -1,26 +1,3 @@
-/*
-    Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011 by Henrik Vendelbo
-
-    This program is free software: you can redistribute it and/or modify it under the terms of
-    the GNU Affero General Public License version 3 as published by the Free Software Foundation.
-
-    Additionally,
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
-    and associated documentation files (the "Software"), to deal in the Software without restriction, 
-    including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-    and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
-    subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
-    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
-    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
 /**
  * @param {Object} ns Namespace base (Optional)
  * " 
@@ -40,7 +17,7 @@ function Resolver(name,ns,options)
 		if (Resolver[name] == undefined) {
 			if (options == undefined) { options = ns; ns = {}; }
 			Resolver[name] = Resolver(ns,options);
-			Resolver[name].name = name;
+			Resolver[name].named = name;
 			}
 		return Resolver[name];
 	}
@@ -96,7 +73,7 @@ function Resolver(name,ns,options)
         }
     };
 
-    resolve.name = name;
+    resolve.named = name;
     resolve.namespace = ns;
     
     resolve.declare = function(name,value,onundefined) 
@@ -129,13 +106,13 @@ function Resolver(name,ns,options)
             var symbol = names.pop();
         	var base = _resolve(names,onundefined);
         	names.push(symbol);
-        	base[symbol] = value;
+        	_setValue(value,names,base,symbol);
         }
         function declare(value) {
             var symbol = names.pop();
         	var base = _resolve(names,onundefined);
         	names.push(symbol);
-        	if (base[symbol] === undefined) base[symbol] = value;
+        	if (base[symbol] === undefined) _setValue(value,names,base,symbol);
         }
         get.set = set;
         get.get = get;
@@ -147,9 +124,9 @@ function Resolver(name,ns,options)
     resolve.override = function(ns,options)
     {
         options = options || {};
-        var name = options.name || this.name; 
+        var name = options.name || this.named; 
 		Resolver[name] = Resolver(ns,options);
-		Resolver[name].name = name;
+		Resolver[name].named = name;
 		return Resolver[name];
     };
 
@@ -157,6 +134,11 @@ function Resolver(name,ns,options)
 }
 Resolver.default = Resolver({},{ name:"default" });
 
+Resolver.hasGenerator = function(subject) {
+	if (subject.__generator__) return true;
+	if (typeof subject == "function" && typeof subject.type == "function") return true;
+	return false;
+};
 
 /**
  * Generator(constr) - get cached or new generator
@@ -175,10 +157,19 @@ function Generator(mainConstr,options)
 		options: options,
 		constructors: []
 	};
-	
-	function newGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
 
-		var instance = new generator.type();
+	function newGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
+		var instance;
+		if (generator.info.existing) {
+			//TODO perhaps different this pointer
+			var id = generator.info.identifier.apply(generator.info,arguments);
+			if (! (id in generator.info.existing)) {
+				instance = generator.info.existing[id] = instance = new generator.type();
+			}
+			instance = generator.info.existing[id];
+		} else {
+			instance = new generator.type();
+		}
 		
 		// constructors
 		instance.__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
@@ -189,19 +180,6 @@ function Generator(mainConstr,options)
 		return instance;
 	}
 
-	function singletonGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
-		if (info.options.singleton == null) {
-			var instance = info.singleton = new generator.type();
-
-			// constructors
-			instance.__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
-			for(var i=0,g; g=info.constructors[i]; ++i) {
-				info.constructors[i].apply(instance,instance.__context__.args);
-			}
-			delete instance.__context__;
-		}
-		return info.singleton;
-	}
 
 	function simpleGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
 		var instance = mainConstr.apply(generator,arguments);
@@ -215,9 +193,6 @@ function Generator(mainConstr,options)
 		}
 	}
 	
-	// pooled generator
-	//TODO
-
 	// Make the generator with type annotations
 	var generator = (function(args){
 		// mark end of constructor arguments
@@ -262,6 +237,7 @@ function Generator(mainConstr,options)
 			constructors.push(b);
 		}
 		constructors.push(mainConstr);
+		constructors[-1] = mainConstr;
 
 		// If we have base classes, make prototype based on their type
 		if (bases.length) {
@@ -314,58 +290,74 @@ function Generator(mainConstr,options)
 	generator.variant = variant;
 	generator.variants = {};
 
+	function toRepr() {
+		var l = [];
+		l.push("function ");
+		l.push(this.info.package);
+		l.push(".");
+		l.push(this.info.symbol);
+		l.push("(");
+		var ps = [];
+		for(var i=0,a; a = this.args[i]; ++i) {
+			ps.push(a.name + ":" + a.variantName);
+		}
+		l.push(ps.join(","))
+		l.push(")");
+		l.push(" {");
+		l.push("<br>  ");
+		l.push("<br>  }");
+		l.push("<br>  ");
+		
+		return l.join("");
+	}
+	generator.toRepr = toRepr;
+
+	function restrict(restrictions) {
+		if (restrictions.singleton) {
+			this.info.singleton = true;
+			this.info.lifecycle = restrictions.lifecycle;
+			this.info.existing = {};
+			this.info.identifier = function() {
+				return 0;
+			}
+			if (!this.info.restricted) {
+				Generator.restricted.push(generator);
+				this.info.restricted = true;
+			}
+		}
+		else if (restrictions.identifier) {
+			var fn = typeof restrictions.identifier == "string"? restrictions.identifier : "identifier";
+			this.info.identifier = this.info.constructors[-1][fn];
+			this.info.existing = {};
+			if (!this.info.restricted) {
+				Generator.restricted.push(generator);
+				this.info.restricted = true;
+			}
+		}
+		else if (restrictions.size != undefined) {
+			
+			if (!this.info.restricted) {
+				Generator.restricted.push(generator);
+				this.info.restricted = true;
+			}
+		}
+		else {
+			//TODO remove from restricted list
+		}
+	}
+	generator.restrict = restrict;
+
 	// Future calls will return this generator
 	mainConstr.__generator__ = generator;
 		
 	return generator;
 };
 
-
-Generator.setVariantGenerator = function(mainConstr,variant,fGenerator,mHandlers,pConstruction,v1,v2,v3,v4)
-{
-	variant = variant || null; // defaults to null
-	
-	// ensure that variants map is present on base constructor
-	mainConstr.generator_variants = mainConstr.generator_variants || {}; 
-
-	mainConstr.generator_variants[variant] = { 
-		generator: fGenerator,
-		handlers: mHandlers || {},
-		construction: pConstruction || [],
-		additional: [v1,v2,v3,v4] 
-	}; 
-};
-
-/**
- * Configure the base constructor to generate a singleton of a specific variant
- */
-Generator.setSingleton = function(mainConstr,variant)
-{
-	// ensure that variants map is present on base constructor
-	mainConstr.generator_variants = fConstructor.generator_variants || {}; 
-	mainConstr.generator_variants[null] = fConstructor.generator_variants[null] || {};
-	
-	mainConstr.generator_variants[null].default_variant = variant || null; // defaults to null
-	mainConstr.generator_variants[null].singleton = null;
-};
-
- 
-/**
- * Configure the base constructor to generate a instances of a specific variant limited by a pool size
- */
-Generator.setPoolSize = function(mainConstr,variant,nSize)
-{
-	// ensure that variants map is present on base constructor
-	mainConstr.generator_variants = mainConstr.generator_variants || {}; 
-	mainConstr.generator_variants[null] = mainConstr.generator_variants[null] || {};
-	
-	mainConstr.generator_variants[null].default_variant = variant || null; // defaults to null
-	mainConstr.generator_variants[null].pool = {};
-	mainConstr.generator_variants[null].pool_size = nSize;
-};
+/* List of generators that have been restricted */
+Generator.restricted = [];
 
 // types for describing generator arguments and generated properties
-(function(){
+(function(win){
 	var essential = Resolver("essential",{});
 	function Type(options) {
 		this.options = options || {};
@@ -376,54 +368,163 @@ Generator.setPoolSize = function(mainConstr,variant,nSize)
 	
 	function StringType(options) {
 		this.type = String;
+		this.variantName = "String";
 	}
 	essential.set("StringType",Generator(StringType,Type));
 	essential.namespace.Type.variant("String",essential.namespace.StringType);
 		
 	function NumberType(options) {
 		this.type = Number;
+		this.variantName = "Number";
 	}
 	essential.set("NumberType",Generator(NumberType,Type));
 	essential.namespace.Type.variant("Number",essential.namespace.NumberType);
 	
 	function DateType(options) {
 		this.type = Date;
+		this.variantName = "Date";
 	}
 	essential.set("DateType",Generator(DateType,Type));
 	essential.namespace.Type.variant("Date",essential.namespace.DateType);
 	
 	function BooleanType(options) {
 		this.type = Boolean;
+		this.variantName = "Boolean";
 	}
 	essential.set("BooleanType",Generator(BooleanType,Type));
 	essential.namespace.Type.variant("Boolean",essential.namespace.BooleanType);
 	
 	function ObjectType(options) {
 		this.type = Object;
+		this.variantName = "Object";
 	}
 	essential.set("ObjectType",Generator(ObjectType,Type));
 	essential.namespace.Type.variant("Object",essential.namespace.ObjectType);
 	
 	function ArrayType(options) {
 		this.type = Array;
+		this.variantName = "Array";
 	}
 	essential.set("ArrayType",Generator(ArrayType,Type));
 	essential.namespace.Type.variant("Array",essential.namespace.ArrayType);
 	
-function enhanceTryout() {
-    var scripts = document.getElementsByTagName("script");
-    for(var i=0,s; s = scripts[i]; ++i) if (s.getAttribute("type") == "tryout/javascript") {
-        var others = document.getElementsByName(s.getAttribute("name"));
-        for(var j=0,o; o = others[j]; ++j) if (o.nodeName.toLowerCase() != "script"){
-            if (o.value != undefined && s.firstChild) o.value = s.firstChild.nodeValue;
-        }
-    }
-    
-}
+	function instantiatePageSingletons()
+	{
+		for(var i=0,g; g = Generator.restricted[i]; ++i) {
+			if (g.info.lifecycle == "page") {
+				g();
+			}
+		}
+	}
 
-	if (window.attachEvent) window.attachEvent("onload",enhanceTryout);
-	else window.addEventListener("load",enhanceTryout,false);
-})();
+	function discardRestricted()
+	{
+		for(var i=0,g; g = Generator.restricted[i]; ++i) {
+			var discarded = g.info.constructors[-1].discarded;
+			for(var n in g.info.existing) {
+				var instance = g.info.existing[n];
+				if (discarded) {
+					discarded.call(g,instance);
+				}
+			}
+			g.info.constructors[-1].__generator__ = undefined;
+			g.__generator__ = undefined;
+		}
+	}
+
+	function fireDomReady()
+	{
+		instantiatePageSingletons();
+	}
+	function fireLoad()
+	{
+		
+	}
+	function fireBeforeUnload()
+	{
+		discardRestricted();
+	}
+
+
+	function listenForDomReady() 
+	{
+	    // Mozilla, Opera and webkit nightlies currently support this event
+	    if (win.document.addEventListener) {
+	      var DOMContentLoaded = function() {
+	        win.document.removeEventListener("DOMContentLoaded", DOMContentLoaded, false);
+	        fireDomReady();
+	      };
+	      
+	      win.document.addEventListener("DOMContentLoaded", DOMContentLoaded, false);
+	      win.addEventListener("load", fireDomReady, false); // fallback
+	      
+	      // If IE event model is used
+	    } else if (win.document.attachEvent) {
+	      
+	      var onreadystatechange = function() {
+	        if (win.document.readyState === "complete") {
+	          win.document.detachEvent("onreadystatechange", onreadystatechange);
+	          fireDomReady();
+	        }
+	      };
+	      
+	      win.document.attachEvent("onreadystatechange", onreadystatechange);
+	      win.attachEvent("onload", fireDomReady); // fallback
+
+	      // If IE and not a frame, continually check to see if the document is ready
+	      var toplevel = false;
+
+	      try {
+	        toplevel = win.frameElement == null;
+	      } catch(e) {}
+
+	      // The DOM ready check for Internet Explorer
+	      if (win.document.documentElement.doScroll && toplevel) {
+	        var doScrollCheck = function() {
+
+	          // stop searching if we have no functions to call 
+	          // (or, in other words, if they have already been called)
+	          if (readyList.length == 0) {
+	            return;
+	          }
+
+	          try {
+	            // If IE is used, use the trick by Diego Perini
+	            // http://javascript.nwbox.com/IEContentLoaded/
+	            win.document.documentElement.doScroll("left");
+	          } catch(e) {
+	            setTimeout(doScrollCheck, 1);
+	            return;
+	          }
+
+	          // and execute any waiting functions
+	          fireDomReady();
+	        }  
+	        doScrollCheck();
+	      }
+	    } 
+	}
+
+
+	if (window.device) {
+		//TODO PhoneGap support
+	}
+	else {
+		listenForDomReady();		
+		if (win.addEventListener) {
+			win.addEventListener("load",fireLoad,false);
+		} else {
+			win.attachEvent("onload",fireLoad);
+		}
+		if (win.addEventListener) {
+			win.addEventListener("beforeunload",fireBeforeUnload,false);
+		} else {
+			win.attachEvent("onbeforeunload",fireBeforeUnload);
+		}
+	}
+
+
+})(window);
 
 
 /*
@@ -460,13 +561,13 @@ var NumberType = Generator(Resolver("essential")("Type"),"Number");
 var shapes = {};
 
 function Shape() {}
-Shape.arguments = [ ];
+Shape.args = [ ];
 
 function Rectangle(width,height) {
 	
 }
 Rectangle.bases = [Shape];
-Rectangle.arguments = [ NumberType({name:"width",preset:true}), NumberType({name:"height",preset:true}) ]; //TODO NumberType({name:"width"}) optional: , default:  seed:
+Rectangle.args = [ NumberType({name:"width",preset:true}), NumberType({name:"height",preset:true}) ]; //TODO NumberType({name:"width"}) optional: , default:  seed:
 Rectangle.prototype.earlyFunc = function() {};
 
 shapes.Shape = Generator(Shape);
@@ -478,7 +579,7 @@ Rectangle.prototype.getWidth = function() {
 
 assert("typeof shapes.Shape.info.options == 'object'");
 assert("shapes.Rectangle.bases == Rectangle.bases");
-assert("shapes.Rectangle.arguments == Rectangle.arguments");
+assert("shapes.Rectangle.args == Rectangle.args");
 
 var s = shapes.Shape();
 var r55 = shapes.Rectangle(5,5);
@@ -512,7 +613,7 @@ function Circle(diameter) {
 Circle.prototype.earlyFunc = function() {};
 
 shapes.Circle = Generator(Circle,Shape,{
-	arguments : [ NumberType({name:"diameter",preset:true}) ] //TODO NumberType({name:"width"}) optional: , default:  seed:
+	args : [ NumberType({name:"diameter",preset:true}) ] //TODO NumberType({name:"width"}) optional: , default:  seed:
 });
 
 Circle.prototype.getWidth = function() {
@@ -521,8 +622,8 @@ Circle.prototype.getWidth = function() {
 
 assert("shapes.Circle.bases.length == 1");
 assert("shapes.Circle.bases[0] == Shape");
-assert("shapes.Circle.info.options.arguments.length == 1");
-assert("typeof shapes.Circle.info.options.arguments[0] == 'object'");
+assert("shapes.Circle.info.options.args.length == 1");
+assert("typeof shapes.Circle.info.options.args[0] == 'object'");
 assert("0 == Circle.prototype.sides");
 
 var c9 = shapes.Circle(9);
