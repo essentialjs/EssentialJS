@@ -1,8 +1,10 @@
-/**
- * @param {Object} ns Namespace base (Optional)
- * " 
- * @param {Object} options Options { generator: function } (Optional) 
- */
+/*!
+    Essential JavaScript ❀ http://essentialjs.com
+    Copyright (C) 2011 by Henrik Vendelbo
+
+    Licensed under GNU Affero v3 and MIT. See http://essentialjs.com/license/
+*/
+
 function Resolver(name,ns,options)
 {
 	switch(typeof(name)) {
