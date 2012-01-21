@@ -165,10 +165,11 @@ function Generator(mainConstr,options)
 		if (generator.info.existing) {
 			//TODO perhaps different this pointer
 			var id = generator.info.identifier.apply(generator.info,arguments);
-			if (! (id in generator.info.existing)) {
-				instance = generator.info.existing[id] = instance = new generator.type();
+			if (id in generator.info.existing) {
+				return instance = generator.info.existing[id];
+			} else {
+				instance = generator.info.existing[id] = new generator.type();
 			}
-			instance = generator.info.existing[id];
 		} else {
 			instance = new generator.type();
 		}
