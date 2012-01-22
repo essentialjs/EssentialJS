@@ -270,6 +270,20 @@ function Generator(mainConstr,options)
 	generator.mixin = mixin;
 	
 	function variant(name,variantConstr,v1,v2,v3,v4) {
+		switch(typeof name) {
+			case "object":
+				for(var i=0,m; m = this.matchers[i]; ++i) {
+					if (m(name)) {
+						return m.generator;
+					}
+				}
+				return this; // defaults to base generator
+			case "function":
+				name.generator = Generator(variantConstr); //TODO track aditional info ?
+				this.matchers.push(name);
+				return;
+		}
+
 		if (variantConstr == undefined) { // Lookup the variant generator
 			var g = this.variants[name];
 			if (g.generator) return g.generator;
@@ -292,6 +306,7 @@ function Generator(mainConstr,options)
 	// variant get/set function and variants map
 	generator.variant = variant;
 	generator.variants = {};
+	generator.matchers = [];
 
 	function toRepr() {
 		var l = [];
@@ -411,6 +426,27 @@ Generator.restricted = [];
 	essential.set("ArrayType",Generator(ArrayType,Type));
 	essential.namespace.Type.variant("Array",essential.namespace.ArrayType);
 	
+	// <abc action="dialog" call="show">
+	function Action()
+	{
+		
+		
+	}
+	essential.set("Action",Generator(Action));
+	
+	Action.prototype.act = function()
+	{
+	};
+
+	Action.prototype.show = function()
+	{
+	};
+
+	function DialogAction() {
+		
+	}
+	essential.namespace.Action.variant("dialog",DialogAction);
+
 	function instantiatePageSingletons()
 	{
 		for(var i=0,g; g = Generator.restricted[i]; ++i) {
