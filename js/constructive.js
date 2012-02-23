@@ -99,21 +99,29 @@ function Resolver(name,ns,options)
     resolve.reference = function(name,onundefined)
     {
         var names = name.split(".");
+        var base_names = names.concat();
+        var symbol = base_names.pop();
 
     	function get() {
+    		if (arguments.length == 1) {
+    			return _resolve(names + arguments[0].split("."),onundefined);
+    		}
         	var base = _resolve(names,onundefined);
         	return base;
         }
         function set(value) {
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
-        	names.push(symbol);
+    		if (arguments.length == 2) {
+    			var combined = names + arguments[0].split(".");
+    			var symbol = combined.pop();
+    			var base = _resolve(combined,onundefined);
+    			combined.push(symbol);
+    			_setValue(value,combined,base,symbol);
+    		}
+        	var base = _resolve(base_names,onundefined);
         	_setValue(value,names,base,symbol);
         }
         function declare(value) {
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
-        	names.push(symbol);
+        	var base = _resolve(base_names,onundefined);
         	if (base[symbol] === undefined) _setValue(value,names,base,symbol);
         }
         get.set = set;

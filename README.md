@@ -9,10 +9,10 @@ Many languages have package and class concepts built in. Javascript has the glob
 If your code is no more than a few thousand lines the built-in concepts a quite sufficient. 
 When moving beyond that point many people try to replicate the package and class concepts with mixed success. We use a different approach which give you even more power.
 
-    var core = Resolver(Resolver()("appname.core"));
+    var core = Resolver().reference("appname.core");
     function DecimalFormatter(decimals) {
     }
-    core.Generator("formatters.DecimalFormatter",DecimalFormatter);
+    core.declare("formatters.DecimalFormatter",Generator(DecimalFormatter));
 
 Here we define a class equivalent in the module `appname.core.formatters`. The module will be accessible globally.
 
