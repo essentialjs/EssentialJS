@@ -338,7 +338,7 @@ function Generator(mainConstr,options)
 	}
 	generator.toRepr = toRepr;
 
-	function restrict(restrictions) {
+	function restrict(restrictions,args) {
 		if (restrictions.singleton) {
 			this.info.singleton = true;
 			this.info.lifecycle = restrictions.lifecycle;
@@ -369,6 +369,10 @@ function Generator(mainConstr,options)
 		}
 		else {
 			//TODO remove from restricted list
+		}
+		this.info.restrictedArgs = args;
+		if (args) {
+			this.info.constructors.unshift(fillMissingArgs);
 		}
 	}
 	generator.restrict = restrict;
