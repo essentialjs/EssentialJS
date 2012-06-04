@@ -18,6 +18,17 @@ js/xhr.js
 js/elements.js
 '
 
+ESSENTIALS='
+js/modernizr-prefix.js
+js/modernizr.js
+js/constructive.js
+js/essentialns.js
+js/xhr.js
+js/elements.js
+js/json2.js
+js/ZeroClipboard.js
+'
+
 APP='
 app/main.js
 '
@@ -29,6 +40,10 @@ then
 	do
 		cat $file
 	done | uglifyjs -nc -o essential.min.js
+	for file in $ESSENTIALS
+	do
+		cat $file
+	done | uglifyjs -nc -o modernizr+essential+json+clipboard.min.js
 	for file in $APP
 	do
 		cat $file
@@ -39,6 +54,10 @@ else
 	do
 		cat $file
 	done > essential.js
+	for file in $ESSENTIALS
+	do
+		cat $file
+	done > modernizr+essential+json+clipboard.js
 	for file in $APP
 	do
 		cat $file
