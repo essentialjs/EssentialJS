@@ -659,6 +659,11 @@
         for(var n in requiredConfigs) {
             if (requiredConfigs[n] == false) { this.state.loading = true; this.state.loadingConfig = true; console.debug(n+" missing")}
         }
+        //TODO perhaps do this after loadingScripts
+        //TODO consider instantiateConfigSingletons
+        if (this.state.loading == false && this.state.launched == false) {
+        	essential("instantiatePageSingletons")();
+        }
     };
 
     ApplicationConfig.prototype.updateState = function() 
