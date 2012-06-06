@@ -115,7 +115,7 @@
 	function instantiatePageSingletons()
 	{
 		for(var i=0,g; g = Generator.restricted[i]; ++i) {
-			if (g.info.lifecycle == "page") {
+			if (g.info.lifecycle == "page") { // TODO  && g.info.existing[g.info.identifier(..)] == undefined
 				g();
 			}
 		}
