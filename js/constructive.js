@@ -5,8 +5,11 @@
     Licensed under GNU Affero v3 and MIT. See http://essentialjs.com/license/
 */
 
+
 function Resolver(name,ns,options)
 {
+	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
 	switch(typeof(name)) {
 	case "undefined":
 		// Resolver()
@@ -193,6 +196,8 @@ Resolver.hasGenerator = function(subject) {
  */
 function Generator(mainConstr,options)
 {
+	//"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
 	if (mainConstr.__generator__) return mainConstr.__generator__;
 
 	var info = {
@@ -232,6 +237,7 @@ function Generator(mainConstr,options)
 	}
 
 	function builtinGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
+		"no strict";
 		var instance;
 		if (generator.info.existing) {
 			//TODO perhaps different this pointer
@@ -248,7 +254,7 @@ function Generator(mainConstr,options)
 				instance[mn] = generator.prototype[mn];
 			}
 			//TODO instance.constructor = mainConstr
-			mainConstr.prototype = info.extendsBuiltin.ctr.prototype; // help instanceof 
+			mainConstr.prototype = info.extendsBuiltin.ctr.prototype; // help instanceof (non-strict) 
 		}
 
 		// constructors
