@@ -491,6 +491,7 @@ function Generator(mainConstr,options)
 		if (args) {
 			this.info.constructors.unshift(fillMissingArgs);
 		}
+		return this;
 	}
 	generator.restrict = restrict;
 
