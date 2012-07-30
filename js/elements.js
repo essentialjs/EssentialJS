@@ -11,6 +11,7 @@
 	function regScriptOnload(domscript,trigger) {
 
 		domscript.onload = function(ev) { 
+<<<<<<< HEAD
 			if ( ! this.onloadDone ) {
 				this.onloadDone = true; 
 				trigger.call(this,ev || event); 
@@ -20,6 +21,17 @@
 			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
 				this.onloadDone = true; 
 				trigger.call(this,ev || event);
+=======
+			if ( ! domscript.onloadDone ) {
+				domscript.onloadDone = true; 
+				trigger.call(domscript,ev || event); 
+			}
+		};
+		domscript.onreadystatechange = function(ev) { 
+			if ( ( "loaded" === domscript.readyState || "complete" === domscript.readyState ) && ! domscript.onloadDone ) {
+				domscript.onloadDone = true; 
+				trigger.call(domscript,ev || event);
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 			}
 		}
 
@@ -212,8 +224,11 @@
 
 	function DocumentRoles(handlers) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
+<<<<<<< HEAD
 		this._on_event = [];
 		
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 		//TODO configure reference as DI arg
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
@@ -240,11 +255,15 @@
 	DocumentRoles.prototype._enhance_descs = function() 
 	{
 		var statefuls = ApplicationConfig(); // Ensure that config is present
+<<<<<<< HEAD
 		var incomplete = false, enhancedCount = 0;
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 
 		for(var i=0,desc; desc=this.descs[i]; ++i) {
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
+<<<<<<< HEAD
 				desc.enhanced = desc.instance === false? false:true;
 				++enhancedCount;
 			}
@@ -259,6 +278,11 @@
 				if (oe.type == "enhanced") oe.func.call(this, this, descs);
 			}
 		} 
+=======
+				desc.enhanced = true;
+			}
+		}
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	};
 
 	DocumentRoles.discarded = function(instance) {
@@ -324,15 +348,19 @@
 					desc.layout.height = oh;
 					updateLayout = true
 				}
+<<<<<<< HEAD
 				if (desc.layout.area != _activeAreaName) { 
 					desc.layout.area = _activeAreaName;
 					updateLayout = true;
 				}
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 				if (updateLayout) this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
 	};
 
+<<<<<<< HEAD
 	DocumentRoles.prototype._area_changed_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
@@ -349,6 +377,8 @@
 		this._on_event.push({ "type":name,"func":func,"name":name,"role":role });
 	}
 	
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	// Element specific handlers
 	DocumentRolesGenerator.presets.declare("handlers.enhance", {});
 	DocumentRolesGenerator.presets.declare("handlers.layout", {});
@@ -422,6 +452,7 @@
 			break; 
 		}
 	}
+<<<<<<< HEAD
 	
 	function applicable_role_element(element) {
 		// role of element or ancestor
@@ -433,12 +464,18 @@
 			element = element.parentNode;
 		}
 	}
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 
 	function dialog_button_click(ev) {
 		ev = ev || event;
 		var e = ev.target || ev.srcElement;
+<<<<<<< HEAD
 		var re = applicable_role_element(e);
 		if (re && re.getAttribute("role") == "button") this.submit(re); else
+=======
+		if (e.getAttribute("role") == "button") this.submit(e); else
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 		if (e.type=="submit") this.submit(e); //TODO action context
 	}
 
@@ -469,9 +506,12 @@
 		return {};
 	};
 
+<<<<<<< HEAD
 	DocumentRolesGenerator.layout_dialog = DocumentRoles.layout_dialog = function(el,layout,instance) {
 		
 	};
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	DocumentRolesGenerator.discard_dialog = DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
@@ -485,9 +525,16 @@
 		return {};
 	};
 
+<<<<<<< HEAD
 	DocumentRolesGenerator.layout_toolbar = DocumentRoles.layout_toolbar = function(el,layout,instance) {
 		
 	};
+=======
+	DocumentRolesGenerator.discard_toolbar = DocumentRoles.layout_toolbar = function(el,layout,instance) {
+		
+	};
+
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	DocumentRolesGenerator.discard_toolbar = DocumentRoles.discard_toolbar = function(el,role,instance) {
 		
 	};
@@ -497,6 +544,7 @@
 		return {};
 	};
 
+<<<<<<< HEAD
 	DocumentRolesGenerator.layout_sheet = DocumentRoles.layout_sheet = function(el,layout,instance) {
 		
 	};
@@ -557,11 +605,19 @@
 		
 	};
 	DocumentRolesGenerator.discard_application = DocumentRoles.discard_application = function(el,role,instance) {
+=======
+	DocumentRolesGenerator.discard_sheet = DocumentRoles.layout_sheet = function(el,layout,instance) {
+		
+	};
+
+	DocumentRolesGenerator.discard_sheet = DocumentRoles.discard_sheet = function(el,role,instance) {
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 		
 	};
 
 	DocumentRoles.default_enhance = function(el,role,config) {
 		
+<<<<<<< HEAD
 		return {};
 	};
 
@@ -570,6 +626,11 @@
 	};
 	
 	DocumentRoles.default_discard = function(el,role,instance) {
+=======
+	};
+
+	DocumentRoles.default_discard = function(el,role,config) {
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 		
 	};
 	
@@ -607,7 +668,11 @@
 
 	StageLayouter.prototype.updateActiveArea = function(areaName) {
 		this.activeArea = areaName;
+<<<<<<< HEAD
 		this.refreshClass(document.getElementById(this.key)); //TODO on delay   
+=======
+		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	}
 
 	function Laidout(key,el,conf) {
@@ -629,6 +694,7 @@
 	var MemberLaidoutGenerator = essential.declare("MemberLaidout",Generator(MemberLaidout));
 	LaidoutGenerator.variant("area-member",MemberLaidoutGenerator);
 
+<<<<<<< HEAD
 	var _activeAreaName,_liveAreas=false;
 
 	function activateArea(areaName) {
@@ -649,11 +715,22 @@
 		return _activeAreaName;
 	}
 	essential.set("getActiveArea",getActiveArea);
+=======
+
+	function activateArea(areaName) {
+		for(var i=0,s; s = stages[i]; ++i) {
+			s.updateActiveArea(areaName);
+		}
+		DocumentRolesGenerator()._layout_descs();
+	}
+	essential.set("activateArea",activateArea);
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 
 	function bringLive() {
 		var ap = ApplicationConfig();
 
 		// Allow the browser to render the page, preventing initial transitions
+<<<<<<< HEAD
 		_liveAreas = true;
 		ap.state.livepage = true;
 		ap.reflectState();
@@ -671,6 +748,16 @@
 		_liveAreas = true;
 		ap.state.livepage = true;
 		ap.updateState();
+=======
+		ap.state.livepage = true;
+		ap.reflectState();
+
+		if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
+		else activateArea(ap.getIntroductionArea());
+	}
+
+	function onPageLoad(ev) {
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	}
 
 	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
@@ -682,6 +769,7 @@
 		this._gather();
 		this._apply();
 
+<<<<<<< HEAD
 		setTimeout(bringLive,60);
 	}
 //    _ApplicationConfig.args = [
@@ -700,6 +788,23 @@
 		"loadingScripts": true,
 		"launched": false
 		});
+=======
+		this.state = {
+			"livepage": false,
+			"authenticated": false,
+			"loading": true,
+			"loadingConfig": true,
+			"loadingScripts": true,
+			"launched": false
+		};
+		this.state.authenticated = true; //TODO add authentication tester
+
+		setTimeout(bringLive,60);
+	}
+	var ApplicationConfig = Generator(_ApplicationConfig);
+	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
+
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	ApplicationConfig.prototype.isPageState = function(whichState) {
 		return this.state[whichState];
 	};
@@ -708,17 +813,37 @@
 		if (this.state.launched) this.updateState();
 	};
 	ApplicationConfig.prototype.getAuthenticatedArea = function() {
+<<<<<<< HEAD
 		// return "edit";
 		return "sp-explorer";
 	};
 	ApplicationConfig.prototype.getIntroductionArea = function() {
 		//return "signup";
 		return "sp-explorer";
+=======
+		// return "edit"; TODO
+		return "explorer-sheet";
+	};
+	ApplicationConfig.prototype.getIntroductionArea = function() {
+		//return "signup"; TODO
+		return "explorer-sheet";
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	};
 
 	ApplicationConfig.prototype.declare = function(key,value) {
 		this.config[key] = value;
 	};
+<<<<<<< HEAD
+=======
+	ApplicationConfig.prototype._gather = function() {
+		var scripts = document.getElementsByTagName("script");
+		for(var i=0,s; s = scripts[i]; ++i) {
+			if (s.getAttribute("type") == "application/config") {
+				with(this) eval(s.text);
+			}
+		}
+	};
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 
 	ApplicationConfig.prototype._apply = function() {
 		for(var k in this.config) {
@@ -734,27 +859,40 @@
 		}
 	};
 
+<<<<<<< HEAD
 	var _singleQuotesRe = new RegExp("'","g");
 
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 	ApplicationConfig.prototype._getElementRoleConfig = function(element) {
 
 		var dataRole = element.getAttribute("data-role");
 		if (dataRole) try {
+<<<<<<< HEAD
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+=======
+			var map = JSON.parse("{" + dataRole + "}");
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 			//TODO extend this.config for elements with id?
 			if (element.id) {
 				this.config[element.id] = map;
 			}
 			return map;
 		} catch(ex) {
+<<<<<<< HEAD
 			console.debug("Invalid config: ",dataRole,ex);
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 			return { "invalid-config":dataRole };
 		}
 		return {};
 	};
 
 	ApplicationConfig.prototype.getConfig = function(element) {
+<<<<<<< HEAD
 		//TODO mixin data-role
+=======
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 		if (element.id) {
 			return this.config[element.id] || this._getElementRoleConfig(element);
 		}
@@ -790,9 +928,16 @@
 		for(var n in requiredConfigs) {
 			if (requiredConfigs[n] == false) { this.state.loading = true; this.state.loadingConfig = true; console.debug(n+" missing")}
 		}
+<<<<<<< HEAD
 		
 		if (this.state.loading == false && this.state.launched == false) {
 			if (document.body) essential("instantiatePageSingletons")();
+=======
+		//TODO perhaps do this after loadingScripts
+		//TODO consider instantiateConfigSingletons
+		if (this.state.loading == false && this.state.launched == false) {
+			essential("instantiatePageSingletons")();
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 		}
 	};
 
@@ -800,10 +945,14 @@
 	{   
 		this.justUpdateState();
 
+<<<<<<< HEAD
 		if (this.state.loading == false) {
 			if (document.body) essential("instantiatePageSingletons")();
 			enhanceUnhandledElements();
 		}
+=======
+		if (this.state.loading == false) enhanceUnhandledElements();
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 
 		//TODO do this in justUpdateState as well?
 		this.reflectState();
@@ -812,7 +961,12 @@
 
 	ApplicationConfig.prototype.reflectState = function()
 	{
+<<<<<<< HEAD
 		if (document.body == null) return; // body not there yet
+=======
+		return;
+		//TODO implement
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
 
 		var bodyClass = ArraySet.apply(null,document.body.className.split(" "));
 		bodyClass.set("login",! this.state.authenticated);
@@ -820,6 +974,7 @@
 		bodyClass.set("loading",this.state.loading);
 		bodyClass.set("login-error",this.state.loginError);
 		bodyClass.set("launched",this.state.launched);
+<<<<<<< HEAD
 		bodyClass.set("launching",this.state.launching);
 		bodyClass.set("livepage",this.state.livepage);
 		console.debug("Changing body from '"+document.body.className+"' to '"+bodyClass.join(" ")+"'");
@@ -837,3 +992,11 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 	}
 };
+=======
+		bodyClass.set("livepage",this.state.livepage);
+		if (window.log) console.log("Changing body from '"+document.body.className+"' to '"+String(bodyClass)+"'");
+		document.body.className = String(bodyClass);
+	};
+
+})();
+>>>>>>> a59ad8b3fd0c2e6034210999a0f0749fccc8ed95
