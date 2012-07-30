@@ -141,8 +141,13 @@
 
 	essential.set("_queueDelayedAssets",function(){});
 
+	var _readyFired = false;
+
 	function fireDomReady()
 	{
+		if (_readyFired) return;
+		_readyFired = true;
+		
 		essential("_queueDelayedAssets")();
 		essential.set("_queueDelayedAssets",function(){});
 
