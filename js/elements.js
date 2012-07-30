@@ -1,54 +1,57 @@
 (function(){
-	var essential = Resolver("essential",{});
-	var ObjectType = essential("ObjectType");
+    "use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
+    var essential = Resolver("essential",{});
+    var ObjectType = essential("ObjectType");
     var console = essential("console");
+    var ArraySet = essential("ArraySet");
     var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
-	// this = element
-	function regScriptOnload(domscript,trigger) {
+    // this = element
+    function regScriptOnload(domscript,trigger) {
 
-		domscript.onload = function(ev) { 
-		    if ( ! domscript.onloadDone ) {
-		        domscript.onloadDone = true; 
-		        trigger.call(domscript,ev || event); 
-		    }
-		};
-		domscript.onreadystatechange = function(ev) { 
-		    if ( ( "loaded" === domscript.readyState || "complete" === domscript.readyState ) && ! domscript.onloadDone ) {
-		        domscript.onloadDone = true; 
-		        trigger.call(domscript,ev || event);
-		    }
-		}
+        domscript.onload = function(ev) { 
+            if ( ! this.onloadDone ) {
+                this.onloadDone = true; 
+                trigger.call(this,ev || event); 
+            }
+        };
+        domscript.onreadystatechange = function(ev) { 
+            if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
+                this.onloadDone = true; 
+                trigger.call(this,ev || event);
+            }
+        }
 
-	}
+    }
 
-	//TODO regScriptOnnotfound (onerror, status=404)
+    //TODO regScriptOnnotfound (onerror, status=404)
 
-	function HTMLScriptElement(from,doc) {
-		var e = (doc || document).createElement("SCRIPT");
-		for(var n in from) {
-			switch(n) {
-				case "id":
-				case "class":
-				case "rel":
-				case "lang":
-				case "language":
-				case "src":
-				case "type":
-					if (from[n] !== undefined) e[n] = from[n]; 
-					break;
-				//TODO case "onprogress": // partial script progress
-				case "onload":
-					regScriptOnload(e,from.onload);
-					break;
-				default:
-					e.setAttribute(n,from[n]);
-					break;
-			}
-		}
-		return e;
-	}
-	essential.set("HTMLScriptElement",HTMLScriptElement);
+    function HTMLScriptElement(from,doc) {
+        var e = (doc || document).createElement("SCRIPT");
+        for(var n in from) {
+            switch(n) {
+                case "id":
+                case "class":
+                case "rel":
+                case "lang":
+                case "language":
+                case "src":
+                case "type":
+                    if (from[n] !== undefined) e[n] = from[n]; 
+                    break;
+                //TODO case "onprogress": // partial script progress
+                case "onload":
+                    regScriptOnload(e,from.onload);
+                    break;
+                default:
+                    e.setAttribute(n,from[n]);
+                    break;
+            }
+        }
+        return e;
+    }
+    essential.set("HTMLScriptElement",HTMLScriptElement);
 
     var pastloadScripts = {};
 
@@ -186,11 +189,11 @@
     //TODO recursive clean of element and children?
 
 
-	function DialogAction(actionName) {
-		this.actionName = actionName;
-	} 
+    function DialogAction(actionName) {
+        this.actionName = actionName;
+    } 
     DialogAction.prototype.activateArea = activateArea; // shortcut to global essential function
-	var DialogActionGenerator = essential.set("DialogAction",Generator(DialogAction));
+    var DialogActionGenerator = essential.set("DialogAction",Generator(DialogAction));
 
 
     function resizeTriggersReflow(ev) {
@@ -207,10 +210,12 @@
         //TODO time to default_enhance yet?
     }
 
-	function DocumentRoles(handlers) {
-	    this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
-	    //TODO configure reference as DI arg
-	    var statefuls = ApplicationConfig(); // Ensure that config is present
+    function DocumentRoles(handlers) {
+        this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
+        this._on_event = [];
+        
+        //TODO configure reference as DI arg
+        var statefuls = ApplicationConfig(); // Ensure that config is present
 
         if (window.addEventListener) {
             window.addEventListener("resize",resizeTriggersReflow,false);
@@ -219,29 +224,41 @@
             window.attachEvent("onresize",resizeTriggersReflow);
         }
         
-	    if (document.querySelectorAll) {
+        if (document.querySelectorAll) {
             this.descs = this._role_descs(document.querySelectorAll("*[role]"));
-	    } else {
-	        this.descs = this._role_descs(document.getElementsByTagName("*"));
-	    }
+        } else {
+            this.descs = this._role_descs(document.getElementsByTagName("*"));
+        }
         this._enhance_descs();
-	}
-	var DocumentRolesGenerator = essential.set("DocumentRoles",Generator(DocumentRoles));
-	
-	DocumentRoles.args = [
-	    ObjectType({ name:"handlers" })
-	];
+    }
+    var DocumentRolesGenerator = essential.set("DocumentRoles",Generator(DocumentRoles));
+    
+    DocumentRoles.args = [
+        ObjectType({ name:"handlers" })
+    ];
 
     DocumentRoles.prototype._enhance_descs = function() 
     {
         var statefuls = ApplicationConfig(); // Ensure that config is present
+        var incomplete = false, enhancedCount = 0;
 
         for(var i=0,desc; desc=this.descs[i]; ++i) {
             if (!desc.enhanced && this.handlers.enhance[desc.role]) {
                 desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
-                desc.enhanced = true;
+                desc.enhanced = desc.instance === false? false:true;
+                ++enhancedCount;
             }
+            if (! desc.enhanced) incomplete = true;
         }
+        
+        if (! incomplete && enhancedCount > 0) {
+            for(var i=0,oe; oe = this._on_event[i]; ++i) {
+                var descs = [];
+                for(var j=0,desc; desc=this.descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs.push(desc); 
+
+                if (oe.type == "enhanced") oe.func.call(this, this, descs);
+            }
+        } 
     };
 
     DocumentRoles.discarded = function(instance) {
@@ -307,11 +324,31 @@
                     desc.layout.height = oh;
                     updateLayout = true
                 }
+                if (desc.layout.area != _activeAreaName) { 
+                    desc.layout.area = _activeAreaName;
+                    updateLayout = true;
+                }
                 if (updateLayout) this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
             }
         }
     };
 
+    DocumentRoles.prototype._area_changed_descs = function() {
+        for(var i=0,desc; desc = this.descs[i]; ++i) {
+            if (desc.enhanced && this.handlers.layout[desc.role]) {
+                desc.layout.area = _activeAreaName;
+                this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+            }
+        }
+    };
+
+    DocumentRoles.prototype.on = function(name,role,func) {
+        if (arguments.length == 2) func = role;
+        
+        //TODO
+        this._on_event.push({ "type":name,"func":func,"name":name,"role":role });
+    }
+    
     // Element specific handlers
     DocumentRolesGenerator.presets.declare("handlers.enhance", {});
     DocumentRolesGenerator.presets.declare("handlers.layout", {});
@@ -385,17 +422,29 @@
             break; 
         }
     }
+    
+    function applicable_role_element(element) {
+        // role of element or ancestor
+        // TODO minor tags are traversed; Stop at document, header, aside etc
+        
+        while(element) {
+            var role = element.getAttribute("role");
+            if (role) return element;
+            element = element.parentNode;
+        }
+    }
 
     function dialog_button_click(ev) {
         ev = ev || event;
         var e = ev.target || ev.srcElement;
-        if (e.getAttribute("role") == "button") this.submit(e); else
+        var re = applicable_role_element(e);
+        if (re && re.getAttribute("role") == "button") this.submit(re); else
         if (e.type=="submit") this.submit(e); //TODO action context
     }
 
-	DocumentRolesGenerator.enhance_dialog = DocumentRoles.enhance_dialog = function (el,role,config) {
-	    switch(el.tagName.toLowerCase()) {
-	        case "form":
+    DocumentRolesGenerator.enhance_dialog = DocumentRoles.enhance_dialog = function (el,role,config) {
+        switch(el.tagName.toLowerCase()) {
+            case "form":
                 // f.method=null; f.action=null;
                 el.onsubmit = form_onsubmit;
                 el.__builtinSubmit = el.submit;
@@ -404,15 +453,15 @@
                 el.blur = form_blur;
                 el.__builtinFocus = el.focus;
                 el.focus = form_focus;
-	            break;
-	            
-	        default:
+                break;
+                
+            default:
                 el.submit = dialog_submit;
-	        	// debugger;
-	            //TODO capture enter from inputs, tweak tab indexes
-	            break;
-	    }
-	    
+                // debugger;
+                //TODO capture enter from inputs, tweak tab indexes
+                break;
+        }
+        
         addEventListeners(el, {
             "click": dialog_button_click
         },false);
@@ -420,6 +469,9 @@
         return {};
     };
 
+    DocumentRolesGenerator.layout_dialog = DocumentRoles.layout_dialog = function(el,layout,instance) {
+        
+    };
     DocumentRolesGenerator.discard_dialog = DocumentRoles.discard_dialog = function (el,role,instance) {
     };
 
@@ -433,10 +485,9 @@
         return {};
     };
 
-    DocumentRolesGenerator.discard_toolbar = DocumentRoles.layout_toolbar = function(el,layout,instance) {
+    DocumentRolesGenerator.layout_toolbar = DocumentRoles.layout_toolbar = function(el,layout,instance) {
         
     };
-
     DocumentRolesGenerator.discard_toolbar = DocumentRoles.discard_toolbar = function(el,role,instance) {
         
     };
@@ -446,19 +497,79 @@
         return {};
     };
 
-    DocumentRolesGenerator.discard_sheet = DocumentRoles.layout_sheet = function(el,layout,instance) {
+    DocumentRolesGenerator.layout_sheet = DocumentRoles.layout_sheet = function(el,layout,instance) {
+        
+    };
+    DocumentRolesGenerator.discard_sheet = DocumentRoles.discard_sheet = function(el,role,instance) {
         
     };
 
-    DocumentRolesGenerator.discard_sheet = DocumentRoles.discard_sheet = function(el,role,instance) {
+    DocumentRolesGenerator.enhance_spinner = DocumentRoles.enhance_spinner = function(el,role,config) {
+        var opts = {
+            lines: 8,
+            length: 5,
+            width: 5,
+            radius: 8,
+            color: '#fff',
+            speed: 1,
+            trail: 60,
+            shadow: false,
+            hwaccel: true,
+            className: 'spinner',
+            zIndex: config.zIndex != undefined? config.zIndex : 2e9, // data-role
+            top: 'auto',
+            left: 'auto'
+        };
+        return new Spinner(opts).spin(el);
+    };
+
+    DocumentRolesGenerator.layout_spinner = DocumentRoles.layout_spinner = function(el,layout,instance) {
+        
+    };
+    DocumentRolesGenerator.discard_spinner = DocumentRoles.discard_spinner = function(el,role,instance) {
+        instance.stop();
+        el.innerHTML = "";
+    };
+    
+    function _lookup_generator(name,resolver) {
+        var constructor = Resolver(resolver || "default")(name,"null");
+        
+        return constructor? Generator(constructor) : null;
+    }
+
+    DocumentRolesGenerator.enhance_application = DocumentRoles.enhance_application = function(el,role,config) {
+        if (config.variant) {
+//          variant of generator (default ApplicationController)
+        }
+        if (config.generator) {
+            var g = _lookup_generator(config.generator,config.resolver);
+            if (g) {
+                var instance = g(el,role,config);
+                return instance;
+            }
+            else return false; // not yet ready
+        }
+        
+        return {};
+    };
+
+    DocumentRolesGenerator.layout_application = DocumentRoles.layout_application = function(el,layout,instance) {
+        
+    };
+    DocumentRolesGenerator.discard_application = DocumentRoles.discard_application = function(el,role,instance) {
         
     };
 
     DocumentRoles.default_enhance = function(el,role,config) {
         
+        return {};
     };
 
-    DocumentRoles.default_discard = function(el,role,config) {
+    DocumentRoles.default_layout = function(el,layout,instance) {
+        
+    };
+    
+    DocumentRoles.default_discard = function(el,role,instance) {
         
     };
     
@@ -470,33 +581,33 @@
     var stages = [];
 
     function StageLayouter(key,el,conf) {
-    	this.key = key;
-    	this.type = conf.layouter;
-    	this.areaNames = conf["area-names"];
-    	this.activeArea = null;
+        this.key = key;
+        this.type = conf.layouter;
+        this.areaNames = conf["area-names"];
+        this.activeArea = null;
 
-    	this.baseClass = conf["base-class"];
-    	if (this.baseClass) this.baseClass += " ";
-    	else this.baseClass = "";
+        this.baseClass = conf["base-class"];
+        if (this.baseClass) this.baseClass += " ";
+        else this.baseClass = "";
 
-    	stages.push(this); // for area updates
+        stages.push(this); // for area updates
     }
     var StageLayouterGenerator = essential.declare("StageLayouter",Generator(StageLayouter));
     LayouterGenerator.variant("area-stage",StageLayouterGenerator);
 
     StageLayouter.prototype.refreshClass = function(el) {
-    	var areaClasses = [];
-    	for(var i=0,a; a = this.areaNames[i]; ++i) {
-    		if (a == this.activeArea) areaClasses.push(a + "-area-active");
-    		else areaClasses.push(a + "-area-inactive");
-    	}
-    	var newClass = this.baseClass + areaClasses.join(" ")
-    	if (el.className != newClass) el.className = newClass;
+        var areaClasses = [];
+        for(var i=0,a; a = this.areaNames[i]; ++i) {
+            if (a == this.activeArea) areaClasses.push(a + "-area-active");
+            else areaClasses.push(a + "-area-inactive");
+        }
+        var newClass = this.baseClass + areaClasses.join(" ")
+        if (el.className != newClass) el.className = newClass;
     };
 
     StageLayouter.prototype.updateActiveArea = function(areaName) {
-    	this.activeArea = areaName;
-    	this.refreshClass(document.getElementById(this.key)); //TODO on delay	
+        this.activeArea = areaName;
+        this.refreshClass(document.getElementById(this.key)); //TODO on delay   
     }
 
     function Laidout(key,el,conf) {
@@ -505,9 +616,9 @@
     var LaidoutGenerator = essential.declare("Laidout",Generator(Laidout));
 
     function MemberLaidout(key,el,conf) {
-    	this.key = key;
-    	this.type = conf.laidout;
-    	this.areaNames = conf["area-names"];
+        this.key = key;
+        this.type = conf.laidout;
+        this.areaNames = conf["area-names"];
 
         this.baseClass = conf["base-class"];
         if (this.baseClass) this.baseClass += " ";
@@ -518,27 +629,48 @@
     var MemberLaidoutGenerator = essential.declare("MemberLaidout",Generator(MemberLaidout));
     LaidoutGenerator.variant("area-member",MemberLaidoutGenerator);
 
+    var _activeAreaName,_liveAreas=false;
 
     function activateArea(areaName) {
-    	for(var i=0,s; s = stages[i]; ++i) {
-    		s.updateActiveArea(areaName);
-    	}
+        if (! _liveAreas) {
+            _activeAreaName = areaName;
+            return;
+        }
+        
+        for(var i=0,s; s = stages[i]; ++i) {
+            s.updateActiveArea(areaName);
+        }
+        _activeAreaName = areaName;
         DocumentRolesGenerator()._layout_descs();
     }
     essential.set("activateArea",activateArea);
+    
+    function getActiveArea() {
+        return _activeAreaName;
+    }
+    essential.set("getActiveArea",getActiveArea);
 
     function bringLive() {
-    	var ap = ApplicationConfig();
+        var ap = ApplicationConfig();
 
         // Allow the browser to render the page, preventing initial transitions
+        _liveAreas = true;
         ap.state.livepage = true;
         ap.reflectState();
 
-    	if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
-    	else activateArea(ap.getIntroductionArea());
+        if (_activeAreaName) {
+            activateArea(_activeAreaName);
+        } else {
+            if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
+            else activateArea(ap.getIntroductionArea());
+        }
     }
 
     function onPageLoad(ev) {
+        var ap = ApplicationConfig();
+        _liveAreas = true;
+        ap.state.livepage = true;
+        ap.updateState();
     }
 
     if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
@@ -546,105 +678,104 @@
 
 
     function _ApplicationConfig() {
-    	this.config = {};
-    	this._gather();
-    	this._apply();
+        this.config = {};
+        this._gather();
+        this._apply();
 
-        this.state = {
-            "livepage": false,
-            "authenticated": false,
-            "loading": true,
-            "loadingConfig": true,
-            "loadingScripts": true,
-            "launched": false
-        };
-        this.state.authenticated = true; //TODO add authentication tester
-
-    	setTimeout(bringLive,60);
+        setTimeout(bringLive,60);
     }
+//    _ApplicationConfig.args = [
+//      ObjectType({ name:"state" })
+//      ];
+
     var ApplicationConfig = Generator(_ApplicationConfig);
     essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
-
+    
+    // preset on instance
+    ApplicationConfig.presets.declare("state", {
+        "livepage": false,
+        "authenticated": false,
+        "loading": true,
+        "loadingConfig": true,
+        "loadingScripts": true,
+        "launched": false
+        });
     ApplicationConfig.prototype.isPageState = function(whichState) {
-    	return this.state[whichState];
+        return this.state[whichState];
     };
     ApplicationConfig.prototype.setPageState = function(whichState,v) {
         this.state[whichState] = v;
         if (this.state.launched) this.updateState();
     };
     ApplicationConfig.prototype.getAuthenticatedArea = function() {
-    	// return "edit"; TODO
-        return "explorer-sheet";
+        // return "edit";
+        return "sp-explorer";
     };
     ApplicationConfig.prototype.getIntroductionArea = function() {
-    	//return "signup"; TODO
-        return "explorer-sheet";
+        //return "signup";
+        return "sp-explorer";
     };
 
     ApplicationConfig.prototype.declare = function(key,value) {
-    	this.config[key] = value;
-    };
-    ApplicationConfig.prototype._gather = function() {
-    	var scripts = document.getElementsByTagName("script");
-    	for(var i=0,s; s = scripts[i]; ++i) {
-    		if (s.getAttribute("type") == "application/config") {
-    			with(this) eval(s.text);
-    		}
-    	}
+        this.config[key] = value;
     };
 
     ApplicationConfig.prototype._apply = function() {
-    	for(var k in this.config) {
-    		var conf = this.config[k];
-    		var el = this.getElement(k);
+        for(var k in this.config) {
+            var conf = this.config[k];
+            var el = this.getElement(k);
 
-    		if (conf.layouter) {
-    			el.layouter = LayouterGenerator.variant(conf.layouter)(k,el,conf);
-    		}
-    		if (conf.laidout) {
-    			el.laidout = LaidoutGenerator.variant(conf.laidout)(k,el,conf);
-    		}
-    	}
+            if (conf.layouter) {
+                el.layouter = LayouterGenerator.variant(conf.layouter)(k,el,conf);
+            }
+            if (conf.laidout) {
+                el.laidout = LaidoutGenerator.variant(conf.laidout)(k,el,conf);
+            }
+        }
     };
+
+    var _singleQuotesRe = new RegExp("'","g");
 
     ApplicationConfig.prototype._getElementRoleConfig = function(element) {
 
         var dataRole = element.getAttribute("data-role");
         if (dataRole) try {
-            var map = JSON.parse("{" + dataRole + "}");
+            var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
             //TODO extend this.config for elements with id?
             if (element.id) {
                 this.config[element.id] = map;
             }
             return map;
         } catch(ex) {
+            console.debug("Invalid config: ",dataRole,ex);
             return { "invalid-config":dataRole };
         }
         return {};
     };
 
     ApplicationConfig.prototype.getConfig = function(element) {
-    	if (element.id) {
-    		return this.config[element.id] || this._getElementRoleConfig(element);
-    	}
-    	var name = element.getAttribute("name");
-    	if (name) {
-    		var p = element.parentNode;
-    		while(p) {
-	    		if (p.id) {
+        //TODO mixin data-role
+        if (element.id) {
+            return this.config[element.id] || this._getElementRoleConfig(element);
+        }
+        var name = element.getAttribute("name");
+        if (name) {
+            var p = element.parentNode;
+            while(p) {
+                if (p.id) {
                     return this.config[p.id + "." + name] || this._getElementRoleConfig(element);
                 } 
-	    		p = p.parentNode;
-    		} 
-    	}
+                p = p.parentNode;
+            } 
+        }
         return this._getElementRoleConfig(element);
     };
 
     ApplicationConfig.prototype.getElement = function(key) {
-    	var keys = key.split(".");
-    	var el = document.getElementById(keys[0]);
-    	if (keys.length > 1) el = el.getElementByName(keys[1]);
-    	return el;
+        var keys = key.split(".");
+        var el = document.getElementById(keys[0]);
+        if (keys.length > 1) el = el.getElementByName(keys[1]);
+        return el;
     };
 
     ApplicationConfig.prototype.justUpdateState = function() 
@@ -659,13 +790,20 @@
         for(var n in requiredConfigs) {
             if (requiredConfigs[n] == false) { this.state.loading = true; this.state.loadingConfig = true; console.debug(n+" missing")}
         }
+        
+        if (this.state.loading == false && this.state.launched == false) {
+            if (document.body) essential("instantiatePageSingletons")();
+        }
     };
 
     ApplicationConfig.prototype.updateState = function() 
     {   
         this.justUpdateState();
 
-        if (this.state.loading == false) enhanceUnhandledElements();
+        if (this.state.loading == false) {
+            if (document.body) essential("instantiatePageSingletons")();
+            enhanceUnhandledElements();
+        }
 
         //TODO do this in justUpdateState as well?
         this.reflectState();
@@ -674,8 +812,7 @@
 
     ApplicationConfig.prototype.reflectState = function()
     {
-        return;
-        //TODO implement
+        if (document.body == null) return; // body not there yet
 
         var bodyClass = ArraySet.apply(null,document.body.className.split(" "));
         bodyClass.set("login",! this.state.authenticated);
@@ -683,9 +820,20 @@
         bodyClass.set("loading",this.state.loading);
         bodyClass.set("login-error",this.state.loginError);
         bodyClass.set("launched",this.state.launched);
+        bodyClass.set("launching",this.state.launching);
         bodyClass.set("livepage",this.state.livepage);
-        if (window.log) console.log("Changing body from '"+document.body.className+"' to '"+String(bodyClass)+"'");
-        document.body.className = String(bodyClass);
+        console.debug("Changing body from '"+document.body.className+"' to '"+bodyClass.join(" ")+"'");
+        document.body.className = bodyClass.join(" "); //TODO should work: String(bodyClass)
     };
 
 })();
+
+// need with context not supported in strict mode
+Resolver("essential")("ApplicationConfig").prototype._gather = function() {
+    var scripts = document.getElementsByTagName("script");
+    for(var i=0,s; s = scripts[i]; ++i) {
+        if (s.getAttribute("type") == "application/config") {
+            with(this) eval(s.text);
+        }
+    }
+};
