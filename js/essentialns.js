@@ -109,6 +109,7 @@
 	
 	ArraySet.prototype.separator = " ";
 
+	//TODO why doesn't this seem to be called for String(ArraySet) ?
 	ArraySet.prototype.toString = function() {
 		return this.join(this.separator);
 	};
