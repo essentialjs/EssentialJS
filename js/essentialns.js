@@ -1,5 +1,7 @@
 // types for describing generator arguments and generated properties
 (function(win){
+	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
 	var essential = Resolver("essential",{});
 	function Type(options) {
 		this.options = options || {};
