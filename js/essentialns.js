@@ -122,6 +122,7 @@
 			}
 		}
 	}
+	essential.set("instantiatePageSingletons",instantiatePageSingletons);
 
 	function discardRestricted()
 	{
