@@ -69,7 +69,7 @@ function Resolver(name,ns,options)
      * @param name To resolve
      * @param onundefined What to do for undefined symbols ("generate","null","throw")
      */
-    function resolve(name,onundefined) {
+    function resolver(name,onundefined) {
         if (typeof name == "object") {
             return _resolve(name.name.split("."),name.onundefined);
         }
@@ -78,10 +78,10 @@ function Resolver(name,ns,options)
         }
     };
 
-    resolve.named = name;
-    resolve.namespace = ns;
+    resolver.named = name;
+    resolver.namespace = ns;
     
-    resolve.declare = function(name,value,onundefined) 
+    resolver.declare = function(name,value,onundefined) 
     {
         var names = name.split(".");
         var symbol = names.pop();
@@ -92,7 +92,7 @@ function Resolver(name,ns,options)
     	} else return base[symbol];
     };
 
-    resolve.set = function(name,value,onundefined) 
+    resolver.set = function(name,value,onundefined) 
     {
         var names = name.split(".");
         var symbol = names.pop();
@@ -101,7 +101,7 @@ function Resolver(name,ns,options)
 		return value;
     };
 
-    resolve.reference = function(name,onundefined)
+    resolver.reference = function(name,onundefined)
     {
         var names = name.split(".");
 
@@ -160,7 +160,7 @@ function Resolver(name,ns,options)
         return get;
     };
 
-    resolve.override = function(ns,options)
+    resolver.override = function(ns,options)
     {
         options = options || {};
         var name = options.name || this.named; 
@@ -170,13 +170,13 @@ function Resolver(name,ns,options)
     };
 
     if (options.mixinto) {
-    	options.mixinto.declare = resolve.declare;
-    	options.mixinto.set = resolve.set;
-    	options.mixinto.reference = resolve.reference;
-    	options.mixinto.override = resolve.override;
+    	options.mixinto.declare = resolver.declare;
+    	options.mixinto.set = resolver.set;
+    	options.mixinto.reference = resolver.reference;
+    	options.mixinto.override = resolver.override;
     }
 
-    return resolve;
+    return resolver;
 }
 Resolver["default"] = Resolver({},{ name:"default" });
 
