@@ -28,3 +28,10 @@ You can configure the default variant for `appname.core.formatters.DecimalFormat
 Of course there is much more to it, check out the [Wiki](http://github.com/essentialjs/EssentialJs/Wiki)
 or the [Website](http://essentialjs.com)
 
+## Building Essential and Essentials
+
+Make sure that you have NodeJS/npm installed and install the build tools `npm install jake uglify-js`.
+
+   ./node_modules/.bin/jake
+
+This will build plain and minified versions.
