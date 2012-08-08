@@ -1178,7 +1178,6 @@ function Resolver(name,ns,options)
 	name = options.name;
 
 	function _resolve(names,onundefined) {
-		var _generator = options.generator || Generator(Object); //TODO faster default
         var top = ns;
         for (var j = 0, n; n = names[j]; ++j) {
             var prev_top = top;
@@ -1187,7 +1186,7 @@ function Resolver(name,ns,options)
                 switch(onundefined) {
                 case undefined:
                 case "generate":
-                    top = prev_top[n] = _generator();
+                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
                     break;
                 case "null":
                     return null;
@@ -1209,11 +1208,54 @@ function Resolver(name,ns,options)
     	}
     }
 
+    function nopCall() {}
+
+    function _makeResolverEvent(resolver,type,selector,data,callback) {
+    	var e = {};
+
+    	e.type = type;
+    	e.selector = selector;
+    	e.data = data;
+    	e.callback = callback;
+
+    	function trigger(value) {
+    		this.value = value;
+    		this.callback.call(resolver,this);
+    	}
+    	e.trigger = callback? trigger : nopCall;
+
+    	return e;
+    }
+
+    function _callListener(resolver,type,names,symbol,value) {
+    	return;
+    	var listeners = resolver.listeners[type] = resolver.listeners[type] || {};
+
+    	for(var i,event; event = listeners["*"][i]; ++i) {
+    		event.trigger(value);
+    	}
+    }
+
+    function _addListener(resolver,type,selector,data,callback) {
+    	/*
+    		selector
+    		*
+    		a
+    		a.b
+    		a.b.c
+    	*/
+    	var listeners = resolver.listeners[type] = resolver.listeners[type] || {};
+    	selector = selector || "*";
+    	if (! selector in listeners) listeners[selector] = [];
+   		listeners[selector].push(_makeResolverEvent(resolver,type,selector,data,callback));
+    }
+
     /**
+     * Function returned by the Resolver call.
      * @param name To resolve
      * @param onundefined What to do for undefined symbols ("generate","null","throw")
      */
-    function resolve(name,onundefined) {
+    function resolver(name,onundefined) {
         if (typeof name == "object") {
             return _resolve(name.name.split("."),name.onundefined);
         }
@@ -1222,30 +1264,58 @@ function Resolver(name,ns,options)
         }
     };
 
-    resolve.named = name;
-    resolve.namespace = ns;
+    resolver.named = name;
+    resolver.namespace = ns;
+    resolver.listeners = {};
+
+    var VALID_LISTENERS = {
+    	"get": true, // allows for switching in alternate lookups
+    	"change": true, // allows reflecting changes elsewhere
+    	"undefined": true // allow filling in unfound entries
+    };
+    // resolver.listners.get.<selector>.<list of callbacks>
+    for(var n in VALID_LISTENERS) resolver.listeners[n] = {};
+
+    resolver.on = function(type,selector,data,callback) {
+    	if (! name in VALID_LISTENERS) return;//fail
+
+    	switch(arguments.length) {
+    		case 2: _addListener(this,type,null,null,arguments[1]); break;
+    		case 3: 
+    			if (typeof arguments[1] == "string") {
+    				_addListener(this,type,selector,null,arguments[2]);
+    			} else {
+	    			_addListener(this,type,null,arguments[1],arguments[2]);
+    			};
+    			break;
+    		case 4: _addListener(this,type,selector,data,callback); break;
+    	};
+
+    };
     
-    resolve.declare = function(name,value,onundefined) 
+    resolver.declare = function(name,value,onundefined) 
     {
         var names = name.split(".");
         var symbol = names.pop();
     	var base = _resolve(names,onundefined);
     	if (base[symbol] === undefined) { 
     		_setValue(value,names,base,symbol);
+	    	_callListener(resolver,"change",names,symbol,value);
     		return value;
     	} else return base[symbol];
     };
 
-    resolve.set = function(name,value,onundefined) 
+    resolver.set = function(name,value,onundefined) 
     {
         var names = name.split(".");
         var symbol = names.pop();
     	var base = _resolve(names,onundefined);
 		_setValue(value,names,base,symbol);
+    	_callListener(resolver,"change",names,symbol,value);
 		return value;
     };
 
-    resolve.reference = function(name,onundefined)
+    resolver.reference = function(name,onundefined)
     {
         var names = name.split(".");
 
@@ -1254,18 +1324,30 @@ function Resolver(name,ns,options)
         	return base;
         }
         function set(value) {
+        	if (arguments.length > 1) {
+
+        	} else {
+
+        	}
             var symbol = names.pop();
         	var base = _resolve(names,onundefined);
         	names.push(symbol);
         	_setValue(value,names,base,symbol);
+	    	_callListener(resolver,"change",names,symbol,value);
         	return value;
         }
         function declare(value) {
+        	if (arguments.length > 1) {
+
+        	} else {
+        		
+        	}
             var symbol = names.pop();
         	var base = _resolve(names,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) {
         		_setValue(value,names,base,symbol);
+		    	_callListener(resolver,"change",names,symbol,value);
         		return value
         	} else return base[symbol];
         }
@@ -1276,6 +1358,7 @@ function Resolver(name,ns,options)
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
         	if (base[symbol][key] === undefined) base[symbol][key] = value;
+        	//TODO event
         }
         function setEntry(key,value) {
             var symbol = names.pop();
@@ -1284,6 +1367,7 @@ function Resolver(name,ns,options)
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
         	base[symbol][key] = value;
+        	//TODO event
         }
         function mixin(map) {
             var symbol = names.pop();
@@ -1304,7 +1388,7 @@ function Resolver(name,ns,options)
         return get;
     };
 
-    resolve.override = function(ns,options)
+    resolver.override = function(ns,options)
     {
         options = options || {};
         var name = options.name || this.named; 
@@ -1314,13 +1398,13 @@ function Resolver(name,ns,options)
     };
 
     if (options.mixinto) {
-    	options.mixinto.declare = resolve.declare;
-    	options.mixinto.set = resolve.set;
-    	options.mixinto.reference = resolve.reference;
-    	options.mixinto.override = resolve.override;
+    	options.mixinto.declare = resolver.declare;
+    	options.mixinto.set = resolver.set;
+    	options.mixinto.reference = resolver.reference;
+    	options.mixinto.override = resolver.override;
     }
 
-    return resolve;
+    return resolver;
 }
 Resolver["default"] = Resolver({},{ name:"default" });
 
@@ -1477,13 +1561,14 @@ function Generator(mainConstr,options)
 						info.extendsBuiltin = { "ctr":ctr }
 						for(var ci=12; ci>=0; --ci) info.extendsBuiltin[ci] = constructByNumber(ctr,ci);
 				}
-				bases.push(args[i]);
+				bases.push(ctr);
 			}
 		}	
 		var constructors = info.constructors;
 		for(var i=0,b; b = bases[i];++i) {
-			if (b.bases) {
+			if (b.bases && b.info && b.info.constructors) {
 				for(var j=0,b2; b2 = b.bases[j]; ++j) constructors.push(b.bases[j]);
+				b = bases[i] = b.info.constructors[-1]
 			}
 			constructors.push(b);
 		}
@@ -1540,7 +1625,7 @@ function Generator(mainConstr,options)
 		return generator;
 	})(arguments);
 
-	Resolver(generator.prototype,{ mixinto:generator });
+	Resolver(generator.prototype,{ mixinto:generator, generator: Generator.ObjectGenerator });
 
 	/*
 	function mixin(mix) {
@@ -1647,121 +1732,10 @@ function Generator(mainConstr,options)
 
 /* List of generators that have been restricted */
 Generator.restricted = [];
+Generator.ObjectGenerator = Generator(Object);
 
 
-/*
-function assert(b) {
-	if (!eval(b)) alert("failed:"+ b);
-}
-var shapes = Resolver()("my.shapes");
-var tools = Resolver()("my.tools");
 
-Resolver().set("my.tools.X",5);
-assert("5 === Resolver.default.namespace.my.tools.X");
-
-assert("shapes === Resolver.default.namespace.my.shapes");
-assert("tools === Resolver.default.namespace.my.tools");
-assert("Resolver.default.namespace.my");
-
-Resolver("default").override({});
-assert("undefined === Resolver["default"].namespace.my");
-Resolver()("my")
-assert("Resolver.default.namespace.my");
-
-var my = Resolver().reference("my");
-assert("my.get()");
-
-var num = Resolver().reference("num");
-num.set(5);
-assert("5 == num.get()");
-
-
-// Generators
-
-var NumberType = Generator(Resolver("essential")("Type"),"Number");
-
-var shapes = {};
-
-function Shape() {}
-Shape.args = [ ];
-
-function Rectangle(width,height) {
-	
-}
-Rectangle.bases = [Shape];
-Rectangle.args = [ NumberType({name:"width",preset:true}), NumberType({name:"height",preset:true}) ]; //TODO NumberType({name:"width"}) optional: , default:  seed:
-Rectangle.prototype.earlyFunc = function() {};
-
-shapes.Shape = Generator(Shape);
-shapes.Rectangle = Generator(Rectangle);
-
-Rectangle.prototype.getWidth = function() {
-	return this.width;
-};
-
-assert("typeof shapes.Shape.info.options == 'object'");
-assert("shapes.Rectangle.bases == Rectangle.bases");
-assert("shapes.Rectangle.args == Rectangle.args");
-
-var s = shapes.Shape();
-var r55 = shapes.Rectangle(5,5);
-assert("r55 instanceof Rectangle");
-assert("r55 instanceof shapes.Rectangle");
-assert("r55 instanceof Shape");
-assert("r55 instanceof shapes.Shape");
-assert("shapes.Rectangle.prototype.getWidth == Rectangle.prototype.getWidth");
-assert("typeof shapes.Rectangle.prototype.earlyFunc == 'function'");
-assert("5 == r55.width");
-assert("5 == r55.getWidth()");
-
-shapes.Shape.mixin({
-	sides: 0
-});
-
-shapes.Rectangle.mixin({
-	sides: 2,
-	getRatio: function() { return this.width / this.height; }
-});
-
-assert("0 == Shape.prototype.sides");
-assert("0 == s.sides");
-assert("2 == Rectangle.prototype.sides");
-assert("2 == r55.sides");
-
-
-function Circle(diameter) {
-	
-}
-Circle.prototype.earlyFunc = function() {};
-
-shapes.Circle = Generator(Circle,Shape,{
-	args : [ NumberType({name:"diameter",preset:true}) ] //TODO NumberType({name:"width"}) optional: , default:  seed:
-});
-
-Circle.prototype.getWidth = function() {
-	return this.diameter;
-};
-
-assert("shapes.Circle.bases.length == 1");
-assert("shapes.Circle.bases[0] == Shape");
-assert("shapes.Circle.info.options.args.length == 1");
-assert("typeof shapes.Circle.info.options.args[0] == 'object'");
-assert("0 == Circle.prototype.sides");
-
-var c9 = shapes.Circle(9);
-assert("c9 instanceof Circle");
-assert("c9 instanceof shapes.Circle");
-assert("c9 instanceof Shape");
-assert("c9 instanceof shapes.Shape");
-assert("9 == c9.diameter");
-assert("9 == c9.getWidth()");
-
-var Simple = Generator(function(v) { return v; }, { alloc: false });
-
-var s8 = Simple(8);
-assert("s8 == 8");
-
-*/
 // types for describing generator arguments and generated properties
 (function(win){
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -2008,6 +1982,8 @@ assert("s8 == 8");
 		proxyConsole["info"] = function() { no_logging("info",arguments); };
 		proxyConsole["warn"] = function() { no_logging("warn",arguments); };
 		proxyConsole["error"] = function() { no_logging("error",arguments); };
+		proxyConsole["group"] = function() { no_logging("group",arguments); };
+		proxyConsole["groupEnd"] = function() { no_logging("groupEnd",arguments); };
 	}
 	essential.declare("setStubConsole",setStubConsole);
  
