@@ -34,7 +34,6 @@ function Resolver(name,ns,options)
 	name = options.name;
 
 	function _resolve(names,onundefined) {
-		var _generator = options.generator || Generator(Object); //TODO faster default
         var top = ns;
         for (var j = 0, n; n = names[j]; ++j) {
             var prev_top = top;
@@ -43,7 +42,7 @@ function Resolver(name,ns,options)
                 switch(onundefined) {
                 case undefined:
                 case "generate":
-                    top = prev_top[n] = _generator();
+                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
                     break;
                 case "null":
                     return null;
@@ -397,7 +396,7 @@ function Generator(mainConstr,options)
 		return generator;
 	})(arguments);
 
-	Resolver(generator.prototype,{ mixinto:generator });
+	Resolver(generator.prototype,{ mixinto:generator, generator: Generator.ObjectGenerator });
 
 	/*
 	function mixin(mix) {
@@ -504,5 +503,6 @@ function Generator(mainConstr,options)
 
 /* List of generators that have been restricted */
 Generator.restricted = [];
+Generator.ObjectGenerator = Generator(Object);
 
 
