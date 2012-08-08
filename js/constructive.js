@@ -333,13 +333,14 @@ function Generator(mainConstr,options)
 						info.extendsBuiltin = { "ctr":ctr }
 						for(var ci=12; ci>=0; --ci) info.extendsBuiltin[ci] = constructByNumber(ctr,ci);
 				}
-				bases.push(args[i]);
+				bases.push(ctr);
 			}
 		}	
 		var constructors = info.constructors;
 		for(var i=0,b; b = bases[i];++i) {
-			if (b.bases) {
+			if (b.bases && b.info && b.info.constructors) {
 				for(var j=0,b2; b2 = b.bases[j]; ++j) constructors.push(b.bases[j]);
+				b = bases[i] = b.info.constructors[-1]
 			}
 			constructors.push(b);
 		}
@@ -505,116 +506,3 @@ function Generator(mainConstr,options)
 Generator.restricted = [];
 
 
-/*
-function assert(b) {
-	if (!eval(b)) alert("failed:"+ b);
-}
-var shapes = Resolver()("my.shapes");
-var tools = Resolver()("my.tools");
-
-Resolver().set("my.tools.X",5);
-assert("5 === Resolver.default.namespace.my.tools.X");
-
-assert("shapes === Resolver.default.namespace.my.shapes");
-assert("tools === Resolver.default.namespace.my.tools");
-assert("Resolver.default.namespace.my");
-
-Resolver("default").override({});
-assert("undefined === Resolver["default"].namespace.my");
-Resolver()("my")
-assert("Resolver.default.namespace.my");
-
-var my = Resolver().reference("my");
-assert("my.get()");
-
-var num = Resolver().reference("num");
-num.set(5);
-assert("5 == num.get()");
-
-
-// Generators
-
-var NumberType = Generator(Resolver("essential")("Type"),"Number");
-
-var shapes = {};
-
-function Shape() {}
-Shape.args = [ ];
-
-function Rectangle(width,height) {
-	
-}
-Rectangle.bases = [Shape];
-Rectangle.args = [ NumberType({name:"width",preset:true}), NumberType({name:"height",preset:true}) ]; //TODO NumberType({name:"width"}) optional: , default:  seed:
-Rectangle.prototype.earlyFunc = function() {};
-
-shapes.Shape = Generator(Shape);
-shapes.Rectangle = Generator(Rectangle);
-
-Rectangle.prototype.getWidth = function() {
-	return this.width;
-};
-
-assert("typeof shapes.Shape.info.options == 'object'");
-assert("shapes.Rectangle.bases == Rectangle.bases");
-assert("shapes.Rectangle.args == Rectangle.args");
-
-var s = shapes.Shape();
-var r55 = shapes.Rectangle(5,5);
-assert("r55 instanceof Rectangle");
-assert("r55 instanceof shapes.Rectangle");
-assert("r55 instanceof Shape");
-assert("r55 instanceof shapes.Shape");
-assert("shapes.Rectangle.prototype.getWidth == Rectangle.prototype.getWidth");
-assert("typeof shapes.Rectangle.prototype.earlyFunc == 'function'");
-assert("5 == r55.width");
-assert("5 == r55.getWidth()");
-
-shapes.Shape.mixin({
-	sides: 0
-});
-
-shapes.Rectangle.mixin({
-	sides: 2,
-	getRatio: function() { return this.width / this.height; }
-});
-
-assert("0 == Shape.prototype.sides");
-assert("0 == s.sides");
-assert("2 == Rectangle.prototype.sides");
-assert("2 == r55.sides");
-
-
-function Circle(diameter) {
-	
-}
-Circle.prototype.earlyFunc = function() {};
-
-shapes.Circle = Generator(Circle,Shape,{
-	args : [ NumberType({name:"diameter",preset:true}) ] //TODO NumberType({name:"width"}) optional: , default:  seed:
-});
-
-Circle.prototype.getWidth = function() {
-	return this.diameter;
-};
-
-assert("shapes.Circle.bases.length == 1");
-assert("shapes.Circle.bases[0] == Shape");
-assert("shapes.Circle.info.options.args.length == 1");
-assert("typeof shapes.Circle.info.options.args[0] == 'object'");
-assert("0 == Circle.prototype.sides");
-
-var c9 = shapes.Circle(9);
-assert("c9 instanceof Circle");
-assert("c9 instanceof shapes.Circle");
-assert("c9 instanceof Shape");
-assert("c9 instanceof shapes.Shape");
-assert("9 == c9.diameter");
-assert("9 == c9.getWidth()");
-
-var Simple = Generator(function(v) { return v; }, { alloc: false });
-
-var s8 = Simple(8);
-assert("s8 == 8");
-
-*/

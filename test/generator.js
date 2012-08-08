@@ -21,10 +21,14 @@ test('Generator inherit from constructor defined on main constructor',function()
 	ok(!! _Shape.__generator__)
 	ok(!! Rectangle.__generator__)
 	ok(!! _Rectangle.__generator__)
+	equal(Rectangle.bases.length, 1)
+	equal(Rectangle.bases[0], _Shape)
 
-	Rectangle();
+	Rectangle(1,2,3,4);
 	equal(_Shape.callCount,1)
 	equal(_Rectangle.callCount,1)
+	ok(_Shape.calledWith(1,2,3,4))
+	ok(_Rectangle.calledWith(1,2,3,4))
 })
 
 test('Generator inherit from generator defined on main constructor',function(){
@@ -41,10 +45,14 @@ test('Generator inherit from generator defined on main constructor',function(){
 	ok(!! _Shape.__generator__)
 	ok(!! Rectangle.__generator__)
 	ok(!! _Rectangle.__generator__)
+	equal(Rectangle.bases.length, 1)
+	equal(Rectangle.bases[0], _Shape)
 
-	Rectangle();
+	Rectangle(1,2,3,4);
 	equal(_Shape.callCount,1)
 	equal(_Rectangle.callCount,1)
+	ok(_Shape.calledWith(1,2,3,4))
+	ok(_Rectangle.calledWith(1,2,3,4))
 })
 
 test('Shape generator with parameters',function() {
@@ -113,7 +121,7 @@ test('Shape generator with parameters',function() {
 	};
 
 	equal(Circle.bases.length, 1);
-	equal(Circle.bases[0], Shape);
+	equal(Circle.bases[0], _Shape);
 	equal(Circle.info.options.args.length, 1);
 	equal(typeof Circle.info.options.args[0], 'object');
 	//TODO equal(_Circle.prototype.sides, 0);
