@@ -1,5 +1,28 @@
 module("Resolver tests");
 
+test("Window resolver",function(){
+	var win = Resolver(window);
+
+	equal(win.namespace,window);
+	equal(win("Array"),Array);
+	equal(win("Boolean"),Boolean);
+	equal(win("self"),window);
+
+	win.set("global_api.a.b.func",function(){ return "return"});
+	equal(global_api.a.b.func(),"return");
+})
+
+test("Document resolver",function(){
+	var doc = Resolver(document);
+
+	equal(doc.namespace,document);
+	equal(doc("all"),document.all);
+	equal(doc("forms"),document.forms);
+
+	doc.set("global_api.a.b.func",function(){ return "return"});
+	equal(document.global_api.a.b.func(),"return");
+})
+
 test('Namespace and package creation',function(){
   	expect(6);
 	var shapes = Resolver()("my.shapes");
