@@ -1,4 +1,5 @@
 module("Resolver tests");
+
 test('Namespace and package creation',function(){
   	expect(6);
 	var shapes = Resolver()("my.shapes");
@@ -16,6 +17,15 @@ test('Namespace and package creation',function(){
 	Resolver()("my")
 	notEqual(Resolver.default.namespace.my, undefined, "namespace replaced");
 
+})
+
+test('Resolve defined and undefined',function(){
+	var resolver = Resolver({});
+
+	equal(typeof resolver("a.b.c"),"object");
+	equal(typeof resolver("d.e.f","generate"),"object");
+	equal(resolver("g.h.i","null"),null);
+	raises(function(){ resolver("j.k.l","throw") },"The 'j' part of 'j.k.l' couldn't be resolved.");
 })
 
 test('Resolver reference',function(){
