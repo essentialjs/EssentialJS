@@ -71,7 +71,6 @@ test('Resolver change listener',function() {
 
 	var resolver = Resolver({});
 
-	debugger;
 	var abc = resolver.reference("a.b.c");
 	var _onabc = sinon.spy();
 	abc.on("change",_onabc);
@@ -79,6 +78,15 @@ test('Resolver change listener',function() {
 	abc.set(5);
 	equal(abc(),5);
 	equal(_onabc.callCount,1);
+	//ok(_onabc.calledWith({value:5}));
+
+	var _ondef = sinon.spy();
+	resolver.on("change","d.e.f",_ondef);
+
+	resolver.set("d.e.f", 6);
+	equal(resolver("d.e.f"), 6);
+	equal(_ondef.callCount,1);
+//	ok(_ondef.calledWith({value:6}));
 });
 
 		// Resolver("abc")
@@ -89,3 +97,6 @@ test('Resolver change listener',function() {
 // Resolver.hasGenerator
 
 // mixinto
+
+// i18n resolver
+

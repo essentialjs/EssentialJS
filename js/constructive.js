@@ -229,9 +229,9 @@ function Resolver(name,ns,options)
     	switch(arguments.length) {
     		case 2: break; //TODO
     		case 3: if (typeof arguments[1] == "string") {
-			    	this.reference(selector).on(type,arguments[1],null,arguments[2]);
+			    	this.reference(selector).on(type,null,arguments[2]);
     			} else { // middle param is data
-			    	this.reference(selector).on(type,null,arguments[1],arguments[2]);
+			    	//TODO this.reference("*").on(type,arguments[1],arguments[2]);
     			}
     			break;
     		case 4:
