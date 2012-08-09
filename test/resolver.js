@@ -52,17 +52,34 @@ test('Resolve defined and undefined',function(){
 })
 
 test('Resolver reference',function(){
-  	expect(3);
+  	expect(4);
 
-	Resolver()("my")
-	var my = Resolver().reference("my");
+	var resolver = Resolver({});
+
+	resolver("my")
+	var my = resolver.reference("my");
 	notEqual(my(), undefined, "namespace replaced");
 	notEqual(my.get(), undefined, "namespace replaced");
 
-	var num = Resolver().reference("num");
+	var num = resolver.reference("num");
 	num.set(5);
+	equal(num(),5);
 	equal(num.get(),5);
 })
+
+test('Resolver change listener',function() {
+
+	var resolver = Resolver({});
+
+	debugger;
+	var abc = resolver.reference("a.b.c");
+	var _onabc = sinon.spy();
+	abc.on("change",_onabc);
+
+	abc.set(5);
+	equal(abc(),5);
+	equal(_onabc.callCount,1);
+});
 
 		// Resolver("abc")
 		// Resolver("abc",{})

@@ -107,29 +107,6 @@ function Resolver(name,ns,options)
     	return e;
     }
 
-    function _callListener(resolver,type,names,symbol,value) {
-    	return;
-    	var listeners = resolver.listeners[type] = resolver.listeners[type] || {};
-
-    	for(var i,event; event = listeners["*"][i]; ++i) {
-    		event.trigger(value);
-    	}
-    }
-
-    function _addListener(resolver,type,selector,data,callback) {
-    	/*
-    		selector
-    		*
-    		a
-    		a.b
-    		a.b.c
-    	*/
-    	var listeners = resolver.listeners[type] = resolver.listeners[type] || {};
-    	selector = selector || "*";
-    	if (! selector in listeners) listeners[selector] = [];
-   		listeners[selector].push(_makeResolverEvent(resolver,type,selector,data,callback));
-    }
-
     /**
      * Function returned by the Resolver call.
      * @param name To resolve
@@ -146,56 +123,26 @@ function Resolver(name,ns,options)
 
     resolver.named = name;
     resolver.namespace = ns;
-    resolver.listeners = {};
+    resolver.references = { };
 
     var VALID_LISTENERS = {
     	"get": true, // allows for switching in alternate lookups
     	"change": true, // allows reflecting changes elsewhere
     	"undefined": true // allow filling in unfound entries
     };
-    // resolver.listners.get.<selector>.<list of callbacks>
-    for(var n in VALID_LISTENERS) resolver.listeners[n] = {};
 
-    resolver.on = function(type,selector,data,callback) {
-    	if (! name in VALID_LISTENERS) return;//fail
+    function _makeListeners() {
+    	var listeners = {};
+	    // listeners.get.<list of callbacks>
+	    // listeners.change.<list of callbacks>
+	    // ..
+	    for(var n in VALID_LISTENERS) listeners[n] = [];
+	    return listeners;
+    }
 
-    	switch(arguments.length) {
-    		case 2: _addListener(this,type,null,null,arguments[1]); break;
-    		case 3: 
-    			if (typeof arguments[1] == "string") {
-    				_addListener(this,type,selector,null,arguments[2]);
-    			} else {
-	    			_addListener(this,type,null,arguments[1],arguments[2]);
-    			};
-    			break;
-    		case 4: _addListener(this,type,selector,data,callback); break;
-    	};
 
-    };
-    
-    resolver.declare = function(name,value,onundefined) 
-    {
-        var names = name.split(".");
-        var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
-    	if (base[symbol] === undefined) { 
-    		_setValue(value,names,base,symbol);
-	    	_callListener(resolver,"change",names,symbol,value);
-    		return value;
-    	} else return base[symbol];
-    };
-
-    resolver.set = function(name,value,onundefined) 
-    {
-        var names = name.split(".");
-        var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
-		_setValue(value,names,base,symbol);
-    	_callListener(resolver,"change",names,symbol,value);
-		return value;
-    };
-
-    resolver.reference = function(name,onundefined)
+    // relies of resolver
+    function makeReference(name,onundefined,listeners)
     {
         var names = name.split(".");
 
@@ -213,7 +160,7 @@ function Resolver(name,ns,options)
         	var base = _resolve(names,onundefined);
         	names.push(symbol);
         	_setValue(value,names,base,symbol);
-	    	_callListener(resolver,"change",names,symbol,value);
+	    	this._callListener("change",names,symbol,value);
         	return value;
         }
         function declare(value) {
@@ -227,7 +174,7 @@ function Resolver(name,ns,options)
         	names.push(symbol);
         	if (base[symbol] === undefined) {
         		_setValue(value,names,base,symbol);
-		    	_callListener(resolver,"change",names,symbol,value);
+		    	this._callListener("change",names,symbol,value);
         		return value
         	} else return base[symbol];
         }
@@ -258,14 +205,103 @@ function Resolver(name,ns,options)
         		base[symbol][n] = map[n];
         	}
         }
+	    function on(type,data,callback) {
+	    	if (! type in VALID_LISTENERS) return;//fail
+
+	    	switch(arguments.length) {
+	    		case 2: this._addListener(type,name,null,arguments[1]); break;
+	    		case 3: this._addListener(type,name,data,callback); break;
+	    	};
+	    }    
+
         get.set = set;
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
+        get.on = on;
+        get.listeners = listeners || _makeListeners();
+
+	    function _callListener(type,names,symbol,value) {
+	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
+	    		event.trigger(value);
+	    	}
+	    }
+	    get._callListener = _callListener;
+	    function _addListener(type,selector,data,callback) {
+	    	/*
+	    		selector
+	    		*
+	    		a
+	    		a.b
+	    		a.b.c
+	    	*/
+	   		this.listeners[type].push(_makeResolverEvent(resolver,type,selector,data,callback));
+	    }
+	    get._addListener = _addListener;
+
 
         return get;
+    };
+
+
+
+    resolver.on = function(type,selector,data,callback) 
+    {
+    	if (! type in VALID_LISTENERS) return;//fail
+    	switch(arguments.length) {
+    		case 2: break; //TODO
+    		case 3: if (typeof arguments[1] == "string") {
+			    	this.reference(selector).on(type,arguments[1],null,arguments[2]);
+    			} else { // middle param is data
+			    	this.reference(selector).on(type,null,arguments[1],arguments[2]);
+    			}
+    			break;
+    		case 4:
+		    	this.reference(selector).on(type,selector,data,callback);
+    			break;
+    	}
+    };
+    
+    resolver.declare = function(name,value,onundefined) 
+    {
+        var names = name.split(".");
+        var symbol = names.pop();
+    	var base = _resolve(names,onundefined);
+    	if (base[symbol] === undefined) { 
+    		_setValue(value,names,base,symbol);
+    		var ref = resolver.references[name];
+    		if (ref) ref._callListener("change",names,symbol,value);
+    		return value;
+    	} else return base[symbol];
+    };
+
+    resolver.set = function(name,value,onundefined) 
+    {
+        var names = name.split(".");
+        var symbol = names.pop();
+    	var base = _resolve(names,onundefined);
+		_setValue(value,names,base,symbol);
+		var ref = resolver.references[name];
+		if (ref) ref._callListener("change",names,symbol,value);
+		return value;
+    };
+
+    resolver.reference = function(name,onundefined) 
+    {
+    	var ref = onundefined? name+":"+onundefined : name;
+    	var entry = this.references[ref];
+    	if (entry) return entry;
+
+    	// make the default reference first
+    	var defaultRef = this.references[name];
+    	if (defaultRef == undefined) {
+    		defaultRef = this.references[name] = makeReference(name,onundefined);
+    		if (ref == name) return defaultRef;
+    	}
+    	// if requested reference is different return that one
+    	return this.references[ref] = makeReference(name,onundefined,defaultRef.listeners);
     };
 
     resolver.override = function(ns,options)
