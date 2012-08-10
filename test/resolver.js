@@ -51,8 +51,15 @@ test('Resolve defined and undefined',function(){
 	raises(function(){ resolver("j.k.l","throw") },"The 'j' part of 'j.k.l' couldn't be resolved.");
 })
 
+test('Resolver set value',function(){
+	var resolver = Resolver({});
+
+	resolver.set("a.b.c","abc")
+	equal(resolver("a.b.c"), "abc")	
+})
+
 test('Resolver reference',function(){
-  	expect(4);
+  	expect(11);
 
 	var resolver = Resolver({});
 
@@ -65,8 +72,31 @@ test('Resolver reference',function(){
 	num.set(5);
 	equal(num(),5);
 	equal(num.get(),5);
+	equal(resolver("num"),5);
+
+	var r = resolver.reference("r");
+	r.set({});
+	strictEqual(r(),resolver("r"));
+
+	equal(r.getEntry("a"),undefined);
+	r.setEntry("a","a");
+	equal(r.getEntry("a"),"a","setEntry initiates the map entry");
+	r.declareEntry("a","aa");
+	equal(r.getEntry("a"),"a","declareEntry doesn't change an existing value");
+
+	equal(r.getEntry("b"),undefined);
+	r.declareEntry("b","b");
+	equal(r.getEntry("b"),"b","declareEntry will change an undefined map entry");
+
+
+
+
 })
 
+/*
+  Change listeners are notified of changes to the entry or members of it.
+  Changes to members of members do not cause notifications.
+*/
 test('Resolver change listener',function() {
 
 	var resolver = Resolver({});
@@ -75,10 +105,14 @@ test('Resolver change listener',function() {
 	var _onabc = sinon.spy();
 	abc.on("change",_onabc);
 
-	abc.set(5);
-	equal(abc(),5);
+	abc.set(function(){});
+	equal(typeof abc(),"function");
 	equal(_onabc.callCount,1);
 	//ok(_onabc.calledWith({value:5}));
+
+	abc.setEntry("d","dd");
+	equal(resolver("a.b.c.d"), "dd");
+	equal(_onabc.callCount,2);
 
 	var _ondef = sinon.spy();
 	resolver.on("change","d.e.f",_ondef);
@@ -87,7 +121,10 @@ test('Resolver change listener',function() {
 	equal(resolver("d.e.f"), 6);
 	equal(_ondef.callCount,1);
 //	ok(_ondef.calledWith({value:6}));
+
 });
+
+//TODO test setEntry morphing "number", "boolean", "string" into builtin
 
 		// Resolver("abc")
 		// Resolver("abc",{})
