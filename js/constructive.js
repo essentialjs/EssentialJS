@@ -46,6 +46,8 @@ function Resolver(name,ns,options)
                     break;
                 case "null":
                     return null;
+                case "undefined":
+                	return undefined;
                 case "throw":
                 	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 }

@@ -1,5 +1,11 @@
 module("Resolver tests");
 
+test ("Anonymous resolver",function(){
+	var r = Resolver({});
+	r.set("a","a");
+	equal(Resolver()("a","undefined"),undefined);
+})
+
 test("Window resolver",function(){
 	var win = Resolver(window);
 
@@ -48,6 +54,7 @@ test('Resolve defined and undefined',function(){
 	equal(typeof resolver("a.b.c"),"object");
 	equal(typeof resolver("d.e.f","generate"),"object");
 	equal(resolver("g.h.i","null"),null);
+	equal(resolver("g.h.i","undefined"),undefined);
 	raises(function(){ resolver("j.k.l","throw") },"The 'j' part of 'j.k.l' couldn't be resolved.");
 })
 
@@ -92,7 +99,6 @@ test('Resolver reference',function(){
 	r.setEntry("c")
 	equal(r.getEntry("c"),undefined)
 
-	debugger;
 	r.setEntry("d.a","d");
 	//equal(r.get("d.a","null"),null);
 	equal(resolver("r.d.a","null"),null);

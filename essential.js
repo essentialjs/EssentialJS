@@ -70,6 +70,8 @@ function Resolver(name,ns,options)
                     break;
                 case "null":
                     return null;
+                case "undefined":
+                	return undefined;
                 case "throw":
                 	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 }
@@ -178,14 +180,21 @@ function Resolver(name,ns,options)
         		return value
         	} else return base[symbol];
         }
+    	function getEntry(key) {
+        	var base = _resolve(names,onundefined);
+        	if (arguments.length) return base[key];
+        	return base;
+        }
         function declareEntry(key,value) {
             var symbol = names.pop();
         	var base = _resolve(names,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
-        	if (base[symbol][key] === undefined) base[symbol][key] = value;
-        	//TODO event
+        	if (base[symbol][key] === undefined) {
+        		base[symbol][key] = value;
+		    	this._callListener("change",names,key,value);
+        	}
         }
         function setEntry(key,value) {
             var symbol = names.pop();
@@ -194,7 +203,7 @@ function Resolver(name,ns,options)
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
         	base[symbol][key] = value;
-        	//TODO event
+	    	this._callListener("change",names,key,value);
         }
         function mixin(map) {
             var symbol = names.pop();
@@ -204,6 +213,7 @@ function Resolver(name,ns,options)
         	for(var n in map) {
         		base[symbol][n] = map[n];
         	}
+	    	this._callListener("change",names,map,value);
         }
 	    function on(type,data,callback) {
 	    	if (! type in VALID_LISTENERS) return;//fail
@@ -218,6 +228,7 @@ function Resolver(name,ns,options)
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
+        get.getEntry = getEntry;
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
         get.on = on;
@@ -253,9 +264,9 @@ function Resolver(name,ns,options)
     	switch(arguments.length) {
     		case 2: break; //TODO
     		case 3: if (typeof arguments[1] == "string") {
-			    	this.reference(selector).on(type,arguments[1],null,arguments[2]);
+			    	this.reference(selector).on(type,null,arguments[2]);
     			} else { // middle param is data
-			    	this.reference(selector).on(type,null,arguments[1],arguments[2]);
+			    	//TODO this.reference("*").on(type,arguments[1],arguments[2]);
     			}
     			break;
     		case 4:
