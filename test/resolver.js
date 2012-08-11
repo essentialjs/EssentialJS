@@ -150,6 +150,18 @@ test('Resolver change listener',function() {
 
 });
 
+test("Resolver mixinto",function() {
+	var mixtarget = {};
+	Resolver({},{ mixinto: mixtarget });
+	ok(mixtarget.get);
+	ok(mixtarget.set);
+	ok(mixtarget.declare);
+	ok(mixtarget.reference);
+	ok(mixtarget.override);
+	//ok(mixtarget.mixin);
+	ok(mixtarget.on);
+})
+
 //TODO test setEntry morphing "number", "boolean", "string" into builtin
 
 		// Resolver("abc")
@@ -158,8 +170,6 @@ test('Resolver change listener',function() {
 
 
 // Resolver.hasGenerator
-
-// mixinto
 
 // i18n resolver
 
