@@ -311,7 +311,7 @@ function Resolver(name,ns,options)
 
     return resolver;
 }
-Resolver["default"] = Resolver({},{ name:"default" });
+Resolver({},{ name:"default" });
 
 Resolver.hasGenerator = function(subject) {
 	if (subject.__generator__) return true;
