@@ -189,7 +189,7 @@ function Resolver(name,ns,options)
         	for(var n in map) {
         		base[symbol][n] = map[n];
         	}
-	    	this._callListener("change",names,map,value);
+	    	this._callListener("change",names,null,map);
         }
 	    function on(type,data,callback) {
 	    	if (! type in VALID_LISTENERS) return;//fail

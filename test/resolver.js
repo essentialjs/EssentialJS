@@ -117,6 +117,11 @@ test('Resolver reference',function(){
 	equal(resolver("r.d.a","null"),null);
 	equal(r()["d.a"],"d");
 
+	r.mixin({ "g":"g", "h":"h", "i":"i" });
+	equal(r.getEntry("g"), "g");
+	equal(r.getEntry("h"), "h");
+	equal(r.getEntry("i"), "i");
+
 })
 
 /*
