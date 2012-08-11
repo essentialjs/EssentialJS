@@ -81,15 +81,23 @@ test('Resolver reference',function(){
 	equal(r.getEntry("a"),undefined);
 	r.setEntry("a","a");
 	equal(r.getEntry("a"),"a","setEntry initiates the map entry");
+	equal(resolver("r.a"),"a");
 	r.declareEntry("a","aa");
 	equal(r.getEntry("a"),"a","declareEntry doesn't change an existing value");
 
 	equal(r.getEntry("b"),undefined);
 	r.declareEntry("b","b");
 	equal(r.getEntry("b"),"b","declareEntry will change an undefined map entry");
+	r.setEntry("c","cc")
+	equal(r.getEntry("c"),"cc")
+	r.setEntry("c")
+	equal(r.getEntry("c"),undefined)
 
-
-
+	debugger;
+	r.setEntry("d.a","d");
+	//equal(r.get("d.a","null"),null);
+	equal(resolver("r.d.a","null"),null);
+	equal(r()["d.a"],"d");
 
 })
 
