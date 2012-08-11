@@ -59,7 +59,6 @@ test('Resolver set value',function(){
 })
 
 test('Resolver reference',function(){
-  	expect(11);
 
 	var resolver = Resolver({});
 
