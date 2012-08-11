@@ -244,6 +244,8 @@
 		proxyConsole["info"] = function() { no_logging("info",arguments); };
 		proxyConsole["warn"] = function() { no_logging("warn",arguments); };
 		proxyConsole["error"] = function() { no_logging("error",arguments); };
+		proxyConsole["group"] = function() { no_logging("group",arguments); };
+		proxyConsole["groupEnd"] = function() { no_logging("groupEnd",arguments); };
 	}
 	essential.declare("setStubConsole",setStubConsole);
  
