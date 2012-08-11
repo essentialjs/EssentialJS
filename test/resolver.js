@@ -6,6 +6,19 @@ test ("Anonymous resolver",function(){
 	equal(Resolver()("a","undefined"),undefined);
 })
 
+test ("Named resolver",function(){
+	var r = Resolver("A",{});
+	r.set("a","a");
+	equal(Resolver()("a","undefined"),undefined);
+	equal(r,Resolver("A"));
+
+	var r = Resolver({},{name:"B"});
+	r.set("a","a");
+	equal(Resolver()("a","undefined"),undefined);
+	equal(r,Resolver("B"));
+	notEqual(r,Resolver("A"));
+})
+
 test("Window resolver",function(){
 	var win = Resolver(window);
 

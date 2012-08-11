@@ -31,7 +31,6 @@ function Resolver(name,ns,options)
 	// Resolver({},{options})
 	options = ns || {};
 	ns = name;
-	name = options.name;
 
 	function _resolve(names,onundefined) {
         var top = ns;
@@ -99,8 +98,9 @@ function Resolver(name,ns,options)
         }
     };
 
-    resolver.named = name;
-    resolver.namespace = ns;
+    resolver.named = options.name;
+    if (options.name) Resolver[options.name] = resolver;
+    resolver.namespace = arguments[0];
     resolver.references = { };
 
     var VALID_LISTENERS = {
@@ -301,10 +301,12 @@ function Resolver(name,ns,options)
     };
 
     if (options.mixinto) {
+    	options.mixinto.get = resolver;
     	options.mixinto.declare = resolver.declare;
     	options.mixinto.set = resolver.set;
     	options.mixinto.reference = resolver.reference;
     	options.mixinto.override = resolver.override;
+    	options.mixinto.on = resolver.on;
     }
 
     return resolver;
