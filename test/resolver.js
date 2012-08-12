@@ -69,6 +69,23 @@ test('Resolve defined and undefined',function(){
 	equal(resolver("g.h.i","null"),null);
 	equal(resolver("g.h.i","undefined"),undefined);
 	raises(function(){ resolver("j.k.l","throw") },"The 'j' part of 'j.k.l' couldn't be resolved.");
+
+	strictEqual(resolver({ name: "m.n.o", onundefined:"null"}), null);
+	equal(typeof resolver({ name: "m.n.o", onundefined:"undefined"}), "undefined");
+	equal(typeof resolver({ name: "m.n.o", onundefined:"generate"}), "object");
+	equal(typeof resolver({ name: "m.n.o"}), "object");
+
+	resolver.set("m.n",null);
+	strictEqual(resolver("m.n"), null);
+	strictEqual(resolver("m.n","undefined"), null);
+	strictEqual(resolver("m.n","null"), null);
+	strictEqual(resolver("m.n","generate"), null);
+	strictEqual(resolver("m.n","throw"), null);
+	raises(function(){ resolver("m.n.o") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	raises(function(){ resolver("m.n.o","undefined") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	raises(function(){ resolver("m.n.o","null") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	raises(function(){ resolver("m.n.o","generate") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	raises(function(){ resolver("m.n.o","throw") },"The 'o' part of 'm.n.o' couldn't be resolved.");
 })
 
 test('Resolver set value',function(){

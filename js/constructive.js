@@ -37,18 +37,23 @@ function Resolver(name,ns,options)
         for (var j = 0, n; n = names[j]; ++j) {
             var prev_top = top;
             top = top[n];
-            if (top == undefined) {
+            if (top == undefined) { 
                 switch(onundefined) {
                 case undefined:
                 case "generate":
-                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
-                    break;
+                	if (top === undefined) {
+	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+	                    continue; // go to next now that we filled in an object
+                	}
                 case "null":
-                    return null;
+                	if (top === undefined) return null;
+                	break;
                 case "undefined":
-                	return undefined;
-                case "throw":
-                	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                	if (top === undefined) return undefined;
+                	break;
+                }
+                if (j < names.length-1) {
+	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 }
             }
         }
@@ -58,7 +63,7 @@ function Resolver(name,ns,options)
     function _setValue(value,names,base,symbol)
     {
     	base[symbol] = value;
-		if (typeof value == "object" && value.__generator__ == value) {
+		if (typeof value == "object" && value !== null && value.__generator__ == value) {
     		value.info.symbol = symbol;
     		value.info["package"] = names.join(".");
     		value.info.within = base;
