@@ -7,6 +7,58 @@
 	var ArraySet = essential("ArraySet");
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
+	function mixinElementState(el,state) {
+		state.disabled = el.disabled || false; // undefined before attach
+		state.readOnly = el.readOnly || false;
+		state.hidden = el.getAttribute("hidden") != null;
+		state.required = el.getAttribute("required") != null;
+	}
+
+	function reflectElementState(event) {
+		var el = event.data;
+		// debugger;
+		switch(event.symbol) {
+			case "disabled":
+			case "readOnly":
+				el[event.symbol] = !!event.value;
+				break;
+			case "hidden":
+			case "required":
+				if (typeof el[event.symbol] == "boolean") {
+					el[event.symbol] = !!event.value;
+					break;
+				}
+				if (event.value) {
+					el.setAttribute(event.symbol,event.symbol);
+				} else {
+					el.removeAttribute(event.symbol);
+				}
+				break;
+		}
+	}
+
+	/*
+		class = <prefix classes> <model classes> <state classes>
+	*/
+	function reflectElementClass(event) {
+		// state-hover state-active state-disabled
+		var stateClasses = [];
+		stateClasses[0] = state.disabled? "state-disabled" : "";
+	}
+
+	function StatefulResolver(el) {
+		if (el.stateful) return el.stateful;
+
+		var stateful = el.stateful = Resolver({ state: {} });
+		mixinElementState(el,stateful("state"));
+		stateful.reference("state").on("change",el,reflectElementState);
+
+		return stateful;
+	}
+	essential.declare("StatefulResolver",StatefulResolver);
+
+	//TODO element cleaner must remove .el references from listeners
+
 	// this = element
 	function regScriptOnload(domscript,trigger) {
 
