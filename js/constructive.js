@@ -80,7 +80,8 @@ function Resolver(name,ns,options)
     	e.data = data;
     	e.callback = callback;
 
-    	function trigger(value) {
+    	function trigger(symbol,value) {
+    		this.symbol = symbol;
     		this.value = value;
     		this.callback.call(resolver,this);
     	}
@@ -139,12 +140,12 @@ function Resolver(name,ns,options)
         	} else {
 
         	}
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
-        	names.push(symbol);
-        	_setValue(value,names,base,symbol);
-	    	this._callListener("change",names,symbol,value);
-        	return value;
+			var symbol = names.pop();
+			var base = _resolve(names,onundefined);
+			names.push(symbol);
+			_setValue(value,names,base,symbol);
+			this._callListener("change",names,symbol,value);
+			return value;
         }
         function declare(value) {
         	if (arguments.length > 1) {
@@ -217,7 +218,7 @@ function Resolver(name,ns,options)
 
 	    function _callListener(type,names,symbol,value) {
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
-	    		event.trigger(value);
+	    		event.trigger(symbol,value);
 	    	}
 	    }
 	    get._callListener = _callListener;
@@ -265,18 +266,24 @@ function Resolver(name,ns,options)
     		_setValue(value,names,base,symbol);
     		var ref = resolver.references[name];
     		if (ref) ref._callListener("change",names,symbol,value);
+			var parentName = names.join(".");
+			var parentRef = resolver.references[parentName];
+			if (parentRef) parentRef._callListener("change",names,symbol,value);
     		return value;
     	} else return base[symbol];
     };
 
     resolver.set = function(name,value,onundefined) 
     {
-        var names = name.split(".");
-        var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
+		var names = name.split(".");
+		var symbol = names.pop();
+		var base = _resolve(names,onundefined);
 		_setValue(value,names,base,symbol);
 		var ref = resolver.references[name];
 		if (ref) ref._callListener("change",names,symbol,value);
+		var parentName = names.join(".");
+		var parentRef = resolver.references[parentName];
+		if (parentRef) parentRef._callListener("change",names,symbol,value);
 		return value;
     };
 
