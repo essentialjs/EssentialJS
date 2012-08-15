@@ -8,7 +8,7 @@ test ("Anonymous resolver",function(){
 
 test ("Named resolver",function(){
 	var r = Resolver("A",{});
-	r.set("a","a");
+	var a = r.set("a","a");
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("A"));
 
@@ -88,11 +88,19 @@ test('Resolve defined and undefined',function(){
 	raises(function(){ resolver("m.n.o","throw") },"The 'o' part of 'm.n.o' couldn't be resolved.");
 })
 
-test('Resolver set value',function(){
+test('Resolver set/declare value',function(){
 	var resolver = Resolver({});
 
-	resolver.set("a.b.c","abc")
-	equal(resolver("a.b.c"), "abc")	
+	var abc = resolver.set("a.b.c","abc");
+	strictEqual(abc,"abc","returned value from set");
+	equal(resolver("a.b.c"), "abc");	
+	var abc = resolver.declare("a.b.c","xxx");
+	strictEqual(abc,"abc","returned value from set");
+	equal(resolver("a.b.c"), "abc");	
+
+	var def = resolver.declare("d.e.f","def");
+	strictEqual(def,"def","returned value from declare");
+	equal(resolver("d.e.f"), "def");	
 })
 
 test('Resolver reference',function(){
