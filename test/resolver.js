@@ -91,16 +91,37 @@ test('Resolve defined and undefined',function(){
 test('Resolver set/declare value',function(){
 	var resolver = Resolver({});
 
-	var abc = resolver.set("a.b.c","abc");
-	strictEqual(abc,"abc","returned value from set");
+	var abc_value = resolver.set("a.b.c","abc");
+	strictEqual(abc_value,"abc","returned value from set");
 	equal(resolver("a.b.c"), "abc");	
-	var abc = resolver.declare("a.b.c","xxx");
-	strictEqual(abc,"abc","returned value from set");
+	var abc_value = resolver.declare("a.b.c","xxx");
+	strictEqual(abc_value,"abc","returned value from set");
 	equal(resolver("a.b.c"), "abc");	
 
-	var def = resolver.declare("d.e.f","def");
-	strictEqual(def,"def","returned value from declare");
+	var def_value = resolver.declare("d.e.f","def");
+	strictEqual(def_value,"def","returned value from declare");
 	equal(resolver("d.e.f"), "def");	
+})
+
+test('Resolver reference set/declare value',function(){
+	var resolver = Resolver({});
+
+	var abc = resolver.reference("a.b.c","null");
+	equal(abc(),null);
+	equal(abc.get(),null);
+	throws(function(){ abc.set("abc"); },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	resolver.set("a.b",{});
+	var abc_value = abc.set("abc");
+	strictEqual(abc_value,"abc","returned value from set");
+	equal(abc(), "abc");	
+	var abc_value = abc.declare("xxx");
+	strictEqual(abc_value,"abc","returned value from set");
+	equal(abc(), "abc");	
+
+	var def = resolver.reference("d.e.f");
+	var def_value = def.declare("def");
+	strictEqual(def_value,"def","returned value from declare");
+	equal(def(), "def");	
 })
 
 test('Resolver reference',function(){

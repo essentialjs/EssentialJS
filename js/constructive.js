@@ -134,6 +134,8 @@ function Resolver(name,ns,options)
     {
         var names = name.split(".");
 
+        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
+
     	function get() {
         	var base = _resolve(names,onundefined);
         	return base;
@@ -145,7 +147,7 @@ function Resolver(name,ns,options)
 
         	}
 			var symbol = names.pop();
-			var base = _resolve(names,onundefined);
+			var base = _resolve(names,onundefinedSet);
 			names.push(symbol);
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
@@ -159,7 +161,7 @@ function Resolver(name,ns,options)
         		
         	}
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,onundefinedSet);
         	names.push(symbol);
         	if (base[symbol] === undefined) {
         		if (_setValue(value,names,base,symbol)) {
