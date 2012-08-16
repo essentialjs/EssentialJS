@@ -97,10 +97,10 @@ test('Resolve defined and undefined reference',function(){
 	equal(resolver.reference("g.h.i","undefined")(),undefined);
 	raises(function(){ resolver.reference("j.k.l","throw")() },"The 'j' part of 'j.k.l' couldn't be resolved.");
 
-	strictEqual(resolver({ name: "m.n.o", onundefined:"null"}), null);
-	equal(typeof resolver({ name: "m.n.o", onundefined:"undefined"}), "undefined");
-	equal(typeof resolver({ name: "m.n.o", onundefined:"generate"}), "object");
-	equal(typeof resolver({ name: "m.n.o"}), "object");
+	strictEqual(resolver.reference({ name: "m.n.o", onundefined:"null"})(), null);
+	equal(typeof resolver.reference({ name: "m.n.o", onundefined:"undefined"})(), "undefined");
+	equal(typeof resolver.reference({ name: "m.n.o", onundefined:"generate"})(), "object");
+	equal(typeof resolver.reference({ name: "m.n.o"})(), "object");
 
 	resolver.set("m.n",null);
 	strictEqual(resolver.reference("m.n")(), null);

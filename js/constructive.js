@@ -311,6 +311,10 @@ function Resolver(name,ns,options)
 
     resolver.reference = function(name,onundefined) 
     {
+    	if (typeof name == "object") {
+    		onundefined = name.onundefined;
+    		name = name.name;
+    	}
     	var ref = onundefined? name+":"+onundefined : name;
     	var entry = this.references[ref];
     	if (entry) return entry;
