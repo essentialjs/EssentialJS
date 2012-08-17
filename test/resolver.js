@@ -240,6 +240,16 @@ test("Resolver mixinto",function() {
 	ok(mixtarget.override);
 	//ok(mixtarget.mixin);
 	ok(mixtarget.on);
+
+	var mixtarget = { "set":"set", "get": "get" };
+	Resolver({},{ mixinto: mixtarget });
+	ok(mixtarget.get,"get","mixinto doesn't override existing values");
+	ok(mixtarget.set,"set","mixinto doesn't override existing values");
+	ok(mixtarget.declare);
+	ok(mixtarget.reference);
+	ok(mixtarget.override);
+	//ok(mixtarget.mixin);
+	ok(mixtarget.on);
 })
 
 //TODO test setEntry morphing "number", "boolean", "string" into builtin

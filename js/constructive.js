@@ -339,12 +339,12 @@ function Resolver(name,ns,options)
     };
 
     if (options.mixinto) {
-    	options.mixinto.get = resolver;
-    	options.mixinto.declare = resolver.declare;
-    	options.mixinto.set = resolver.set;
-    	options.mixinto.reference = resolver.reference;
-    	options.mixinto.override = resolver.override;
-    	options.mixinto.on = resolver.on;
+    	if (options.mixinto.get==null) options.mixinto.get = resolver;
+    	if (options.mixinto.declare==null) options.mixinto.declare = resolver.declare;
+    	if (options.mixinto.set==null) options.mixinto.set = resolver.set;
+    	if (options.mixinto.reference==null) options.mixinto.reference = resolver.reference;
+    	if (options.mixinto.override==null) options.mixinto.override = resolver.override;
+    	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
     }
 
     return resolver;
