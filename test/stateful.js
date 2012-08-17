@@ -10,16 +10,25 @@ test("Stateful element state",function(){
 	ok(! stateful("state.disabled"));
 	stateful.set("state.disabled",true);
 	ok(el.disabled);
-	// equal(el.className,"state-disabled");
+	equal(el.className,"state-disabled");
+	stateful.set("state.disabled",false);
+	ok(!el.disabled);
+	equal(el.className,"");
 
 	ok(! stateful("state.readOnly"));
 	stateful.set("state.readOnly",true);
 	ok(el.readOnly);
-	// equal(el.className,"state-readOnly");
+	equal(el.className,"state-readOnly");
+	stateful.set("state.readOnly",false);
+	ok(!el.readOnly);
+	equal(el.className,"");
 
 	ok(! stateful("state.hidden"));
 	stateful.set("state.hidden",true);
 	//equal(el.getAttribute("hidden"),"hidden");
 	ok(el.hidden || (el.getAttribute("hidden") == "hidden"));
-	// equal(el.className,"state-hidden");
+	equal(el.className,"state-hidden");
 })
+
+
+// action + button allows action to be disabled causing disable on button

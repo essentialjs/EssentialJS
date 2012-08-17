@@ -103,6 +103,8 @@
 		required: { index: 3, reflect: reflectAttribute }
 	};
 
+	var DOMTokenList_set = essential("DOMTokenList.set");
+
 	function reflectElementState(event) {
 		var el = event.data;
 		var treatment = state_treatment[event.symbol];
@@ -114,9 +116,9 @@
 		}
 
 		if (el.stateful.updateClass) {
-			el.classList[treatment.index] = event.value? "state-"+event.symbol : "";
+			DOMTokenList_set(el.classList,"state-"+event.symbol,event.value);
 			if (!nativeClassList) {
-				el.className = el.classList.join(" ");
+				el.className = el.classList.toString();
 			}
 		}
 	}
@@ -555,6 +557,10 @@
 		ev = ev || event;
 		var e = ev.target || ev.srcElement;
 		var re = applicable_role_element(e);
+		var stateful = StatefulResolver(re);
+		if (stateful("state.disabled")) return; // disable
+		if (re.getAttribute("aria-disabled") != null) return; //TODO fold into stateful
+
 		if (re && re.getAttribute("role") == "button") this.submit(re); else
 		if (e.type=="submit") this.submit(e); //TODO action context
 	}

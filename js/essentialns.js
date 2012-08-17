@@ -64,8 +64,23 @@
 		//TODO remove dupes
 	}
 	essential.set("ArraySet",Generator(ArraySet,Array)); //TODO support this
-	essential.set("DOMTokenList",Generator(ArraySet,Array)); //TODO support this
+	function _DOMTokenList() {
 
+	}
+	_DOMTokenList.prototype = ArraySet.prototype;
+	essential.set("DOMTokenList",Generator(_DOMTokenList,ArraySet,Array)); //TODO support this
+
+	// use this for native DOMTokenList
+	_DOMTokenList.set = function(as,id,value) {
+		if (typeof id == "object"); //TODO set map removing rest
+		if (value) { // set true
+			as.add(id);
+		} else { // set false
+			as.remove(id);
+		}
+	};
+	essential.set("DOMTokenList.set",_DOMTokenList.set);
+	
 	ArraySet.prototype.item = function(index) {
 		return this[index]; // use native array
 	};
