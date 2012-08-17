@@ -715,7 +715,8 @@
 			s.updateActiveArea(areaName);
 		}
 		_activeAreaName = areaName;
-		DocumentRolesGenerator()._layout_descs();
+		// only use DocumentRoles layout if DOM is ready
+		if (document.body) DocumentRolesGenerator()._layout_descs();
 	}
 	essential.set("activateArea",activateArea);
 	
