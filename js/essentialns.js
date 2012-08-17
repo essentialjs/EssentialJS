@@ -173,7 +173,7 @@
 	{
 		
 	}
-	function fireBeforeUnload()
+	function fireUnload()
 	{
 		discardRestricted();
 	}
@@ -243,9 +243,9 @@
 			win.attachEvent("onload",fireLoad);
 		}
 		if (win.addEventListener) {
-			win.addEventListener("beforeunload",fireBeforeUnload,false);
+			win.addEventListener("unload",fireUnload,false);
 		} else {
-			win.attachEvent("onbeforeunload",fireBeforeUnload);
+			win.attachEvent("onunload",fireUnload);
 		}
 	}
 
