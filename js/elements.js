@@ -7,6 +7,70 @@
 	var ArraySet = essential("ArraySet");
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
+	//TODO regScriptOnnotfound (onerror, status=404)
+	
+	// (tagName,{attributes},content)
+	// ({attributes},content)
+	function HTMLElement(tagName,from,content_list,_document) {
+		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
+		
+		// optional document arg
+		var d = arguments[c_to];
+		var _doc = document;
+		if (typeof d == "object" && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		
+		// optional tagName arg
+		if (typeof _tagName == "object") { 
+			_from = _tagName; 
+			_tagName = _from.tagName || "span"; 
+			--c_from; 
+		}
+		
+		var e = _doc.createElement(_tagName);
+		for(var n in _from) {
+			switch(n) {
+				case "tagName": break; // already used
+				case "class":
+					if (_from[n] !== undefined) e.className = _from[n]; 
+					break;
+				case "style":
+					//TODO support object
+					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
+					break;
+					
+				case "id":
+				case "className":
+				case "rel":
+				case "lang":
+				case "language":
+				case "src":
+				case "type":
+					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+				//TODO case "onprogress": // partial script progress
+				case "onload":
+					regScriptOnload(e,_from.onload);
+					break;
+				default:
+					e.setAttribute(n,_from[n]);
+					break;
+			}
+		}
+		var l = [];
+		for(var i=c_from; i<=c_to; ++i) {
+			var p = arguments[i];
+			if (typeof p == "object" && "length" in p) l.concat(p);
+			else if (typeof p == "string") l.push(arguments[i]);
+		}
+		if (l.length) e.innerHTML = l.join("");
+		
+		//TODO .appendTo function
+		
+		return e;
+	}
+	essential.set("HTMLElement",HTMLElement);
+	
+	
 	var nativeClassList = !!document.documentElement.classList;
 
 	function mixinElementState(el,state) {
@@ -102,32 +166,11 @@
 	//TODO regScriptOnnotfound (onerror, status=404)
 
 	function HTMLScriptElement(from,doc) {
-		var e = (doc || document).createElement("SCRIPT");
-		for(var n in from) {
-			switch(n) {
-				case "id":
-				case "class":
-				case "rel":
-				case "lang":
-				case "language":
-				case "src":
-				case "type":
-					if (from[n] !== undefined) e[n] = from[n]; 
-					break;
-				//TODO case "onprogress": // partial script progress
-				case "onload":
-					regScriptOnload(e,from.onload);
-					break;
-				default:
-					e.setAttribute(n,from[n]);
-					break;
-			}
-		}
-		return e;
+		return HTMLElement("SCRIPT",from,doc);
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
-	var pastloadScripts = {};
+    var pastloadScripts = {};
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
