@@ -7,6 +7,8 @@
 	var ArraySet = essential("ArraySet");
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
+	var nativeClassList = !!document.documentElement.classList;
+
 	function mixinElementState(el,state) {
 		state.disabled = el.disabled || false; // undefined before attach
 		state.readOnly = el.readOnly || false;
@@ -14,26 +16,44 @@
 		state.required = el.getAttribute("required") != null;
 	}
 
+	function reflectProperty(el,key,value) {
+		el[key] = !!value;
+	}
+
+	function reflectAttribute(el,key,value) {
+		if (typeof el[key] == "boolean") {
+			el[key] = !!value;
+			return;
+		}
+		if (value) {
+			el.setAttribute(key,key);
+		} else {
+			el.removeAttribute(key);
+		}
+	}
+
+	var state_treatment = {
+		disabled: { index: 0, reflect: reflectProperty },
+		readOnly: { index: 1, reflect: reflectProperty },
+		hidden: { index: 2, reflect: reflectAttribute },
+		required: { index: 3, reflect: reflectAttribute }
+	};
+
 	function reflectElementState(event) {
 		var el = event.data;
-		// debugger;
-		switch(event.symbol) {
-			case "disabled":
-			case "readOnly":
-				el[event.symbol] = !!event.value;
-				break;
-			case "hidden":
-			case "required":
-				if (typeof el[event.symbol] == "boolean") {
-					el[event.symbol] = !!event.value;
-					break;
-				}
-				if (event.value) {
-					el.setAttribute(event.symbol,event.symbol);
-				} else {
-					el.removeAttribute(event.symbol);
-				}
-				break;
+		var treatment = state_treatment[event.symbol];
+		if (treatment) {
+			// known props
+			treatment.reflect(el,event.symbol,event.value);
+		} else {
+			// extra state
+		}
+
+		if (el.stateful.updateClass) {
+			el.classList[treatment.index] = event.value? "state-"+event.symbol : "";
+			if (!nativeClassList) {
+				el.className = el.classList.join(" ");
+			}
 		}
 	}
 
@@ -52,6 +72,8 @@
 		var stateful = el.stateful = Resolver({ state: {} });
 		mixinElementState(el,stateful("state"));
 		stateful.reference("state").on("change",el,reflectElementState);
+		if (!nativeClassList) el.classList = [];//ArraySet();
+		//TODO initial class ?
 
 		return stateful;
 	}
