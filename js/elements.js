@@ -97,11 +97,45 @@
 		}
 	}
 
+	function reflectAria(el,key,value) {
+		if (typeof el[key] == "boolean") {
+			el[key] = !!value;
+			return;
+		}
+		if (value) {
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
+	function reflectAttributeAria(el,key,value) {
+		if (typeof el[key] == "boolean") {
+			el[key] = !!value;
+			return;
+		}
+		if (value) {
+			el.setAttribute(key,key);
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute(key);
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectProperty },
+		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute },
-		required: { index: 3, reflect: reflectAttribute }
+		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
+		required: { index: 3, reflect: reflectAttributeAria }
+		//TODO draggable
+		//TODO contenteditable
+		//TODO checked
+		//TODO tooltip
+		//TODO hover
+		//TODO down
+		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
+		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
 	};
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");

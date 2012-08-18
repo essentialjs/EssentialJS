@@ -20,7 +20,8 @@ test("Stateful element state",function(){
 
 	ok(! stateful("state.disabled"));
 	stateful.set("state.disabled",true);
-	ok(el.disabled);
+	ok(!el.disabled);
+	equal(el.getAttribute("aria-disabled"),"disabled");
 	equal(el.className,"state-disabled");
 	stateful.set("state.disabled",false);
 	ok(!el.disabled);
@@ -36,11 +37,20 @@ test("Stateful element state",function(){
 
 	ok(! stateful("state.hidden"));
 	stateful.set("state.hidden",true);
-	//equal(el.getAttribute("hidden"),"hidden");
 	ok(el.hidden || (el.getAttribute("hidden") == "hidden"));
 	equal(el.className,"state-hidden");
 	stateful.set("state.hidden",false);
 	ok(!el.hidden);
+	equal(el.className,"");
+
+	ok(! stateful("state.required"));
+	stateful.set("state.required",true);
+	ok(el.required || (el.getAttribute("required") == "required"));
+	equal(el.getAttribute("aria-required"),"required");
+	equal(el.className,"state-required");
+	stateful.set("state.required",false);
+	ok(!el.required);
+	equal(el.getAttribute("required"),null);
 	equal(el.className,"");
 })
 
