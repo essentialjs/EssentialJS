@@ -16,8 +16,8 @@ test("Stateful element state",function(){
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
 
 	var el = document.createElement("div");
-	var stateful = StatefulResolver(el);
-	stateful.updateClass = true;
+	var stateful = StatefulResolver(el,true);
+	//stateful.updateClass = true;
 
 	ok(! stateful("state.disabled"));
 	stateful.set("state.disabled",true);

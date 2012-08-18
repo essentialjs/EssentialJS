@@ -116,6 +116,13 @@
 			// extra state
 		}
 
+		var mapClassForState = el.stateful("map.class.state");
+		if (mapClassForState[event.symbol]) {
+			DOMTokenList_set(el.classList,mapClassForState[event.symbol],event.value);
+			if (!nativeClassList) {
+				el.className = el.classList.toString();
+			}
+		} else
 		if (el.stateful.updateClass) {
 			DOMTokenList_set(el.classList,"state-"+event.symbol,event.value);
 			if (!nativeClassList) {
@@ -133,7 +140,15 @@
 		stateClasses[0] = state.disabled? "state-disabled" : "";
 	}
 
-	function StatefulResolver(el) {
+	function ClassForState() {
+
+	}
+	ClassForState.prototype.disabled = "state-disabled";
+	ClassForState.prototype.readOnly = "state-readOnly";
+	ClassForState.prototype.hidden = "state-hidden";
+	ClassForState.prototype.required = "state-required";
+
+	function StatefulResolver(el,mapClassForState) {
 		if (el) {
 			if (el.stateful) return el.stateful;
 			var stateful = el.stateful = Resolver({ state: {} });
@@ -143,6 +158,7 @@
 		} else {
 			var stateful = Resolver({ state: {} });
 		}
+		if (mapClassForState) stateful.set("map.class.state", new ClassForState());
 		//TODO initial class ?
 
 		return stateful;
