@@ -139,3 +139,6 @@ test('Shape generator with parameters',function() {
 
 // inherit from generator not constructor
 
+// Generator.set get declare on the prototype
+
+

@@ -4,6 +4,7 @@ test("Multi parameter logging",function(){
 	ok(1)
 })
 
-test("ArraySet as classList replacement",function(){
+//TODO eitherClass
+// test("ArraySet as classList replacement",function(){
 	
-})
+// })
