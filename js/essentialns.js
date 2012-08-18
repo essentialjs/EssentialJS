@@ -52,6 +52,8 @@
 	essential.set("ArrayType",Generator(ArrayType,Type));
 	essential.namespace.Type.variant("Array",essential.namespace.ArrayType);
 
+	var nativeClassList = !!document.documentElement.classList;
+
 	//TODO consider if ""/null restriction is only for derived DOMTokenList
 	
 	function ArraySet() {
@@ -80,6 +82,19 @@
 		}
 	};
 	essential.set("DOMTokenList.set",_DOMTokenList.set);
+
+	_DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
+		var classList = el.classList;
+		var removeName = value? falseName:trueName;
+		var addName = value? trueName:falseName;
+		if (removeName) classList.remove(removeName);
+		if (addName) classList.add(addName);
+		if (!nativeClassList)
+		 {
+			el.className = el.classList.toString();
+		}
+	}
+	essential.set("DOMTokenList.eitherClass",_DOMTokenList.eitherClass);
 	
 	ArraySet.prototype.item = function(index) {
 		return this[index]; // use native array

@@ -104,7 +104,7 @@
 		required: { index: 3, reflect: reflectAttribute }
 	};
 
-	var DOMTokenList_set = essential("DOMTokenList.set");
+	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -116,19 +116,10 @@
 			// extra state
 		}
 
-		var mapClassForState = el.stateful("map.class.state");
-		if (mapClassForState[event.symbol]) {
-			DOMTokenList_set(el.classList,mapClassForState[event.symbol],event.value);
-			if (!nativeClassList) {
-				el.className = el.classList.toString();
-			}
-		} else
-		if (el.stateful.updateClass) {
-			DOMTokenList_set(el.classList,"state-"+event.symbol,event.value);
-			if (!nativeClassList) {
-				el.className = el.classList.toString();
-			}
-		}
+		var mapClass = el.stateful("map.class","undefined");
+		if (mapClass) {
+			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+		} 
 	}
 
 	/*
@@ -148,6 +139,14 @@
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
 
+	function ClassForNotState() {
+
+	}
+	ClassForNotState.prototype.disabled = "";
+	ClassForNotState.prototype.readOnly = "";
+	ClassForNotState.prototype.hidden = "";
+	ClassForNotState.prototype.required = "";
+
 	function StatefulResolver(el,mapClassForState) {
 		if (el) {
 			if (el.stateful) return el.stateful;
@@ -158,7 +157,10 @@
 		} else {
 			var stateful = Resolver({ state: {} });
 		}
-		if (mapClassForState) stateful.set("map.class.state", new ClassForState());
+		if (mapClassForState) {
+			stateful.set("map.class.state", new ClassForState());
+			stateful.set("map.class.notstate", new ClassForNotState());
+		}
 		//TODO initial class ?
 
 		return stateful;
