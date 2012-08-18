@@ -1,5 +1,17 @@
 module('stateful elements');
 
+test ("Creating StatefulResolver",function(){
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
+
+	// Create a new one
+	var stateful = StatefulResolver();
+	ok(stateful);
+
+	var el = document.createElement("div");
+	var stateful = StatefulResolver(el);
+	equal(el.stateful,stateful);
+})
+
 test("Stateful element state",function(){
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
 

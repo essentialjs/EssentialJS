@@ -5,6 +5,7 @@
 	var ObjectType = essential("ObjectType");
 	var console = essential("console");
 	var ArraySet = essential("ArraySet");
+	var DOMTokenList = essential("DOMTokenList");
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
 	//TODO regScriptOnnotfound (onerror, status=404)
@@ -133,12 +134,15 @@
 	}
 
 	function StatefulResolver(el) {
-		if (el.stateful) return el.stateful;
-
-		var stateful = el.stateful = Resolver({ state: {} });
-		mixinElementState(el,stateful("state"));
-		stateful.reference("state").on("change",el,reflectElementState);
-		if (!nativeClassList) el.classList = [];//ArraySet();
+		if (el) {
+			if (el.stateful) return el.stateful;
+			var stateful = el.stateful = Resolver({ state: {} });
+			mixinElementState(el,stateful("state"));
+			stateful.reference("state").on("change",el,reflectElementState);
+			if (!nativeClassList) el.classList = DOMTokenList();
+		} else {
+			var stateful = Resolver({ state: {} });
+		}
 		//TODO initial class ?
 
 		return stateful;
