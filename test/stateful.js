@@ -105,13 +105,52 @@ test("Stateful element custom state ",function(){
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
 
 	var el = document.createElement("div");
+
+	// debugger;
+
 	var stateful = StatefulResolver(el,true);
 	var mapClass = stateful("map.class");
 	mapClass.state.transitioning = "transitioning";
+	mapClass.state.authenticated = "authenticated";
+	mapClass.notstate.authenticated = "login";
+	mapClass.state.loading = "loading";
+	mapClass.state.launched = "launched";
+	mapClass.state.livepage = "livepage";
+	mapClass.state.loginError = "login-error";
+	StatefulResolver.updateClass(stateful,el);
+
+	equal(el.className,"login");
 
 	ok(! stateful("state.transitioning","undefined"));
 	stateful.set("state.transitioning",true);
-	equal(el.className,"transitioning");
+	equal(el.className,"login transitioning");
+	stateful.set("state.transitioning",false);
+	equal(el.className,"login");
+
+	ok(! stateful("state.authenticated","undefined"));
+	stateful.set("state.authenticated",true);
+	equal(el.className,"authenticated");
+
+	ok(! stateful("state.loading","undefined"));
+	stateful.set("state.loading",true);
+	equal(el.className,"authenticated loading");
+	stateful.set("state.loading",false);
+
+	ok(! stateful("state.loginError","undefined"));
+	stateful.set("state.loginError",true);
+	equal(el.className,"authenticated login-error");
+	stateful.set("state.loginError",false);
+
+	ok(! stateful("state.launched","undefined"));
+	stateful.set("state.launched",true);
+	equal(el.className,"authenticated launched");
+	stateful.set("state.launched",false);
+
+	ok(! stateful("state.livepage","undefined"));
+	stateful.set("state.livepage",true);
+	equal(el.className,"authenticated livepage");
+	stateful.set("state.livepage",false);
+
 })
 
 // action + button allows action to be disabled causing disable on button

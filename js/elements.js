@@ -198,11 +198,22 @@
 		if (mapClassForState) {
 			stateful.set("map.class.state", new ClassForState());
 			stateful.set("map.class.notstate", new ClassForNotState());
+			StatefulResolver.updateClass(stateful,el);
 		}
 
 		return stateful;
 	}
 	essential.declare("StatefulResolver",StatefulResolver);
+
+	StatefulResolver.updateClass = function(stateful,el) {
+		var triggers = {};
+		for(var n in state_treatment) triggers[n] = true;
+		for(var n in stateful("map.class.state")) triggers[n] = true;
+		for(var n in stateful("map.class.notstate")) triggers[n] = true;
+		for(var n in triggers) {
+			stateful.reference("state."+n,"null").trigger("change");
+		}
+	};
 
 	//TODO element cleaner must remove .el references from listeners
 
