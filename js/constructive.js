@@ -45,6 +45,7 @@ function Resolver(name,ns,options)
 	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
 	                    continue; // go to next now that we filled in an object
                 	}
+                //TODO "false"
                 case "null":
                 	if (top === undefined) return null;
                 	break;
@@ -151,6 +152,7 @@ function Resolver(name,ns,options)
 			names.push(symbol);
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
+	    	//TODO parent listeners
 			}
 			return value;
         }
@@ -166,6 +168,7 @@ function Resolver(name,ns,options)
         	if (base[symbol] === undefined) {
         		if (_setValue(value,names,base,symbol)) {
 			    	this._callListener("change",names,symbol,value);
+	    	//TODO parent listeners
 			    }
         		return value
         	} else return base[symbol];
@@ -185,6 +188,7 @@ function Resolver(name,ns,options)
         		names.push(key);
         		if (_setValue(value,names,base[symbol],key)) {
 			    	this._callListener("change",names,key,value);
+	    	//TODO parent listeners
         		}
 	    		names.pop(); // return names to unchanged
         	}
@@ -198,6 +202,7 @@ function Resolver(name,ns,options)
     		names.push(key);
     		if (_setValue(value,names,base[symbol],key)) {
 		    	this._callListener("change",names,key,value);
+	    	//TODO parent listeners
     		}
     		names.pop(); // return names to unchanged
         }
@@ -216,6 +221,7 @@ function Resolver(name,ns,options)
         	}
         	names.pop(); // return names to unchanged
 	    	this._callListener("change",names,null,mods);
+	    	//TODO parent listeners
         }
 	    function on(type,data,callback) {
 	    	if (! type in VALID_LISTENERS) return;//fail
@@ -224,6 +230,18 @@ function Resolver(name,ns,options)
 	    		case 2: this._addListener(type,name,null,arguments[1]); break;
 	    		case 3: this._addListener(type,name,data,callback); break;
 	    	};
+	    }
+
+	    function trigger(type) {
+	    	var value = _resolve(names,onundefined);
+	    	var symbol = names.pop();
+			var parentName = names.join(".");
+
+	    	this._callListener(type,names,symbol,value);
+			var parentRef = resolver.references[parentName];
+			if (parentRef) parentRef._callListener("change",names,symbol,value);
+
+			names.push(symbol);
 	    }    
 
         get.set = set;
@@ -234,6 +252,7 @@ function Resolver(name,ns,options)
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
         get.on = on;
+        get.trigger = trigger;
         get.listeners = listeners || _makeListeners();
 
 	    function _callListener(type,names,symbol,value) {
