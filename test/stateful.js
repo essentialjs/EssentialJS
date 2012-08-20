@@ -31,7 +31,7 @@ test("Stateful element state",function(){
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
 
-	ok(! stateful("state.disabled"));
+	ok(! stateful("state.disabled","undefined"));
 	stateful.set("state.disabled",true);
 	ok(!el.disabled);
 	equal(el.getAttribute("aria-disabled"),"disabled");
@@ -40,7 +40,7 @@ test("Stateful element state",function(){
 	ok(!el.disabled);
 	equal(el.className,"");
 
-	ok(! stateful("state.readOnly"));
+	ok(! stateful("state.readOnly","undefined"));
 	stateful.set("state.readOnly",true);
 	ok(el.readOnly);
 	equal(el.className,"state-readOnly");
@@ -48,7 +48,7 @@ test("Stateful element state",function(){
 	ok(!el.readOnly);
 	equal(el.className,"");
 
-	ok(! stateful("state.hidden"));
+	ok(! stateful("state.hidden","undefined"));
 	stateful.set("state.hidden",true);
 	ok(el.hidden || (el.getAttribute("hidden") == "hidden"));
 	equal(el.className,"state-hidden");
@@ -56,7 +56,7 @@ test("Stateful element state",function(){
 	ok(!el.hidden);
 	equal(el.className,"");
 
-	ok(! stateful("state.required"));
+	ok(! stateful("state.required","undefined"));
 	stateful.set("state.required",true);
 	ok(el.required || (el.getAttribute("required") == "required"));
 	equal(el.getAttribute("aria-required"),"required");
@@ -79,21 +79,21 @@ test("Stateful element state with custom class",function(){
 	mapClass.state.hidden = "hide";
 	mapClass.notstate.hidden = "show";
 
-	ok(! stateful("state.disabled"));
+	ok(! stateful("state.disabled","undefined"));
 	stateful.set("state.disabled",true);
 	equal(el.className,"is-disabled");
 	stateful.set("state.disabled",false);
 	ok(!el.disabled);
 	equal(el.className,"is-not-disabled");
 
-	ok(! stateful("state.readOnly"));
+	ok(! stateful("state.readOnly","undefined"));
 	stateful.set("state.readOnly",true);
 	equal(el.className,"is-not-disabled state-readOnly");
 	stateful.set("state.readOnly",false);
 	ok(!el.readOnly);
 	equal(el.className,"is-not-disabled");
 
-	ok(! stateful("state.hidden"));
+	ok(! stateful("state.hidden","undefined"));
 	stateful.set("state.hidden",true);
 	equal(el.className,"is-not-disabled hide");
 	stateful.set("state.hidden",false);
@@ -101,6 +101,17 @@ test("Stateful element state with custom class",function(){
 	equal(el.className,"is-not-disabled show");
 })
 
+test("Stateful element custom state ",function(){
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
 
+	var el = document.createElement("div");
+	var stateful = StatefulResolver(el,true);
+	var mapClass = stateful("map.class");
+	mapClass.state.transitioning = "transitioning";
+
+	ok(! stateful("state.transitioning","undefined"));
+	stateful.set("state.transitioning",true);
+	equal(el.className,"transitioning");
+})
 
 // action + button allows action to be disabled causing disable on button
