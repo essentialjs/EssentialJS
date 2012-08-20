@@ -130,12 +130,26 @@
 		required: { index: 3, reflect: reflectAttributeAria }
 		//TODO draggable
 		//TODO contenteditable
-		//TODO checked
+		//TODO checked ariaChecked
 		//TODO tooltip
 		//TODO hover
-		//TODO down
+		//TODO down ariaPressed
+		//TODO ariaHidden
+		//TODO ariaDisabled
+		//TODO ariaRequired
+		//TODO ariaExpanded
+		//TODO ariaSelected
+
 		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
 		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
+
+		/*TODO IE aria props
+			string:
+			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
+			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
+
+			
+		*/
 	};
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
