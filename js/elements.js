@@ -139,6 +139,7 @@
 	};
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
+	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -187,7 +188,10 @@
 			var stateful = el.stateful = Resolver({ state: {} });
 			mixinElementState(el,stateful("state"));
 			stateful.reference("state").on("change",el,reflectElementState);
-			if (!nativeClassList) el.classList = DOMTokenList();
+			if (!nativeClassList) {
+				el.classList = DOMTokenList();
+				DOMTokenList_mixin(el.classList,el.className);
+			}
 		} else {
 			var stateful = Resolver({ state: {} });
 		}
@@ -195,7 +199,6 @@
 			stateful.set("map.class.state", new ClassForState());
 			stateful.set("map.class.notstate", new ClassForNotState());
 		}
-		//TODO initial class ?
 
 		return stateful;
 	}
@@ -613,7 +616,7 @@
 		ev = ev || event;
 		var e = ev.target || ev.srcElement;
 		var re = applicable_role_element(e);
-		var stateful = StatefulResolver(re);
+		var stateful = StatefulResolver(re,true);
 		if (stateful("state.disabled")) return; // disable
 		if (re.getAttribute("aria-disabled") != null) return; //TODO fold into stateful
 

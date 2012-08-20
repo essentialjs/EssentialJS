@@ -83,6 +83,20 @@
 	};
 	essential.set("DOMTokenList.set",_DOMTokenList.set);
 
+	_DOMTokenList.mixin = function(dtl,mix) {
+		if (mix.split) { // string
+			var toset = mix.split(" ");
+			for(var i=0,entry; entry = toset[i]; ++i) dtl.add(entry);
+			return;
+		}
+		if (mix.length) {
+			for(var i=0,entry; entry = mix[i]; ++i) dtl.add(entry);
+			return;
+		}
+		for(var n in mix) dtl.set(n,mix[n]);
+	}
+	essential.set("DOMTokenList.mixin",_DOMTokenList.mixin);
+
 	_DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
 		var classList = el.classList;
 		var removeName = value? falseName:trueName;

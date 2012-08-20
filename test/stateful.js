@@ -12,6 +12,19 @@ test ("Creating StatefulResolver",function(){
 	equal(el.stateful,stateful);
 })
 
+test("Stateful element initial class",function(){
+
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
+
+	var el = document.createElement("div");
+	el.className = "a b c";
+	var stateful = StatefulResolver(el,true);
+	ok(el.classList);
+	equal(el.classList[0],"a");
+	equal(el.classList[1],"b");
+	equal(el.classList[2],"c");
+})
+
 test("Stateful element state",function(){
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
 
@@ -63,10 +76,11 @@ test("Stateful element state with custom class",function(){
 	var mapClass = stateful("map.class");
 	mapClass.state.disabled = "is-disabled";
 	mapClass.notstate.disabled = "is-not-disabled";
+	mapClass.state.hidden = "hide";
+	mapClass.notstate.hidden = "show";
 
 	ok(! stateful("state.disabled"));
 	stateful.set("state.disabled",true);
-	ok(el.disabled);
 	equal(el.className,"is-disabled");
 	stateful.set("state.disabled",false);
 	ok(!el.disabled);
@@ -74,7 +88,6 @@ test("Stateful element state with custom class",function(){
 
 	ok(! stateful("state.readOnly"));
 	stateful.set("state.readOnly",true);
-	ok(el.readOnly);
 	equal(el.className,"is-not-disabled state-readOnly");
 	stateful.set("state.readOnly",false);
 	ok(!el.readOnly);
@@ -82,12 +95,10 @@ test("Stateful element state with custom class",function(){
 
 	ok(! stateful("state.hidden"));
 	stateful.set("state.hidden",true);
-	//equal(el.getAttribute("hidden"),"hidden");
-	ok(el.hidden || (el.getAttribute("hidden") == "hidden"));
-	equal(el.className,"is-not-disabled state-hidden");
+	equal(el.className,"is-not-disabled hide");
 	stateful.set("state.hidden",false);
 	ok(!el.hidden);
-	equal(el.className,"is-not-disabled");
+	equal(el.className,"is-not-disabled show");
 })
 
 
