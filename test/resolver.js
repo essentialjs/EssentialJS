@@ -48,16 +48,16 @@ test('Namespace and package creation',function(){
 	var tools = Resolver()("my.tools");
 
 	Resolver().set("my.tools.X",5);
-	equal(Resolver.default.namespace.my.tools.X,5, "Set number worked");
-	equal(Resolver.default.namespace.my.shapes, shapes, "two level package works");
-	equal(Resolver.default.namespace.my.tools, tools, "two level package works");
-	equal(typeof Resolver.default.namespace.my, "object", "top level package created");
+	equal(Resolver["default"].namespace.my.tools.X,5, "Set number worked");
+	equal(Resolver["default"].namespace.my.shapes, shapes, "two level package works");
+	equal(Resolver["default"].namespace.my.tools, tools, "two level package works");
+	equal(typeof Resolver["default"].namespace.my, "object", "top level package created");
 
 	Resolver("default").override({});
-	equal(Resolver.default.namespace.my, undefined, "namespace replaced");
+	equal(Resolver["default"].namespace.my, undefined, "namespace replaced");
 
 	Resolver()("my")
-	notEqual(Resolver.default.namespace.my, undefined, "namespace replaced");
+	notEqual(Resolver["default"].namespace.my, undefined, "namespace replaced");
 
 })
 

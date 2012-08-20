@@ -6,7 +6,7 @@ test('Basic element construction',function(){
 	var div = HTMLElement("div",{ "class":"abc"},"<span>","abc","</span>");
 	equal(div.tagName,"DIV");
 	equal(div.className,"abc");
-	equal(div.innerHTML,"<span>abc</span>");
+	equal(div.innerHTML,"<span>abc</span>".toLowerCase());
 
 	var span = HTMLElement("span",{ "id":"def"})
 	equal(span.id,"def");
