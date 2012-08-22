@@ -153,7 +153,7 @@ test("Inherit from Builtin",function(){
 	}
 
 	var test = Test();
-	debugger;
+	// debugger;
 	ok(test.a);
 	ok(test.b);
 	ok(test.b());
