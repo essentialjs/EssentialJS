@@ -1839,7 +1839,7 @@ var sinon = (function (buster) {
         
         // create asynchronous versions of callsArg* and yields* methods
         for (var method in proto) {
-            if (proto.hasOwnProperty(method) && method.match(/^(callsArg|yields)/)) {
+            if (proto.hasOwnProperty(method) && method.match(/^(callsArg|yields)/) && !method.match(/Async/)) {
                 proto[method + 'Async'] = (function (syncFnName) {
                     return function () {
                         this.callbackAsync = true;

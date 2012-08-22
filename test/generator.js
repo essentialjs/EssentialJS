@@ -148,8 +148,17 @@ test("Inherit from Builtin",function(){
 
 	}
 	var Test = Generator(_Test,Array);
+	_Test.prototype.b = function(){
+		return "b";
+	}
 
 	var test = Test();
+	debugger;
 	ok(test.a);
+	ok(test.b);
+	ok(test.b());
+	equal(test.length,0);
+	test.push("d");
+	equal(test.length,1);
 });
 
