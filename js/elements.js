@@ -148,8 +148,10 @@
 			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
 			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
 
-			
+
 		*/
+
+		//TODO restricted/forbidden tie in with session specific permissions
 	};
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
@@ -204,8 +206,8 @@
 			stateful.reference("state").on("change",el,reflectElementState);
 			if (!nativeClassList) {
 				el.classList = DOMTokenList();
-				DOMTokenList_mixin(el.classList,el.className);
 			}
+			DOMTokenList_mixin(el.classList,el.className);
 		} else {
 			var stateful = Resolver({ state: {} });
 		}
