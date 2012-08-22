@@ -197,6 +197,10 @@ test('Resolver reference',function(){
 
 })
 
+// test trigger function handler(event) .trigger(eventName)
+// test trigger function handler(event,p1,p2) .trigger(event,[p1,p2])
+// test trigger function handler(event,p1) .trigger(event,p1)
+
 /*
   Change listeners are notified of changes to the entry or members of it.
   Changes to members of members do not cause notifications.
