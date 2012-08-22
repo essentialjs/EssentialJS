@@ -152,6 +152,8 @@
 		*/
 
 		//TODO restricted/forbidden tie in with session specific permissions
+
+		//TODO focus for elements with focus
 	};
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
@@ -665,6 +667,10 @@
 				break;
 				
 			default:
+				// make sure no submit buttons outside form, or enter key will fire the first one.
+				var buttons = el.getElementsByTagName("BUTTON");
+				for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") button.getAttribute("type","button");
+
 				el.submit = dialog_submit;
 				// debugger;
 				//TODO capture enter from inputs, tweak tab indexes
@@ -685,6 +691,10 @@
 	};
 
 	DocumentRolesGenerator.enhance_toolbar = DocumentRoles.enhance_toolbar = function(el,role,config) {
+		// make sure no submit buttons outside form, or enter key will fire the first one.
+		var buttons = el.getElementsByTagName("BUTTON");
+		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") button.getAttribute("type","button");
+
 		el.submit = toolbar_submit;
 
 		addEventListeners(el, {
