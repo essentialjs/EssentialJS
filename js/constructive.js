@@ -406,6 +406,8 @@ function Generator(mainConstr,options)
 				return instance = generator.info.existing[id];
 			} else {
 				instance = generator.info.existing[id] = new generator.type();
+				//TODO consider different strategies for JS engine
+				instance.constructor = info.constructors[0]; // make the correct constructor appear in debuggers
 			}
 		} else {
 			instance = new generator.type();
