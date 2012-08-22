@@ -17,6 +17,12 @@ test ("Named resolver",function(){
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("B"));
 	notEqual(r,Resolver("A"));
+
+	var r = Resolver("C",null); // check for non-existent 
+	equal(r, null);
+
+	var r = Resolver("C"); // create blank one 
+	equal(typeof r, "function");
 })
 
 test("Window resolver",function(){

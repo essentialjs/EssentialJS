@@ -17,9 +17,11 @@ function Resolver(name,ns,options)
 		
 	case "string":
 		// Resolver("abc")
+		// Resolver("abc",null)
 		// Resolver("abc",{})
 		// Resolver("abc",{},{options})
 		if (Resolver[name] == undefined) {
+			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
 			if (options == undefined) { options = ns; ns = {}; }
 			Resolver[name] = Resolver(ns,options);
 			Resolver[name].named = name;
