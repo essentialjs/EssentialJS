@@ -51,18 +51,21 @@ test('Enhancing DocumentRoles',function(){
 
 	var handlers = {
 		"enhance": {
+			"sinon": sinon.spy(),
 			"dialog": DocumentRoles.enhance_dialog,
 			"navigation": DocumentRoles.enhance_toolbar,
 			"spinner": DocumentRoles.enhance_spinner,
 			"application": DocumentRoles.enhance_application
 		},
 		"layout": {
+			"sinon": sinon.spy(),
 			"dialog": DocumentRoles.layout_dialog,
 			"navigation": DocumentRoles.layout_toolbar,
 			"spinner": DocumentRoles.layout_spinner,
 			"application": DocumentRoles.layout_application
 		},
 		"discard": {
+			"sinon": sinon.spy(),
 			"dialog": DocumentRoles.discard_dialog,
 			"navigation": DocumentRoles.discard_toolbar,
 			"spinner": DocumentRoles.discard_spinner,
@@ -72,17 +75,43 @@ test('Enhancing DocumentRoles',function(){
 
 	var doc = createDocument([
 		"<body>",
+		
 		'<span role="navigation">',
 		'<button name="a"></button>',
 		'</span>',
+
+		'<span role="sinon"></span>',
 		"</body>"
 		]);
 	var dr = DocumentRoles(handlers,doc);
+
+	equal(handlers.enhance.sinon.callCount,1);
+	equal(handlers.layout.sinon.callCount,0);
+	equal(handlers.discard.sinon.callCount,0);
+
+	//TODO test delayed enhance
+
+	// enhance should be completed
+	dr._enhance_descs();
+	equal(handlers.enhance.sinon.callCount,1);
+	equal(handlers.layout.sinon.callCount,0);
+	equal(handlers.discard.sinon.callCount,0);
+
+
+	// Submit buttons turned into ordinary
 	var buttons = doc.getElementsByTagName("BUTTON");
 	for(var i=0,button; button=buttons[i]; ++i) {
 		equal(button.type,"button");
 	}
 
+	//TODO _resize_descs
+	//TODO _layout_descs
+
 	//TODO all with roles are enhanced
 	//TODO discard called for all enhanced
+
+	DocumentRoles.info.constructors[-1].discarded(dr); // emulate singleton teardown
+	equal(handlers.enhance.sinon.callCount,1);
+	equal(handlers.layout.sinon.callCount,0);
+	equal(handlers.discard.sinon.callCount,1);
 });

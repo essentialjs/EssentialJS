@@ -162,3 +162,8 @@ test("Inherit from Builtin",function(){
 	equal(test.length,1);
 });
 
+
+//TODO singleton construction and discard/teardown
+//TODO singleton page lifecycle
+
+
