@@ -52,8 +52,6 @@
 	essential.set("ArrayType",Generator(ArrayType,Type));
 	essential.namespace.Type.variant("Array",essential.namespace.ArrayType);
 
-	var nativeClassList = !!document.documentElement.classList;
-
 	//TODO consider if ""/null restriction is only for derived DOMTokenList
 	
 	function ArraySet() {
@@ -117,10 +115,12 @@
 	function _DOMTokenList() {
 
 	}
-	essential.set("DOMTokenList",Generator(_DOMTokenList,ArraySet,Array)); //TODO support this
+	var DOMTokenList = essential.set("DOMTokenList",Generator(_DOMTokenList,ArraySet,Array)); //TODO support this
+
+	DOMTokenList.prototype.emulateClassList = true;
 
 	// use this for native DOMTokenList
-	_DOMTokenList.set = function(as,id,value) {
+	DOMTokenList.set = function(as,id,value) {
 		if (typeof id == "object"); //TODO set map removing rest
 		if (value) { // set true
 			as.add(id);
@@ -128,9 +128,8 @@
 			as.remove(id);
 		}
 	};
-	essential.set("DOMTokenList.set",_DOMTokenList.set);
 
-	_DOMTokenList.mixin = function(dtl,mix) {
+	DOMTokenList.mixin = function(dtl,mix) {
 		if (mix.split) { // string
 			var toset = mix.split(" ");
 			for(var i=0,entry; entry = toset[i]; ++i) dtl.add(entry);
@@ -142,20 +141,18 @@
 		}
 		for(var n in mix) dtl.set(n,mix[n]);
 	}
-	essential.set("DOMTokenList.mixin",_DOMTokenList.mixin);
 
-	_DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
+	DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
 		var classList = el.classList;
 		var removeName = value? falseName:trueName;
 		var addName = value? trueName:falseName;
 		if (removeName) classList.remove(removeName);
 		if (addName) classList.add(addName);
-		if (!nativeClassList)
+		if (classList.emulateClassList)
 		 {
 			el.className = el.classList.toString();
 		}
 	}
-	essential.set("DOMTokenList.eitherClass",_DOMTokenList.eitherClass);
 	
 
 	function instantiatePageSingletons()
