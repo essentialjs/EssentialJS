@@ -405,46 +405,47 @@
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
-		DocumentRolesGenerator()._resize_descs();
+		DocumentRoles()._resize_descs();
 	}
 
 	function enhanceUnhandledElements() {
 		// debugger;
 		var statefuls = ApplicationConfig(); // Ensure that config is present
-		var handlers = DocumentRolesGenerator.presets("handlers");
+		var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
-		DocumentRolesGenerator()._enhance_descs();
+		DocumentRoles()._enhance_descs();
 		//TODO time to default_enhance yet?
 	}
 
-	function DocumentRoles(handlers) {
+	function _DocumentRoles(handlers,doc) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
 		this._on_event = [];
+		doc = doc || document;
 		
 		//TODO configure reference as DI arg
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
 		if (window.addEventListener) {
 			window.addEventListener("resize",resizeTriggersReflow,false);
-			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			doc.body.addEventListener("orientationchange",resizeTriggersReflow,false);
 		} else {
 			window.attachEvent("onresize",resizeTriggersReflow);
 		}
 		
-		if (document.querySelectorAll) {
-			this.descs = this._role_descs(document.querySelectorAll("*[role]"));
+		if (doc.querySelectorAll) {
+			this.descs = this._role_descs(doc.querySelectorAll("*[role]"));
 		} else {
-			this.descs = this._role_descs(document.getElementsByTagName("*"));
+			this.descs = this._role_descs(doc.getElementsByTagName("*"));
 		}
 		this._enhance_descs();
 	}
-	var DocumentRolesGenerator = essential.set("DocumentRoles",Generator(DocumentRoles));
+	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
-	DocumentRoles.args = [
+	_DocumentRoles.args = [
 		ObjectType({ name:"handlers" })
 	];
 
-	DocumentRoles.prototype._enhance_descs = function() 
+	_DocumentRoles.prototype._enhance_descs = function() 
 	{
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
@@ -468,7 +469,7 @@
 		} 
 	};
 
-	DocumentRoles.discarded = function(instance) {
+	_DocumentRoles.discarded = function(instance) {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
 		for(var i=0,desc; desc=instance.descs[i]; ++i) {
@@ -476,7 +477,7 @@
 				if (instance.handlers.discard[desc.role]) {
 					instance.handlers.discard[desc.role].call(instance,desc.el,desc.role,desc.instance);
 				} else {
-					DocumentRoles.default_discard.call(instance,desc.el,desc.role,desc.instance);
+					_DocumentRoles.default_discard.call(instance,desc.el,desc.role,desc.instance);
 				}
 				desc.discarded = true;
 				//TODO clean layouter/laidout
@@ -485,8 +486,7 @@
 		}
 	};
 
-	DocumentRoles.prototype._role_descs = function(elements) {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
+	_DocumentRoles.prototype._role_descs = function(elements) {
 		var descs = [];
 		for(var i=0,e; e=elements[i]; ++i) {
 			var role = e.getAttribute("role");
@@ -504,7 +504,7 @@
 		return descs;
 	};
 
-	DocumentRoles.prototype._resize_descs = function() {
+	_DocumentRoles.prototype._resize_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
@@ -517,7 +517,7 @@
 		}
 	};
 
-	DocumentRoles.prototype._layout_descs = function() {
+	_DocumentRoles.prototype._layout_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var updateLayout = false;
@@ -540,7 +540,7 @@
 		}
 	};
 
-	DocumentRoles.prototype._area_changed_descs = function() {
+	_DocumentRoles.prototype._area_changed_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				desc.layout.area = _activeAreaName;
@@ -549,7 +549,7 @@
 		}
 	};
 
-	DocumentRoles.prototype.on = function(name,role,func) {
+	_DocumentRoles.prototype.on = function(name,role,func) {
 		if (arguments.length == 2) func = role;
 		
 		//TODO
@@ -557,9 +557,9 @@
 	}
 	
 	// Element specific handlers
-	DocumentRolesGenerator.presets.declare("handlers.enhance", {});
-	DocumentRolesGenerator.presets.declare("handlers.layout", {});
-	DocumentRolesGenerator.presets.declare("handlers.discard", {});
+	DocumentRoles.presets.declare("handlers.enhance", {});
+	DocumentRoles.presets.declare("handlers.layout", {});
+	DocumentRoles.presets.declare("handlers.discard", {});
 
 
 	function form_onsubmit(ev) {
@@ -653,7 +653,7 @@
 		if (e.type=="submit") this.submit(e); //TODO action context
 	}
 
-	DocumentRolesGenerator.enhance_dialog = DocumentRoles.enhance_dialog = function (el,role,config) {
+	DocumentRoles.enhance_dialog = _DocumentRoles.enhance_dialog = function (el,role,config) {
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -668,8 +668,7 @@
 				
 			default:
 				// make sure no submit buttons outside form, or enter key will fire the first one.
-				var buttons = el.getElementsByTagName("BUTTON");
-				for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") button.getAttribute("type","button");
+				forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 
 				el.submit = dialog_submit;
 				// debugger;
@@ -684,16 +683,23 @@
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_dialog = DocumentRoles.layout_dialog = function(el,layout,instance) {
+	DocumentRoles.layout_dialog = _DocumentRoles.layout_dialog = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_dialog = DocumentRoles.discard_dialog = function (el,role,instance) {
+	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
-	DocumentRolesGenerator.enhance_toolbar = DocumentRoles.enhance_toolbar = function(el,role,config) {
+	function forceNoSubmitType(buttons) {
+
+		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") {
+			button.setAttribute("type","button");
+			if (button.type == "submit") button.type = "submit";
+		}
+	}
+
+	DocumentRoles.enhance_toolbar = _DocumentRoles.enhance_toolbar = function(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
-		var buttons = el.getElementsByTagName("BUTTON");
-		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") button.getAttribute("type","button");
+		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 
 		el.submit = toolbar_submit;
 
@@ -704,26 +710,26 @@
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_toolbar = DocumentRoles.layout_toolbar = function(el,layout,instance) {
+	DocumentRoles.layout_toolbar = _DocumentRoles.layout_toolbar = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_toolbar = DocumentRoles.discard_toolbar = function(el,role,instance) {
+	DocumentRoles.discard_toolbar = _DocumentRoles.discard_toolbar = function(el,role,instance) {
 		
 	};
 
-	DocumentRolesGenerator.enhance_sheet = DocumentRoles.enhance_sheet = function(el,role,config) {
+	DocumentRoles.enhance_sheet = _DocumentRoles.enhance_sheet = function(el,role,config) {
 		
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_sheet = DocumentRoles.layout_sheet = function(el,layout,instance) {
+	DocumentRoles.layout_sheet = _DocumentRoles.layout_sheet = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_sheet = DocumentRoles.discard_sheet = function(el,role,instance) {
+	DocumentRoles.discard_sheet = _DocumentRoles.discard_sheet = function(el,role,instance) {
 		
 	};
 
-	DocumentRolesGenerator.enhance_spinner = DocumentRoles.enhance_spinner = function(el,role,config) {
+	DocumentRoles.enhance_spinner = _DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -742,10 +748,10 @@
 		return new Spinner(opts).spin(el);
 	};
 
-	DocumentRolesGenerator.layout_spinner = DocumentRoles.layout_spinner = function(el,layout,instance) {
+	DocumentRoles.layout_spinner = _DocumentRoles.layout_spinner = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_spinner = DocumentRoles.discard_spinner = function(el,role,instance) {
+	DocumentRoles.discard_spinner = _DocumentRoles.discard_spinner = function(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
 	};
@@ -756,7 +762,7 @@
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRolesGenerator.enhance_application = DocumentRoles.enhance_application = function(el,role,config) {
+	DocumentRoles.enhance_application = _DocumentRoles.enhance_application = function(el,role,config) {
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
@@ -772,23 +778,23 @@
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_application = DocumentRoles.layout_application = function(el,layout,instance) {
+	DocumentRoles.layout_application = _DocumentRoles.layout_application = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_application = DocumentRoles.discard_application = function(el,role,instance) {
+	DocumentRoles.discard_application = _DocumentRoles.discard_application = function(el,role,instance) {
 		
 	};
 
-	DocumentRoles.default_enhance = function(el,role,config) {
+	_DocumentRoles.default_enhance = function(el,role,config) {
 		
 		return {};
 	};
 
-	DocumentRoles.default_layout = function(el,layout,instance) {
+	_DocumentRoles.default_layout = function(el,layout,instance) {
 		
 	};
 	
-	DocumentRoles.default_discard = function(el,role,instance) {
+	_DocumentRoles.default_discard = function(el,role,instance) {
 		
 	};
 	
@@ -861,7 +867,7 @@
 		}
 		_activeAreaName = areaName;
 		// only use DocumentRoles layout if DOM is ready
-		if (document.body) DocumentRolesGenerator()._layout_descs();
+		if (document.body) DocumentRoles()._layout_descs();
 	}
 	essential.set("activateArea",activateArea);
 	
