@@ -50,11 +50,9 @@ test('Enhance element early or delayed',function() {
 		}
 	};
 
-	var doc = createDocument([
-		"<body>",
+	var doc = createDocument([],[
 		'<span role="delayed" id="a"></span>',
-		'<span role="early" id="b"></span>',
-		"</body>"
+		'<span role="early" id="b"></span>'
 		]);
 	handlers.enhance.delayed.returns(false);
 	var dr = DocumentRoles(handlers,doc);
@@ -117,14 +115,10 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 		}
 	};
 
-	var doc = createDocument([
-		"<body>",
-		
+	var doc = createDocument([],[
 		'<span role="navigation">',
 		'<button name="a"></button>',
-		'</span>',
-
-		"</body>"
+		'</span>'
 		]);
 	var dr = DocumentRoles(handlers,doc);
 
@@ -181,15 +175,11 @@ test('Role navigation action',function(){
 
 	ok(1)
 	return;
-	
-	var doc = createDocument([
-		"<body>",
-		
+
+	var doc = createDocument([],[
 		'<span role="navigation" action="a/b/c">',
 		'<button name="button1" role="button"></button>',
-		'</span>',
-
-		"</body>"
+		'</span>'
 		]);
 	var dr = DocumentRoles(handlers,doc);
 
