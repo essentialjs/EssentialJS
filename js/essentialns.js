@@ -150,7 +150,8 @@
 		if (addName) classList.add(addName);
 		if (classList.emulateClassList)
 		 {
-			el.className = el.classList.toString();
+			//TODO make toString override work on IE, el.className = el.classList.toString();
+			el.className = el.classList.join(el.classList.separator);
 		}
 	}
 	
