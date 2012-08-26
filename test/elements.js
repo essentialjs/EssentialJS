@@ -26,26 +26,6 @@ test('Script element construction',function(){
 
 })
 
-function createDocument(html) {
-	// var doc = document.implementation.createDocument('','',
-	// 	document.implementation.createDocumentType('html','',''));
-	var doc;
-	if (document.implementation && document.implementation.createHTMLDocument) {
-		doc = document.implementation.createHTMLDocument("");
-	} else  if (window.ActiveXObject) {
-		doc = new ActiveXObject("htmlfile");
-	} else {
-		return document.createElement("DIV");// dummy default
-	}
-
-	if (typeof html == "object" && typeof html.length == "number") {
-		html = html.join("");
-	}
-	doc.documentElement.innerHTML = html;
-
-	return doc;
-}
-
 test('Enhanced element config',function(){
 	ok(true,"TODO configure just using data-role");
 	ok(true,"TODO configure just using application/config");
@@ -172,3 +152,47 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 	// equal(handlers.layout.sinon.callCount,0);
 	// equal(handlers.discard.sinon.callCount,1);
 });
+
+test('Role navigation action',function(){
+	var DialogAction = Resolver("essential")("DialogAction");
+	var DocumentRoles = Resolver("essential")("DocumentRoles");
+
+	function ABC_DialogAction() {
+
+	}
+	ABC_DialogAction.prototype.button1 = function() {
+
+	debugger;
+	};
+
+	DialogAction.variant("a/b/c",Generator(ABC_DialogAction,DialogAction));
+
+	var handlers = {
+		"enhance": {
+			"navigation": DocumentRoles.enhance_toolbar
+		},
+		"layout": {
+			"navigation": DocumentRoles.layout_toolbar
+		},
+		"discard": {
+			"navigation": DocumentRoles.discard_toolbar
+		}
+	};
+
+	var doc = createDocument([
+		"<body>",
+		
+		'<span role="navigation" action="a/b/c">',
+		'<button name="button1" role="button"></button>',
+		'</span>',
+
+		"</body>"
+		]);
+	var dr = DocumentRoles(handlers,doc);
+
+	//doc.body.firstChild.firstChild.click();
+	simulateClick(doc.body.firstChild);//.firstChild);
+	ok(1)
+});
+
+
