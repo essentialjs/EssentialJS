@@ -645,7 +645,7 @@
 		ev = ev || event;
 		var e = ev.target || ev.srcElement;
 		var re = applicable_role_element(e);
-		var stateful = StatefulResolver(re,true);
+		var stateful = StatefulResolver(re,true); //TODO configuration option for if state class map
 		if (stateful("state.disabled")) return; // disable
 		if (re.getAttribute("aria-disabled") != null) return; //TODO fold into stateful
 
