@@ -36,8 +36,12 @@ function simulateMouse(doc,element,eventName, props) {
 	var options = {
 	  pointerX: 0, pointerY: 0,
 	  button:0, // 0=left 2=right
-	  ctrlKey: false, altKey: false, shiftKey: false, metaKey:false
+	  detail: 1, // click count
+	  ctrlKey: false, altKey: false, shiftKey: false, metaKey:false,
+	  target: element,
+	  relatedTarget: null
 	};
+	if (eventName == "mouseover" || eventName == "mouseout") options.relatedTarget = element;//TODO alternative elem?
 	if (props)
 	  for(var n in props) options[n] = props[n];;
 	
@@ -50,22 +54,23 @@ function simulateMouse(doc,element,eventName, props) {
 	} else
 	if (doc.createEvent) {
 	  var e = doc.createEvent("MouseEvents");
-	  if (e.initMouseEvent) { // DOM
+	  if (e.initMouseEvent && false) { // DOM
 	    e.initMouseEvent(eventName,true,true,doc.defaultView,
-	      options.buttons, options.pointerX, options.pointerY, options.pointerX, options.pointerY,
-	      options.ctrlKey, options.altKey, options.shiftKey, options.metaKey, options.button, element);
+	      options.detail, options.pointerX, options.pointerY, options.pointerX, options.pointerY,
+	      options.ctrlKey, options.altKey, options.shiftKey, options.metaKey, options.button, options.relatedTarget);
 	  } else { // Safari
-	  	e = document.createEvent("UIEvents");
+	  	//e = document.createEvent("UIEvents");
 	    //TODO add extra props
-	    for(var n in props) e[n] = options[n];
-	    e.initEvent(eventName, false, true);
+	    for(var n in options) e[n] = options[n];
+	    e.initEvent(eventName, true, true);
 	  }
 	  element.dispatchEvent(e);
 	}
 	else throw new ExampleException("No support for synthetic events");
 }
 
-function simulateClick(target) {
+function simulateClick(target,call) {
+	call = call || target;
     simulateMouse(document,target,"mouseover",{relatedTarget:document.body});
     simulateMouse(document,target,"mousedown",{});
     sendEvent(document,target,"focus",{});
@@ -116,3 +121,25 @@ function simulateKey(doc, element, eventName, props) {
 	}
 	else throw new ExampleException("No support for synthetic events");
 }
+
+function createDocument(html) {
+	// var doc = document.implementation.createDocument('','',
+	// 	document.implementation.createDocumentType('html','',''));
+	var doc;
+	if (document.implementation && document.implementation.createHTMLDocument) {
+		doc = document.implementation.createHTMLDocument("");
+	} else  if (window.ActiveXObject) {
+		doc = new ActiveXObject("htmlfile");
+	} else {
+		return document.createElement("DIV");// dummy default
+	}
+
+	if (typeof html == "object" && typeof html.length == "number") {
+		html = html.join("");
+	}
+	doc.documentElement.innerHTML = html;
+
+	return doc;
+}
+
+
