@@ -154,3 +154,16 @@ test("Stateful element custom state ",function(){
 })
 
 // action + button allows action to be disabled causing disable on button
+
+// field.disabled
+// field.hidden
+
+// action.disabled
+// action.hidden
+
+function Model() {
+	this.firstName = ModelField("Mike");
+	this.lastName = ModelField("Malone");
+
+	'<span data-bind="model.firstName"></span>'+'<span data-bind="model.lastName"></span>';
+}
