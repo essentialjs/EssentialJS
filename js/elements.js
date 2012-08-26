@@ -85,6 +85,9 @@
 		el[key] = !!value;
 	}
 
+	/*
+		Reflect on the property if present otherwise the attribute. 
+	*/
 	function reflectAttribute(el,key,value) {
 		if (typeof el[key] == "boolean") {
 			el[key] = !!value;
@@ -97,11 +100,10 @@
 		}
 	}
 
+	/*
+		Reflect only aria property 
+	*/
 	function reflectAria(el,key,value) {
-		if (typeof el[key] == "boolean") {
-			el[key] = !!value;
-			return;
-		}
 		if (value) {
 			el.setAttribute("aria-"+key,key);
 		} else {
@@ -109,16 +111,22 @@
 		}
 	}
 
+	/*
+		Reflect on property or attribute and aria equivalent. 
+	*/
 	function reflectAttributeAria(el,key,value) {
 		if (typeof el[key] == "boolean") {
 			el[key] = !!value;
-			return;
+		} else {
+			if (value) {
+				el.setAttribute(key,key);
+			} else {
+				el.removeAttribute(key);
+			}
 		}
 		if (value) {
-			el.setAttribute(key,key);
 			el.setAttribute("aria-"+key,key);
 		} else {
-			el.removeAttribute(key);
 			el.removeAttribute("aria-"+key);
 		}
 	}
