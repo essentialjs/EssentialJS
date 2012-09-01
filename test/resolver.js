@@ -273,3 +273,10 @@ test("Resolver mixinto",function() {
 
 // i18n resolver
 
+/*
+wire up references to other references
+
+reference.wire(true).andEqual('named.question1.state.checked',true).andEqual('named.question2.state.checked',true);
+
+reference.wire(false).orEqual(reference1,true).orEqual(reference2,true);
+*/
