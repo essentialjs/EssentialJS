@@ -337,8 +337,21 @@
 		}
 		cleaner.listeners = listeners; // for removeEventListeners
 		return cleaner;
-	};
+	}
 
+	function MutableEvent(sourceEvent) {
+		function ClonedEvent() { }
+		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
+		var ev = ClonedEvent();
+		if (sourceEvent == undefined) {		// IE event object
+			ev.target = ev.srcElement;
+			//TODO ev.button 1,2,3 vs 1,2,4
+		}
+		ev.withActionInfo = MutableEvent_withActionInfo;
+		ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		return ev;		
+	}
+	essential.declare("MutableEvent",MutableEvent)
 
 	/**
 	 * Register map of event listeners 
@@ -425,6 +438,41 @@
 		//TODO time to default_enhance yet?
 	}
 
+	/*
+		action buttons not caught by enhanced dialogs/navigations
+	*/
+	function defaultButtonClick(ev) {
+		ev = MutableEvent(ev).withActionInfo();
+		if (ev.commandElement) {
+
+			//TODO action event filtering
+			//TODO disabled
+			fireAction(ev);
+		}
+	}
+
+	function fireAction(ev) 
+	{
+		var el = ev.actionElement, action = ev.action, name = ev.commandName;
+		if (! el.actionVariant) {
+			if (action) {
+				action = action.replace(baseUrl,"");
+			} else {
+				action = "submit";
+			}
+
+			el.actionVariant = DialogActionGenerator.variant(action)(action);
+		}
+
+		if (el.actionVariant[name]) el.actionVariant[name](el);
+		else {
+			var sn = name.replace("-","_").replace(" ","_");
+			if (el.actionVariant[sn]) el.actionVariant[sn](el);
+		}
+		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
+	}
+	essential.declare("fireAction",fireAction);
+
 	function _DocumentRoles(handlers,doc) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
 		this._on_event = [];
@@ -436,10 +484,12 @@
 		if (window.addEventListener) {
 			window.addEventListener("resize",resizeTriggersReflow,false);
 			doc.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			doc.body.addEventListener("click",defaultButtonClick,false);
 		} else {
 			window.attachEvent("onresize",resizeTriggersReflow);
+			doc.body.attachEvent("onclick",defaultButtonClick);
 		}
-		
+
 		if (doc.querySelectorAll) {
 			this.descs = this._role_descs(doc.querySelectorAll("*[role]"));
 		} else {
@@ -573,57 +623,54 @@
 	function form_onsubmit(ev) {
 		var frm = this;
 		setTimeout(function(){
-			frm.submit();
+			frm.submit(ev);
 		},0);
 		return false;
 	}
-	function form_submit() {
+	function form_submit(ev) {
 		if (document.activeElement) document.activeElement.blur();
 		this.blur();
 
-		dialog_submit.call(this);
+		dialog_submit.call(this,ev);
 	}
 	function dialog_submit(clicked) {
-		var submitName = "trigger";
-		if (this.elements) {
+		if (clicked == undefined) clicked = MutableEvent().withDefaultSubmit(this);
 
-			for(var i=0,e; e=this.elements[i]; ++i) {
-				if (e.type=="submit") submitName = e.name;
-			}
+		if (clicked.commandElement) {
+			fireAction(clicked);
 		} else {
-
-			var buttons = this.getElementsByTagName("button");
-			for(var i=0,e; e=buttons[i]; ++i) {
-				if (e.type=="submit") submitName = e.name;
-			}
-			var inputs = this.getElementsByTagName("input");
-			for(var i=0,e; e=inputs[i]; ++i) {
-				if (e.type=="submit") submitName = e.name;
-			}
+			//TODO default submit when no submit button or event
 		}
-		if (clicked && clicked.name) submitName = clicked.name;
-
-		if (! this.actionVariant) {
-			var action = this.getAttribute("action");
-			if (action) {
-				action = action.replace(baseUrl,"");
-			} else {
-				action = "submit";
-			}
-
-			this.actionVariant = DialogActionGenerator.variant(action)(action);
-		}
-
-		if (this.actionVariant[submitName]) this.actionVariant[submitName](this);
-		else {
-			var sn = submitName.replace("-","_").replace(" ","_");
-			if (this.actionVariant[sn]) this.actionVariant[sn](this);
-		}
-		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 	}
 
-	function toolbar_submit(clicked) {
-		return dialog_submit.call(this,clicked);
+	function MutableEvent_withDefaultSubmit(form) {
+		var commandName = "trigger";
+		var commandElement = null;
+
+		if (form.elements) {
+			for(var i=0,e; e=form.elements[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		} else {
+			var buttons = form.getElementsByTagName("button");
+			for(var i=0,e; e=buttons[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+			var inputs = form.getElementsByTagName("input");
+			if (commandElement) for(var i=0,e; e=inputs[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		}
+		this.action = form.action;
+		this.actionElement = form;
+		this.commandElement = commandElement;
+		this.commandName = commandName;
+
+		return this;
+	}
+
+	function toolbar_submit(ev) {
+		return dialog_submit.call(this,ev);
 	}
 
 	function form_blur() {
@@ -638,27 +685,63 @@
 		}
 	}
 	
-	function applicable_role_element(element) {
+	function MutableEvent_withActionInfo() {
+		var element = this.target;
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
 		while(element) {
 			var role = element.getAttribute("role");
-			if (role) return element;
+			switch(role) {
+				case "button":
+				case "link":
+				case "menuitem":
+					this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+					this.commandRole = role;
+					this.commandElement = element;
+					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+
+					//determine commandName within action object
+					this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+					//TODO should links deduct actions and name from href
+					element = null;
+					break;
+				case null:
+					switch(element.tagName) {
+						case "BUTTON":
+						case "button":
+							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							break;
+					}
+					break;
+			}
 			element = element.parentNode;
 		}
+		if (this.commandElement == undefined) return this; // no command
+
+		element = this.commandElement;
+		while(element) {
+			var action = element.getAttribute("action");
+			if (action) {
+				this.action = action;
+				this.actionElement = element;
+				element = null;
+			}			
+			element = element.parentNode;
+		}
+
+		return this;
 	}
 
 	function dialog_button_click(ev) {
-		ev = ev || event;
-		var e = ev.target || ev.srcElement;
-		var re = applicable_role_element(e);
-		var stateful = StatefulResolver(re,true); //TODO configuration option for if state class map
-		if (stateful("state.disabled")) return; // disable
-		if (re.getAttribute("aria-disabled") != null) return; //TODO fold into stateful
+		ev = MutableEvent(ev).withActionInfo();
 
-		if (re && re.getAttribute("role") == "button") this.submit(re); else
-		if (e.type=="submit") this.submit(e); //TODO action context
+		if (ev.commandElement) {
+			if (ev.stateful("state.disabled")) return; // disable
+			if (ev.ariaDisabled) return; //TODO fold into stateful
+
+			this.submit(ev); //TODO action context
+		}
 	}
 
 	DocumentRoles.enhance_dialog = _DocumentRoles.enhance_dialog = function (el,role,config) {
@@ -697,6 +780,7 @@
 	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
+	/* convert listed button elements */
 	function forceNoSubmitType(buttons) {
 
 		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") {

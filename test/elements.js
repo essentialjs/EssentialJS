@@ -150,16 +150,19 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential")("DialogAction");
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
+	var fireAction = Resolver("essential")("fireAction");
 
 	function ABC_DialogAction() {
 
 	}
-	ABC_DialogAction.prototype.button1 = function() {
-
-	debugger;
-	};
-
+	ABC_DialogAction.prototype.button1 = sinon.spy();
 	DialogAction.variant("a/b/c",Generator(ABC_DialogAction,DialogAction));
+
+	function DEF_DialogAction() {
+
+	}
+	DEF_DialogAction.prototype.button2 = sinon.spy();
+	DialogAction.variant("d/e/f",Generator(DEF_DialogAction,DialogAction));
 
 	var handlers = {
 		"enhance": {
@@ -173,18 +176,24 @@ test('Role navigation action',function(){
 		}
 	};
 
-	ok(1)
-	return;
-
 	var doc = createDocument([],[
 		'<span role="navigation" action="a/b/c">',
 		'<button name="button1" role="button"></button>',
-		'</span>'
+		'</span>',
+		'<button name="button2" role="button" action="d/e/f"></button>'
 		]);
 	var dr = DocumentRoles(handlers,doc);
+	var dialog = doc.body.firstChild;
 
 	//doc.body.firstChild.firstChild.click();
-	simulateClick(doc.body.firstChild);//.firstChild);
+	//simulateClick(doc.body.firstChild);//.firstChild);
+	dialog.submit({ commandElement: dialog.firstChild, actionElement:dialog, action:"a/b/c", commandName:"button1" });
+	ok(ABC_DialogAction.prototype.button1.called);
+	fireAction({ commandElement: dialog.nextSibling, actionElement:dialog.nextSibling, action: "d/e/f", commandName: "button2" });
+	ok(DEF_DialogAction.prototype.button2.called);
+
+	//TODO events that might trigger actions are extended with action info and filtered through
+	// permissions and routers
 });
 
 
