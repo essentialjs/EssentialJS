@@ -606,21 +606,31 @@ function Generator(mainConstr,options)
 	
 	function variant(name,variantConstr,v1,v2,v3,v4) {
 		if (variantConstr == undefined) { // Lookup the variant generator
-			var g = this.variants[name];
-			if (g && g.generator) return g.generator;
+			if (typeof name == "string") {
+				var g = this.variants[name];
+				if (g && g.generator) return g.generator;
+			} else {
+				// array like list of alternatives
+				for(var i=0,n; n = name[i]; ++i) {
+					var g = this.variants[n];
+					if (g && g.generator) return g.generator;
+				}				
+			}
 			var g = this.variants[""]; // default generator
 			if (g && g.generator) return g.generator;
 			return this;			
 		} else {	// Set the variant generator
 			var handlers = variantConstr.handlers;
 			var bases = variantConstr.bases;
+			var generator = Generator(variantConstr);
 			this.variants[name] = { 
 				func: variantConstr,
-				generator: Generator(variantConstr),
+				generator: generator,
 				handlers: handlers || {},
 				bases: bases || [],
 				additional: [v1,v2,v3,v4] 
-			}; 
+			};
+			return generator; 
 		}
 	}
 

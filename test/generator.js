@@ -166,4 +166,20 @@ test("Inherit from Builtin",function(){
 //TODO singleton construction and discard/teardown
 //TODO singleton page lifecycle
 
+test("Generator variant for one or more options",function(){
+	var Base = Generator(function(){});
+	var V1 = Base.variant("1",Generator(function(){}));
+	var V2 = Base.variant("2",Generator(function(){}));
+
+	equal(Base.variant("1"),V1);
+	equal(Base.variant(["1"]),V1);
+	equal(Base.variant(["1","2"]),V1);
+	equal(Base.variant(["0","1","2"]),V1);
+
+	equal(Base.variant("2"),V2);
+	equal(Base.variant(["2"]),V2);
+	equal(Base.variant(["2","1"]),V2);
+	equal(Base.variant(["0","2","1"]),V2);
+
+});
 

@@ -1,5 +1,20 @@
 module("Types Tests");
 
+test("Parameter type variant resolution",function(){
+	var essential = Resolver("essential");
+	var Type = essential("Type");
+
+	equal(Type.variant("Number"),essential("NumberType"));
+	equal(Type.variant(["Number","String"]),essential("NumberType"));
+	equal(Type.variant(["gobbledygook","Number","String"]),essential("NumberType"));
+	equal(Type.variant("String"),essential("StringType"));
+	equal(Type.variant("Date"),essential("DateType"));
+	equal(Type.variant("Boolean"),essential("BooleanType"));
+	equal(Type.variant("Object"),essential("ObjectType"));
+
+});
+
+
 test("ArraySet as an Array",function(){
 	var ArraySet = Resolver("essential")("ArraySet");
 
@@ -50,5 +65,5 @@ test("mock el.classList",function(){
 	ok(!el.classList.has("false"));
 	ok(!el.classList.contains("false"));
 	equal(el.className,"true");
-	
+
 })
