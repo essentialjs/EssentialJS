@@ -54,6 +54,13 @@
 
 	//TODO consider if ""/null restriction is only for derived DOMTokenList
 	
+	function arrayContains(array,item) {
+		if (array.indexOf) return array.indexOf(item) >= 0;
+
+		for(var i=0,e; e = array[i]; ++i) if (e == item) return true;
+		return false;
+	}
+
 	function ArraySet() {
 		this._set = {};
 		for(var i=this.length-1; i>=0; --i) {
@@ -68,8 +75,14 @@
 		return this[index]; // use native array
 	};
 
-	ArraySet.prototype.has = function(id) {
-		return this._set[id];
+	ArraySet.prototype.has = function(value) {
+		var entry = this._set[value];
+		// single existing same value
+		if (entry === value) return true;
+		// single existing different value
+		if (typeof entry != "object" || !entry.multiple_values) return false;
+		// multiple existing
+		return arrayContains(entry,value);
 	};
 
 	ArraySet.prototype.contains = 
@@ -88,11 +101,26 @@
 	
 	//TODO mixin with map of entries to set
 
-	ArraySet.prototype.add = function(id) {
-		if (!(id in this._set)) {
-			this._set[id] = true;
-			this.push(id);
+	ArraySet.prototype.add = function(value) {
+		var entry = this._set[value];
+		if (entry === undefined) {
+			this._set[value] = value;
+			this.push(value);
+		} else {
+			// single existing same value
+			if (entry === value) return;
+			// single existing different value
+			if (typeof entry != "object" || !entry.multiple_values) {
+				entry = this._set[value] = [entry];
+				entry.multiple_values = true;
+			}
+			// single or multiple existing
+			if (!arrayContains(entry,value)) {
+				entry.push(value);
+				this.push(value);
+			}
 		}
+
 	};
 	ArraySet.prototype.remove = function(id) {
 		if (id in this._set) {

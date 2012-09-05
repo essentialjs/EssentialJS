@@ -24,6 +24,32 @@ test("ArraySet as an Array",function(){
 
 });
 
+test("ArraySet entry uniqueness",function(){
+	var ArraySet = Resolver("essential")("ArraySet");
+
+	function e1() {}
+	function e2() {}
+	function e3() {}
+	notEqual(e1,e2);
+	equal(e1,e1);
+
+	var a1 = ArraySet();
+	a1.add(e1);
+	ok(a1.has(e1)); ok(!a1.has(e2)); ok(!a1.has(e3));
+	a1.add(e2);
+	ok(a1.has(e1)); ok(a1.has(e2)); ok(!a1.has(e3));
+	a1.add(e3);
+	ok(a1.has(e1)); ok(a1.has(e2)); ok(a1.has(e3));
+	equal(a1.length,3);
+	equal(a1[0],e1);
+	equal(a1[1],e2);
+	equal(a1[2],e3);
+
+	ok(1, "ArraySet remove with multiple values")
+	ok(1, "ArraySet of similar values such as functions")
+	ok(1, "ArraySet of arrays")
+});
+
 
 test("DOMTokenList",function(){
 	var DOMTokenList = Resolver("essential")("DOMTokenList");
