@@ -75,6 +75,7 @@
 		return this[index]; // use native array
 	};
 
+	ArraySet.prototype.contains = 
 	ArraySet.prototype.has = function(value) {
 		var entry = this._set[value];
 		// single existing same value
@@ -83,11 +84,6 @@
 		if (typeof entry != "object" || !entry.multiple_values) return false;
 		// multiple existing
 		return arrayContains(entry,value);
-	};
-
-	ArraySet.prototype.contains = 
-	ArraySet.prototype.has = function(id) {
-		return Boolean(this._set[id]);
 	};
 
 	ArraySet.prototype.set = function(id,value) {
@@ -122,12 +118,24 @@
 		}
 
 	};
-	ArraySet.prototype.remove = function(id) {
-		if (id in this._set) {
-			for(var i=this.length-1; i>=0; --i) if (this[i] === id) this.splice(i,1);
-			delete this._set[id];
+	ArraySet.prototype.remove = function(value) {
+		var entry = this._set[value];
+		// single existing
+		if (entry === undefined) return;
+		if (entry === value) {
+			for(var i=this.length-1; i>=0; --i) if (this[i] === value) this.splice(i,1);
+			delete this._set[value];
+			return;
 		}
+		// single existing different value
+		if (typeof entry != "object" || !entry.multiple_values) return;
+
+		// multiple existing
+		for(var i=this.length-1; i>=0; --i) if (this[i] === value) this.splice(i,1);
+		for(var i=entry.length-1; i>=0; --i) if (entry[i] === value) entry.splice(i,1);
+		if (entry.length==0) delete this._set[value];
 	};
+
 	ArraySet.prototype.toggle = function(id) {
 		if (this.has(id)) this.remove(id);
 		else this.add(id);

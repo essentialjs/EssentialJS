@@ -45,6 +45,12 @@ test("ArraySet entry uniqueness",function(){
 	equal(a1[1],e2);
 	equal(a1[2],e3);
 
+	a1.remove(e1);
+	ok(!a1.has(e1)); ok(a1.has(e2)); ok(a1.has(e3));
+	equal(a1.length,2);
+	equal(a1[0],e2);
+	equal(a1[1],e3);
+
 	ok(1, "ArraySet remove with multiple values")
 	ok(1, "ArraySet of similar values such as functions")
 	ok(1, "ArraySet of arrays")
