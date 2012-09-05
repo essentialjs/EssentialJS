@@ -51,9 +51,48 @@ test("ArraySet entry uniqueness",function(){
 	equal(a1[0],e2);
 	equal(a1[1],e3);
 
+	var o1 = {}, o2 = {}, o3 = {};
+
+	var a2 = ArraySet();
+	a2.add(o1)
+	ok(a2.has(o1)); ok(!a2.has(o2)); ok(!a2.has(o3));
+	a2.add(o2);
+	ok(a2.has(o1)); ok(a2.has(o2)); ok(!a2.has(o3));
+	a2.add(o3);
+	ok(a2.has(o1)); ok(a2.has(o2)); ok(a2.has(o3));
+	equal(a2.length,3);
+	equal(a2[0],o1);
+	equal(a2[1],o2);
+	equal(a2[2],o3);
+
+	a2.remove(o1);
+	ok(!a2.has(o1)); ok(a2.has(o2)); ok(a2.has(o3));
+	equal(a2.length,2,"ArraySet of similar values such as objects");
+	equal(a2[0],o2);
+	equal(a2[1],o3);
+
+	var o1 = [], o2 = [], o3 = [];
+
+	var a3 = ArraySet();
+	a3.add(o1)
+	ok(a3.has(o1)); ok(!a3.has(o2)); ok(!a3.has(o3));
+	a3.add(o2);
+	ok(a3.has(o1)); ok(a3.has(o2)); ok(!a3.has(o3));
+	a3.add(o3);
+	ok(a3.has(o1)); ok(a3.has(o2)); ok(a3.has(o3));
+	equal(a3.length,3);
+	equal(a3[0],o1);
+	equal(a3[1],o2);
+	equal(a3[2],o3);
+
+	a3.remove(o1);
+	ok(!a3.has(o1)); ok(a3.has(o2)); ok(a3.has(o3));
+	equal(a3.length,2,"ArraySet of arrays");
+	equal(a3[0],o2);
+	equal(a3[1],o3);
+
 	ok(1, "ArraySet remove with multiple values")
-	ok(1, "ArraySet of similar values such as functions")
-	ok(1, "ArraySet of arrays")
+	ok(1, "ArraySet of similar values such as objects")
 });
 
 
