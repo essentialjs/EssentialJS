@@ -91,6 +91,33 @@ test('Enhance element early or delayed',function() {
 
 //TODO layout and discard are optional handlers
 
+test("Enhancing elements creating stateful fields",function() {
+
+	var enhanceStatefulFields = Resolver("essential")("enhanceStatefulFields");
+	var StatefulField = Resolver("essential")("StatefulField");
+	var buttonField = StatefulField.variant("*[role=button]");
+	var linkField = StatefulField.variant("*[role=link]");
+
+	notEqual(buttonField,StatefulField);
+
+	var buttonFieldSpy = sinon.spy();
+	var linkFieldSpy = sinon.spy();
+	var buttonField = StatefulField.variant("*[role=button]",Generator(buttonFieldSpy,buttonField));
+	var linkField = StatefulField.variant("*[role=link]",Generator(linkFieldSpy,linkField));
+	var doc = createDocument([],[
+		'<span role="navigation">',
+		'<a name="z" role="link"></a>',
+
+		'<button name="a" role="button"></button>',
+		'<button name="b" role="button"></button>',
+		'<button name="c" role="button"></button>',
+		'</span>'
+		]);
+	enhanceStatefulFields(doc.body);
+	equal(buttonFieldSpy.callCount,3);
+	equal(linkFieldSpy.callCount,1);
+});
+
 test('Enhancing DocumentRoles with builtin handlers',function(){
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
 

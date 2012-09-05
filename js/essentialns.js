@@ -60,6 +60,7 @@
 		for(var i=0,e; e = array[i]; ++i) if (e == item) return true;
 		return false;
 	}
+	essential.declare("arrayContains",arrayContains);
 
 	function ArraySet() {
 		this._set = {};

@@ -473,6 +473,64 @@
 	}
 	essential.declare("fireAction",fireAction);
 
+	function _StatefulField(name,stateful) {
+
+	}
+	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField));
+
+	function _TimeField() {
+
+	}
+	StatefulField.variant("input[type=time]",Generator(_TimeField));
+
+	function _CommandField(name,stateful,role) {
+
+	}
+	_CommandField.discarded = function(instance) {
+
+	};
+	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField));
+	StatefulField.variant("*[role=button]",Generator(_CommandField));
+
+	function statefulCleaner(el) {
+		if (el.stateful) {
+			if (el.stateful.field) StatefulField.discarded(el.stateful.field);
+			el.stateful.field = undefined;
+			el.stateful = undefined;
+		}
+	}
+
+	var arrayContains = essential("arrayContains");
+
+	/* Enhance all stateful fields of a parent */
+	function enhanceStatefulFields(parent) {
+
+		for(var el = parent.firstChild; el; el = el.nextSibling) {
+			var name = el.name || el.getAttribute("data-name") || el.getAttribute("name");
+			if (name) {
+				var role = el.getAttribute("role");
+				var variants = [];
+				if (role) {
+					if (el.type) variants.push("*[role="+role+",type="+el.type+"]");
+					variants.push("*[role="+role+"]");
+				} else {
+					if (el.type) variants.push(el.tagName+"[type="+el.type+"]");
+					variants.push(el.tagName);
+				}
+
+				var stateful = StatefulResolver(el,true);
+				var field = stateful.field = StatefulField.variant(variants)(name,stateful,role);
+				
+				//TODO add field for _cleaners element 
+				if (el._cleaners == undefined) el._cleaners = [];
+				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+			}
+
+			enhanceStatefulFields(el); // enhance children
+		}
+	}
+	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
+
 	function _DocumentRoles(handlers,doc) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
 		this._on_event = [];
