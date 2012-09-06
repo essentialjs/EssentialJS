@@ -374,7 +374,7 @@
 			var oThis = bListenerInstance? fCallOrThis : eControl;
 			var fCall = bListenerInstance? fCallOrThis.handleEvent : fCallOrThis;
 			return function() { 
-				return fCall.call(eControl,window.event); 
+				return fCall.call(eControl,MutableEvent(window.event)); 
 			};
 		} 
 
