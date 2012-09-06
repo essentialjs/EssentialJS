@@ -394,27 +394,32 @@
 	}
 	essential.declare("addEventListeners",addEventListeners);
 
-	//TODO modifyable events object on IE
-
 	//TODO removeEventListeners (eControl, listeners, bubble)
 
 	/**
 	 * Cleans up registered event listeners and other references
 	 * 
-	 * @param {Object} eControl
+	 * @param {Element} el
 	 */
-	function callCleaners(eControl)
+	function callCleaners(el)
 	{
-		var pCleaners = eControl._cleaners;
-		if (pCleaners != undefined) {
-			for(var i=0,c; c = pCleaners[i]; ++i) {
-				c.call(eControl);
+		var _cleaners = el._cleaners;
+		if (_cleaners != undefined) {
+			for(var i=0,c; c = _cleaners[i]; ++i) {
+				c.call(el);
 			}
-			pCleaners = undefined;
+			_cleaners = undefined;
 		}
 	};
 
 	//TODO recursive clean of element and children?
+	function cleanRecursively(el) {
+		for(var child=el.firstChild; child; child = child.nextSibling) {
+			callCleaners(child);
+			cleanRecursively(child);
+		}
+	}
+	essential.declare("cleanRecursively",cleanRecursively);
 
 
 	function DialogAction(actionName) {
@@ -478,25 +483,28 @@
 	}
 	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField));
 
+	StatefulField.prototype.destroy = function() {};
+	StatefulField.prototype.discard = function() {};
+
 	function _TimeField() {
 
 	}
-	StatefulField.variant("input[type=time]",Generator(_TimeField));
+	StatefulField.variant("input[type=time]",Generator(_TimeField,_StatefulField));
 
 	function _CommandField(name,stateful,role) {
 
 	}
-	_CommandField.discarded = function(instance) {
+	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
+	StatefulField.variant("*[role=button]",Generator(_CommandField,_StatefulField));
 
-	};
-	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField));
-	StatefulField.variant("*[role=button]",Generator(_CommandField));
-
-	function statefulCleaner(el) {
-		if (el.stateful) {
-			if (el.stateful.field) StatefulField.discarded(el.stateful.field);
-			el.stateful.field = undefined;
-			el.stateful = undefined;
+	function statefulCleaner() {
+		if (this.stateful) {
+			if (this.stateful.field) {
+				this.stateful.field.destroy();
+				this.stateful.field.discard();
+			}
+			this.stateful.field = undefined;
+			this.stateful = undefined;
 		}
 	}
 
@@ -520,7 +528,7 @@
 
 				var stateful = StatefulResolver(el,true);
 				var field = stateful.field = StatefulField.variant(variants)(name,stateful,role);
-				
+
 				//TODO add field for _cleaners element 
 				if (el._cleaners == undefined) el._cleaners = [];
 				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 

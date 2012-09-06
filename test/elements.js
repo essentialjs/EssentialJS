@@ -101,7 +101,11 @@ test("Enhancing elements creating stateful fields",function() {
 	notEqual(buttonField,StatefulField);
 
 	var buttonFieldSpy = sinon.spy();
+	buttonFieldSpy.prototype.destroy = sinon.spy();
+	buttonFieldSpy.prototype.discard = sinon.spy();
 	var linkFieldSpy = sinon.spy();
+	linkFieldSpy.prototype.destroy = sinon.spy();
+	linkFieldSpy.prototype.discard = sinon.spy();
 	var buttonField = StatefulField.variant("*[role=button]",Generator(buttonFieldSpy,buttonField));
 	var linkField = StatefulField.variant("*[role=link]",Generator(linkFieldSpy,linkField));
 	var doc = createDocument([],[
@@ -113,9 +117,21 @@ test("Enhancing elements creating stateful fields",function() {
 		'<button name="c" role="button"></button>',
 		'</span>'
 		]);
+	//TODO expect calls with each of the elements
 	enhanceStatefulFields(doc.body);
 	equal(buttonFieldSpy.callCount,3);
 	equal(linkFieldSpy.callCount,1);
+	ok(doc.body.firstChild.childNodes[0].stateful);
+	ok(doc.body.firstChild.childNodes[1].stateful);
+	ok(doc.body.firstChild.childNodes[2].stateful);
+	ok(doc.body.firstChild.childNodes[3].stateful);
+
+	// destroy called for fields
+	Resolver("essential")("cleanRecursively")(doc.body);
+	equal(linkFieldSpy.prototype.destroy.callCount,1);
+	equal(linkFieldSpy.prototype.discard.callCount,1);
+	equal(buttonFieldSpy.prototype.destroy.callCount,3);
+	equal(buttonFieldSpy.prototype.discard.callCount,3);
 });
 
 test('Enhancing DocumentRoles with builtin handlers',function(){
