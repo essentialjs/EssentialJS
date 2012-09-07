@@ -208,10 +208,46 @@
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
 
+	function make_Stateful_fireAction(el) {
+		return function() {
+			var ev = MutableEvent({
+				"target":el
+			}).withActionInfo(); 
+			fireAction(ev);
+		};
+	}
+
+	function Stateful_setField(field) {
+		this.field = field;
+		return field;
+	}
+
+	function Stateful_destroy() {
+
+	}
+
+	// all stateful elements whether field or not get a cleaner
+	function statefulCleaner() {
+		if (this.stateful) {
+			if (this.stateful.field) {
+				this.stateful.field.destroy();
+				this.stateful.field.discard();
+			}
+			this.stateful.field = undefined;
+			this.stateful.destroy();
+			this.stateful.fireAction = undefined;
+			this.stateful.setField = undefined;
+			this.stateful.destroy = undefined;
+			this.stateful = undefined;
+		}
+	}
+
 	function StatefulResolver(el,mapClassForState) {
 		if (el) {
 			if (el.stateful) return el.stateful;
 			var stateful = el.stateful = Resolver({ state: {} });
+			if (el._cleaners == undefined) el._cleaners = [];
+			if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
 			mixinElementState(el,stateful("state"));
 			stateful.reference("state").on("change",el,reflectElementState);
 			if (!nativeClassList) {
@@ -226,6 +262,9 @@
 			stateful.set("map.class.notstate", new ClassForNotState());
 			StatefulResolver.updateClass(stateful,el);
 		}
+		stateful.fireAction = make_Stateful_fireAction(el);
+		stateful.setField = Stateful_setField;
+		stateful.destroy = Stateful_destroy;
 
 		return stateful;
 	}
@@ -497,17 +536,6 @@
 	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
 	StatefulField.variant("*[role=button]",Generator(_CommandField,_StatefulField));
 
-	function statefulCleaner() {
-		if (this.stateful) {
-			if (this.stateful.field) {
-				this.stateful.field.destroy();
-				this.stateful.field.discard();
-			}
-			this.stateful.field = undefined;
-			this.stateful = undefined;
-		}
-	}
-
 	var arrayContains = essential("arrayContains");
 
 	/* Enhance all stateful fields of a parent */
@@ -522,12 +550,12 @@
 					if (el.type) variants.push("*[role="+role+",type="+el.type+"]");
 					variants.push("*[role="+role+"]");
 				} else {
-					if (el.type) variants.push(el.tagName+"[type="+el.type+"]");
-					variants.push(el.tagName);
+					if (el.type) variants.push(el.tagName.toLowerCase()+"[type="+el.type+"]");
+					variants.push(el.tagName.toLowerCase());
 				}
 
 				var stateful = StatefulResolver(el,true);
-				var field = stateful.field = StatefulField.variant(variants)(name,stateful,role);
+				var field = stateful.setField(StatefulField.variant(variants)(name,stateful,role));
 
 				//TODO add field for _cleaners element 
 				if (el._cleaners == undefined) el._cleaners = [];
@@ -1082,6 +1110,7 @@
 		"loading": true,
 		"loadingConfig": true,
 		"loadingScripts": true,
+		//TODO applyingConfig: support for onload instantiating
 		"launched": false
 		});
 	ApplicationConfig.prototype.isPageState = function(whichState) {

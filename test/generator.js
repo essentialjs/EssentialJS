@@ -183,3 +183,6 @@ test("Generator variant for one or more options",function(){
 
 });
 
+//TODO only call constructor once for multiple inheritance
+
+

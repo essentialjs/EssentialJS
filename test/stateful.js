@@ -12,6 +12,18 @@ test ("Creating StatefulResolver",function(){
 	equal(el.stateful,stateful);
 })
 
+test("Destroying StatefulResolver",function(){
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
+
+	// Create a new one
+	var stateful = StatefulResolver();
+	ok(stateful);
+	stateful.destroy();
+	ok(1, "TODO any teardown?")
+
+	ok(1,"TODO cleaner");
+});
+
 test("Stateful element initial class",function(){
 
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
