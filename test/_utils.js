@@ -155,4 +155,15 @@ debugger;
 	return doc;
 }
 
+test("Simulate MouseEvent",function(){
+	var el = document.createElement("div");
+	var clickHandler = sinon.spy();
+	if (el.addEventListener) el.addEventListener("click",clickHandler,false);
+	else {
+		ok(el.attachEvent);
+		el.attachEvent("onclick",clickHandler);
+	}
+	simulateMouse(document, el, "click", {});
+	equal(clickHandler.callCount,1);
 
+});

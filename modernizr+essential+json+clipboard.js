@@ -1161,9 +1161,11 @@ function Resolver(name,ns,options)
 		
 	case "string":
 		// Resolver("abc")
+		// Resolver("abc",null)
 		// Resolver("abc",{})
 		// Resolver("abc",{},{options})
 		if (Resolver[name] == undefined) {
+			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
 			if (options == undefined) { options = ns; ns = {}; }
 			Resolver[name] = Resolver(ns,options);
 			Resolver[name].named = name;
@@ -1189,6 +1191,7 @@ function Resolver(name,ns,options)
 	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
 	                    continue; // go to next now that we filled in an object
                 	}
+                //TODO "false"
                 case "null":
                 	if (top === undefined) return null;
                 	break;
@@ -1295,6 +1298,7 @@ function Resolver(name,ns,options)
 			names.push(symbol);
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
+	    	//TODO parent listeners
 			}
 			return value;
         }
@@ -1310,6 +1314,7 @@ function Resolver(name,ns,options)
         	if (base[symbol] === undefined) {
         		if (_setValue(value,names,base,symbol)) {
 			    	this._callListener("change",names,symbol,value);
+	    	//TODO parent listeners
 			    }
         		return value
         	} else return base[symbol];
@@ -1329,6 +1334,7 @@ function Resolver(name,ns,options)
         		names.push(key);
         		if (_setValue(value,names,base[symbol],key)) {
 			    	this._callListener("change",names,key,value);
+	    	//TODO parent listeners
         		}
 	    		names.pop(); // return names to unchanged
         	}
@@ -1342,6 +1348,7 @@ function Resolver(name,ns,options)
     		names.push(key);
     		if (_setValue(value,names,base[symbol],key)) {
 		    	this._callListener("change",names,key,value);
+	    	//TODO parent listeners
     		}
     		names.pop(); // return names to unchanged
         }
@@ -1360,6 +1367,7 @@ function Resolver(name,ns,options)
         	}
         	names.pop(); // return names to unchanged
 	    	this._callListener("change",names,null,mods);
+	    	//TODO parent listeners
         }
 	    function on(type,data,callback) {
 	    	if (! type in VALID_LISTENERS) return;//fail
@@ -1368,6 +1376,18 @@ function Resolver(name,ns,options)
 	    		case 2: this._addListener(type,name,null,arguments[1]); break;
 	    		case 3: this._addListener(type,name,data,callback); break;
 	    	};
+	    }
+
+	    function trigger(type) {
+	    	var value = _resolve(names,onundefined);
+	    	var symbol = names.pop();
+			var parentName = names.join(".");
+
+	    	this._callListener(type,names,symbol,value);
+			var parentRef = resolver.references[parentName];
+			if (parentRef) parentRef._callListener("change",names,symbol,value);
+
+			names.push(symbol);
 	    }    
 
         get.set = set;
@@ -1378,6 +1398,7 @@ function Resolver(name,ns,options)
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
         get.on = on;
+        get.trigger = trigger;
         get.listeners = listeners || _makeListeners();
 
 	    function _callListener(type,names,symbol,value) {
@@ -1483,12 +1504,12 @@ function Resolver(name,ns,options)
     };
 
     if (options.mixinto) {
-    	options.mixinto.get = resolver;
-    	options.mixinto.declare = resolver.declare;
-    	options.mixinto.set = resolver.set;
-    	options.mixinto.reference = resolver.reference;
-    	options.mixinto.override = resolver.override;
-    	options.mixinto.on = resolver.on;
+    	if (options.mixinto.get==null) options.mixinto.get = resolver;
+    	if (options.mixinto.declare==null) options.mixinto.declare = resolver.declare;
+    	if (options.mixinto.set==null) options.mixinto.set = resolver.set;
+    	if (options.mixinto.reference==null) options.mixinto.reference = resolver.reference;
+    	if (options.mixinto.override==null) options.mixinto.override = resolver.override;
+    	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
     }
 
     return resolver;
@@ -1531,6 +1552,8 @@ function Generator(mainConstr,options)
 				return instance = generator.info.existing[id];
 			} else {
 				instance = generator.info.existing[id] = new generator.type();
+				//TODO consider different strategies for JS engine
+				instance.constructor = info.constructors[0]; // make the correct constructor appear in debuggers
 			}
 		} else {
 			instance = new generator.type();
@@ -1727,21 +1750,31 @@ function Generator(mainConstr,options)
 	
 	function variant(name,variantConstr,v1,v2,v3,v4) {
 		if (variantConstr == undefined) { // Lookup the variant generator
-			var g = this.variants[name];
-			if (g && g.generator) return g.generator;
+			if (typeof name == "string") {
+				var g = this.variants[name];
+				if (g && g.generator) return g.generator;
+			} else {
+				// array like list of alternatives
+				for(var i=0,n; n = name[i]; ++i) {
+					var g = this.variants[n];
+					if (g && g.generator) return g.generator;
+				}				
+			}
 			var g = this.variants[""]; // default generator
 			if (g && g.generator) return g.generator;
 			return this;			
 		} else {	// Set the variant generator
 			var handlers = variantConstr.handlers;
 			var bases = variantConstr.bases;
+			var generator = Generator(variantConstr);
 			this.variants[name] = { 
 				func: variantConstr,
-				generator: Generator(variantConstr),
+				generator: generator,
 				handlers: handlers || {},
 				bases: bases || [],
 				additional: [v1,v2,v3,v4] 
-			}; 
+			};
+			return generator; 
 		}
 	}
 
@@ -1879,6 +1912,14 @@ Generator.ObjectGenerator = Generator(Object);
 
 	//TODO consider if ""/null restriction is only for derived DOMTokenList
 	
+	function arrayContains(array,item) {
+		if (array.indexOf) return array.indexOf(item) >= 0;
+
+		for(var i=0,e; e = array[i]; ++i) if (e == item) return true;
+		return false;
+	}
+	essential.declare("arrayContains",arrayContains);
+
 	function ArraySet() {
 		this._set = {};
 		for(var i=this.length-1; i>=0; --i) {
@@ -1889,19 +1930,19 @@ Generator.ObjectGenerator = Generator(Object);
 		//TODO remove dupes
 	}
 	essential.set("ArraySet",Generator(ArraySet,Array)); //TODO support this
-	essential.set("DOMTokenList",Generator(ArraySet,Array)); //TODO support this
-
 	ArraySet.prototype.item = function(index) {
 		return this[index]; // use native array
 	};
 
-	ArraySet.prototype.has = function(id) {
-		return this._set[id];
-	};
-
 	ArraySet.prototype.contains = 
-	ArraySet.prototype.has = function(id) {
-		return Boolean(this._set[id]);
+	ArraySet.prototype.has = function(value) {
+		var entry = this._set[value];
+		// single existing same value
+		if (entry === value) return true;
+		// single existing different value
+		if (typeof entry != "object" || !entry.multiple_values) return false;
+		// multiple existing
+		return arrayContains(entry,value);
 	};
 
 	ArraySet.prototype.set = function(id,value) {
@@ -1915,18 +1956,45 @@ Generator.ObjectGenerator = Generator(Object);
 	
 	//TODO mixin with map of entries to set
 
-	ArraySet.prototype.add = function(id) {
-		if (!(id in this._set)) {
-			this._set[id] = true;
-			this.push(id);
+	ArraySet.prototype.add = function(value) {
+		var entry = this._set[value];
+		if (entry === undefined) {
+			this._set[value] = value;
+			this.push(value);
+		} else {
+			// single existing same value
+			if (entry === value) return;
+			// single existing different value
+			if (typeof entry != "object" || !entry.multiple_values) {
+				entry = this._set[value] = [entry];
+				entry.multiple_values = true;
+			}
+			// single or multiple existing
+			if (!arrayContains(entry,value)) {
+				entry.push(value);
+				this.push(value);
+			}
 		}
+
 	};
-	ArraySet.prototype.remove = function(id) {
-		if (id in this._set) {
-			for(var i=this.length-1; i>=0; --i) if (this[i] === id) this.splice(i,1);
-			delete this._set[id];
+	ArraySet.prototype.remove = function(value) {
+		var entry = this._set[value];
+		// single existing
+		if (entry === undefined) return;
+		if (entry === value) {
+			for(var i=this.length-1; i>=0; --i) if (this[i] === value) this.splice(i,1);
+			delete this._set[value];
+			return;
 		}
+		// single existing different value
+		if (typeof entry != "object" || !entry.multiple_values) return;
+
+		// multiple existing
+		for(var i=this.length-1; i>=0; --i) if (this[i] === value) this.splice(i,1);
+		for(var i=entry.length-1; i>=0; --i) if (entry[i] === value) entry.splice(i,1);
+		if (entry.length==0) delete this._set[value];
 	};
+
 	ArraySet.prototype.toggle = function(id) {
 		if (this.has(id)) this.remove(id);
 		else this.add(id);
@@ -1939,6 +2007,49 @@ Generator.ObjectGenerator = Generator(Object);
 		return this.join(this.separator);
 	};
 
+	function _DOMTokenList() {
+
+	}
+	var DOMTokenList = essential.set("DOMTokenList",Generator(_DOMTokenList,ArraySet,Array)); //TODO support this
+
+	DOMTokenList.prototype.emulateClassList = true;
+
+	// use this for native DOMTokenList
+	DOMTokenList.set = function(as,id,value) {
+		if (typeof id == "object"); //TODO set map removing rest
+		if (value) { // set true
+			as.add(id);
+		} else { // set false
+			as.remove(id);
+		}
+	};
+
+	DOMTokenList.mixin = function(dtl,mix) {
+		if (mix.split) { // string
+			var toset = mix.split(" ");
+			for(var i=0,entry; entry = toset[i]; ++i) dtl.add(entry);
+			return;
+		}
+		if (mix.length) {
+			for(var i=0,entry; entry = mix[i]; ++i) dtl.add(entry);
+			return;
+		}
+		for(var n in mix) dtl.set(n,mix[n]);
+	}
+
+	DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
+		var classList = el.classList;
+		var removeName = value? falseName:trueName;
+		var addName = value? trueName:falseName;
+		if (removeName) classList.remove(removeName);
+		if (addName) classList.add(addName);
+		if (classList.emulateClassList)
+		 {
+			//TODO make toString override work on IE, el.className = el.classList.toString();
+			el.className = el.classList.join(el.classList.separator);
+		}
+	}
+	
 
 	function instantiatePageSingletons()
 	{
@@ -1974,16 +2085,22 @@ Generator.ObjectGenerator = Generator(Object);
 		if (_readyFired) return;
 		_readyFired = true;
 		
-		essential("_queueDelayedAssets")();
-		essential.set("_queueDelayedAssets",function(){});
+		try {
+			essential("_queueDelayedAssets")();
+			essential.set("_queueDelayedAssets",function(){});
 
-		instantiatePageSingletons();
+			instantiatePageSingletons();
+		}
+		catch(ex) {
+			console.error("Failed to launch delayed assets and singletons",ex);
+			//debugger;
+		}
 	}
 	function fireLoad()
 	{
 		
 	}
-	function fireBeforeUnload()
+	function fireUnload()
 	{
 		discardRestricted();
 	}
@@ -2053,9 +2170,9 @@ Generator.ObjectGenerator = Generator(Object);
 			win.attachEvent("onload",fireLoad);
 		}
 		if (win.addEventListener) {
-			win.addEventListener("beforeunload",fireBeforeUnload,false);
+			win.addEventListener("unload",fireUnload,false);
 		} else {
-			win.attachEvent("onbeforeunload",fireBeforeUnload);
+			win.attachEvent("onunload",fireUnload);
 		}
 	}
 
@@ -2650,8 +2767,73 @@ Generator.ObjectGenerator = Generator(Object);
 	var ObjectType = essential("ObjectType");
 	var console = essential("console");
 	var ArraySet = essential("ArraySet");
+	var DOMTokenList = essential("DOMTokenList");
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
+	//TODO regScriptOnnotfound (onerror, status=404)
+	
+	// (tagName,{attributes},content)
+	// ({attributes},content)
+	function HTMLElement(tagName,from,content_list,_document) {
+		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
+		
+		// optional document arg
+		var d = arguments[c_to];
+		var _doc = document;
+		if (typeof d == "object" && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		
+		// optional tagName arg
+		if (typeof _tagName == "object") { 
+			_from = _tagName; 
+			_tagName = _from.tagName || "span"; 
+			--c_from; 
+		}
+		
+		var e = _doc.createElement(_tagName);
+		for(var n in _from) {
+			switch(n) {
+				case "tagName": break; // already used
+				case "class":
+					if (_from[n] !== undefined) e.className = _from[n]; 
+					break;
+				case "style":
+					//TODO support object
+					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
+					break;
+					
+				case "id":
+				case "className":
+				case "rel":
+				case "lang":
+				case "language":
+				case "src":
+				case "type":
+					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+				//TODO case "onprogress": // partial script progress
+				case "onload":
+					regScriptOnload(e,_from.onload);
+					break;
+				default:
+					e.setAttribute(n,_from[n]);
+					break;
+			}
+		}
+		var l = [];
+		for(var i=c_from; i<=c_to; ++i) {
+			var p = arguments[i];
+			if (typeof p == "object" && "length" in p) l.concat(p);
+			else if (typeof p == "string") l.push(arguments[i]);
+		}
+		if (l.length) e.innerHTML = l.join("");
+		
+		//TODO .appendTo function
+		
+		return e;
+	}
+	essential.set("HTMLElement",HTMLElement);
+	
+	
 	var nativeClassList = !!document.documentElement.classList;
 
 	function mixinElementState(el,state) {
@@ -2665,6 +2847,9 @@ Generator.ObjectGenerator = Generator(Object);
 		el[key] = !!value;
 	}
 
+	/*
+		Reflect on the property if present otherwise the attribute. 
+	*/
 	function reflectAttribute(el,key,value) {
 		if (typeof el[key] == "boolean") {
 			el[key] = !!value;
@@ -2677,12 +2862,72 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
+	/*
+		Reflect only aria property 
+	*/
+	function reflectAria(el,key,value) {
+		if (value) {
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
+	/*
+		Reflect on property or attribute and aria equivalent. 
+	*/
+	function reflectAttributeAria(el,key,value) {
+		if (typeof el[key] == "boolean") {
+			el[key] = !!value;
+		} else {
+			if (value) {
+				el.setAttribute(key,key);
+			} else {
+				el.removeAttribute(key);
+			}
+		}
+		if (value) {
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectProperty },
+		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute },
-		required: { index: 3, reflect: reflectAttribute }
+		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
+		required: { index: 3, reflect: reflectAttributeAria }
+		//TODO draggable
+		//TODO contenteditable
+		//TODO checked ariaChecked
+		//TODO tooltip
+		//TODO hover
+		//TODO down ariaPressed
+		//TODO ariaHidden
+		//TODO ariaDisabled
+		//TODO ariaRequired
+		//TODO ariaExpanded
+		//TODO ariaSelected
+
+		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
+		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
+
+		/*TODO IE aria props
+			string:
+			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
+			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
+
+
+		*/
+
+		//TODO restricted/forbidden tie in with session specific permissions
+
+		//TODO focus for elements with focus
 	};
+
+	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
+	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -2694,12 +2939,10 @@ Generator.ObjectGenerator = Generator(Object);
 			// extra state
 		}
 
-		if (el.stateful.updateClass) {
-			el.classList[treatment.index] = event.value? "state-"+event.symbol : "";
-			if (!nativeClassList) {
-				el.className = el.classList.join(" ");
-			}
-		}
+		var mapClass = el.stateful("map.class","undefined");
+		if (mapClass) {
+			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+		} 
 	}
 
 	/*
@@ -2711,18 +2954,93 @@ Generator.ObjectGenerator = Generator(Object);
 		stateClasses[0] = state.disabled? "state-disabled" : "";
 	}
 
-	function StatefulResolver(el) {
-		if (el.stateful) return el.stateful;
+	function ClassForState() {
 
-		var stateful = el.stateful = Resolver({ state: {} });
-		mixinElementState(el,stateful("state"));
-		stateful.reference("state").on("change",el,reflectElementState);
-		if (!nativeClassList) el.classList = [];//ArraySet();
-		//TODO initial class ?
+	}
+	ClassForState.prototype.disabled = "state-disabled";
+	ClassForState.prototype.readOnly = "state-readOnly";
+	ClassForState.prototype.hidden = "state-hidden";
+	ClassForState.prototype.required = "state-required";
+
+	function ClassForNotState() {
+
+	}
+	ClassForNotState.prototype.disabled = "";
+	ClassForNotState.prototype.readOnly = "";
+	ClassForNotState.prototype.hidden = "";
+	ClassForNotState.prototype.required = "";
+
+	function make_Stateful_fireAction(el) {
+		return function() {
+			var ev = MutableEvent({
+				"target":el
+			}).withActionInfo(); 
+			fireAction(ev);
+		};
+	}
+
+	function Stateful_setField(field) {
+		this.field = field;
+		return field;
+	}
+
+	function Stateful_destroy() {
+
+	}
+
+	// all stateful elements whether field or not get a cleaner
+	function statefulCleaner() {
+		if (this.stateful) {
+			if (this.stateful.field) {
+				this.stateful.field.destroy();
+				this.stateful.field.discard();
+			}
+			this.stateful.field = undefined;
+			this.stateful.destroy();
+			this.stateful.fireAction = undefined;
+			this.stateful.setField = undefined;
+			this.stateful.destroy = undefined;
+			this.stateful = undefined;
+		}
+	}
+
+	function StatefulResolver(el,mapClassForState) {
+		if (el) {
+			if (el.stateful) return el.stateful;
+			var stateful = el.stateful = Resolver({ state: {} });
+			if (el._cleaners == undefined) el._cleaners = [];
+			if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+			mixinElementState(el,stateful("state"));
+			stateful.reference("state").on("change",el,reflectElementState);
+			if (!nativeClassList) {
+				el.classList = DOMTokenList();
+			}
+			DOMTokenList_mixin(el.classList,el.className);
+		} else {
+			var stateful = Resolver({ state: {} });
+		}
+		if (mapClassForState) {
+			stateful.set("map.class.state", new ClassForState());
+			stateful.set("map.class.notstate", new ClassForNotState());
+			StatefulResolver.updateClass(stateful,el);
+		}
+		stateful.fireAction = make_Stateful_fireAction(el);
+		stateful.setField = Stateful_setField;
+		stateful.destroy = Stateful_destroy;
 
 		return stateful;
 	}
 	essential.declare("StatefulResolver",StatefulResolver);
+
+	StatefulResolver.updateClass = function(stateful,el) {
+		var triggers = {};
+		for(var n in state_treatment) triggers[n] = true;
+		for(var n in stateful("map.class.state")) triggers[n] = true;
+		for(var n in stateful("map.class.notstate")) triggers[n] = true;
+		for(var n in triggers) {
+			stateful.reference("state."+n,"null").trigger("change");
+		}
+	};
 
 	//TODO element cleaner must remove .el references from listeners
 
@@ -2747,32 +3065,11 @@ Generator.ObjectGenerator = Generator(Object);
 	//TODO regScriptOnnotfound (onerror, status=404)
 
 	function HTMLScriptElement(from,doc) {
-		var e = (doc || document).createElement("SCRIPT");
-		for(var n in from) {
-			switch(n) {
-				case "id":
-				case "class":
-				case "rel":
-				case "lang":
-				case "language":
-				case "src":
-				case "type":
-					if (from[n] !== undefined) e[n] = from[n]; 
-					break;
-				//TODO case "onprogress": // partial script progress
-				case "onload":
-					regScriptOnload(e,from.onload);
-					break;
-				default:
-					e.setAttribute(n,from[n]);
-					break;
-			}
-		}
-		return e;
+		return HTMLElement("SCRIPT",from,doc);
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
-	var pastloadScripts = {};
+    var pastloadScripts = {};
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
@@ -2841,8 +3138,21 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		cleaner.listeners = listeners; // for removeEventListeners
 		return cleaner;
-	};
+	}
 
+	function MutableEvent(sourceEvent) {
+		function ClonedEvent() { }
+		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
+		var ev = ClonedEvent();
+		if (sourceEvent == undefined) {		// IE event object
+			ev.target = ev.srcElement;
+			//TODO ev.button 1,2,3 vs 1,2,4
+		}
+		ev.withActionInfo = MutableEvent_withActionInfo;
+		ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		return ev;		
+	}
+	essential.declare("MutableEvent",MutableEvent)
 
 	/**
 	 * Register map of event listeners 
@@ -2865,7 +3175,7 @@ Generator.ObjectGenerator = Generator(Object);
 			var oThis = bListenerInstance? fCallOrThis : eControl;
 			var fCall = bListenerInstance? fCallOrThis.handleEvent : fCallOrThis;
 			return function() { 
-				return fCall.call(eControl,window.event); 
+				return fCall.call(eControl,MutableEvent(window.event)); 
 			};
 		} 
 
@@ -2885,27 +3195,32 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("addEventListeners",addEventListeners);
 
-	//TODO modifyable events object on IE
-
 	//TODO removeEventListeners (eControl, listeners, bubble)
 
 	/**
 	 * Cleans up registered event listeners and other references
 	 * 
-	 * @param {Object} eControl
+	 * @param {Element} el
 	 */
-	function callCleaners(eControl)
+	function callCleaners(el)
 	{
-		var pCleaners = eControl._cleaners;
-		if (pCleaners != undefined) {
-			for(var i=0,c; c = pCleaners[i]; ++i) {
-				c.call(eControl);
+		var _cleaners = el._cleaners;
+		if (_cleaners != undefined) {
+			for(var i=0,c; c = _cleaners[i]; ++i) {
+				c.call(el);
 			}
-			pCleaners = undefined;
+			_cleaners = undefined;
 		}
 	};
 
 	//TODO recursive clean of element and children?
+	function cleanRecursively(el) {
+		for(var child=el.firstChild; child; child = child.nextSibling) {
+			callCleaners(child);
+			cleanRecursively(child);
+		}
+	}
+	essential.declare("cleanRecursively",cleanRecursively);
 
 
 	function DialogAction(actionName) {
@@ -2917,46 +3232,134 @@ Generator.ObjectGenerator = Generator(Object);
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
-		DocumentRolesGenerator()._resize_descs();
+		DocumentRoles()._resize_descs();
 	}
 
 	function enhanceUnhandledElements() {
 		// debugger;
 		var statefuls = ApplicationConfig(); // Ensure that config is present
-		var handlers = DocumentRolesGenerator.presets("handlers");
+		var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
-		DocumentRolesGenerator()._enhance_descs();
+		DocumentRoles()._enhance_descs();
 		//TODO time to default_enhance yet?
 	}
 
-	function DocumentRoles(handlers) {
+	/*
+		action buttons not caught by enhanced dialogs/navigations
+	*/
+	function defaultButtonClick(ev) {
+		ev = MutableEvent(ev).withActionInfo();
+		if (ev.commandElement) {
+
+			//TODO action event filtering
+			//TODO disabled
+			fireAction(ev);
+		}
+	}
+
+	function fireAction(ev) 
+	{
+		var el = ev.actionElement, action = ev.action, name = ev.commandName;
+		if (! el.actionVariant) {
+			if (action) {
+				action = action.replace(baseUrl,"");
+			} else {
+				action = "submit";
+			}
+
+			el.actionVariant = DialogActionGenerator.variant(action)(action);
+		}
+
+		if (el.actionVariant[name]) el.actionVariant[name](el);
+		else {
+			var sn = name.replace("-","_").replace(" ","_");
+			if (el.actionVariant[sn]) el.actionVariant[sn](el);
+		}
+		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
+	}
+	essential.declare("fireAction",fireAction);
+
+	function _StatefulField(name,stateful) {
+
+	}
+	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField));
+
+	StatefulField.prototype.destroy = function() {};
+	StatefulField.prototype.discard = function() {};
+
+	function _TimeField() {
+
+	}
+	StatefulField.variant("input[type=time]",Generator(_TimeField,_StatefulField));
+
+	function _CommandField(name,stateful,role) {
+
+	}
+	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
+	StatefulField.variant("*[role=button]",Generator(_CommandField,_StatefulField));
+
+	var arrayContains = essential("arrayContains");
+
+	/* Enhance all stateful fields of a parent */
+	function enhanceStatefulFields(parent) {
+
+		for(var el = parent.firstChild; el; el = el.nextSibling) {
+			var name = el.name || el.getAttribute("data-name") || el.getAttribute("name");
+			if (name) {
+				var role = el.getAttribute("role");
+				var variants = [];
+				if (role) {
+					if (el.type) variants.push("*[role="+role+",type="+el.type+"]");
+					variants.push("*[role="+role+"]");
+				} else {
+					if (el.type) variants.push(el.tagName.toLowerCase()+"[type="+el.type+"]");
+					variants.push(el.tagName.toLowerCase());
+				}
+
+				var stateful = StatefulResolver(el,true);
+				var field = stateful.setField(StatefulField.variant(variants)(name,stateful,role));
+
+				//TODO add field for _cleaners element 
+				if (el._cleaners == undefined) el._cleaners = [];
+				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+			}
+
+			enhanceStatefulFields(el); // enhance children
+		}
+	}
+	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
+
+	function _DocumentRoles(handlers,doc) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
 		this._on_event = [];
+		doc = doc || document;
 		
 		//TODO configure reference as DI arg
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
 		if (window.addEventListener) {
 			window.addEventListener("resize",resizeTriggersReflow,false);
-			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			doc.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			doc.body.addEventListener("click",defaultButtonClick,false);
 		} else {
 			window.attachEvent("onresize",resizeTriggersReflow);
+			doc.body.attachEvent("onclick",defaultButtonClick);
 		}
-		
-		if (document.querySelectorAll) {
-			this.descs = this._role_descs(document.querySelectorAll("*[role]"));
+
+		if (doc.querySelectorAll) {
+			this.descs = this._role_descs(doc.querySelectorAll("*[role]"));
 		} else {
-			this.descs = this._role_descs(document.getElementsByTagName("*"));
+			this.descs = this._role_descs(doc.getElementsByTagName("*"));
 		}
 		this._enhance_descs();
 	}
-	var DocumentRolesGenerator = essential.set("DocumentRoles",Generator(DocumentRoles));
+	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
-	DocumentRoles.args = [
+	_DocumentRoles.args = [
 		ObjectType({ name:"handlers" })
 	];
 
-	DocumentRoles.prototype._enhance_descs = function() 
+	_DocumentRoles.prototype._enhance_descs = function() 
 	{
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
@@ -2980,7 +3383,7 @@ Generator.ObjectGenerator = Generator(Object);
 		} 
 	};
 
-	DocumentRoles.discarded = function(instance) {
+	_DocumentRoles.discarded = function(instance) {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
 		for(var i=0,desc; desc=instance.descs[i]; ++i) {
@@ -2988,7 +3391,7 @@ Generator.ObjectGenerator = Generator(Object);
 				if (instance.handlers.discard[desc.role]) {
 					instance.handlers.discard[desc.role].call(instance,desc.el,desc.role,desc.instance);
 				} else {
-					DocumentRoles.default_discard.call(instance,desc.el,desc.role,desc.instance);
+					_DocumentRoles.default_discard.call(instance,desc.el,desc.role,desc.instance);
 				}
 				desc.discarded = true;
 				//TODO clean layouter/laidout
@@ -2997,8 +3400,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
-	DocumentRoles.prototype._role_descs = function(elements) {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
+	_DocumentRoles.prototype._role_descs = function(elements) {
 		var descs = [];
 		for(var i=0,e; e=elements[i]; ++i) {
 			var role = e.getAttribute("role");
@@ -3016,7 +3418,7 @@ Generator.ObjectGenerator = Generator(Object);
 		return descs;
 	};
 
-	DocumentRoles.prototype._resize_descs = function() {
+	_DocumentRoles.prototype._resize_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
@@ -3029,7 +3431,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
-	DocumentRoles.prototype._layout_descs = function() {
+	_DocumentRoles.prototype._layout_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var updateLayout = false;
@@ -3052,7 +3454,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
-	DocumentRoles.prototype._area_changed_descs = function() {
+	_DocumentRoles.prototype._area_changed_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				desc.layout.area = _activeAreaName;
@@ -3061,7 +3463,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
-	DocumentRoles.prototype.on = function(name,role,func) {
+	_DocumentRoles.prototype.on = function(name,role,func) {
 		if (arguments.length == 2) func = role;
 		
 		//TODO
@@ -3069,65 +3471,62 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	
 	// Element specific handlers
-	DocumentRolesGenerator.presets.declare("handlers.enhance", {});
-	DocumentRolesGenerator.presets.declare("handlers.layout", {});
-	DocumentRolesGenerator.presets.declare("handlers.discard", {});
+	DocumentRoles.presets.declare("handlers.enhance", {});
+	DocumentRoles.presets.declare("handlers.layout", {});
+	DocumentRoles.presets.declare("handlers.discard", {});
 
 
 	function form_onsubmit(ev) {
 		var frm = this;
 		setTimeout(function(){
-			frm.submit();
+			frm.submit(ev);
 		},0);
 		return false;
 	}
-	function form_submit() {
+	function form_submit(ev) {
 		if (document.activeElement) document.activeElement.blur();
 		this.blur();
 
-		dialog_submit.call(this);
+		dialog_submit.call(this,ev);
 	}
 	function dialog_submit(clicked) {
-		var submitName = "trigger";
-		if (this.elements) {
+		if (clicked == undefined) clicked = MutableEvent().withDefaultSubmit(this);
 
-			for(var i=0,e; e=this.elements[i]; ++i) {
-				if (e.type=="submit") submitName = e.name;
-			}
+		if (clicked.commandElement) {
+			fireAction(clicked);
 		} else {
-
-			var buttons = this.getElementsByTagName("button");
-			for(var i=0,e; e=buttons[i]; ++i) {
-				if (e.type=="submit") submitName = e.name;
-			}
-			var inputs = this.getElementsByTagName("input");
-			for(var i=0,e; e=inputs[i]; ++i) {
-				if (e.type=="submit") submitName = e.name;
-			}
+			//TODO default submit when no submit button or event
 		}
-		if (clicked && clicked.name) submitName = clicked.name;
-
-		if (! this.actionVariant) {
-			var action = this.getAttribute("action");
-			if (action) {
-				action = action.replace(baseUrl,"");
-			} else {
-				action = "submit";
-			}
-
-			this.actionVariant = DialogActionGenerator.variant(action)(action);
-		}
-
-		if (this.actionVariant[submitName]) this.actionVariant[submitName](this);
-		else {
-			var sn = submitName.replace("-","_").replace(" ","_");
-			if (this.actionVariant[sn]) this.actionVariant[sn](this);
-		}
-		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 	}
 
-	function toolbar_submit(clicked) {
-		return dialog_submit.call(this,clicked);
+	function MutableEvent_withDefaultSubmit(form) {
+		var commandName = "trigger";
+		var commandElement = null;
+
+		if (form.elements) {
+			for(var i=0,e; e=form.elements[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		} else {
+			var buttons = form.getElementsByTagName("button");
+			for(var i=0,e; e=buttons[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+			var inputs = form.getElementsByTagName("input");
+			if (commandElement) for(var i=0,e; e=inputs[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		}
+		this.action = form.action;
+		this.actionElement = form;
+		this.commandElement = commandElement;
+		this.commandName = commandName;
+
+		return this;
+	}
+
+	function toolbar_submit(ev) {
+		return dialog_submit.call(this,ev);
 	}
 
 	function form_blur() {
@@ -3142,26 +3541,66 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 	
-	function applicable_role_element(element) {
+	function MutableEvent_withActionInfo() {
+		var element = this.target;
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
 		while(element) {
 			var role = element.getAttribute("role");
-			if (role) return element;
+			switch(role) {
+				case "button":
+				case "link":
+				case "menuitem":
+					this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+					this.commandRole = role;
+					this.commandElement = element;
+					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+
+					//determine commandName within action object
+					this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+					//TODO should links deduct actions and name from href
+					element = null;
+					break;
+				case null:
+					switch(element.tagName) {
+						case "BUTTON":
+						case "button":
+							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							break;
+					}
+					break;
+			}
 			element = element.parentNode;
 		}
+		if (this.commandElement == undefined) return this; // no command
+
+		element = this.commandElement;
+		while(element) {
+			var action = element.getAttribute("action");
+			if (action) {
+				this.action = action;
+				this.actionElement = element;
+				element = null;
+			}			
+			element = element.parentNode;
+		}
+
+		return this;
 	}
 
 	function dialog_button_click(ev) {
-		ev = ev || event;
-		var e = ev.target || ev.srcElement;
-		var re = applicable_role_element(e);
-		if (re && re.getAttribute("role") == "button") this.submit(re); else
-		if (e.type=="submit") this.submit(e); //TODO action context
+		ev = MutableEvent(ev).withActionInfo();
+
+		if (ev.commandElement) {
+			if (ev.stateful("state.disabled")) return; // disable
+			if (ev.ariaDisabled) return; //TODO fold into stateful
+
+			this.submit(ev); //TODO action context
+		}
 	}
 
-	DocumentRolesGenerator.enhance_dialog = DocumentRoles.enhance_dialog = function (el,role,config) {
+	DocumentRoles.enhance_dialog = _DocumentRoles.enhance_dialog = function (el,role,config) {
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -3175,6 +3614,9 @@ Generator.ObjectGenerator = Generator(Object);
 				break;
 				
 			default:
+				// make sure no submit buttons outside form, or enter key will fire the first one.
+				forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+
 				el.submit = dialog_submit;
 				// debugger;
 				//TODO capture enter from inputs, tweak tab indexes
@@ -3188,13 +3630,25 @@ Generator.ObjectGenerator = Generator(Object);
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_dialog = DocumentRoles.layout_dialog = function(el,layout,instance) {
+	DocumentRoles.layout_dialog = _DocumentRoles.layout_dialog = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_dialog = DocumentRoles.discard_dialog = function (el,role,instance) {
+	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
-	DocumentRolesGenerator.enhance_toolbar = DocumentRoles.enhance_toolbar = function(el,role,config) {
+	/* convert listed button elements */
+	function forceNoSubmitType(buttons) {
+
+		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") {
+			button.setAttribute("type","button");
+			if (button.type == "submit") button.type = "submit";
+		}
+	}
+
+	DocumentRoles.enhance_toolbar = _DocumentRoles.enhance_toolbar = function(el,role,config) {
+		// make sure no submit buttons outside form, or enter key will fire the first one.
+		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+
 		el.submit = toolbar_submit;
 
 		addEventListeners(el, {
@@ -3204,26 +3658,26 @@ Generator.ObjectGenerator = Generator(Object);
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_toolbar = DocumentRoles.layout_toolbar = function(el,layout,instance) {
+	DocumentRoles.layout_toolbar = _DocumentRoles.layout_toolbar = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_toolbar = DocumentRoles.discard_toolbar = function(el,role,instance) {
+	DocumentRoles.discard_toolbar = _DocumentRoles.discard_toolbar = function(el,role,instance) {
 		
 	};
 
-	DocumentRolesGenerator.enhance_sheet = DocumentRoles.enhance_sheet = function(el,role,config) {
+	DocumentRoles.enhance_sheet = _DocumentRoles.enhance_sheet = function(el,role,config) {
 		
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_sheet = DocumentRoles.layout_sheet = function(el,layout,instance) {
+	DocumentRoles.layout_sheet = _DocumentRoles.layout_sheet = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_sheet = DocumentRoles.discard_sheet = function(el,role,instance) {
+	DocumentRoles.discard_sheet = _DocumentRoles.discard_sheet = function(el,role,instance) {
 		
 	};
 
-	DocumentRolesGenerator.enhance_spinner = DocumentRoles.enhance_spinner = function(el,role,config) {
+	DocumentRoles.enhance_spinner = _DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -3242,10 +3696,10 @@ Generator.ObjectGenerator = Generator(Object);
 		return new Spinner(opts).spin(el);
 	};
 
-	DocumentRolesGenerator.layout_spinner = DocumentRoles.layout_spinner = function(el,layout,instance) {
+	DocumentRoles.layout_spinner = _DocumentRoles.layout_spinner = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_spinner = DocumentRoles.discard_spinner = function(el,role,instance) {
+	DocumentRoles.discard_spinner = _DocumentRoles.discard_spinner = function(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
 	};
@@ -3256,7 +3710,7 @@ Generator.ObjectGenerator = Generator(Object);
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRolesGenerator.enhance_application = DocumentRoles.enhance_application = function(el,role,config) {
+	DocumentRoles.enhance_application = _DocumentRoles.enhance_application = function(el,role,config) {
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
@@ -3272,23 +3726,23 @@ Generator.ObjectGenerator = Generator(Object);
 		return {};
 	};
 
-	DocumentRolesGenerator.layout_application = DocumentRoles.layout_application = function(el,layout,instance) {
+	DocumentRoles.layout_application = _DocumentRoles.layout_application = function(el,layout,instance) {
 		
 	};
-	DocumentRolesGenerator.discard_application = DocumentRoles.discard_application = function(el,role,instance) {
+	DocumentRoles.discard_application = _DocumentRoles.discard_application = function(el,role,instance) {
 		
 	};
 
-	DocumentRoles.default_enhance = function(el,role,config) {
+	_DocumentRoles.default_enhance = function(el,role,config) {
 		
 		return {};
 	};
 
-	DocumentRoles.default_layout = function(el,layout,instance) {
+	_DocumentRoles.default_layout = function(el,layout,instance) {
 		
 	};
 	
-	DocumentRoles.default_discard = function(el,role,instance) {
+	_DocumentRoles.default_discard = function(el,role,instance) {
 		
 	};
 	
@@ -3360,7 +3814,8 @@ Generator.ObjectGenerator = Generator(Object);
 			s.updateActiveArea(areaName);
 		}
 		_activeAreaName = areaName;
-		DocumentRolesGenerator()._layout_descs();
+		// only use DocumentRoles layout if DOM is ready
+		if (document.body) DocumentRoles()._layout_descs();
 	}
 	essential.set("activateArea",activateArea);
 	
@@ -3417,6 +3872,7 @@ Generator.ObjectGenerator = Generator(Object);
 		"loading": true,
 		"loadingConfig": true,
 		"loadingScripts": true,
+		//TODO applyingConfig: support for onload instantiating
 		"launched": false
 		});
 	ApplicationConfig.prototype.isPageState = function(whichState) {
