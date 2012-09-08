@@ -186,3 +186,8 @@ test("Generator variant for one or more options",function(){
 //TODO only call constructor once for multiple inheritance
 
 
+test("Generator presets",function(){
+	ok(1,"presets.declare")
+	ok(1,"presets.declare assign/copy/resolve")
+});
+

@@ -227,10 +227,16 @@
 		if (_readyFired) return;
 		_readyFired = true;
 		
-		essential("_queueDelayedAssets")();
-		essential.set("_queueDelayedAssets",function(){});
+		try {
+			essential("_queueDelayedAssets")();
+			essential.set("_queueDelayedAssets",function(){});
 
-		instantiatePageSingletons();
+			instantiatePageSingletons();
+		}
+		catch(ex) {
+			console.error("Failed to launch delayed assets and singletons",ex);
+			//debugger;
+		}
 	}
 	function fireLoad()
 	{
