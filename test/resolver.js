@@ -155,6 +155,18 @@ test('Resolver reference set/declare value',function(){
 	var def_value = def.declare("def");
 	strictEqual(def_value,"def","returned value from declare");
 	equal(def(), "def");	
+
+	// sub-values
+	var ghi = resolver.reference("g.h.i");
+	var j = ghi.declare("j","j");
+	equal(j,"j");
+	equal(ghi("j"),"j")
+	var j = ghi.declare("j","j2");
+	equal(j,"j");
+	equal(ghi("j"),"j")
+	var j = ghi.set("j","j2");
+	equal(j,"j2");
+	equal(ghi("j"),"j2")
 })
 
 test('Resolver reference',function(){

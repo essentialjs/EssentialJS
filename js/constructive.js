@@ -141,17 +141,23 @@ function Resolver(name,ns,options)
 
     	function get() {
         	var base = _resolve(names,onundefined);
-        	return base;
+    		if (arguments.length==1) {
+    			//TODO onundefined for the arg
+	        	return base[arguments[0]];
+    		} else {
+	        	return base;
+    		}
         }
         function set(value) {
         	if (arguments.length > 1) {
-
+	        	var base = _resolve(names,onundefinedSet);
+	        	var symbol = arguments[0];
+	        	value = arguments[1];
         	} else {
-
+				var symbol = names.pop();
+				var base = _resolve(names,onundefinedSet);
+				names.push(symbol);
         	}
-			var symbol = names.pop();
-			var base = _resolve(names,onundefinedSet);
-			names.push(symbol);
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
 	    	//TODO parent listeners
@@ -160,13 +166,14 @@ function Resolver(name,ns,options)
         }
         function declare(value) {
         	if (arguments.length > 1) {
-
+	        	var base = _resolve(names,onundefinedSet);
+	        	var symbol = arguments[0];
+	        	value = arguments[1];
         	} else {
-        		
+	            var symbol = names.pop();
+	        	var base = _resolve(names,onundefinedSet);
+	        	names.push(symbol);
         	}
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefinedSet);
-        	names.push(symbol);
         	if (base[symbol] === undefined) {
         		if (_setValue(value,names,base,symbol)) {
 			    	this._callListener("change",names,symbol,value);
