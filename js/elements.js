@@ -284,6 +284,20 @@
 
 	var pageResolver = StatefulResolver(null,{ name:"page" });
 	pageResolver.declare("config",{});
+	pageResolver.reference("state").mixin({
+		"livepage": false,
+		"authenticated": true,
+		"authorised": true,
+		"connected": true,
+		"online": true, //TODO update
+		"loading": true,
+		"loadingConfig": true,
+		"loadingScripts": true,
+		"configured": true,
+		"fullscreen": false, 
+		"launched": false
+		});
+
 
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
@@ -1082,7 +1096,7 @@
 
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
-		ap.state.livepage = true;
+		ap.state.set("livepage",true);
 		ap.reflectState();
 
 		if (_activeAreaName) {
@@ -1096,7 +1110,7 @@
 	function onPageLoad(ev) {
 		var ap = ApplicationConfig();
 		_liveAreas = true;
-		ap.state.livepage = true;
+		ap.state.set("livepage",true);
 		ap.updateState();
 	}
 
@@ -1106,10 +1120,16 @@
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+
+		// copy state presets for backwards compatibility
+		var state = this.resolver.reference("state","undefined");
+		for(var n in this.state) state.set(n,this.state[n]);
+
 		document.body.stateful = pageResolver;
+		//TODO reflect class on body
 
 		this.config = this.resolver.reference("config","undefined");
-		//TODO this.state = this.resolver.reference("state");
+		this.state = state;
 		this._gather();
 		this._apply();
 
@@ -1122,25 +1142,15 @@
 	var ApplicationConfig = Generator(_ApplicationConfig);
 	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
 	
-	// preset on instance
-	ApplicationConfig.presets.declare("state", {
-		"livepage": false,
-		"authenticated": false,
-		"loading": true,
-		"loadingConfig": true,
-		"loadingScripts": true,
-		//TODO applyingConfig: support for onload instantiating
-		// fullscreen
-		// connected
-		// online
-		"launched": false
-		});
+	// preset on instance (old api)
+	ApplicationConfig.presets.declare("state", { });
+
 	ApplicationConfig.prototype.isPageState = function(whichState) {
 		return this.resolver("state."+whichState);
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
 		this.resolver.set("state."+whichState,v);
-		if (this.state.launched) this.updateState();
+		if (this.state("launched")) this.updateState();
 	};
 	ApplicationConfig.prototype.getAuthenticatedArea = function() {
 		// return "edit";
@@ -1226,7 +1236,7 @@
 		this.resolver.set("state.loading",loading);
 		this.resolver.set("state.loadingScripts",loadingScripts);
 		this.resolver.set("state.loadingConfig",loadingConfig);
-		if (this.state.loading == false && this.state.launched == false) {
+		if (this.state("loading") == false && this.state("launched") == false) {
 			if (document.body) essential("instantiatePageSingletons")();
 		}
 	};
@@ -1235,7 +1245,7 @@
 	{   
 		this.justUpdateState();
 
-		if (this.state.loading == false) {
+		if (this.state("loading") == false) {
 			if (document.body) essential("instantiatePageSingletons")();
 			enhanceUnhandledElements();
 		}
@@ -1250,13 +1260,13 @@
 		if (document.body == null) return; // body not there yet
 
 		var bodyClass = ArraySet.apply(null,document.body.className.split(" "));
-		bodyClass.set("login",! this.state.authenticated);
-		bodyClass.set("authenticated",this.state.authenticated);
-		bodyClass.set("loading",this.state.loading);
-		bodyClass.set("login-error",this.state.loginError);
-		bodyClass.set("launched",this.state.launched);
-		bodyClass.set("launching",this.state.launching);
-		bodyClass.set("livepage",this.state.livepage);
+		bodyClass.set("login",! this.state("authenticated"));
+		bodyClass.set("authenticated",this.state("authenticated"));
+		bodyClass.set("loading",this.state("loading"));
+		bodyClass.set("login-error",this.state("loginError"));
+		bodyClass.set("launched",this.state("launched"));
+		bodyClass.set("launching",this.state("launching"));
+		bodyClass.set("livepage",this.state("livepage"));
 		console.debug("Changing body from '"+document.body.className+"' to '"+bodyClass.join(" ")+"'");
 		document.body.className = bodyClass.join(" "); //TODO should work: String(bodyClass)
 	};

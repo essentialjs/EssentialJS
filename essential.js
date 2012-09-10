@@ -58,7 +58,7 @@ function Resolver(name,ns,options)
 	options = ns || {};
 	ns = name;
 
-	function _resolve(names,onundefined) {
+	function _resolve(names,subnames,onundefined) {
         var top = ns;
         for (var j = 0, n; n = names[j]; ++j) {
             var prev_top = top;
@@ -83,6 +83,32 @@ function Resolver(name,ns,options)
 	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 }
             }
+        }
+        if (subnames) {
+        	for(var i=0,n; n = subnames[i]; ++i) {
+	            var prev_top = top;
+	            top = top[n];
+	            if (top == undefined) { 
+	                switch(onundefined) {
+	                case undefined:
+	                case "generate":
+	                	if (top === undefined) {
+		                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+		                    continue; // go to next now that we filled in an object
+	                	}
+	                //TODO "false"
+	                case "null":
+	                	if (top === undefined) return null;
+	                	break;
+	                case "undefined":
+	                	if (top === undefined) return undefined;
+	                	break;
+	                }
+	                if (j < names.length-1) {
+		            	throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
+	                }
+	            }
+        	}
         }
         return top;
 	}
@@ -128,10 +154,10 @@ function Resolver(name,ns,options)
      */
     function resolver(name,onundefined) {
         if (typeof name == "object") {
-            return _resolve(name.name.split("."),name.onundefined);
+            return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
-            return _resolve(name.split("."),onundefined);
+            return _resolve(name.split("."),null,onundefined);
         }
     };
 
@@ -164,18 +190,26 @@ function Resolver(name,ns,options)
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
     	function get() {
-        	var base = _resolve(names,onundefined);
-        	return base;
+    		if (arguments.length==1) {
+	        	var r = _resolve(names,arguments[0].split("."),onundefined);
+    			//TODO onundefined for the arg
+	        	return r;
+    		} else {
+	        	var base = _resolve(names,null,onundefined);
+	        	return base;
+    		}
         }
         function set(value) {
         	if (arguments.length > 1) {
-
+        		var subnames = arguments[0].split(".");
+				var symbol = subnames.pop();
+	        	var base = _resolve(names,subnames,onundefinedSet);
+	        	value = arguments[1];
         	} else {
-
+				var symbol = names.pop();
+				var base = _resolve(names,null,onundefinedSet);
+				names.push(symbol);
         	}
-			var symbol = names.pop();
-			var base = _resolve(names,onundefinedSet);
-			names.push(symbol);
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
 	    	//TODO parent listeners
@@ -184,13 +218,15 @@ function Resolver(name,ns,options)
         }
         function declare(value) {
         	if (arguments.length > 1) {
-
+        		var subnames = arguments[0].split(".");
+				var symbol = subnames.pop();
+	        	var base = _resolve(names,subnames,onundefinedSet);
+	        	value = arguments[1];
         	} else {
-        		
+	            var symbol = names.pop();
+	        	var base = _resolve(names,null,onundefinedSet);
+	        	names.push(symbol);
         	}
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefinedSet);
-        	names.push(symbol);
         	if (base[symbol] === undefined) {
         		if (_setValue(value,names,base,symbol)) {
 			    	this._callListener("change",names,symbol,value);
@@ -200,13 +236,13 @@ function Resolver(name,ns,options)
         	} else return base[symbol];
         }
     	function getEntry(key) {
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	if (arguments.length) return base[key];
         	return base;
         }
         function declareEntry(key,value) {
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
@@ -221,7 +257,7 @@ function Resolver(name,ns,options)
         }
         function setEntry(key,value) {
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
@@ -234,7 +270,7 @@ function Resolver(name,ns,options)
         }
         function mixin(map) {
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	var ni = names.length;
@@ -259,7 +295,7 @@ function Resolver(name,ns,options)
 	    }
 
 	    function trigger(type) {
-	    	var value = _resolve(names,onundefined);
+	    	var value = _resolve(names,null,onundefined);
 	    	var symbol = names.pop();
 			var parentName = names.join(".");
 
@@ -326,7 +362,7 @@ function Resolver(name,ns,options)
     {
         var names = name.split(".");
         var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
+    	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
     		if (_setValue(value,names,base,symbol)) {
 	    		var ref = resolver.references[name];
@@ -343,7 +379,7 @@ function Resolver(name,ns,options)
     {
 		var names = name.split(".");
 		var symbol = names.pop();
-		var base = _resolve(names,onundefined);
+		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
 			if (ref) ref._callListener("change",names,symbol,value);
@@ -1884,10 +1920,20 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
+	/*
+	  StatefulResolver()
+	  StatefulResolver(el)
+	  StatefulResolver(el,true)
+	*/
 	function StatefulResolver(el,mapClassForState) {
 		if (el) {
 			if (el.stateful) return el.stateful;
-			var stateful = el.stateful = Resolver({ state: {} });
+			var resolverOptions = {};
+			if (typeof mapClassForState == "object") {
+				resolverOptions = mapClassForState;
+				mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
+			}
+			var stateful = el.stateful = Resolver({ state: {} },resolverOptions);
 			if (el._cleaners == undefined) el._cleaners = [];
 			if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
 			mixinElementState(el,stateful("state"));
@@ -1897,7 +1943,9 @@ Generator.ObjectGenerator = Generator(Object);
 			}
 			DOMTokenList_mixin(el.classList,el.className);
 		} else {
-			var stateful = Resolver({ state: {} });
+			var resolverOptions = typeof mapClassForState == "object"? mapClassForState : {}
+			mapClassForState = false;
+			var stateful = Resolver({ state: {} },resolverOptions);
 		}
 		if (mapClassForState) {
 			stateful.set("map.class.state", new ClassForState());
@@ -1911,6 +1959,23 @@ Generator.ObjectGenerator = Generator(Object);
 		return stateful;
 	}
 	essential.declare("StatefulResolver",StatefulResolver);
+
+	var pageResolver = StatefulResolver(null,{ name:"page" });
+	pageResolver.declare("config",{});
+	pageResolver.reference("state").mixin({
+		"livepage": false,
+		"authenticated": true,
+		"authorised": true,
+		"connected": true,
+		"online": true, //TODO update
+		"loading": true,
+		"loadingConfig": true,
+		"loadingScripts": true,
+		"configured": true,
+		"fullscreen": false, 
+		"launched": false
+		});
+
 
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
@@ -2023,7 +2088,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
 		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
-		var ev = ClonedEvent();
+		var ev = new ClonedEvent();
 		if (sourceEvent == undefined) {		// IE event object
 			ev.target = ev.srcElement;
 			//TODO ev.button 1,2,3 vs 1,2,4
@@ -2709,7 +2774,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
-		ap.state.livepage = true;
+		ap.state.set("livepage",true);
 		ap.reflectState();
 
 		if (_activeAreaName) {
@@ -2723,7 +2788,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function onPageLoad(ev) {
 		var ap = ApplicationConfig();
 		_liveAreas = true;
-		ap.state.livepage = true;
+		ap.state.set("livepage",true);
 		ap.updateState();
 	}
 
@@ -2732,7 +2797,17 @@ Generator.ObjectGenerator = Generator(Object);
 
 
 	function _ApplicationConfig() {
-		this.config = {};
+		this.resolver = pageResolver;
+
+		// copy state presets for backwards compatibility
+		var state = this.resolver.reference("state","undefined");
+		for(var n in this.state) state.set(n,this.state[n]);
+
+		document.body.stateful = pageResolver;
+		//TODO reflect class on body
+
+		this.config = this.resolver.reference("config","undefined");
+		this.state = state;
 		this._gather();
 		this._apply();
 
@@ -2745,22 +2820,15 @@ Generator.ObjectGenerator = Generator(Object);
 	var ApplicationConfig = Generator(_ApplicationConfig);
 	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
 	
-	// preset on instance
-	ApplicationConfig.presets.declare("state", {
-		"livepage": false,
-		"authenticated": false,
-		"loading": true,
-		"loadingConfig": true,
-		"loadingScripts": true,
-		//TODO applyingConfig: support for onload instantiating
-		"launched": false
-		});
+	// preset on instance (old api)
+	ApplicationConfig.presets.declare("state", { });
+
 	ApplicationConfig.prototype.isPageState = function(whichState) {
-		return this.state[whichState];
+		return this.resolver("state."+whichState);
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
-		this.state[whichState] = v;
-		if (this.state.launched) this.updateState();
+		this.resolver.set("state."+whichState,v);
+		if (this.state("launched")) this.updateState();
 	};
 	ApplicationConfig.prototype.getAuthenticatedArea = function() {
 		// return "edit";
@@ -2772,12 +2840,12 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 	ApplicationConfig.prototype.declare = function(key,value) {
-		this.config[key] = value;
+		this.config.declare(key,value);
 	};
 
 	ApplicationConfig.prototype._apply = function() {
-		for(var k in this.config) {
-			var conf = this.config[k];
+		for(var k in this.config()) {
+			var conf = this.config()[k];
 			var el = this.getElement(k);
 
 			if (conf.layouter) {
@@ -2798,7 +2866,7 @@ Generator.ObjectGenerator = Generator(Object);
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
 			//TODO extend this.config for elements with id?
 			if (element.id) {
-				this.config[element.id] = map;
+				this.config()[element.id] = map;
 			}
 			return map;
 		} catch(ex) {
@@ -2811,14 +2879,14 @@ Generator.ObjectGenerator = Generator(Object);
 	ApplicationConfig.prototype.getConfig = function(element) {
 		//TODO mixin data-role
 		if (element.id) {
-			return this.config[element.id] || this._getElementRoleConfig(element);
+			return this.config()[element.id] || this._getElementRoleConfig(element);
 		}
 		var name = element.getAttribute("name");
 		if (name) {
 			var p = element.parentNode;
 			while(p) {
 				if (p.id) {
-					return this.config[p.id + "." + name] || this._getElementRoleConfig(element);
+					return this.config()[p.id + "." + name] || this._getElementRoleConfig(element);
 				} 
 				p = p.parentNode;
 			} 
@@ -2835,18 +2903,18 @@ Generator.ObjectGenerator = Generator(Object);
 
 	ApplicationConfig.prototype.justUpdateState = function() 
 	{   
-		this.state.loading = false;
-		this.state.loadingScripts = false;
-		this.state.loadingConfig = false;
+		var loading = false,loadingScripts = false,loadingConfig = false;
 
 		for(var n in pastloadScripts) {
-			if (pastloadScripts[n] == false) { this.state.loading = true; this.state.loadingScripts = true; console.debug(n+" missing")}
+			if (pastloadScripts[n] == false) { loading = true; loadingScripts = true; console.debug(n+" missing")}
 		}
 		for(var n in requiredConfigs) {
-			if (requiredConfigs[n] == false) { this.state.loading = true; this.state.loadingConfig = true; console.debug(n+" missing")}
+			if (requiredConfigs[n] == false) { loading = true; loadingConfig = true; console.debug(n+" missing")}
 		}
-		
-		if (this.state.loading == false && this.state.launched == false) {
+		this.resolver.set("state.loading",loading);
+		this.resolver.set("state.loadingScripts",loadingScripts);
+		this.resolver.set("state.loadingConfig",loadingConfig);
+		if (this.state("loading") == false && this.state("launched") == false) {
 			if (document.body) essential("instantiatePageSingletons")();
 		}
 	};
@@ -2855,7 +2923,7 @@ Generator.ObjectGenerator = Generator(Object);
 	{   
 		this.justUpdateState();
 
-		if (this.state.loading == false) {
+		if (this.state("loading") == false) {
 			if (document.body) essential("instantiatePageSingletons")();
 			enhanceUnhandledElements();
 		}
@@ -2870,13 +2938,13 @@ Generator.ObjectGenerator = Generator(Object);
 		if (document.body == null) return; // body not there yet
 
 		var bodyClass = ArraySet.apply(null,document.body.className.split(" "));
-		bodyClass.set("login",! this.state.authenticated);
-		bodyClass.set("authenticated",this.state.authenticated);
-		bodyClass.set("loading",this.state.loading);
-		bodyClass.set("login-error",this.state.loginError);
-		bodyClass.set("launched",this.state.launched);
-		bodyClass.set("launching",this.state.launching);
-		bodyClass.set("livepage",this.state.livepage);
+		bodyClass.set("login",! this.state("authenticated"));
+		bodyClass.set("authenticated",this.state("authenticated"));
+		bodyClass.set("loading",this.state("loading"));
+		bodyClass.set("login-error",this.state("loginError"));
+		bodyClass.set("launched",this.state("launched"));
+		bodyClass.set("launching",this.state("launching"));
+		bodyClass.set("livepage",this.state("livepage"));
 		console.debug("Changing body from '"+document.body.className+"' to '"+bodyClass.join(" ")+"'");
 		document.body.className = bodyClass.join(" "); //TODO should work: String(bodyClass)
 	};
