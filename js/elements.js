@@ -396,7 +396,7 @@
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
 		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
-		var ev = ClonedEvent();
+		var ev = new ClonedEvent();
 		if (sourceEvent == undefined) {		// IE event object
 			ev.target = ev.srcElement;
 			//TODO ev.button 1,2,3 vs 1,2,4
