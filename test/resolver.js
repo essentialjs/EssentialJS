@@ -167,6 +167,15 @@ test('Resolver reference set/declare value',function(){
 	var j = ghi.set("j","j2");
 	equal(j,"j2");
 	equal(ghi("j"),"j2")
+	var l = ghi.declare("k.l","l");
+	equal(l,"l");
+	equal(ghi("k.l"),"l");
+	var l = ghi.declare("k.l","l2");
+	equal(l,"l");
+	equal(ghi("k.l"),"l");
+	var l = ghi.set("k.l","l2");
+	equal(l,"l2");
+	equal(ghi("k.l"),"l2");
 })
 
 test('Resolver reference',function(){

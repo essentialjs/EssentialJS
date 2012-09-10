@@ -34,7 +34,7 @@ function Resolver(name,ns,options)
 	options = ns || {};
 	ns = name;
 
-	function _resolve(names,onundefined) {
+	function _resolve(names,subnames,onundefined) {
         var top = ns;
         for (var j = 0, n; n = names[j]; ++j) {
             var prev_top = top;
@@ -59,6 +59,32 @@ function Resolver(name,ns,options)
 	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 }
             }
+        }
+        if (subnames) {
+        	for(var i=0,n; n = subnames[i]; ++i) {
+	            var prev_top = top;
+	            top = top[n];
+	            if (top == undefined) { 
+	                switch(onundefined) {
+	                case undefined:
+	                case "generate":
+	                	if (top === undefined) {
+		                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+		                    continue; // go to next now that we filled in an object
+	                	}
+	                //TODO "false"
+	                case "null":
+	                	if (top === undefined) return null;
+	                	break;
+	                case "undefined":
+	                	if (top === undefined) return undefined;
+	                	break;
+	                }
+	                if (j < names.length-1) {
+		            	throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
+	                }
+	            }
+        	}
         }
         return top;
 	}
@@ -104,10 +130,10 @@ function Resolver(name,ns,options)
      */
     function resolver(name,onundefined) {
         if (typeof name == "object") {
-            return _resolve(name.name.split("."),name.onundefined);
+            return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
-            return _resolve(name.split("."),onundefined);
+            return _resolve(name.split("."),null,onundefined);
         }
     };
 
@@ -140,22 +166,24 @@ function Resolver(name,ns,options)
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
     	function get() {
-        	var base = _resolve(names,onundefined);
     		if (arguments.length==1) {
+	        	var r = _resolve(names,arguments[0].split("."),onundefined);
     			//TODO onundefined for the arg
-	        	return base[arguments[0]];
+	        	return r;
     		} else {
+	        	var base = _resolve(names,null,onundefined);
 	        	return base;
     		}
         }
         function set(value) {
         	if (arguments.length > 1) {
-	        	var base = _resolve(names,onundefinedSet);
-	        	var symbol = arguments[0];
+        		var subnames = arguments[0].split(".");
+				var symbol = subnames.pop();
+	        	var base = _resolve(names,subnames,onundefinedSet);
 	        	value = arguments[1];
         	} else {
 				var symbol = names.pop();
-				var base = _resolve(names,onundefinedSet);
+				var base = _resolve(names,null,onundefinedSet);
 				names.push(symbol);
         	}
 			if (_setValue(value,names,base,symbol)) {
@@ -166,12 +194,13 @@ function Resolver(name,ns,options)
         }
         function declare(value) {
         	if (arguments.length > 1) {
-	        	var base = _resolve(names,onundefinedSet);
-	        	var symbol = arguments[0];
+        		var subnames = arguments[0].split(".");
+				var symbol = subnames.pop();
+	        	var base = _resolve(names,subnames,onundefinedSet);
 	        	value = arguments[1];
         	} else {
 	            var symbol = names.pop();
-	        	var base = _resolve(names,onundefinedSet);
+	        	var base = _resolve(names,null,onundefinedSet);
 	        	names.push(symbol);
         	}
         	if (base[symbol] === undefined) {
@@ -183,13 +212,13 @@ function Resolver(name,ns,options)
         	} else return base[symbol];
         }
     	function getEntry(key) {
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	if (arguments.length) return base[key];
         	return base;
         }
         function declareEntry(key,value) {
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
@@ -204,7 +233,7 @@ function Resolver(name,ns,options)
         }
         function setEntry(key,value) {
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
@@ -217,7 +246,7 @@ function Resolver(name,ns,options)
         }
         function mixin(map) {
             var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
+        	var base = _resolve(names,null,onundefined);
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	var ni = names.length;
@@ -242,7 +271,7 @@ function Resolver(name,ns,options)
 	    }
 
 	    function trigger(type) {
-	    	var value = _resolve(names,onundefined);
+	    	var value = _resolve(names,null,onundefined);
 	    	var symbol = names.pop();
 			var parentName = names.join(".");
 
@@ -309,7 +338,7 @@ function Resolver(name,ns,options)
     {
         var names = name.split(".");
         var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
+    	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
     		if (_setValue(value,names,base,symbol)) {
 	    		var ref = resolver.references[name];
@@ -326,7 +355,7 @@ function Resolver(name,ns,options)
     {
 		var names = name.split(".");
 		var symbol = names.pop();
-		var base = _resolve(names,onundefined);
+		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
 			if (ref) ref._callListener("change",names,symbol,value);
