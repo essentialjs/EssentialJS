@@ -242,10 +242,20 @@
 		}
 	}
 
+	/*
+	  StatefulResolver()
+	  StatefulResolver(el)
+	  StatefulResolver(el,true)
+	*/
 	function StatefulResolver(el,mapClassForState) {
 		if (el) {
 			if (el.stateful) return el.stateful;
-			var stateful = el.stateful = Resolver({ state: {} });
+			var resolverOptions = {};
+			if (typeof mapClassForState == "object") {
+				resolverOptions = mapClassForState;
+				mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
+			}
+			var stateful = el.stateful = Resolver({ state: {} },resolverOptions);
 			if (el._cleaners == undefined) el._cleaners = [];
 			if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
 			mixinElementState(el,stateful("state"));
@@ -255,7 +265,9 @@
 			}
 			DOMTokenList_mixin(el.classList,el.className);
 		} else {
-			var stateful = Resolver({ state: {} });
+			var resolverOptions = typeof mapClassForState == "object"? mapClassForState : {}
+			mapClassForState = false;
+			var stateful = Resolver({ state: {} },resolverOptions);
 		}
 		if (mapClassForState) {
 			stateful.set("map.class.state", new ClassForState());
@@ -269,6 +281,9 @@
 		return stateful;
 	}
 	essential.declare("StatefulResolver",StatefulResolver);
+
+	var pageResolver = StatefulResolver(null,{ name:"page" });
+	pageResolver.declare("config",{});
 
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
@@ -1090,7 +1105,11 @@
 
 
 	function _ApplicationConfig() {
-		this.config = {};
+		this.resolver = pageResolver;
+		document.body.stateful = pageResolver;
+
+		this.config = this.resolver.reference("config","undefined");
+		//TODO this.state = this.resolver.reference("state");
 		this._gather();
 		this._apply();
 
@@ -1111,13 +1130,16 @@
 		"loadingConfig": true,
 		"loadingScripts": true,
 		//TODO applyingConfig: support for onload instantiating
+		// fullscreen
+		// connected
+		// online
 		"launched": false
 		});
 	ApplicationConfig.prototype.isPageState = function(whichState) {
-		return this.state[whichState];
+		return this.resolver("state."+whichState);
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
-		this.state[whichState] = v;
+		this.resolver.set("state."+whichState,v);
 		if (this.state.launched) this.updateState();
 	};
 	ApplicationConfig.prototype.getAuthenticatedArea = function() {
@@ -1130,12 +1152,12 @@
 	};
 
 	ApplicationConfig.prototype.declare = function(key,value) {
-		this.config[key] = value;
+		this.config.declare(key,value);
 	};
 
 	ApplicationConfig.prototype._apply = function() {
-		for(var k in this.config) {
-			var conf = this.config[k];
+		for(var k in this.config()) {
+			var conf = this.config()[k];
 			var el = this.getElement(k);
 
 			if (conf.layouter) {
@@ -1156,7 +1178,7 @@
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
 			//TODO extend this.config for elements with id?
 			if (element.id) {
-				this.config[element.id] = map;
+				this.config()[element.id] = map;
 			}
 			return map;
 		} catch(ex) {
@@ -1169,14 +1191,14 @@
 	ApplicationConfig.prototype.getConfig = function(element) {
 		//TODO mixin data-role
 		if (element.id) {
-			return this.config[element.id] || this._getElementRoleConfig(element);
+			return this.config()[element.id] || this._getElementRoleConfig(element);
 		}
 		var name = element.getAttribute("name");
 		if (name) {
 			var p = element.parentNode;
 			while(p) {
 				if (p.id) {
-					return this.config[p.id + "." + name] || this._getElementRoleConfig(element);
+					return this.config()[p.id + "." + name] || this._getElementRoleConfig(element);
 				} 
 				p = p.parentNode;
 			} 
@@ -1193,17 +1215,17 @@
 
 	ApplicationConfig.prototype.justUpdateState = function() 
 	{   
-		this.state.loading = false;
-		this.state.loadingScripts = false;
-		this.state.loadingConfig = false;
+		var loading = false,loadingScripts = false,loadingConfig = false;
 
 		for(var n in pastloadScripts) {
-			if (pastloadScripts[n] == false) { this.state.loading = true; this.state.loadingScripts = true; console.debug(n+" missing")}
+			if (pastloadScripts[n] == false) { loading = true; loadingScripts = true; console.debug(n+" missing")}
 		}
 		for(var n in requiredConfigs) {
-			if (requiredConfigs[n] == false) { this.state.loading = true; this.state.loadingConfig = true; console.debug(n+" missing")}
+			if (requiredConfigs[n] == false) { loading = true; loadingConfig = true; console.debug(n+" missing")}
 		}
-		
+		this.resolver.set("state.loading",loading);
+		this.resolver.set("state.loadingScripts",loadingScripts);
+		this.resolver.set("state.loadingConfig",loadingConfig);
 		if (this.state.loading == false && this.state.launched == false) {
 			if (document.body) essential("instantiatePageSingletons")();
 		}
