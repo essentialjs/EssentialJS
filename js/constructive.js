@@ -130,6 +130,9 @@ function Resolver(name,ns,options)
      */
     function resolver(name,onundefined) {
         if (typeof name == "object") {
+            // name is array
+            if (name.length != undefined) return _resolve(name,null,onundefined);
+            // {} call
             return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
@@ -167,7 +170,8 @@ function Resolver(name,ns,options)
 
     	function get() {
     		if (arguments.length==1) {
-	        	var r = _resolve(names,arguments[0].split("."),onundefined);
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+	        	var r = _resolve(names,subnames,onundefined);
     			//TODO onundefined for the arg
 	        	return r;
     		} else {
@@ -177,7 +181,7 @@ function Resolver(name,ns,options)
         }
         function set(value) {
         	if (arguments.length > 1) {
-        		var subnames = arguments[0].split(".");
+        		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
 	        	var base = _resolve(names,subnames,onundefinedSet);
 	        	value = arguments[1];
@@ -194,7 +198,7 @@ function Resolver(name,ns,options)
         }
         function declare(value) {
         	if (arguments.length > 1) {
-        		var subnames = arguments[0].split(".");
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
 	        	var base = _resolve(names,subnames,onundefinedSet);
 	        	value = arguments[1];
@@ -334,9 +338,12 @@ function Resolver(name,ns,options)
     	}
     };
     
+    /*
+        name = string/array
+    */
     resolver.declare = function(name,value,onundefined) 
     {
-        var names = name.split(".");
+        var names = (typeof name == "object")? name : name.split(".");
         var symbol = names.pop();
     	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
@@ -351,9 +358,12 @@ function Resolver(name,ns,options)
     	} else return base[symbol];
     };
 
+    /*
+        name = string/array
+    */
     resolver.set = function(name,value,onundefined) 
     {
-		var names = name.split(".");
+        var names = (typeof name == "object")? name : name.split(".");
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
@@ -727,6 +737,8 @@ function Generator(mainConstr,options)
 		}
 		else {
 			//TODO remove from restricted list
+			this.info.singleton = false;
+			this.info.existing = null;
 		}
 		this.info.restrictedArgs = args;
 		if (args) {
