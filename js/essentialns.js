@@ -322,33 +322,53 @@
 	function setStubConsole() {
 		function no_logging(level,parts) {}
  
-		proxyConsole["log"] = function() { no_logging("none",arguments); };
-		proxyConsole["trace"] = function() { no_logging("trace",arguments); };
-		proxyConsole["debug"] = function() { no_logging("debug",arguments); };
-		proxyConsole["info"] = function() { no_logging("info",arguments); };
-		proxyConsole["warn"] = function() { no_logging("warn",arguments); };
-		proxyConsole["error"] = function() { no_logging("error",arguments); };
-		proxyConsole["group"] = function() { no_logging("group",arguments); };
-		proxyConsole["groupEnd"] = function() { no_logging("groupEnd",arguments); };
+		proxyConsole["log"] = function() { 
+			no_logging("none",arguments); };
+		proxyConsole["trace"] = function() { 
+			no_logging("trace",arguments); };
+		proxyConsole["debug"] = function() { 
+			no_logging("debug",arguments); };
+		proxyConsole["info"] = function() { 
+			no_logging("info",arguments); };
+		proxyConsole["warn"] = function() { 
+			no_logging("warn",arguments); };
+		proxyConsole["error"] = function() { 
+			no_logging("error",arguments); };
+		proxyConsole["group"] = function() { 
+			no_logging("group",arguments); };
+		proxyConsole["groupEnd"] = function() { 
+			no_logging("groupEnd",arguments); };
 	}
 	essential.declare("setStubConsole",setStubConsole);
  
 	function setWindowConsole() {
-		proxyConsole["log"] = function() { window.console.log.apply(window.console,arguments); };
-		proxyConsole["trace"] = function() { window.console.trace(); };
-		proxyConsole["debug"] = function() { (window.console.debug || window.console.info).apply(window.console,arguments); };
-		proxyConsole["info"] = function() { window.console.info.apply(window.console,arguments); };
-		proxyConsole["warn"] = function() { window.console.warn.apply(window.console,arguments); };
-		proxyConsole["error"] = function() { window.console.error.apply(window.console,arguments); };
+		proxyConsole["log"] = function() { 
+			window.console.log.apply(window.console,arguments); };
+		proxyConsole["trace"] = function() { 
+			window.console.trace(); };
+		proxyConsole["debug"] = function() { 
+			(window.console.debug || window.console.info).apply(window.console,arguments); };
+		proxyConsole["info"] = function() { 
+			window.console.info.apply(window.console,arguments); };
+		proxyConsole["warn"] = function() { 
+			window.console.warn.apply(window.console,arguments); };
+		proxyConsole["error"] = function() { 
+			window.console.error.apply(window.console,arguments); };
  
 		if (window.console.debug == undefined) {
 			// IE8
-			proxyConsole["log"] = function(m) { window.console.log(m); };
-			proxyConsole["trace"] = function(m) { window.console.trace(); };
-			proxyConsole["debug"] = function(m) { window.console.log(m); };
-			proxyConsole["info"] = function(m) { window.console.info(m); };
-			proxyConsole["warn"] = function(m) { window.console.warn(m); };
-			proxyConsole["error"] = function(m) { window.console.error(m); };
+			proxyConsole["log"] = function(m) { 
+				window.console.log(m); };
+			proxyConsole["trace"] = function(m) { 
+				window.console.trace(); };
+			proxyConsole["debug"] = function(m) { 
+				window.console.log(m); };
+			proxyConsole["info"] = function(m) { 
+				window.console.info(m); };
+			proxyConsole["warn"] = function(m) { 
+				window.console.warn(m); };
+			proxyConsole["error"] = function(m) { 
+				window.console.error(m); };
 		}
 	}
 	essential.declare("setWindowConsole",setWindowConsole);
