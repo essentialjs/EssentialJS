@@ -1,0 +1,145 @@
+.loading-indicator {
+	display: block;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin-top: -50px;
+	margin-left: -50px;
+	width: 100px;
+	height: 100px;
+
+	.launched & {
+		 display: none; 
+	}
+	.loading.login & {
+		display: none;
+	}
+}
+
+body {
+	background-color: @background-color;
+	background-image: @repeating-background-image;
+
+	> footer {
+		display: block;
+		position: absolute;
+		font-size: @footer-font-size;
+		bottom: 10px;
+		left: 50%;
+		margin-left: -0.5 * @footer-width;
+		width: @footer-width;
+		text-align: center;
+		color: @footer-copyright-color;
+	}
+}
+
+#sessionBadge {
+	display:none;
+	
+	.login &,
+	.loading & {
+		.connection-status { display:none; }
+	}
+	.launched & {
+	}
+}
+#login {
+	display: none;
+	.login & {
+		display: block;
+	}
+}
+
+.login #launched { display:none; }
+.loading #launched { display:none; }
+
+#sessionBadge {
+	//.noise();
+	.center-dialog(@login-width - 2*20px,@login-height - 2*20px,20px);
+	border-radius: 10px;
+	
+	background: @login-bg-color;
+	
+	.login & {
+		display: block;
+	}
+	.launched & {
+		.center-bottom-dialog(@login-width - 2*20px,@login-height - 2*20px,20px,20px);
+		border-radius: 10px;
+		margin-top: -60px;
+		
+		#launched {
+			position: relative;
+			top: -90px;
+			padding-left: 30px;
+			padding-top: 10px;
+		}
+	}
+}
+
+#login {
+	position: relative;
+	zoom: 1;
+	margin-bottom: 0;
+	
+	color: @common-label-color;
+	
+	padding-top: @login-tradez-logo-line-height;
+		
+	label.details {
+		vertical-align: bottom;
+		margin-top: .8em;
+		margin-bottom: 0;
+	}
+
+	label.password { width:100px; position: absolute; left:0; }
+	input[name=j_password] { width:100px; position: absolute; left:0; margin-top: 2.2em; }
+
+	label.onetime { left:120px; width:90px; position: relative; }
+	input[name=j_password_onetime] { left:120px; width:90px; position: relative; }
+		
+	h5 { margin-top: 1em; }
+	
+	select,
+	textarea,
+	input[type="text"],
+	input[type="password"],
+	input[type="datetime"],
+	input[type="datetime-local"],
+	input[type="date"],
+	input[type="month"],
+	input[type="time"],
+	input[type="week"],
+	input[type="number"],
+	input[type="email"],
+	input[type="url"],
+	input[type="search"],
+	input[type="tel"],
+	input[type="color"],
+	.uneditable-input
+	{
+		height: @button-height - 4px;
+        line-height: @button-height - 6px;
+        vertical-align: middle;
+    }
+	
+	output[name=loginErrors],
+	#loginErrors {
+		display: none;
+		color: yellow;
+		font-weight: bold;
+	}
+
+	&.error {
+		height: 266px;	
+
+		output[name=loginErrors],
+		#loginErrors {
+			display: block;
+		}
+	}
+}
+
+#loginShield { display: none; }
+.login #loginShield { .absolute-overlay(); }
+

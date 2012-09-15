@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]--><!--[if lt IE 7 ]><html class="no-js ie6" lang="en"><![endif]--><!--[if IE 7 ]><html class="no-js ie7" lang="en"><![endif]--><!--[if IE 8 ]><html class="no-js ie8" lang="en"><![endif]--><!--[if (gte IE 9)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]--><head>
+  <meta charset="utf-8">
+  <meta content="chrome=1,IE=edge" http-equiv="X-UA-Compatible">
+  <meta content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" name="SKYPE_TOOLBAR">
+	<title>Frontend</title>
+  <meta content="Novo Bank" name="description">
+  <meta content="Henrik Vendelbo" name="author">
+
+	<meta name="enhanced roles" content="dialog navigation spinner application"> 
+	
+
+	<link rel="stylesheet" href="qunit/qunit.css" media="screen">
+
+	<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
+	<script type="text/javascript" src="../js/modernizr.js"></script>
+	<script type="text/javascript" src="../js/json2.js"></script>
+	<script type="text/javascript" src="../js/constructive.js"></script>
+	<script type="text/javascript" src="../js/essentialns.js"></script>
+	<script type="text/javascript" src="../js/xhr.js"></script>
+	<script type="text/javascript" src="../js/elements.js"></script>
+
+  <script>(function(){
+	Resolver("page").set(["state","connected"],false);
+	//Resolver("page").set(["state","authenticated"],false); assume that login page passed
+	Resolver("page").set(["state","authorised"],false);
+	Resolver("page").set(["state","configured"],false);
+
+    var DocumentRoles = Resolver("essential")("DocumentRoles");
+    DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
+    
+    DocumentRoles.presets.declare("handlers.enhance.dialog", DocumentRoles.enhance_dialog);
+    DocumentRoles.presets.declare("handlers.layout.dialog", DocumentRoles.layout_dialog);
+    DocumentRoles.presets.declare("handlers.discard.dialog", DocumentRoles.discard_dialog);
+    
+    DocumentRoles.presets.declare("handlers.enhance.navigation", DocumentRoles.enhance_toolbar);
+    DocumentRoles.presets.declare("handlers.layout.navigation", DocumentRoles.layout_toolbar);
+    DocumentRoles.presets.declare("handlers.discard.navigation", DocumentRoles.discard_toolbar);
+    
+    DocumentRoles.presets.declare("handlers.enhance.spinner", DocumentRoles.enhance_spinner);
+    DocumentRoles.presets.declare("handlers.layout.spinner", DocumentRoles.layout_spinner);
+    DocumentRoles.presets.declare("handlers.discard.spinner", DocumentRoles.discard_spinner);
+    
+    DocumentRoles.presets.declare("handlers.enhance.application", DocumentRoles.enhance_application);
+    DocumentRoles.presets.declare("handlers.layout.application", DocumentRoles.layout_application);
+    DocumentRoles.presets.declare("handlers.discard.application", DocumentRoles.discard_application);
+    
+    Resolver(window).reference("app.APPLICATION_PROPERTIES").mixin({
+      "BOOTSTRAP.IS_DEVELOPEMENT": true,
+      "DEFAULTS.CELL.RENDERER": "text",
+      "APPLICATION.CONFIG": "resource.xmlbundle",
+      "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
+      "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
+    });
+	})();
+    </script>
+	<script src="js/auth-state.js" type="text/javascript"></script>
+</head>
+<body class="loading">
+
+   <header>
+   	<nav action="navigation/logo" role="navigation">
+      <button name="menu" role="button"></button>
+    </nav>
+    <nav action="navigation/application" role="navigation">
+      <button name="designer" role="button"><span class="icon"></span><label>Designer</label></button>
+      <button name="explorer" role="button"><span class="icon"></span><label>Explorer</label></button>
+      <button name="products" role="button"><span class="icon"></span><label>Active Products</label></button>
+      <button name="reports" role="button"><span class="icon"></span><label>Reports</label></button>
+    </nav>
+
+    <div action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="presentation">
+    </div>
+
+   </header>
+   <aside id="warnings-and-alerts" role="application">
+   </aside>
+   <aside class="leftmenu">
+   </aside>
+  </div>
+  
+  <nav id="zkb-logo">
+  	<span class="image-wrap"><img height="50" name="menu" role="button" 
+  	src="images/zkb184white.png" width="50"/></span>
+	<span><h1>Essential<br/>JavaScript</h1></span>
+  </nav>
+
+  <nav id="tradez-logo">EssentialJS
+  </nav>
+  <footer>© Right Here Inc
+  </footer>
+  
+  <div id="loginShield">
+  </div>
+
+  <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
+  </div>
+
+  <div id="sessionBadge">
+   <form action="dialogs/login" autocomplete="off" id="login" method="client" name="login" role="dialog">
+   	<div class="connection-status">
+   		<div class="inner"></div>
+    </div>
+
+	<h1></h1>
+	<output name="loginErrors">The username or password you entered is incorrect, please try again</output>
+
+	<label class="details">User Name</label>
+	<input autofocus="" maxlength="20" name="j_username"/>
+
+	<label class="details password">Password</label>
+	<input maxlength="20" name="j_password" type="password"/>
+
+	<label class="details onetime">OTP</label>
+	<input maxlength="20" name="j_password_onetime" type="password"/>
+
+	<h5 name="forgottenPassword">Can't access your account?</h5>
+
+	<button name="login" type="submit">Login</button>
+
+   </form>
+   <form action="dialogs/launched" autocomplete="off" id="launched" method="client" name="launched" 
+   	role="dialog">
+   		<h3>Sample User One</h3>
+		<button name="logout" type="submit">X</button>
+   </form>
+  </div>
+
+  	<script src="js/jquery-1.7.2.min.js" type="text/javascript"></script>
+  	<script src="js/spin.min.js" type="text/javascript"></script>
+
+  	<link rel="pastload" src="js/knockout.js"/>
+  	<link rel="pastload" src="js/raphael.min.js"/>
+  	<link rel="pastload" src="js/frontend.js"/>
+
+	<script type="application/config">
+		declare("logo",{"charset": "utf-8"});
+		declare("login",{"charset": "utf-8"});
+		declare("launched",{"charset": "utf-8"});
+	</script>
+
+	loading state determined when DOM ready reflecting outstanding scripts/config.
+	
+	when loading is done, when page is launching, when page is launched
+	the unenhanced are enhanced and outstanding page 
+	lifecycle generator are instantiated.
+
+	between loading done and page launching
+	outstanding page lifecycle generator are instantiated.
+
+	live state
+
+	live state is set after 60ms or when page onload.
+
+	when live state is hit
+	initial active area based on authenticated
+	unless an active area was already set.
+
+
+	body.class
+
+	reflect state on body at livepage, and onwards
+	after live state and loading finished.
+</body>
+</html>
