@@ -343,7 +343,11 @@ function Resolver(name,ns,options)
     */
     resolver.declare = function(name,value,onundefined) 
     {
-        var names = (typeof name == "object")? name : name.split(".");
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
         var symbol = names.pop();
     	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
@@ -363,7 +367,11 @@ function Resolver(name,ns,options)
     */
     resolver.set = function(name,value,onundefined) 
     {
-        var names = (typeof name == "object")? name : name.split(".");
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
