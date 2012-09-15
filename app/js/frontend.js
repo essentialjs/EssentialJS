@@ -53,8 +53,8 @@ DocumentRoles.presets.declare("handlers.discard.presentation", PresentationLoade
 		console.log("frontend_post_loading");
 	}
 
-	Resolver("page").on("change","state",function(ev){
-		if (ev.symbol == "loading" && ev.value == false) {
+	Resolver("page").on("change","state.loading",function(ev){
+		if (ev.value == false) {
 			// finish the loading of the frontend
 			if (Resolver("page")("state.configured")==false) frontend_post_loading();
 			Resolver("page").set(["state","configured"],true);
@@ -69,4 +69,5 @@ DocumentRoles.presets.declare("handlers.discard.presentation", PresentationLoade
 	Resolver("page").on("change","state.loadingConfigUrl",function(ev){
 		if (ev.value == false) console.log("loaded config: ",ev.symbol)
 	});
+	console.log("frontend.js finished load execution");
 })();

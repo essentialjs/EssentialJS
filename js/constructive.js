@@ -108,12 +108,14 @@ function Resolver(name,ns,options)
     function _makeResolverEvent(resolver,type,selector,data,callback) {
     	var e = {};
 
+        e.resolver = resolver;
     	e.type = type;
     	e.selector = selector;
     	e.data = data;
     	e.callback = callback;
 
     	function trigger(symbol,value) {
+            //TODO this.base
     		this.symbol = symbol;
     		this.value = value;
     		this.callback.call(resolver,this);

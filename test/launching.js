@@ -11,8 +11,12 @@ test("Page Resolver",function(){
 	equal(Resolver("page")("config.logo.charset"),"utf-8");
 })
 
+var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+ApplicationConfig.restrict({ singleton:true });
+
 test("ApplicationConfig",function(){
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var configRequired = Resolver("essential")("configRequired");
+	var configLoaded = Resolver("essential")("configLoaded");
 	var ac = ApplicationConfig();
 
 	// application/config
@@ -27,10 +31,33 @@ test("ApplicationConfig",function(){
 	equal(ac.state("connected"),true);
 	equal(ac.state("configured"),true);
 	equal(ac.state("fullscreen"),false);
-	// equal(ac.state("launching"),false);
+	equal(ac.state("launching"),false);
 	equal(ac.state("launched"),false);
 
 	// waiting for later determination if logged in
 	Resolver("page").set("state.authenticated",false);
+
+
+	// wait for config files
+	debugger;
+	configRequired("medic.conf");
+
+	ok(ac.isPageState("loadingConfig"));
+
+	// config file loaded
+	configLoaded("medic.conf");
+
+	ok(! ac.isPageState("loadingConfig"));
+	ok(! ac.isPageState("loadingScripts"));
+
+	// loading complete
+	ok(1,"body classes are reflected")
+
+	// when launched 
+	ok(1,"last page singletons are instantiated")
+	ok(1,"last document roles are enhanced")
+	ok(1,"body classes are reflected")
 });
+
+//TODO when page is brought live the correct area is activated
 

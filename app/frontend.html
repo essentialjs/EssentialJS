@@ -125,7 +125,7 @@
 		<button name="logout" type="submit">X</button>
    </form>
   </div>
-
+  	<script>Resolver("page").reflectStateOn(document.body);</script>
   	<script src="js/jquery-1.7.2.min.js" type="text/javascript"></script>
   	<script src="js/spin.min.js" type="text/javascript"></script>
 
@@ -140,13 +140,13 @@
 	</script>
 
 	loading state determined when DOM ready reflecting outstanding scripts/config.
-	
+
 	when loading is done, when page is launching, when page is launched
-	the unenhanced are enhanced and outstanding page 
-	lifecycle generator are instantiated.
+	the unenhanced roles are enhanced and outstanding page 
+	lifecycle generators are instantiated.
 
 	between loading done and page launching
-	outstanding page lifecycle generator are instantiated.
+	outstanding page lifecycle generators are instantiated.
 
 	live state
 
@@ -161,5 +161,12 @@
 
 	reflect state on body at livepage, and onwards
 	after live state and loading finished.
+
+	note:
+
+	post processing of scripts can add configuration to fetch going back to 
+	the loading phase in this case configured should be set to false so the
+	post load configuration can be revisited after the config is fetched.
+
 </body>
 </html>
