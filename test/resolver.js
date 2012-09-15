@@ -287,11 +287,14 @@ test('Resolver change listener',function() {
 	equal(_ondef.callCount,1);
 
 	var _onxyz = sinon.spy();
-	resolver.on("change","x.y.z",_onxyz);
+	resolver.on("change","x.y.z",{},_onxyz);
 	resolver.set("x.y.z","xyz");
 	equal(_onxyz.callCount,1,"Change listener on resolver using string is triggered");
 	resolver.set(["x","y","z"],"xyz2");
 	equal(_onxyz.callCount,2,"Change listener on resolver using array name is triggered");
+
+	ok(1,"Removing change listener")
+	ok(1,"Resolver change listener with 3 params")
 
 	ok(1,"Change listener is only called if values have changed")
 	ok(1,"Change listener is only called recursively for 3 levels")

@@ -333,7 +333,7 @@ function Resolver(name,ns,options)
     			}
     			break;
     		case 4:
-		    	this.reference(selector).on(type,selector,data,callback);
+		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
     };
