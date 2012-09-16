@@ -1,5 +1,6 @@
 var fs = require('fs');
 var uglify = require('uglify-js');
+var less = require('less');
 
 var MODERNIZR_FILES = [
   'modernizr-prefix.js',
@@ -70,6 +71,15 @@ task('combine',function(params){
   fs.writeSync(out, combine(ESSENTIAL_FILES));
   fs.writeSync(out, "\n");
   fs.writeSync(out, combine(EXTRAS_FILES));
+});
+
+desc('Make CSS files for demos');
+task('css',function(params){
+  var basic = fs.readFileSync('app/css/basic.less').toString();
+  less.Parser({}).parse(basic,function(css){
+    var out = fs.openSync('app/css/basic.css', 'w+');
+    fs.writeSync(out, css);
+  })
 });
 
 desc('Build all files');
