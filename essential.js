@@ -132,15 +132,21 @@ function Resolver(name,ns,options)
     function _makeResolverEvent(resolver,type,selector,data,callback) {
     	var e = {};
 
+        e.resolver = resolver;
     	e.type = type;
     	e.selector = selector;
     	e.data = data;
     	e.callback = callback;
+        e.inTrigger = 0;
 
-    	function trigger(symbol,value) {
+    	function trigger(base,symbol,value) {
+            if (this.inTrigger) return;
+            ++this.inTrigger;
+            this.base = base;
     		this.symbol = symbol;
     		this.value = value;
     		this.callback.call(resolver,this);
+            --this.inTrigger;
     	}
     	e.trigger = callback? trigger : nopCall;
 
@@ -154,6 +160,9 @@ function Resolver(name,ns,options)
      */
     function resolver(name,onundefined) {
         if (typeof name == "object") {
+            // name is array
+            if (name.length != undefined) return _resolve(name,null,onundefined);
+            // {} call
             return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
@@ -186,12 +195,17 @@ function Resolver(name,ns,options)
     function makeReference(name,onundefined,listeners)
     {
         var names = name.split(".");
+        var leafName = names.pop();
+        var baseRefName = names.join(".");
+        var baseNames = names.slice(0);
+        names.push(leafName);
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
     	function get() {
     		if (arguments.length==1) {
-	        	var r = _resolve(names,arguments[0].split("."),onundefined);
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+	        	var r = _resolve(names,subnames,onundefined);
     			//TODO onundefined for the arg
 	        	return r;
     		} else {
@@ -201,39 +215,64 @@ function Resolver(name,ns,options)
         }
         function set(value) {
         	if (arguments.length > 1) {
-        		var subnames = arguments[0].split(".");
+        		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
 	        	var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
 	        	value = arguments[1];
+
+                if (_setValue(value,combined,base,symbol)) {
+                    var childRef = resolver.references[parentName + "." + symbol];
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    var parentRef = resolver.references[parentName];
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                }
         	} else {
-				var symbol = names.pop();
-				var base = _resolve(names,null,onundefinedSet);
-				names.push(symbol);
+				var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (_setValue(value,baseNames,base,leafName)) {
+                    this._callListener("change",baseNames,base,leafName,value);
+                    //TODO test for triggering specific listeners
+                    var parentRef = resolver.references[baseRefName];
+                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                }
         	}
-			if (_setValue(value,names,base,symbol)) {
-				this._callListener("change",names,symbol,value);
-	    	//TODO parent listeners
-			}
 			return value;
         }
         function declare(value) {
         	if (arguments.length > 1) {
-        		var subnames = arguments[0].split(".");
-				var symbol = subnames.pop();
-	        	var base = _resolve(names,subnames,onundefinedSet);
-	        	value = arguments[1];
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                value = arguments[1];
+
+                if (base[symbol] === undefined) {
+                    if (_setValue(value,combined,base,symbol)) {
+                        var childRef = resolver.references[parentName + "." + symbol];
+                        if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                        var parentRef = resolver.references[parentName];
+                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    }
+                }
+                return base[symbol];
         	} else {
-	            var symbol = names.pop();
-	        	var base = _resolve(names,null,onundefinedSet);
-	        	names.push(symbol);
+                var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (base[leafName] === undefined) {
+                    if (_setValue(value,baseNames,base,leafName)) {
+                        this._callListener("change",baseNames,base,leafName,value);
+                        //TODO test for triggering specific listeners
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
+                }
+                return base[leafName];
         	}
-        	if (base[symbol] === undefined) {
-        		if (_setValue(value,names,base,symbol)) {
-			    	this._callListener("change",names,symbol,value);
-	    	//TODO parent listeners
-			    }
-        		return value
-        	} else return base[symbol];
         }
     	function getEntry(key) {
         	var base = _resolve(names,null,onundefined);
@@ -296,14 +335,10 @@ function Resolver(name,ns,options)
 
 	    function trigger(type) {
 	    	var value = _resolve(names,null,onundefined);
-	    	var symbol = names.pop();
-			var parentName = names.join(".");
 
-	    	this._callListener(type,names,symbol,value);
-			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,symbol,value);
-
-			names.push(symbol);
+	    	this._callListener(type,baseNames,leafName,value);
+			var parentRef = resolver.references[baseRefName];
+			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
 	    }    
 
         get.set = set;
@@ -317,9 +352,9 @@ function Resolver(name,ns,options)
         get.trigger = trigger;
         get.listeners = listeners || _makeListeners();
 
-	    function _callListener(type,names,symbol,value) {
+	    function _callListener(type,names,base,symbol,value) {
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
-	    		event.trigger(symbol,value);
+	    		event.trigger(base,symbol,value);
 	    	}
 	    }
 	    get._callListener = _callListener;
@@ -353,39 +388,53 @@ function Resolver(name,ns,options)
     			}
     			break;
     		case 4:
-		    	this.reference(selector).on(type,selector,data,callback);
+		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
     };
     
+    /*
+        name = string/array
+    */
     resolver.declare = function(name,value,onundefined) 
     {
-        var names = name.split(".");
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
         var symbol = names.pop();
     	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
     		if (_setValue(value,names,base,symbol)) {
 	    		var ref = resolver.references[name];
-	    		if (ref) ref._callListener("change",names,symbol,value);
+	    		if (ref) ref._callListener("change",names,base,symbol,value);
 				var parentName = names.join(".");
 				var parentRef = resolver.references[parentName];
-				if (parentRef) parentRef._callListener("change",names,symbol,value);
+				if (parentRef) parentRef._callListener("change",names,base,symbol,value);
     		}
     		return value;
     	} else return base[symbol];
     };
 
+    /*
+        name = string/array
+    */
     resolver.set = function(name,value,onundefined) 
     {
-		var names = name.split(".");
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
-			if (ref) ref._callListener("change",names,symbol,value);
+			if (ref) ref._callListener("change",names,base,symbol,value);
 			var parentName = names.join(".");
 			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,symbol,value);
+			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
 		}
 		return value;
     };
@@ -751,6 +800,8 @@ function Generator(mainConstr,options)
 		}
 		else {
 			//TODO remove from restricted list
+			this.info.singleton = false;
+			this.info.existing = null;
 		}
 		this.info.restrictedArgs = args;
 		if (args) {
@@ -1096,36 +1147,57 @@ Generator.ObjectGenerator = Generator(Object);
 	function setStubConsole() {
 		function no_logging(level,parts) {}
  
-		proxyConsole["log"] = function() { no_logging("none",arguments); };
-		proxyConsole["trace"] = function() { no_logging("trace",arguments); };
-		proxyConsole["debug"] = function() { no_logging("debug",arguments); };
-		proxyConsole["info"] = function() { no_logging("info",arguments); };
-		proxyConsole["warn"] = function() { no_logging("warn",arguments); };
-		proxyConsole["error"] = function() { no_logging("error",arguments); };
-		proxyConsole["group"] = function() { no_logging("group",arguments); };
-		proxyConsole["groupEnd"] = function() { no_logging("groupEnd",arguments); };
+		proxyConsole["log"] = function() { 
+			no_logging("none",arguments); };
+		proxyConsole["trace"] = function() { 
+			no_logging("trace",arguments); };
+		proxyConsole["debug"] = function() { 
+			no_logging("debug",arguments); };
+		proxyConsole["info"] = function() { 
+			no_logging("info",arguments); };
+		proxyConsole["warn"] = function() { 
+			no_logging("warn",arguments); };
+		proxyConsole["error"] = function() { 
+			no_logging("error",arguments); };
+		proxyConsole["group"] = function() { 
+			no_logging("group",arguments); };
+		proxyConsole["groupEnd"] = function() { 
+			no_logging("groupEnd",arguments); };
 	}
 	essential.declare("setStubConsole",setStubConsole);
  
 	function setWindowConsole() {
-		proxyConsole["log"] = function() { window.console.log.apply(window.console,arguments); };
-		proxyConsole["trace"] = function() { window.console.trace(); };
-		proxyConsole["debug"] = function() { (window.console.debug || window.console.info).apply(window.console,arguments); };
-		proxyConsole["info"] = function() { window.console.info.apply(window.console,arguments); };
-		proxyConsole["warn"] = function() { window.console.warn.apply(window.console,arguments); };
-		proxyConsole["error"] = function() { window.console.error.apply(window.console,arguments); };
+		proxyConsole["log"] = function() { 
+			window.console.log.apply(window.console,arguments); };
+		proxyConsole["trace"] = function() { 
+			window.console.trace(); };
+		proxyConsole["debug"] = function() { 
+			(window.console.debug || window.console.info).apply(window.console,arguments); };
+		proxyConsole["info"] = function() { 
+			window.console.info.apply(window.console,arguments); };
+		proxyConsole["warn"] = function() { 
+			window.console.warn.apply(window.console,arguments); };
+		proxyConsole["error"] = function() { 
+			window.console.error.apply(window.console,arguments); };
  
 		if (window.console.debug == undefined) {
 			// IE8
-			proxyConsole["log"] = function(m) { window.console.log(m); };
-			proxyConsole["trace"] = function(m) { window.console.trace(); };
-			proxyConsole["debug"] = function(m) { window.console.log(m); };
-			proxyConsole["info"] = function(m) { window.console.info(m); };
-			proxyConsole["warn"] = function(m) { window.console.warn(m); };
-			proxyConsole["error"] = function(m) { window.console.error(m); };
+			proxyConsole["log"] = function(m) { 
+				window.console.log(m); };
+			proxyConsole["trace"] = function(m) { 
+				window.console.trace(); };
+			proxyConsole["debug"] = function(m) { 
+				window.console.log(m); };
+			proxyConsole["info"] = function(m) { 
+				window.console.info(m); };
+			proxyConsole["warn"] = function(m) { 
+				window.console.warn(m); };
+			proxyConsole["error"] = function(m) { 
+				window.console.error(m); };
 		}
 	}
 	essential.declare("setWindowConsole",setWindowConsole);
+	
 	if (window.console) setWindowConsole();
 	else setStubConsole();
  
@@ -1752,7 +1824,7 @@ Generator.ObjectGenerator = Generator(Object);
 	
 	var nativeClassList = !!document.documentElement.classList;
 
-	function mixinElementState(el,state) {
+	function readElementState(el,state) {
 		state.disabled = el.disabled || false; // undefined before attach
 		state.readOnly = el.readOnly || false;
 		state.hidden = el.getAttribute("hidden") != null;
@@ -1904,6 +1976,21 @@ Generator.ObjectGenerator = Generator(Object);
 
 	}
 
+	function Stateful_reflectStateOn(el,useAsSource) {
+		var stateful = el.stateful = this;
+		if (el._cleaners == undefined) el._cleaners = [];
+		//TODO consider when to clean body element
+		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+		if (useAsSource != false) readElementState(el,stateful("state"));
+		stateful.on("change","state",el,reflectElementState);
+		if (!nativeClassList) {
+			el.classList = DOMTokenList();
+			DOMTokenList_mixin(el.classList,el.className);
+		}
+		var mapClass = el.stateful("map.class","undefined");
+		if (mapClass) StatefulResolver.updateClass(stateful,el); //TODO move 
+	}
+ 
 	// all stateful elements whether field or not get a cleaner
 	function statefulCleaner() {
 		if (this.stateful) {
@@ -1926,41 +2013,30 @@ Generator.ObjectGenerator = Generator(Object);
 	  StatefulResolver(el,true)
 	*/
 	function StatefulResolver(el,mapClassForState) {
-		if (el) {
-			if (el.stateful) return el.stateful;
-			var resolverOptions = {};
-			if (typeof mapClassForState == "object") {
-				resolverOptions = mapClassForState;
-				mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
-			}
-			var stateful = el.stateful = Resolver({ state: {} },resolverOptions);
-			if (el._cleaners == undefined) el._cleaners = [];
-			if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
-			mixinElementState(el,stateful("state"));
-			stateful.reference("state").on("change",el,reflectElementState);
-			if (!nativeClassList) {
-				el.classList = DOMTokenList();
-			}
-			DOMTokenList_mixin(el.classList,el.className);
-		} else {
-			var resolverOptions = typeof mapClassForState == "object"? mapClassForState : {}
-			mapClassForState = false;
-			var stateful = Resolver({ state: {} },resolverOptions);
+		if (el && el.stateful) return el.stateful;
+
+		var resolverOptions = {};
+		if (typeof mapClassForState == "object") {
+			resolverOptions = mapClassForState;
+			mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
 		}
+		var stateful = Resolver({ state: {} },resolverOptions);
 		if (mapClassForState) {
 			stateful.set("map.class.state", new ClassForState());
 			stateful.set("map.class.notstate", new ClassForNotState());
-			StatefulResolver.updateClass(stateful,el);
 		}
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.setField = Stateful_setField;
+		stateful.reflectStateOn = Stateful_reflectStateOn;
 		stateful.destroy = Stateful_destroy;
 
+		if (el) stateful.reflectStateOn(el);
+		
 		return stateful;
 	}
 	essential.declare("StatefulResolver",StatefulResolver);
 
-	var pageResolver = StatefulResolver(null,{ name:"page" });
+	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
 	pageResolver.declare("config",{});
 	pageResolver.reference("state").mixin({
 		"livepage": false,
@@ -1969,13 +2045,26 @@ Generator.ObjectGenerator = Generator(Object);
 		"connected": true,
 		"online": true, //TODO update
 		"loading": true,
-		"loadingConfig": true,
-		"loadingScripts": true,
+		"loadingConfig": false,
+		"loadingScripts": false,
 		"configured": true,
-		"fullscreen": false, 
+		"fullscreen": false,
+		"launching": false, 
 		"launched": false
 		});
 
+	pageResolver.reference("map.class.state").mixin({
+		authenticated: "authenticated",
+		loading: "loading",
+		//login-error
+		launched: "launched",
+		launching: "launching",
+		livepage: "livepage"
+	});
+
+	pageResolver.reference("map.class.notstate").mixin({
+		authenticated: "login"
+	});
 
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
@@ -1994,7 +2083,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		domscript.onload = function(ev) { 
 			if ( ! this.onloadDone ) {
-				this.onloadDone = true; 
+				this.onloadDone = true;
 				trigger.call(this,ev || event); 
 			}
 		};
@@ -2014,19 +2103,21 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
-    var pastloadScripts = {};
-
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
-			pastloadScripts[this.src.replace(baseUrl,"")] = true;
-			console.log("loaded: "+this.src.replace(baseUrl,""));
-			ApplicationConfig().justUpdateState();
+			var el = this;
+			setTimeout(function(){
+				// make sure it's not called before script executes
+				pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+			},0);
 		}
 		return delayedOnload;       
 	}
 
 	function _queueDelayedAssets()
 	{
+		//TODO move this to pageResolver("state.ready")
+
 		console.debug("loading phased scripts");
 		var links = document.getElementsByTagName("link");
 		//TODO phase
@@ -2041,7 +2132,8 @@ Generator.ObjectGenerator = Generator(Object);
 			//attrs["id"] = l.getAttribute("script-id");
 			attrs["onload"] = delayedScriptOnload(l.rel);
 			var relSrc = attrs["src"].replace(baseUrl,"");
-			pastloadScripts[relSrc] = false;
+			pageResolver.set(["state","loadingScripts"],true);
+			pageResolver.set(["state","loadingScriptsUrl",relSrc],true);
 			document.body.appendChild(HTMLScriptElement(attrs));
 		}
 	}
@@ -2052,15 +2144,17 @@ Generator.ObjectGenerator = Generator(Object);
 
 	function configRequired(url)
 	{
-		requiredConfigs[url] = false;
+		pageResolver.set(["state","loadingConfig"],true);
+		pageResolver.set(["state","loadingConfigUrl",url],true);
+		//requiredConfigs[url] = false;
 	}
 	essential.set("configRequired",configRequired);
 
 	function configLoaded(url)
 	{
-		requiredConfigs[url] = true;
+		pageResolver.set(["state","loadingConfigUrl",url],false);
+		//requiredConfigs[url] = true;
 		console.debug("config loaded:"+url);
-		ApplicationConfig().justUpdateState();
 	}
 	essential.set("configLoaded",configLoaded);
 
@@ -2775,21 +2869,13 @@ Generator.ObjectGenerator = Generator(Object);
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
 		ap.state.set("livepage",true);
-		ap.reflectState();
 
-		if (_activeAreaName) {
-			activateArea(_activeAreaName);
-		} else {
-			if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
-			else activateArea(ap.getIntroductionArea());
-		}
 	}
 
 	function onPageLoad(ev) {
 		var ap = ApplicationConfig();
 		_liveAreas = true;
 		ap.state.set("livepage",true);
-		ap.updateState();
 	}
 
 	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
@@ -2802,12 +2888,14 @@ Generator.ObjectGenerator = Generator(Object);
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
-
-		document.body.stateful = pageResolver;
-		//TODO reflect class on body
+		this.state = state;
+		state.on("change",this,this.onStateChange);
+		this.state.set("loadingScriptsUrl",{});
+		this.state.set("loadingConfigUrl",{});
+		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
+		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
 		this.config = this.resolver.reference("config","undefined");
-		this.state = state;
 		this._gather();
 		this._apply();
 
@@ -2823,12 +2911,100 @@ Generator.ObjectGenerator = Generator(Object);
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
 
+	ApplicationConfig.prototype.onStateChange = function(ev) {
+		switch(ev.symbol) {
+			case "livepage":
+				pageResolver.reflectStateOn(document.body,false);
+				var ap = ev.data;
+				//if (ev.value == true) ap.reflectState();
+				if (_activeAreaName) {
+					activateArea(_activeAreaName);
+				} else {
+					//TODO scan config to determine these
+					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
+				}
+				break;
+			case "loadingScripts":
+			case "loadingConfig":
+				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
+				--ev.inTrigger;
+				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
+				++ev.inTrigger;
+				break;
+
+			case "loading":
+				if (ev.value == false) {
+					if (document.body) essential("instantiatePageSingletons")();	
+					enhanceUnhandledElements();
+					if (ev.base.configured == true && ev.base.authenticated == true && ev.base.authorised == true && ev.base.launched == false) {
+						this.set("state.launching",true);
+						// do the below as recursion is prohibited
+						if (document.body) essential("instantiatePageSingletons")();
+						enhanceUnhandledElements();
+					}
+				} 
+				break;
+			case "authenticated":
+			case "authorised":
+			case "configured":
+				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
+					&& ev.base.authorised == true && ev.base.launched == false) {
+					this.set("state.launching",true);
+					// do the below as recursion is prohibited
+					if (document.body) essential("instantiatePageSingletons")();
+					enhanceUnhandledElements();
+				}
+				break;			
+			case "launching":
+			case "launched":
+				if (ev.value == true) {
+					if (document.body) essential("instantiatePageSingletons")();
+					enhanceUnhandledElements();
+					if (ev.symbol == "launched") this.set("state.launching",false);
+				}
+				break;
+			//TODO authenticated, authorised, connected
+			default:
+				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
+					if (document.body) essential("instantiatePageSingletons")();
+				}
+		}
+	};
+
+	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
+		var loadingScriptsUrl = this("state.loadingScriptsUrl");
+			
+		var loadingScripts = false;
+		for(var url in loadingScriptsUrl) {
+			if (loadingScriptsUrl[url]) loadingScripts = true;
+		}
+		this.set("state.loadingScripts",loadingScripts);
+		if (ev.value==false) {
+			// finished loading a script
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
+
+	ApplicationConfig.prototype.onLoadingConfig = function(ev) {
+		var loadingConfigUrl = this("state.loadingConfigUrl");
+			
+		var loadingConfig = false;
+		for(var url in loadingConfigUrl) {
+			if (loadingConfigUrl[url]) loadingConfig = true;
+		}
+		this.set("state.loadingConfig",loadingConfig);
+		if (ev.value==false) {
+			// finished loading a config
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
+
 	ApplicationConfig.prototype.isPageState = function(whichState) {
 		return this.resolver("state."+whichState);
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
-		this.resolver.set("state."+whichState,v);
-		if (this.state("launched")) this.updateState();
+		this.resolver.set(["state",whichState],v);
 	};
 	ApplicationConfig.prototype.getAuthenticatedArea = function() {
 		// return "edit";
@@ -2900,55 +3076,6 @@ Generator.ObjectGenerator = Generator(Object);
 		if (keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
-
-	ApplicationConfig.prototype.justUpdateState = function() 
-	{   
-		var loading = false,loadingScripts = false,loadingConfig = false;
-
-		for(var n in pastloadScripts) {
-			if (pastloadScripts[n] == false) { loading = true; loadingScripts = true; console.debug(n+" missing")}
-		}
-		for(var n in requiredConfigs) {
-			if (requiredConfigs[n] == false) { loading = true; loadingConfig = true; console.debug(n+" missing")}
-		}
-		this.resolver.set("state.loading",loading);
-		this.resolver.set("state.loadingScripts",loadingScripts);
-		this.resolver.set("state.loadingConfig",loadingConfig);
-		if (this.state("loading") == false && this.state("launched") == false) {
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	};
-
-	ApplicationConfig.prototype.updateState = function() 
-	{   
-		this.justUpdateState();
-
-		if (this.state("loading") == false) {
-			if (document.body) essential("instantiatePageSingletons")();
-			enhanceUnhandledElements();
-		}
-
-		//TODO do this in justUpdateState as well?
-		this.reflectState();
-	};
-
-
-	ApplicationConfig.prototype.reflectState = function()
-	{
-		if (document.body == null) return; // body not there yet
-
-		var bodyClass = ArraySet.apply(null,document.body.className.split(" "));
-		bodyClass.set("login",! this.state("authenticated"));
-		bodyClass.set("authenticated",this.state("authenticated"));
-		bodyClass.set("loading",this.state("loading"));
-		bodyClass.set("login-error",this.state("loginError"));
-		bodyClass.set("launched",this.state("launched"));
-		bodyClass.set("launching",this.state("launching"));
-		bodyClass.set("livepage",this.state("livepage"));
-		console.debug("Changing body from '"+document.body.className+"' to '"+bodyClass.join(" ")+"'");
-		document.body.className = bodyClass.join(" "); //TODO should work: String(bodyClass)
-	};
-
 })();
 
 // need with context not supported in strict mode
