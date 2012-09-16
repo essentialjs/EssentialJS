@@ -18,7 +18,7 @@ Here we define a class equivalent in the module `appname.core.formatters`. The m
 
 If you want to create a DecimalFormatter instance simply call.
 
-    var formatter = Generator("appname.core.formatters.DecimalFormatter")(2);
+    var formatter = Resolver()("appname.core.formatters.DecimalFormatter")(2);
 
 The really powerful part is that you can configure the resolution and generation somewhere else.
 

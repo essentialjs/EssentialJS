@@ -3102,7 +3102,7 @@ Generator.ObjectGenerator = Generator(Object);
 		//TODO consider when to clean body element
 		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
 		if (useAsSource != false) readElementState(el,stateful("state"));
-		stateful.on("change","state",el,reflectElementState);
+		stateful.on("change","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
 		if (!nativeClassList) {
 			el.classList = DOMTokenList();
 			DOMTokenList_mixin(el.classList,el.className);
@@ -3255,6 +3255,15 @@ Generator.ObjectGenerator = Generator(Object);
 			pageResolver.set(["state","loadingScripts"],true);
 			pageResolver.set(["state","loadingScriptsUrl",relSrc],true);
 			document.body.appendChild(HTMLScriptElement(attrs));
+		}
+
+		var metas = document.getElementsByTagName("meta");
+		for(var i=0,m; m = metas[i]; ++i) {
+			switch((m.getAttribute("name") || "").toLowerCase()) {
+				case "enhanced roles":
+					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
+					break;
+			}
 		}
 	}
 	essential.set("_queueDelayedAssets",_queueDelayedAssets);
@@ -3758,6 +3767,16 @@ Generator.ObjectGenerator = Generator(Object);
 			this.submit(ev); //TODO action context
 		}
 	}
+
+	DocumentRoles.useBuiltins = function(list) {
+		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
+		for(var i=0,r; r = list[i]; ++i) {
+			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
+			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
+			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
+		}
+	}
+
 
 	DocumentRoles.enhance_dialog = _DocumentRoles.enhance_dialog = function (el,role,config) {
 		switch(el.tagName.toLowerCase()) {
