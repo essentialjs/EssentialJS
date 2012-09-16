@@ -195,6 +195,7 @@ function Resolver(name,ns,options)
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
 	    	//TODO parent listeners
+            //TODO test for triggering specific listeners
 			}
 			return value;
         }

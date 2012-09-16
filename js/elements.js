@@ -323,8 +323,7 @@
 		domscript.onload = function(ev) { 
 			if ( ! this.onloadDone ) {
 				this.onloadDone = true;
-				var that = this; 
-				setTimeout(function(){ trigger.call(that,ev || event) },0); 
+				trigger.call(this,ev || event); 
 			}
 		};
 		domscript.onreadystatechange = function(ev) { 
@@ -345,7 +344,11 @@
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
-			pageResolver.set(["state","loadingScriptsUrl",this.src.replace(baseUrl,"")],false);
+			var el = this;
+			setTimeout(function(){
+				// make sure it's not called before script executes
+				pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+			},0);
 		}
 		return delayedOnload;       
 	}
@@ -1163,7 +1166,7 @@
 				break;
 			case "loadingScripts":
 			case "loadingConfig":
-				console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
+				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
 				this.set("state.loading",this("state.loadingScripts") || this("state.loadingConfig"));
 				break;
 
@@ -1171,8 +1174,18 @@
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();	
 					enhanceUnhandledElements();
+					if (this("state.configured") == true && this("state.authenticated") == true && this("state.authorised") == true) {
+						this.set("state.launching",true);
+					}
 				} 
 				break;
+			case "authenticated":
+			case "authorised":
+			case "configured":
+				if (this("state.loading") == false && this("state.configured") == true && this("state.authenticated") == true && this("state.authorised") == true) {
+					this.set("state.launching",true);
+				}
+				break;			
 			case "launching":
 			case "launched":
 				if (ev.value == true) {
