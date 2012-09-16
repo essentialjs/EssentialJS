@@ -108,12 +108,14 @@ function Resolver(name,ns,options)
     function _makeResolverEvent(resolver,type,selector,data,callback) {
     	var e = {};
 
+        e.resolver = resolver;
     	e.type = type;
     	e.selector = selector;
     	e.data = data;
     	e.callback = callback;
 
     	function trigger(symbol,value) {
+            //TODO this.base
     		this.symbol = symbol;
     		this.value = value;
     		this.callback.call(resolver,this);
@@ -130,6 +132,9 @@ function Resolver(name,ns,options)
      */
     function resolver(name,onundefined) {
         if (typeof name == "object") {
+            // name is array
+            if (name.length != undefined) return _resolve(name,null,onundefined);
+            // {} call
             return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
@@ -167,7 +172,8 @@ function Resolver(name,ns,options)
 
     	function get() {
     		if (arguments.length==1) {
-	        	var r = _resolve(names,arguments[0].split("."),onundefined);
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+	        	var r = _resolve(names,subnames,onundefined);
     			//TODO onundefined for the arg
 	        	return r;
     		} else {
@@ -177,7 +183,7 @@ function Resolver(name,ns,options)
         }
         function set(value) {
         	if (arguments.length > 1) {
-        		var subnames = arguments[0].split(".");
+        		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
 	        	var base = _resolve(names,subnames,onundefinedSet);
 	        	value = arguments[1];
@@ -189,12 +195,13 @@ function Resolver(name,ns,options)
 			if (_setValue(value,names,base,symbol)) {
 				this._callListener("change",names,symbol,value);
 	    	//TODO parent listeners
+            //TODO test for triggering specific listeners
 			}
 			return value;
         }
         function declare(value) {
         	if (arguments.length > 1) {
-        		var subnames = arguments[0].split(".");
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
 	        	var base = _resolve(names,subnames,onundefinedSet);
 	        	value = arguments[1];
@@ -329,14 +336,21 @@ function Resolver(name,ns,options)
     			}
     			break;
     		case 4:
-		    	this.reference(selector).on(type,selector,data,callback);
+		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
     };
     
+    /*
+        name = string/array
+    */
     resolver.declare = function(name,value,onundefined) 
     {
-        var names = name.split(".");
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
         var symbol = names.pop();
     	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
@@ -351,9 +365,16 @@ function Resolver(name,ns,options)
     	} else return base[symbol];
     };
 
+    /*
+        name = string/array
+    */
     resolver.set = function(name,value,onundefined) 
     {
-		var names = name.split(".");
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
@@ -727,6 +748,8 @@ function Generator(mainConstr,options)
 		}
 		else {
 			//TODO remove from restricted list
+			this.info.singleton = false;
+			this.info.existing = null;
 		}
 		this.info.restrictedArgs = args;
 		if (args) {

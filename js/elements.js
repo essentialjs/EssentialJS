@@ -226,6 +226,10 @@
 
 	}
 
+	function Stateful_reflectStateOn(el) {
+
+	}
+ 
 	// all stateful elements whether field or not get a cleaner
 	function statefulCleaner() {
 		if (this.stateful) {
@@ -276,6 +280,7 @@
 		}
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.setField = Stateful_setField;
+		stateful.reflectStateOn = Stateful_reflectStateOn;
 		stateful.destroy = Stateful_destroy;
 
 		return stateful;
@@ -291,10 +296,11 @@
 		"connected": true,
 		"online": true, //TODO update
 		"loading": true,
-		"loadingConfig": true,
-		"loadingScripts": true,
+		"loadingConfig": false,
+		"loadingScripts": false,
 		"configured": true,
-		"fullscreen": false, 
+		"fullscreen": false,
+		"launching": false, 
 		"launched": false
 		});
 
@@ -316,7 +322,7 @@
 
 		domscript.onload = function(ev) { 
 			if ( ! this.onloadDone ) {
-				this.onloadDone = true; 
+				this.onloadDone = true;
 				trigger.call(this,ev || event); 
 			}
 		};
@@ -336,13 +342,13 @@
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
-    var pastloadScripts = {};
-
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
-			pastloadScripts[this.src.replace(baseUrl,"")] = true;
-			console.log("loaded: "+this.src.replace(baseUrl,""));
-			ApplicationConfig().justUpdateState();
+			var el = this;
+			setTimeout(function(){
+				// make sure it's not called before script executes
+				pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+			},0);
 		}
 		return delayedOnload;       
 	}
@@ -363,7 +369,8 @@
 			//attrs["id"] = l.getAttribute("script-id");
 			attrs["onload"] = delayedScriptOnload(l.rel);
 			var relSrc = attrs["src"].replace(baseUrl,"");
-			pastloadScripts[relSrc] = false;
+			pageResolver.set(["state","loadingScripts"],true);
+			pageResolver.set(["state","loadingScriptsUrl",relSrc],true);
 			document.body.appendChild(HTMLScriptElement(attrs));
 		}
 	}
@@ -374,15 +381,17 @@
 
 	function configRequired(url)
 	{
-		requiredConfigs[url] = false;
+		pageResolver.set(["state","loadingConfig"],true);
+		pageResolver.set(["state","loadingConfigUrl",url],true);
+		//requiredConfigs[url] = false;
 	}
 	essential.set("configRequired",configRequired);
 
 	function configLoaded(url)
 	{
-		requiredConfigs[url] = true;
+		pageResolver.set(["state","loadingConfigUrl",url],false);
+		//requiredConfigs[url] = true;
 		console.debug("config loaded:"+url);
-		ApplicationConfig().justUpdateState();
 	}
 	essential.set("configLoaded",configLoaded);
 
@@ -1097,21 +1106,13 @@
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
 		ap.state.set("livepage",true);
-		ap.reflectState();
 
-		if (_activeAreaName) {
-			activateArea(_activeAreaName);
-		} else {
-			if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
-			else activateArea(ap.getIntroductionArea());
-		}
 	}
 
 	function onPageLoad(ev) {
 		var ap = ApplicationConfig();
 		_liveAreas = true;
 		ap.state.set("livepage",true);
-		ap.updateState();
 	}
 
 	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
@@ -1124,12 +1125,17 @@
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
+		this.state = state;
+		state.on("change",this,this.onStateChange);
+		this.state.set("loadingScriptsUrl",{});
+		this.state.set("loadingConfigUrl",{});
+		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
+		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
 		document.body.stateful = pageResolver;
 		//TODO reflect class on body
 
 		this.config = this.resolver.reference("config","undefined");
-		this.state = state;
 		this._gather();
 		this._apply();
 
@@ -1145,12 +1151,89 @@
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
 
+	ApplicationConfig.prototype.onStateChange = function(ev) {
+		switch(ev.symbol) {
+			case "livepage":
+				var ap = ev.data;
+				if (ev.value == true) ap.reflectState();
+				if (_activeAreaName) {
+					activateArea(_activeAreaName);
+				} else {
+					//TODO scan config to determine these
+					if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
+				}
+				break;
+			case "loadingScripts":
+			case "loadingConfig":
+				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
+				this.set("state.loading",this("state.loadingScripts") || this("state.loadingConfig"));
+				break;
+
+			case "loading":
+				if (ev.value == false) {
+					if (document.body) essential("instantiatePageSingletons")();	
+					enhanceUnhandledElements();
+					if (this("state.configured") == true && this("state.authenticated") == true && this("state.authorised") == true) {
+						this.set("state.launching",true);
+					}
+				} 
+				break;
+			case "authenticated":
+			case "authorised":
+			case "configured":
+				if (this("state.loading") == false && this("state.configured") == true && this("state.authenticated") == true && this("state.authorised") == true) {
+					this.set("state.launching",true);
+				}
+				break;			
+			case "launching":
+			case "launched":
+				if (ev.value == true) {
+					if (document.body) essential("instantiatePageSingletons")();
+					enhanceUnhandledElements();
+				}
+				break;
+			//TODO authenticated, authorised, connected
+			default:
+				if (this("state.loading")==false && this("state.launching")==false && this("state.launched")==false) {
+					if (document.body) essential("instantiatePageSingletons")();
+				}
+		}
+	};
+
+	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
+		var loadingScriptsUrl = this("state.loadingScriptsUrl");
+			
+		var loadingScripts = false;
+		for(var url in loadingScriptsUrl) {
+			if (loadingScriptsUrl[url]) loadingScripts = true;
+		}
+		this.set("state.loadingScripts",loadingScripts);
+		if (ev.value==false) {
+			// finished loading a script
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
+
+	ApplicationConfig.prototype.onLoadingConfig = function(ev) {
+		var loadingConfigUrl = this("state.loadingConfigUrl");
+			
+		var loadingConfig = false;
+		for(var url in loadingConfigUrl) {
+			if (loadingConfigUrl[url]) loadingConfig = true;
+		}
+		this.set("state.loadingConfig",loadingConfig);
+		if (ev.value==false) {
+			// finished loading a config
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
+
 	ApplicationConfig.prototype.isPageState = function(whichState) {
 		return this.resolver("state."+whichState);
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
-		this.resolver.set("state."+whichState,v);
-		if (this.state("launched")) this.updateState();
+		this.resolver.set(["state",whichState],v);
 	};
 	ApplicationConfig.prototype.getAuthenticatedArea = function() {
 		// return "edit";
@@ -1223,33 +1306,8 @@
 		return el;
 	};
 
-	ApplicationConfig.prototype.justUpdateState = function() 
-	{   
-		var loading = false,loadingScripts = false,loadingConfig = false;
-
-		for(var n in pastloadScripts) {
-			if (pastloadScripts[n] == false) { loading = true; loadingScripts = true; console.debug(n+" missing")}
-		}
-		for(var n in requiredConfigs) {
-			if (requiredConfigs[n] == false) { loading = true; loadingConfig = true; console.debug(n+" missing")}
-		}
-		this.resolver.set("state.loading",loading);
-		this.resolver.set("state.loadingScripts",loadingScripts);
-		this.resolver.set("state.loadingConfig",loadingConfig);
-		if (this.state("loading") == false && this.state("launched") == false) {
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	};
-
 	ApplicationConfig.prototype.updateState = function() 
 	{   
-		this.justUpdateState();
-
-		if (this.state("loading") == false) {
-			if (document.body) essential("instantiatePageSingletons")();
-			enhanceUnhandledElements();
-		}
-
 		//TODO do this in justUpdateState as well?
 		this.reflectState();
 	};

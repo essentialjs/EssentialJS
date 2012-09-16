@@ -134,6 +134,20 @@ test('Resolver set/declare value',function(){
 	var def_value = resolver.declare("d.e.f","def");
 	strictEqual(def_value,"def","returned value from declare");
 	equal(resolver("d.e.f"), "def");	
+
+	var ghi_value = resolver.set(["g","h","i"],"ghi");
+	strictEqual(ghi_value,"ghi","returned value from set");
+	equal(resolver(["g","h","i"]), "ghi");	
+	var ghi_value = resolver.declare(["g","h","i"],"xxx");
+	strictEqual(ghi_value,"ghi","returned value from set");
+	equal(resolver(["g","h","i"]), "ghi");	
+
+	var klm_value = resolver.declare(["k","l","m"],"klm");
+	strictEqual(klm_value,"klm","returned value from declare");
+	equal(resolver(["k","l","m"]), "klm");	
+
+	//TODO try string like objects for get/set/declare
+	//TODO try array like objects for get/set/declare
 })
 
 test('Resolver reference set/declare value',function(){
@@ -176,6 +190,20 @@ test('Resolver reference set/declare value',function(){
 	var l = ghi.set("k.l","l2");
 	equal(l,"l2");
 	equal(ghi("k.l"),"l2");
+
+	var ghi_value = ghi.set(["g2","h","i"],"ghi");
+	strictEqual(ghi_value,"ghi","returned value from set");
+	equal(ghi(["g2","h","i"]), "ghi");	
+	var ghi_value = ghi.declare(["g2","h","i"],"xxx");
+	strictEqual(ghi_value,"ghi","returned value from set");
+	equal(ghi(["g2","h","i"]), "ghi");	
+
+	var klm_value = ghi.declare(["k2","l","m"],"klm");
+	strictEqual(klm_value,"klm","returned value from declare");
+	equal(ghi(["k2","l","m"]), "klm");	
+
+	//TODO try string like objects for get/set/declare
+	//TODO try array like objects for get/set/declare
 })
 
 test('Resolver reference',function(){
@@ -221,7 +249,6 @@ test('Resolver reference',function(){
 	equal(r.getEntry("g"), "g");
 	equal(r.getEntry("h"), "h");
 	equal(r.getEntry("i"), "i");
-
 })
 
 // test trigger function handler(event) .trigger(eventName)
@@ -258,6 +285,19 @@ test('Resolver change listener',function() {
 //	ok(_ondef.calledWith({value:6}));
 	resolver.set("d.e.f", 6);
 	equal(_ondef.callCount,1);
+
+	var _onxyz = sinon.spy();
+	resolver.on("change","x.y.z",{},_onxyz);
+	resolver.set("x.y.z","xyz");
+	equal(_onxyz.callCount,1,"Change listener on resolver using string is triggered");
+	resolver.set(["x","y","z"],"xyz2");
+	equal(_onxyz.callCount,2,"Change listener on resolver using array name is triggered");
+
+	ok(1,"Removing change listener")
+	ok(1,"Resolver change listener with 3 params")
+
+	ok(1,"Change listener is only called if values have changed")
+	ok(1,"Change listener is only called recursively for 3 levels")
 
 });
 
