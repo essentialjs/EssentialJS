@@ -36,19 +36,32 @@ test("ApplicationConfig",function(){
 
 	// waiting for later determination if logged in
 	Resolver("page").set("state.authenticated",false);
+	Resolver("page").set("state.authorised",false);
 
 
 	// wait for config files
-	debugger;
 	configRequired("medic.conf");
 
 	ok(ac.isPageState("loadingConfig"));
+
+	equal(ac.state("launching"),false);
+	equal(ac.state("launched"),false);
+
+	Resolver("page").set("state.authenticated",true);
+
+	equal(ac.state("launching"),false);
+	equal(ac.state("launched"),false);
 
 	// config file loaded
 	configLoaded("medic.conf");
 
 	ok(! ac.isPageState("loadingConfig"));
 	ok(! ac.isPageState("loadingScripts"));
+	equal(ac.state("launching"),false);
+
+	Resolver("page").set("state.authorised",true);
+
+	equal(ac.state("launching"),true);
 
 	// loading complete
 	ok(1,"body classes are reflected")
