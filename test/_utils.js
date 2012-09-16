@@ -49,7 +49,7 @@ function simulateMouse(doc,element,eventName, props) {
 	  options.clientX = options.pointerX;
 	  options.clientY = options.pointerY;      
 	  var e = doc.createEventObject();
-	  for(var n in props) e[n] = options[n];
+	  for(var n in options) e[n] = options[n];
 	  element.fireEvent("on"+eventName,e)
 	} else
 	if (doc.createEvent) {
@@ -145,8 +145,8 @@ function createDocument(head,body) {
 		doc.documentElement.appendChild(_head);
 		doc.documentElement.appendChild(_body);
 debugger;
-		_head.innerHTML = head;
 		_body.innerHTML = body;
+		if (head != "") _head.innerHTML = head;
 
 	} else {
 		return document.createElement("DIV");// dummy default
