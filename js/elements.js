@@ -74,7 +74,7 @@
 	
 	var nativeClassList = !!document.documentElement.classList;
 
-	function mixinElementState(el,state) {
+	function readElementState(el,state) {
 		state.disabled = el.disabled || false; // undefined before attach
 		state.readOnly = el.readOnly || false;
 		state.hidden = el.getAttribute("hidden") != null;
@@ -226,8 +226,19 @@
 
 	}
 
-	function Stateful_reflectStateOn(el) {
-
+	function Stateful_reflectStateOn(el,useAsSource) {
+		var stateful = el.stateful = this;
+		if (el._cleaners == undefined) el._cleaners = [];
+		//TODO consider when to clean body element
+		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+		if (useAsSource != false) readElementState(el,stateful("state"));
+		stateful.on("change","state",el,reflectElementState);
+		if (!nativeClassList) {
+			el.classList = DOMTokenList();
+			DOMTokenList_mixin(el.classList,el.className);
+		}
+		var mapClass = el.stateful("map.class","undefined");
+		if (mapClass) StatefulResolver.updateClass(stateful,el); //TODO move 
 	}
  
 	// all stateful elements whether field or not get a cleaner
@@ -252,42 +263,30 @@
 	  StatefulResolver(el,true)
 	*/
 	function StatefulResolver(el,mapClassForState) {
-		if (el) {
-			if (el.stateful) return el.stateful;
-			var resolverOptions = {};
-			if (typeof mapClassForState == "object") {
-				resolverOptions = mapClassForState;
-				mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
-			}
-			var stateful = el.stateful = Resolver({ state: {} },resolverOptions);
-			if (el._cleaners == undefined) el._cleaners = [];
-			if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
-			mixinElementState(el,stateful("state"));
-			stateful.reference("state").on("change",el,reflectElementState);
-			if (!nativeClassList) {
-				el.classList = DOMTokenList();
-			}
-			DOMTokenList_mixin(el.classList,el.className);
-		} else {
-			var resolverOptions = typeof mapClassForState == "object"? mapClassForState : {}
-			mapClassForState = false;
-			var stateful = Resolver({ state: {} },resolverOptions);
+		if (el && el.stateful) return el.stateful;
+
+		var resolverOptions = {};
+		if (typeof mapClassForState == "object") {
+			resolverOptions = mapClassForState;
+			mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
 		}
+		var stateful = Resolver({ state: {} },resolverOptions);
 		if (mapClassForState) {
 			stateful.set("map.class.state", new ClassForState());
 			stateful.set("map.class.notstate", new ClassForNotState());
-			StatefulResolver.updateClass(stateful,el);
 		}
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.setField = Stateful_setField;
 		stateful.reflectStateOn = Stateful_reflectStateOn;
 		stateful.destroy = Stateful_destroy;
 
+		if (el) stateful.reflectStateOn(el);
+		
 		return stateful;
 	}
 	essential.declare("StatefulResolver",StatefulResolver);
 
-	var pageResolver = StatefulResolver(null,{ name:"page" });
+	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
 	pageResolver.declare("config",{});
 	pageResolver.reference("state").mixin({
 		"livepage": false,
@@ -304,6 +303,18 @@
 		"launched": false
 		});
 
+	pageResolver.reference("map.class.state").mixin({
+		authenticated: "authenticated",
+		loading: "loading",
+		//login-error
+		launched: "launched",
+		launching: "launching",
+		livepage: "livepage"
+	});
+
+	pageResolver.reference("map.class.notstate").mixin({
+		authenticated: "login"
+	});
 
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
@@ -355,6 +366,8 @@
 
 	function _queueDelayedAssets()
 	{
+		//TODO move this to pageResolver("state.ready")
+
 		console.debug("loading phased scripts");
 		var links = document.getElementsByTagName("link");
 		//TODO phase
@@ -1132,9 +1145,6 @@
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
-		document.body.stateful = pageResolver;
-		//TODO reflect class on body
-
 		this.config = this.resolver.reference("config","undefined");
 		this._gather();
 		this._apply();
@@ -1154,36 +1164,46 @@
 	ApplicationConfig.prototype.onStateChange = function(ev) {
 		switch(ev.symbol) {
 			case "livepage":
+				pageResolver.reflectStateOn(document.body,false);
 				var ap = ev.data;
-				if (ev.value == true) ap.reflectState();
+				//if (ev.value == true) ap.reflectState();
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
 					//TODO scan config to determine these
-					if (ap.isPageState("authenticated")) activateArea(ap.getAuthenticatedArea());
+					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
 					else activateArea(ap.getIntroductionArea());
 				}
 				break;
 			case "loadingScripts":
 			case "loadingConfig":
 				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
-				this.set("state.loading",this("state.loadingScripts") || this("state.loadingConfig"));
+				--ev.inTrigger;
+				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
+				++ev.inTrigger;
 				break;
 
 			case "loading":
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();	
 					enhanceUnhandledElements();
-					if (this("state.configured") == true && this("state.authenticated") == true && this("state.authorised") == true) {
+					if (ev.base.configured == true && ev.base.authenticated == true && ev.base.authorised == true && ev.base.launched == false) {
 						this.set("state.launching",true);
+						// do the below as recursion is prohibited
+						if (document.body) essential("instantiatePageSingletons")();
+						enhanceUnhandledElements();
 					}
 				} 
 				break;
 			case "authenticated":
 			case "authorised":
 			case "configured":
-				if (this("state.loading") == false && this("state.configured") == true && this("state.authenticated") == true && this("state.authorised") == true) {
+				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
+					&& ev.base.authorised == true && ev.base.launched == false) {
 					this.set("state.launching",true);
+					// do the below as recursion is prohibited
+					if (document.body) essential("instantiatePageSingletons")();
+					enhanceUnhandledElements();
 				}
 				break;			
 			case "launching":
@@ -1191,11 +1211,12 @@
 				if (ev.value == true) {
 					if (document.body) essential("instantiatePageSingletons")();
 					enhanceUnhandledElements();
+					if (ev.symbol == "launched") this.set("state.launching",false);
 				}
 				break;
 			//TODO authenticated, authorised, connected
 			default:
-				if (this("state.loading")==false && this("state.launching")==false && this("state.launched")==false) {
+				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
 					if (document.body) essential("instantiatePageSingletons")();
 				}
 		}
@@ -1305,30 +1326,6 @@
 		if (keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
-
-	ApplicationConfig.prototype.updateState = function() 
-	{   
-		//TODO do this in justUpdateState as well?
-		this.reflectState();
-	};
-
-
-	ApplicationConfig.prototype.reflectState = function()
-	{
-		if (document.body == null) return; // body not there yet
-
-		var bodyClass = ArraySet.apply(null,document.body.className.split(" "));
-		bodyClass.set("login",! this.state("authenticated"));
-		bodyClass.set("authenticated",this.state("authenticated"));
-		bodyClass.set("loading",this.state("loading"));
-		bodyClass.set("login-error",this.state("loginError"));
-		bodyClass.set("launched",this.state("launched"));
-		bodyClass.set("launching",this.state("launching"));
-		bodyClass.set("livepage",this.state("livepage"));
-		console.debug("Changing body from '"+document.body.className+"' to '"+bodyClass.join(" ")+"'");
-		document.body.className = bodyClass.join(" "); //TODO should work: String(bodyClass)
-	};
-
 })();
 
 // need with context not supported in strict mode

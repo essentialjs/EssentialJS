@@ -48,6 +48,9 @@
 	DocumentRoles.presets.declare("handlers.layout.presentation", PresentationLoader.layout_presentation);
 	DocumentRoles.presets.declare("handlers.discard.presentation", PresentationLoader.discard_presentation);
 
+	//TODO role that requires permissions
+
+	//TODO role that requires launching
 
 	function frontend_post_loading() {
 		// do things here that depends on all scripts and configs being loaded
@@ -60,29 +63,26 @@
 		},2000);
 	}
 
-	pageState.on("change","loading",function(ev){
-		if (ev.value == false) {
+	function frontend_launching() {
+		//TODO you can enable things here just before app is launched
+	}
+
+	// manage the loading of the application
+	pageState.on("change",function(ev){
+		if (ev.symbol == "loading" && ev.value == false) {
 			// finish the loading of the frontend, now that scripts and config is loaded.
 			if (pageState("configured")==false) frontend_post_loading();
 			pageState.set("configured",true);
 		}
+		if (ev.symbol == "launching" && ev.value == true) {
+			frontend_launching();
+			// give app and rendering time to settle
+			setTimeout(function(){
+				pageState.set("launched",true);
+			},100);
+		}
 	});
 
-	//
-	// listeners for logging when scripts/config are loaded
-	// demo purposes only
-	Resolver("page").on("change","state.loadingScriptsUrl",function(ev){
-		if (ev.value == false) console.log("loaded script: ",ev.symbol)
-	});
-	Resolver("page").on("change","state.loadingConfigUrl",function(ev){
-		if (ev.value == false) console.log("loaded config: ",ev.symbol)
-	});
-	Resolver("page").on("change","state.configured",function(ev){
-		if (ev.value == true) console.log("Loading done, application configured");
-	});
-	Resolver("page").on("change","state.authorised",function(ev){
-		if (ev.value == true) console.log("Loading of permissions done");
-	});
 
 	console.log("frontend.js finished load execution");
 
