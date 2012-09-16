@@ -263,6 +263,10 @@ test('Resolver change listener',function() {
 
 	var resolver = Resolver({});
 
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("change",_onab);
+
 	var abc = resolver.reference("a.b.c");
 	var _onabc = sinon.spy();
 	abc.on("change",_onabc);
@@ -271,6 +275,7 @@ test('Resolver change listener',function() {
 	equal(typeof abc(),"function");
 	equal(_onabc.callCount,1);
 	//ok(_onabc.calledWith({value:5}));
+	equal(_onab.callCount,1);
 
 	abc.setEntry("d","dd");
 	equal(resolver("a.b.c.d"), "dd");
@@ -300,6 +305,9 @@ test('Resolver change listener',function() {
 	ok(1,"Change listener is only called recursively for 3 levels")
 
 });
+
+//TODO reference.trigger
+//TODO test recursive triggers stopped
 
 test("Resolver mixinto",function() {
 	var mixtarget = {};

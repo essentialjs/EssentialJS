@@ -113,12 +113,16 @@ function Resolver(name,ns,options)
     	e.selector = selector;
     	e.data = data;
     	e.callback = callback;
+        e.inTrigger = 0;
 
-    	function trigger(symbol,value) {
-            //TODO this.base
+    	function trigger(base,symbol,value) {
+            if (this.inTrigger) return;
+            ++this.inTrigger;
+            this.base = base;
     		this.symbol = symbol;
     		this.value = value;
     		this.callback.call(resolver,this);
+            --this.inTrigger;
     	}
     	e.trigger = callback? trigger : nopCall;
 
@@ -167,6 +171,10 @@ function Resolver(name,ns,options)
     function makeReference(name,onundefined,listeners)
     {
         var names = name.split(".");
+        var leafName = names.pop();
+        var baseRefName = names.join(".");
+        var baseNames = names.slice(0);
+        names.push(leafName);
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
@@ -186,37 +194,61 @@ function Resolver(name,ns,options)
         		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
 	        	var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
 	        	value = arguments[1];
+
+                if (_setValue(value,combined,base,symbol)) {
+                    var childRef = resolver.references[parentName + "." + symbol];
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    var parentRef = resolver.references[parentName];
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                }
         	} else {
-				var symbol = names.pop();
-				var base = _resolve(names,null,onundefinedSet);
-				names.push(symbol);
+				var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (_setValue(value,baseNames,base,leafName)) {
+                    this._callListener("change",baseNames,base,leafName,value);
+                    //TODO test for triggering specific listeners
+                    var parentRef = resolver.references[baseRefName];
+                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                }
         	}
-			if (_setValue(value,names,base,symbol)) {
-				this._callListener("change",names,symbol,value);
-	    	//TODO parent listeners
-            //TODO test for triggering specific listeners
-			}
 			return value;
         }
         function declare(value) {
         	if (arguments.length > 1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-				var symbol = subnames.pop();
-	        	var base = _resolve(names,subnames,onundefinedSet);
-	        	value = arguments[1];
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                value = arguments[1];
+
+                if (base[symbol] === undefined) {
+                    if (_setValue(value,combined,base,symbol)) {
+                        var childRef = resolver.references[parentName + "." + symbol];
+                        if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                        var parentRef = resolver.references[parentName];
+                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    }
+                }
+                return base[symbol];
         	} else {
-	            var symbol = names.pop();
-	        	var base = _resolve(names,null,onundefinedSet);
-	        	names.push(symbol);
+                var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (base[leafName] === undefined) {
+                    if (_setValue(value,baseNames,base,leafName)) {
+                        this._callListener("change",baseNames,base,leafName,value);
+                        //TODO test for triggering specific listeners
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
+                }
+                return base[leafName];
         	}
-        	if (base[symbol] === undefined) {
-        		if (_setValue(value,names,base,symbol)) {
-			    	this._callListener("change",names,symbol,value);
-	    	//TODO parent listeners
-			    }
-        		return value
-        	} else return base[symbol];
         }
     	function getEntry(key) {
         	var base = _resolve(names,null,onundefined);
@@ -279,14 +311,10 @@ function Resolver(name,ns,options)
 
 	    function trigger(type) {
 	    	var value = _resolve(names,null,onundefined);
-	    	var symbol = names.pop();
-			var parentName = names.join(".");
 
-	    	this._callListener(type,names,symbol,value);
-			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,symbol,value);
-
-			names.push(symbol);
+	    	this._callListener(type,baseNames,leafName,value);
+			var parentRef = resolver.references[baseRefName];
+			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
 	    }    
 
         get.set = set;
@@ -300,9 +328,9 @@ function Resolver(name,ns,options)
         get.trigger = trigger;
         get.listeners = listeners || _makeListeners();
 
-	    function _callListener(type,names,symbol,value) {
+	    function _callListener(type,names,base,symbol,value) {
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
-	    		event.trigger(symbol,value);
+	    		event.trigger(base,symbol,value);
 	    	}
 	    }
 	    get._callListener = _callListener;
@@ -356,10 +384,10 @@ function Resolver(name,ns,options)
     	if (base[symbol] === undefined) { 
     		if (_setValue(value,names,base,symbol)) {
 	    		var ref = resolver.references[name];
-	    		if (ref) ref._callListener("change",names,symbol,value);
+	    		if (ref) ref._callListener("change",names,base,symbol,value);
 				var parentName = names.join(".");
 				var parentRef = resolver.references[parentName];
-				if (parentRef) parentRef._callListener("change",names,symbol,value);
+				if (parentRef) parentRef._callListener("change",names,base,symbol,value);
     		}
     		return value;
     	} else return base[symbol];
@@ -379,10 +407,10 @@ function Resolver(name,ns,options)
 		var base = _resolve(names,null,onundefined);
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
-			if (ref) ref._callListener("change",names,symbol,value);
+			if (ref) ref._callListener("change",names,base,symbol,value);
 			var parentName = names.join(".");
 			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,symbol,value);
+			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
 		}
 		return value;
     };

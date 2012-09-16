@@ -372,6 +372,7 @@
 		}
 	}
 	essential.declare("setWindowConsole",setWindowConsole);
+	
 	if (window.console) setWindowConsole();
 	else setStubConsole();
  
