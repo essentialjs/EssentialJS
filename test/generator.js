@@ -191,3 +191,5 @@ test("Generator presets",function(){
 	ok(1,"presets.declare assign/copy/resolve")
 });
 
+//TODO test restrict called multiple times
+
