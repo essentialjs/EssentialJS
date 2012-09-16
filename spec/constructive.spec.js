@@ -1,4 +1,4 @@
-@describe "resolver and generator" {
+@describe "resolver and generator" { 
     it "should do default resolves" {
         
 		var shapes = Resolver()("my.shapes");
@@ -114,6 +114,8 @@
 		c9 should be_instanceof(shapes.Shape);
 		c9.diameter should == 9;
 		c9.getWidth() should == 9;
+
+		//TODO Dialog.variant(({type:"bond"},BondDialog);
 	}
 	
 	it "should make a simple type generator" {

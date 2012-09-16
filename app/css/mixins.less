@@ -1,0 +1,124 @@
+.no-user-selection() {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.user-selection() {
+	-webkit-touch-callout: text;
+	-webkit-user-select: text;
+	-khtml-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+}
+
+.border-radius-withPie(@radius: 5px)
+{
+	.border-radius(@radius);
+	behavior: url(/PIE.htc);
+}
+
+.absolute-overlay() {
+	display: block;
+	position: absolute;
+	left:0; right:0;
+	width:100%; height:100%;
+}
+
+.center-dialog(@width,@height,@padding: 20px) {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: @width;
+	height: auto;
+	margin: 0 auto;
+	margin-top: -@height/2 - @padding;
+	margin-left: -@width/2 - @padding;
+	padding: @padding;
+	
+	z-index: @z-popup;
+}
+
+.center-bottom-dialog(@width,@height,@padding: 20px, @vert-offset:0px) {
+	position: absolute;
+	left: 50%;
+	top: 100%;
+	width: @width;
+	height: @height;
+	margin: 0 auto;
+	margin-top: -@height/2 - @padding - @vert-offset;
+	margin-left: -@width/2 - @padding;
+	padding: @padding;
+	
+	z-index: @z-popup;
+}
+
+.center-top-scroll(@width,@padding:20px,@top:5px) {
+	position: absolute;
+	left: 50%;
+	top: @top;
+	margin-left: -@width/2 - @padding;
+	padding: @padding;
+	width: @width;
+	
+	z-index: @z-popup;
+}
+
+.color-dialog(@from_color: #004892, @to_color: rgba(0,53,110,.2), @to_stop: 50%, @border: none) {
+	color: #fff;
+	border: @border;
+	
+	background: @from_color;
+	background: -moz-linear-gradient(top, @from_color 0%, @to_color @to_stop);
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,@from_color), color-stop(@to_stop,@to_color));
+	background: -webkit-linear-gradient(top, @from_color 0%, @to_color @to_stop);
+	background: -ms-linear-gradient(top, @from_color 0%, @to_color @to_stop);
+	background: linear-gradient(top, @from_color 0%, @to_color @to_stop);
+	filter: progid:DXImageTransform.Microsoft.gradient(
+	startColorstr='@from_color', endColorstr='@to_color',GradientType=0);	
+}
+
+
+// Transformations
+.rotateY(@degrees) {
+  -webkit-transform: rotateY(@degrees);
+     -moz-transform: rotateY(@degrees);
+      -ms-transform: rotateY(@degrees);
+       -o-transform: rotateY(@degrees);
+          transform: rotateY(@degrees);
+}
+
+// Some magic to get the input boxes to automatically adjust their size based
+// on the width of their parent.
+// See http://stackoverflow.com/questions/1030793/input-with-displayblock-is-not-a-block-why-not
+.input-width-auto(@width: 100%) {
+	width: @width;
+	.box-sizing(border-box);
+}
+
+// Adds a box shadow with a given blur length to the top and bottom only.
+.box-shadow-top-bottom(@shadowBlurLength, @color) {
+	// Less strips out the unit for this variable when we pass it into the escaped
+	// string, so we manually put px in.
+	@lengthWithUnit: "@{shadowBlurLength}px";
+	.box-shadow(~"inset 0px @{lengthWithUnit} @{lengthWithUnit} -@{lengthWithUnit} @{color}, inset 0px -@{lengthWithUnit} @{lengthWithUnit} -@{lengthWithUnit} @{color}");
+}
+
+.icon40BackgroundPosition(@index:0)
+ {
+ 	.icon {
+		background-position:(-@index * @topnav-button-width) 0;
+	}
+
+	&:hover .icon {
+		background-position:(-@index * @topnav-button-width) (-1 * @topnav-button-height); 
+	} 
+	&[aria-disabled] .icon, &[disabled] .icon, &[readonly] .icon,
+	&:disabled .icon, &:readonly .icon {
+		background-position:(-@index * @topnav-button-width) (-2 * @topnav-button-height); 
+	} 
+}

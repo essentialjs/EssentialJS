@@ -1,46 +1,30 @@
-/*
+/*!
     Essential JavaScript ❀ http://essentialjs.com
     Copyright (C) 2011 by Henrik Vendelbo
 
-    This program is free software: you can redistribute it and/or modify it under the terms of
-    the GNU Affero General Public License version 3 as published by the Free Software Foundation.
-
-    Additionally,
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
-    and associated documentation files (the "Software"), to deal in the Software without restriction, 
-    including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-    and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
-    subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
-    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
-    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    Licensed under GNU Affero v3 and MIT. See http://essentialjs.com/license/
 */
-/**
- * @param {Object} ns Namespace base (Optional)
- * " 
- * @param {Object} options Options { generator: function } (Optional) 
- */
+
+
 function Resolver(name,ns,options)
 {
+	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
 	switch(typeof(name)) {
 	case "undefined":
 		// Resolver()
-		return Resolver.default;
+		return Resolver["default"];
 		
 	case "string":
 		// Resolver("abc")
+		// Resolver("abc",null)
 		// Resolver("abc",{})
 		// Resolver("abc",{},{options})
 		if (Resolver[name] == undefined) {
+			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
 			if (options == undefined) { options = ns; ns = {}; }
 			Resolver[name] = Resolver(ns,options);
-			Resolver[name].name = name;
+			Resolver[name].named = name;
 			}
 		return Resolver[name];
 	}
@@ -49,114 +33,435 @@ function Resolver(name,ns,options)
 	// Resolver({},{options})
 	options = ns || {};
 	ns = name;
-	name = options.name;
-	var _generator = options.generator || Generator(Object); //TODO faster default
 
-	function _resolve(names,onundefined) {
+	function _resolve(names,subnames,onundefined) {
         var top = ns;
         for (var j = 0, n; n = names[j]; ++j) {
             var prev_top = top;
             top = top[n];
-            if (top == undefined) {
+            if (top == undefined) { 
                 switch(onundefined) {
                 case undefined:
                 case "generate":
-                    top = prev_top[n] = _generator();
-                    break;
+                	if (top === undefined) {
+	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+	                    continue; // go to next now that we filled in an object
+                	}
+                //TODO "false"
                 case "null":
-                    return null;
-                case "throw":
-                	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                	if (top === undefined) return null;
+                	break;
+                case "undefined":
+                	if (top === undefined) return undefined;
+                	break;
+                }
+                if (j < names.length-1) {
+	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 }
             }
+        }
+        if (subnames) {
+        	for(var i=0,n; n = subnames[i]; ++i) {
+	            var prev_top = top;
+	            top = top[n];
+	            if (top == undefined) { 
+	                switch(onundefined) {
+	                case undefined:
+	                case "generate":
+	                	if (top === undefined) {
+		                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+		                    continue; // go to next now that we filled in an object
+	                	}
+	                //TODO "false"
+	                case "null":
+	                	if (top === undefined) return null;
+	                	break;
+	                case "undefined":
+	                	if (top === undefined) return undefined;
+	                	break;
+	                }
+	                if (j < names.length-1) {
+		            	throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
+	                }
+	            }
+        	}
         }
         return top;
 	}
 	
     function _setValue(value,names,base,symbol)
     {
+    	if (base[symbol] === value) return false;
+
     	base[symbol] = value;
-		if (value.__generator__ == value) {
+		if (typeof value == "object" && value !== null && value.__generator__ == value) {
     		value.info.symbol = symbol;
     		value.info["package"] = names.join(".");
     		value.info.within = base;
     	}
+
+    	return true;
+    }
+
+    function nopCall() {}
+
+    function _makeResolverEvent(resolver,type,selector,data,callback) {
+    	var e = {};
+
+        e.resolver = resolver;
+    	e.type = type;
+    	e.selector = selector;
+    	e.data = data;
+    	e.callback = callback;
+        e.inTrigger = 0;
+
+    	function trigger(base,symbol,value) {
+            if (this.inTrigger) return;
+            ++this.inTrigger;
+            this.base = base;
+    		this.symbol = symbol;
+    		this.value = value;
+    		this.callback.call(resolver,this);
+            --this.inTrigger;
+    	}
+    	e.trigger = callback? trigger : nopCall;
+
+    	return e;
     }
 
     /**
+     * Function returned by the Resolver call.
      * @param name To resolve
      * @param onundefined What to do for undefined symbols ("generate","null","throw")
      */
-    function resolve(name,onundefined) {
+    function resolver(name,onundefined) {
         if (typeof name == "object") {
-            return _resolve(name.name.split("."),name.onundefined);
+            // name is array
+            if (name.length != undefined) return _resolve(name,null,onundefined);
+            // {} call
+            return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
-            return _resolve(name.split("."),onundefined);
+            return _resolve(name.split("."),null,onundefined);
         }
     };
 
-    resolve.name = name;
-    resolve.namespace = ns;
-    
-    resolve.declare = function(name,value,onundefined) 
-    {
-        var names = name.split(".");
-        var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
-    	if (base[symbol] === undefined) { 
-    		_setValue(value,names,base,symbol);
-    	}
+    resolver.named = options.name;
+    if (options.name) Resolver[options.name] = resolver;
+    resolver.namespace = arguments[0];
+    resolver.references = { };
+
+    var VALID_LISTENERS = {
+    	"get": true, // allows for switching in alternate lookups
+    	"change": true, // allows reflecting changes elsewhere
+    	"undefined": true // allow filling in unfound entries
     };
 
-    resolve.set = function(name,value,onundefined) 
-    {
-        var names = name.split(".");
-        var symbol = names.pop();
-    	var base = _resolve(names,onundefined);
-		_setValue(value,names,base,symbol);
-    };
+    function _makeListeners() {
+    	var listeners = {};
+	    // listeners.get.<list of callbacks>
+	    // listeners.change.<list of callbacks>
+	    // ..
+	    for(var n in VALID_LISTENERS) listeners[n] = [];
+	    return listeners;
+    }
 
-    resolve.reference = function(name,onundefined)
+
+    // relies of resolver
+    function makeReference(name,onundefined,listeners)
     {
         var names = name.split(".");
+        var leafName = names.pop();
+        var baseRefName = names.join(".");
+        var baseNames = names.slice(0);
+        names.push(leafName);
+
+        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
     	function get() {
-        	var base = _resolve(names,onundefined);
-        	return base;
+    		if (arguments.length==1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+	        	var r = _resolve(names,subnames,onundefined);
+    			//TODO onundefined for the arg
+	        	return r;
+    		} else {
+	        	var base = _resolve(names,null,onundefined);
+	        	return base;
+    		}
         }
         function set(value) {
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
-        	names.push(symbol);
-        	base[symbol] = value;
+        	if (arguments.length > 1) {
+        		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+				var symbol = subnames.pop();
+	        	var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+	        	value = arguments[1];
+
+                if (_setValue(value,combined,base,symbol)) {
+                    var childRef = resolver.references[parentName + "." + symbol];
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    var parentRef = resolver.references[parentName];
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                }
+        	} else {
+				var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (_setValue(value,baseNames,base,leafName)) {
+                    this._callListener("change",baseNames,base,leafName,value);
+                    //TODO test for triggering specific listeners
+                    var parentRef = resolver.references[baseRefName];
+                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                }
+        	}
+			return value;
         }
         function declare(value) {
-            var symbol = names.pop();
-        	var base = _resolve(names,onundefined);
-        	names.push(symbol);
-        	if (base[symbol] === undefined) base[symbol] = value;
+        	if (arguments.length > 1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                value = arguments[1];
+
+                if (base[symbol] === undefined) {
+                    if (_setValue(value,combined,base,symbol)) {
+                        var childRef = resolver.references[parentName + "." + symbol];
+                        if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                        var parentRef = resolver.references[parentName];
+                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    }
+                }
+                return base[symbol];
+        	} else {
+                var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (base[leafName] === undefined) {
+                    if (_setValue(value,baseNames,base,leafName)) {
+                        this._callListener("change",baseNames,base,leafName,value);
+                        //TODO test for triggering specific listeners
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
+                }
+                return base[leafName];
+        	}
         }
+    	function getEntry(key) {
+        	var base = _resolve(names,null,onundefined);
+        	if (arguments.length) return base[key];
+        	return base;
+        }
+        function declareEntry(key,value) {
+            var symbol = names.pop();
+        	var base = _resolve(names,null,onundefined);
+        	names.push(symbol);
+        	if (base[symbol] === undefined) _setValue({},names,base,symbol);
+        	
+        	if (base[symbol][key] === undefined) {
+        		names.push(key);
+        		if (_setValue(value,names,base[symbol],key)) {
+			    	this._callListener("change",names,key,value);
+	    	//TODO parent listeners
+        		}
+	    		names.pop(); // return names to unchanged
+        	}
+        }
+        function setEntry(key,value) {
+            var symbol = names.pop();
+        	var base = _resolve(names,null,onundefined);
+        	names.push(symbol);
+        	if (base[symbol] === undefined) _setValue({},names,base,symbol);
+        	
+    		names.push(key);
+    		if (_setValue(value,names,base[symbol],key)) {
+		    	this._callListener("change",names,key,value);
+	    	//TODO parent listeners
+    		}
+    		names.pop(); // return names to unchanged
+        }
+        function mixin(map) {
+            var symbol = names.pop();
+        	var base = _resolve(names,null,onundefined);
+        	names.push(symbol);
+        	if (base[symbol] === undefined) _setValue({},names,base,symbol);
+        	var ni = names.length;
+        	var mods = {};
+        	for(var n in map) {
+        		names[ni] = n;
+        		if (_setValue(map[n],names,base[symbol],n)) {
+        			mods[n] = map[n];
+        		}
+        	}
+        	names.pop(); // return names to unchanged
+	    	this._callListener("change",names,null,mods);
+	    	//TODO parent listeners
+        }
+	    function on(type,data,callback) {
+	    	if (! type in VALID_LISTENERS) return;//fail
+
+	    	switch(arguments.length) {
+	    		case 2: this._addListener(type,name,null,arguments[1]); break;
+	    		case 3: this._addListener(type,name,data,callback); break;
+	    	};
+	    }
+
+	    function trigger(type) {
+	    	var value = _resolve(names,null,onundefined);
+
+	    	this._callListener(type,baseNames,leafName,value);
+			var parentRef = resolver.references[baseRefName];
+			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
+	    }    
+
         get.set = set;
         get.get = get;
         get.declare = declare;
+        get.mixin = mixin;
+        get.getEntry = getEntry;
+        get.declareEntry = declareEntry;
+        get.setEntry = setEntry;
+        get.on = on;
+        get.trigger = trigger;
+        get.listeners = listeners || _makeListeners();
+
+	    function _callListener(type,names,base,symbol,value) {
+	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
+	    		event.trigger(base,symbol,value);
+	    	}
+	    }
+	    get._callListener = _callListener;
+	    function _addListener(type,selector,data,callback) {
+	    	/*
+	    		selector
+	    		*
+	    		a
+	    		a.b
+	    		a.b.c
+	    	*/
+	   		this.listeners[type].push(_makeResolverEvent(resolver,type,selector,data,callback));
+	    }
+	    get._addListener = _addListener;
+
 
         return get;
     };
 
-    resolve.override = function(ns,options)
+
+
+    resolver.on = function(type,selector,data,callback) 
+    {
+    	if (! type in VALID_LISTENERS) return;//fail
+    	switch(arguments.length) {
+    		case 2: break; //TODO
+    		case 3: if (typeof arguments[1] == "string") {
+			    	this.reference(selector).on(type,null,arguments[2]);
+    			} else { // middle param is data
+			    	//TODO this.reference("*").on(type,arguments[1],arguments[2]);
+    			}
+    			break;
+    		case 4:
+		    	this.reference(selector).on(type,data,callback);
+    			break;
+    	}
+    };
+    
+    /*
+        name = string/array
+    */
+    resolver.declare = function(name,value,onundefined) 
+    {
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
+        var symbol = names.pop();
+    	var base = _resolve(names,null,onundefined);
+    	if (base[symbol] === undefined) { 
+    		if (_setValue(value,names,base,symbol)) {
+	    		var ref = resolver.references[name];
+	    		if (ref) ref._callListener("change",names,base,symbol,value);
+				var parentName = names.join(".");
+				var parentRef = resolver.references[parentName];
+				if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+    		}
+    		return value;
+    	} else return base[symbol];
+    };
+
+    /*
+        name = string/array
+    */
+    resolver.set = function(name,value,onundefined) 
+    {
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
+		var symbol = names.pop();
+		var base = _resolve(names,null,onundefined);
+		if (_setValue(value,names,base,symbol)) {
+			var ref = resolver.references[name];
+			if (ref) ref._callListener("change",names,base,symbol,value);
+			var parentName = names.join(".");
+			var parentRef = resolver.references[parentName];
+			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+		}
+		return value;
+    };
+
+    resolver.reference = function(name,onundefined) 
+    {
+    	if (typeof name == "object") {
+    		onundefined = name.onundefined;
+    		name = name.name;
+    	}
+    	var ref = onundefined? name+":"+onundefined : name;
+    	var entry = this.references[ref];
+    	if (entry) return entry;
+
+    	// make the default reference first
+    	var defaultRef = this.references[name];
+    	if (defaultRef == undefined) {
+    		defaultRef = this.references[name] = makeReference(name,onundefined);
+    		if (ref == name) return defaultRef;
+    	}
+    	// if requested reference is different return that one
+    	return this.references[ref] = makeReference(name,onundefined,defaultRef.listeners);
+    };
+
+    resolver.override = function(ns,options)
     {
         options = options || {};
-        var name = options.name || this.name; 
+        var name = options.name || this.named; 
 		Resolver[name] = Resolver(ns,options);
-		Resolver[name].name = name;
+		Resolver[name].named = name;
 		return Resolver[name];
     };
 
-    return resolve;
-}
-Resolver.default = Resolver({},{ name:"default" });
+    if (options.mixinto) {
+    	if (options.mixinto.get==null) options.mixinto.get = resolver;
+    	if (options.mixinto.declare==null) options.mixinto.declare = resolver.declare;
+    	if (options.mixinto.set==null) options.mixinto.set = resolver.set;
+    	if (options.mixinto.reference==null) options.mixinto.reference = resolver.reference;
+    	if (options.mixinto.override==null) options.mixinto.override = resolver.override;
+    	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
+    }
 
+    return resolver;
+}
+Resolver({},{ name:"default" });
+
+Resolver.hasGenerator = function(subject) {
+	if (subject.__generator__) return true;
+	if (typeof subject == "function" && typeof subject.type == "function") return true;
+	return false;
+};
 
 /**
  * Generator(constr) - get cached or new generator
@@ -168,56 +473,122 @@ Resolver.default = Resolver({},{ name:"default" });
  */
 function Generator(mainConstr,options)
 {
+	//"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
 	if (mainConstr.__generator__) return mainConstr.__generator__;
 
 	var info = {
 		arguments: {},
+		presets: {}, // presets to copy before constructors
 		options: options,
 		constructors: []
 	};
-	
-	function newGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
 
-		var instance = new generator.type();
+	function newGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
+		var instance;
+		if (generator.info.existing) {
+			//TODO perhaps different this pointer
+			var id = generator.info.identifier.apply(generator.info,arguments);
+			if (id in generator.info.existing) {
+				return instance = generator.info.existing[id];
+			} else {
+				instance = generator.info.existing[id] = new generator.type();
+				//TODO consider different strategies for JS engine
+				instance.constructor = info.constructors[0]; // make the correct constructor appear in debuggers
+			}
+		} else {
+			instance = new generator.type();
+		}
 		
 		// constructors
 		instance.__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
-		for(var i=0,g; g=info.constructors[i]; ++i) {
-			info.constructors[i].apply(instance,instance.__context__.args);
+		for(var i=0,cst; cst=info.constructors[i]; ++i) {
+			cst.apply(instance,instance.__context__.args);
 		}
 		delete instance.__context__;
 		return instance;
 	}
 
-	function singletonGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
-		if (info.options.singleton == null) {
-			var instance = info.singleton = new generator.type();
-
-			// constructors
-			instance.__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
-			for(var i=0,g; g=info.constructors[i]; ++i) {
-				info.constructors[i].apply(instance,instance.__context__.args);
-			}
-			delete instance.__context__;
-		}
-		return info.singleton;
-	}
 
 	function simpleGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
 		var instance = mainConstr.apply(generator,arguments);
 		return instance;
 	}
 
-	function presetMembers() {
+	function builtinGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
+		"no strict";
+		var instance;
+		if (generator.info.existing) {
+			//TODO perhaps different this pointer
+			var id = generator.info.identifier.apply(generator.info,arguments);
+			if (id in generator.info.existing) {
+				return instance = generator.info.existing[id];
+			} else {
+				instance = generator.info.existing[id] = info.extendsBuiltin[arguments.length].apply(null,arguments);
+			}
+		} else {
+			instance = info.extendsBuiltin[arguments.length].apply(null,arguments);
+			// copy the methods
+			for(var mn in generator.prototype) {
+				instance[mn] = generator.prototype[mn];
+			}
+			//TODO instance.constructor = mainConstr
+			mainConstr.prototype = info.extendsBuiltin.ctr.prototype; // help instanceof (non-strict) 
+		}
+
+		// constructors
+		instance.__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
+		for(var i=0,ctr; ctr=info.constructors[i]; ++i) {
+			if (info.extendsBuiltin.ctr !== ctr) {
+				ctr.apply(instance,instance.__context__.args);
+			}
+		}
+		delete instance.__context__;
+		return instance;
+	}
+
+	function fillMissingArgs() {
+		var passedArgs = this.__context__.args;
+		for(var i=0,argDef; argDef = generator.args[i]; ++i) if (passedArgs[i] === undefined) {
+			 var argName = generator.args[i].name;
+			 var argDefault = generator.args[i]["default"];
+			 if (argName in info.restrictedArgs) passedArgs[i] = info.restrictedArgs[argName];
+			 else if (argDefault) passedArgs[i] = argDefault;
+		}
+		//TODO support args default values in all cases
+	}
+
+	function presetMembersInfo() {
+		for(var n in info.presets) this[n] = info.presets[n];
+	}
+
+	function presetMembersArgs() {
 		var args = this.__context__.generator.args;
 		for(var i=0,a; a = args[i]; ++i) if (a.preset) {
 			this[a.preset] = arguments[i];
 		}
 	}
-	
-	// pooled generator
-	//TODO
 
+	function constructByNumber(ctr,no) {
+		return function(a,b,c,d,e,f,g,h,i,j,k,l) {
+			switch(no) {
+				case 1: return new ctr(a);
+				case 2: return new ctr(a,b);
+				case 3: return new ctr(a,b,c);
+				case 4: return new ctr(a,b,c,d);
+				case 5: return new ctr(a,b,c,d,e);
+				case 6: return new ctr(a,b,c,d,e,f);
+				case 7: return new ctr(a,b,c,d,e,f,g);
+				case 8: return new ctr(a,b,c,d,e,f,g,h);
+				case 9: return new ctr(a,b,c,d,e,f,g,h,i);
+				case 10: return new ctr(a,b,c,d,e,f,g,h,i,j);
+				case 11: return new ctr(a,b,c,d,e,f,g,h,i,j,k);
+				case 12: return new ctr(a,b,c,d,e,f,g,h,i,j,k,l);
+				default: return new ctr();
+			}
+		};
+	}
+	
 	// Make the generator with type annotations
 	var generator = (function(args){
 		// mark end of constructor arguments
@@ -230,9 +601,39 @@ function Generator(mainConstr,options)
 		}
 		info.options = options;
 
-		var generator = options.alloc === false? simpleGenerator : newGenerator;
+		// get order of bases and constructors from the main constructor or the arguments
+		var bases = mainConstr.bases || [];
+		if (last > 0) {
+			bases = [];
+			for(var i=last,ctr; (i >= 1) &&(ctr = args[i]); --i) {
+				switch(ctr) {
+					case Array:
+					case String: 
+						info.extendsBuiltin = { "ctr":ctr }
+						for(var ci=12; ci>=0; --ci) info.extendsBuiltin[ci] = constructByNumber(ctr,ci);
+				}
+				bases.push(ctr);
+			}
+		}	
+		var constructors = info.constructors;
+		for(var i=0,b; b = bases[i];++i) {
+			if (b.bases && b.info && b.info.constructors) {
+				for(var j=0,b2; b2 = b.bases[j]; ++j) constructors.push(b.bases[j]);
+				b = bases[i] = b.info.constructors[-1]
+			}
+			constructors.push(b);
+		}
+		constructors.push(mainConstr);
+		constructors[-1] = mainConstr;
+
+		// determine the generator to use
+		var generator = newGenerator;
+		if (options.alloc === false) generator = simpleGenerator;
+		else if (info.extendsBuiltin) generator = builtinGenerator;
+
 		generator.__generator__ = generator;
 		generator.info = info;
+		generator.bases = bases;
 
 		// arguments planning
 		generator.args = options.args || mainConstr.args || [];
@@ -242,26 +643,15 @@ function Generator(mainConstr,options)
 			info.arguments[a.name] = a;
 			if (a.preset) argsPreset = true;
 		}
-		if (argsPreset) {
-			info.constructors.push(presetMembers)
-		}
+		/* 
+		TODO only add this when presets are set
+		TODO collapse base classes
+		*/
+		info.constructors.unshift(presetMembersInfo);
 
-		// get order of bases and constructors from the main constructor or the arguments
-		var bases = generator.bases = mainConstr.bases || [];
-		if (last > 0) {
-			bases = generator.bases = [];
-			for(var i=last,a; (i >= 1) &&(a = args[i]); --i) {
-				bases.push(args[i]);
-			}
-		}	
-		var constructors = info.constructors;
-		for(var i=0,b; b = bases[i];++i) {
-			if (b.bases) {
-				for(var j=0,b2; b2 = b.bases[j]; ++j) constructors.push(b.bases[j]);
-			}
-			constructors.push(b);
+		if (argsPreset) {
+			info.constructors.unshift(presetMembersArgs)
 		}
-		constructors.push(mainConstr);
 
 		// If we have base classes, make prototype based on their type
 		if (bases.length) {
@@ -280,32 +670,52 @@ function Generator(mainConstr,options)
 		// migrate prototype
 		for(var n in mainConstr.prototype) generator.prototype[n] = mainConstr.prototype[n];
 		mainConstr.prototype = generator.prototype;
-
+		//TODO generator.fn = generator.prototype
+		
 		
 		return generator;
 	})(arguments);
 
+	Resolver(generator.prototype,{ mixinto:generator, generator: Generator.ObjectGenerator });
+
+	/*
 	function mixin(mix) {
 		for(var n in mix) this.prototype[n] = mix[n];
 	}
 	generator.mixin = mixin;
+	*/
+
+	//TODO callback when preset entry defined first time
+	generator.presets = Resolver(info.presets);
+
 	
 	function variant(name,variantConstr,v1,v2,v3,v4) {
 		if (variantConstr == undefined) { // Lookup the variant generator
-			var g = this.variants[name];
-			if (g.generator) return g.generator;
+			if (typeof name == "string") {
+				var g = this.variants[name];
+				if (g && g.generator) return g.generator;
+			} else {
+				// array like list of alternatives
+				for(var i=0,n; n = name[i]; ++i) {
+					var g = this.variants[n];
+					if (g && g.generator) return g.generator;
+				}				
+			}
 			var g = this.variants[""]; // default generator
-			if (g.generator) return g.generator;
+			if (g && g.generator) return g.generator;
 			return this;			
 		} else {	// Set the variant generator
 			var handlers = variantConstr.handlers;
 			var bases = variantConstr.bases;
+			var generator = Generator(variantConstr);
 			this.variants[name] = { 
 				func: variantConstr,
+				generator: generator,
 				handlers: handlers || {},
 				bases: bases || [],
 				additional: [v1,v2,v3,v4] 
-			}; 
+			};
+			return generator; 
 		}
 	}
 
@@ -313,228 +723,78 @@ function Generator(mainConstr,options)
 	generator.variant = variant;
 	generator.variants = {};
 
+	function toRepr() {
+		var l = [];
+		l.push("function ");
+		l.push(this.info.package);
+		l.push(".");
+		l.push(this.info.symbol);
+		l.push("(");
+		var ps = [];
+		for(var i=0,a; a = this.args[i]; ++i) {
+			ps.push(a.name + ":" + a.variantName);
+		}
+		l.push(ps.join(","))
+		l.push(")");
+		l.push(" {");
+		l.push("<br>  ");
+		l.push("<br>  }");
+		l.push("<br>  ");
+		
+		return l.join("");
+	}
+	generator.toRepr = toRepr;
+
+	function restrict(restrictions,args) {
+		if (restrictions.singleton) {
+			this.info.singleton = true;
+			this.info.lifecycle = restrictions.lifecycle;
+			this.info.existing = {};
+			this.info.identifier = function() {
+				return 0;
+			}
+			if (!this.info.restricted) {
+				Generator.restricted.push(generator);
+				this.info.restricted = true;
+			}
+		}
+		else if (restrictions.identifier) {
+			var fn = typeof restrictions.identifier == "string"? restrictions.identifier : "identifier";
+			this.info.identifier = this.info.constructors[-1][fn];
+			this.info.existing = {};
+			if (!this.info.restricted) {
+				Generator.restricted.push(generator);
+				this.info.restricted = true;
+			}
+		}
+		else if (restrictions.size != undefined) {
+			
+			if (!this.info.restricted) {
+				Generator.restricted.push(generator);
+				this.info.restricted = true;
+			}
+		}
+		else {
+			//TODO remove from restricted list
+			this.info.singleton = false;
+			this.info.existing = null;
+		}
+		this.info.restrictedArgs = args;
+		if (args) {
+			this.info.constructors.unshift(fillMissingArgs);
+		}
+		return this;
+	}
+	generator.restrict = restrict;
+
 	// Future calls will return this generator
 	mainConstr.__generator__ = generator;
 		
 	return generator;
 };
 
-
-Generator.setVariantGenerator = function(mainConstr,variant,fGenerator,mHandlers,pConstruction,v1,v2,v3,v4)
-{
-	variant = variant || null; // defaults to null
-	
-	// ensure that variants map is present on base constructor
-	mainConstr.generator_variants = mainConstr.generator_variants || {}; 
-
-	mainConstr.generator_variants[variant] = { 
-		generator: fGenerator,
-		handlers: mHandlers || {},
-		construction: pConstruction || [],
-		additional: [v1,v2,v3,v4] 
-	}; 
-};
-
-/**
- * Configure the base constructor to generate a singleton of a specific variant
- */
-Generator.setSingleton = function(mainConstr,variant)
-{
-	// ensure that variants map is present on base constructor
-	mainConstr.generator_variants = fConstructor.generator_variants || {}; 
-	mainConstr.generator_variants[null] = fConstructor.generator_variants[null] || {};
-	
-	mainConstr.generator_variants[null].default_variant = variant || null; // defaults to null
-	mainConstr.generator_variants[null].singleton = null;
-};
-
- 
-/**
- * Configure the base constructor to generate a instances of a specific variant limited by a pool size
- */
-Generator.setPoolSize = function(mainConstr,variant,nSize)
-{
-	// ensure that variants map is present on base constructor
-	mainConstr.generator_variants = mainConstr.generator_variants || {}; 
-	mainConstr.generator_variants[null] = mainConstr.generator_variants[null] || {};
-	
-	mainConstr.generator_variants[null].default_variant = variant || null; // defaults to null
-	mainConstr.generator_variants[null].pool = {};
-	mainConstr.generator_variants[null].pool_size = nSize;
-};
-
-// types for describing generator arguments and generated properties
-(function(){
-	var essential = Resolver("essential",{});
-	function Type(options) {
-		this.options = options || {};
-		this.name = this.options.name;
-		this.preset = this.options.preset === true? this.name : this.options.preset;
-	}
-	essential.set("Type",Generator(Type));
-	
-	function StringType(options) {
-		this.type = String;
-	}
-	essential.set("StringType",Generator(StringType,Type));
-	essential.namespace.Type.variant("String",essential.namespace.StringType);
-		
-	function NumberType(options) {
-		this.type = Number;
-	}
-	essential.set("NumberType",Generator(NumberType,Type));
-	essential.namespace.Type.variant("Number",essential.namespace.NumberType);
-	
-	function DateType(options) {
-		this.type = Date;
-	}
-	essential.set("DateType",Generator(DateType,Type));
-	essential.namespace.Type.variant("Date",essential.namespace.DateType);
-	
-	function BooleanType(options) {
-		this.type = Boolean;
-	}
-	essential.set("BooleanType",Generator(BooleanType,Type));
-	essential.namespace.Type.variant("Boolean",essential.namespace.BooleanType);
-	
-	function ObjectType(options) {
-		this.type = Object;
-	}
-	essential.set("ObjectType",Generator(ObjectType,Type));
-	essential.namespace.Type.variant("Object",essential.namespace.ObjectType);
-	
-	function ArrayType(options) {
-		this.type = Array;
-	}
-	essential.set("ArrayType",Generator(ArrayType,Type));
-	essential.namespace.Type.variant("Array",essential.namespace.ArrayType);
-	
-function enhanceTryout() {
-    var scripts = document.getElementsByTagName("script");
-    for(var i=0,s; s = scripts[i]; ++i) if (s.getAttribute("type") == "tryout/javascript") {
-        var others = document.getElementsByName(s.getAttribute("name"));
-        for(var j=0,o; o = others[j]; ++j) if (o.nodeName.toLowerCase() != "script"){
-            if (o.value != undefined && s.firstChild) o.value = s.firstChild.nodeValue;
-        }
-    }
-    
-}
-
-	if (window.attachEvent) window.attachEvent("onload",enhanceTryout);
-	else window.addEventListener("load",enhanceTryout,false);
-})();
+/* List of generators that have been restricted */
+Generator.restricted = [];
+Generator.ObjectGenerator = Generator(Object);
 
 
-/*
-function assert(b) {
-	if (!eval(b)) alert("failed:"+ b);
-}
-var shapes = Resolver()("my.shapes");
-var tools = Resolver()("my.tools");
-
-Resolver().set("my.tools.X",5);
-assert("5 === Resolver.default.namespace.my.tools.X");
-
-assert("shapes === Resolver.default.namespace.my.shapes");
-assert("tools === Resolver.default.namespace.my.tools");
-assert("Resolver.default.namespace.my");
-
-Resolver("default").override({});
-assert("undefined === Resolver.default.namespace.my");
-Resolver()("my")
-assert("Resolver.default.namespace.my");
-
-var my = Resolver().reference("my");
-assert("my.get()");
-
-var num = Resolver().reference("num");
-num.set(5);
-assert("5 == num.get()");
-
-
-// Generators
-
-var NumberType = Generator(Resolver("essential")("Type"),"Number");
-
-var shapes = {};
-
-function Shape() {}
-Shape.arguments = [ ];
-
-function Rectangle(width,height) {
-	
-}
-Rectangle.bases = [Shape];
-Rectangle.arguments = [ NumberType({name:"width",preset:true}), NumberType({name:"height",preset:true}) ]; //TODO NumberType({name:"width"}) optional: , default:  seed:
-Rectangle.prototype.earlyFunc = function() {};
-
-shapes.Shape = Generator(Shape);
-shapes.Rectangle = Generator(Rectangle);
-
-Rectangle.prototype.getWidth = function() {
-	return this.width;
-};
-
-assert("typeof shapes.Shape.info.options == 'object'");
-assert("shapes.Rectangle.bases == Rectangle.bases");
-assert("shapes.Rectangle.arguments == Rectangle.arguments");
-
-var s = shapes.Shape();
-var r55 = shapes.Rectangle(5,5);
-assert("r55 instanceof Rectangle");
-assert("r55 instanceof shapes.Rectangle");
-assert("r55 instanceof Shape");
-assert("r55 instanceof shapes.Shape");
-assert("shapes.Rectangle.prototype.getWidth == Rectangle.prototype.getWidth");
-assert("typeof shapes.Rectangle.prototype.earlyFunc == 'function'");
-assert("5 == r55.width");
-assert("5 == r55.getWidth()");
-
-shapes.Shape.mixin({
-	sides: 0
-});
-
-shapes.Rectangle.mixin({
-	sides: 2,
-	getRatio: function() { return this.width / this.height; }
-});
-
-assert("0 == Shape.prototype.sides");
-assert("0 == s.sides");
-assert("2 == Rectangle.prototype.sides");
-assert("2 == r55.sides");
-
-
-function Circle(diameter) {
-	
-}
-Circle.prototype.earlyFunc = function() {};
-
-shapes.Circle = Generator(Circle,Shape,{
-	arguments : [ NumberType({name:"diameter",preset:true}) ] //TODO NumberType({name:"width"}) optional: , default:  seed:
-});
-
-Circle.prototype.getWidth = function() {
-	return this.diameter;
-};
-
-assert("shapes.Circle.bases.length == 1");
-assert("shapes.Circle.bases[0] == Shape");
-assert("shapes.Circle.info.options.arguments.length == 1");
-assert("typeof shapes.Circle.info.options.arguments[0] == 'object'");
-assert("0 == Circle.prototype.sides");
-
-var c9 = shapes.Circle(9);
-assert("c9 instanceof Circle");
-assert("c9 instanceof shapes.Circle");
-assert("c9 instanceof Shape");
-assert("c9 instanceof shapes.Shape");
-assert("9 == c9.diameter");
-assert("9 == c9.getWidth()");
-
-var Simple = Generator(function(v) { return v; }, { alloc: false });
-
-var s8 = Simple(8);
-assert("s8 == 8");
-
-*/

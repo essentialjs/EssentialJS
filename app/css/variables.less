@@ -1,0 +1,220 @@
+@zkb-dark-blue: #054696;
+@zkb-light-blue: rgb(1,122,213);
+@zkb-website-lighter-blue: rgb(219,233,246);
+@zkb-grey: rgb(49,58,61);
+@zkb-red: #e63e2e;
+@zkb-green: #587521;
+@zkb-orange: #ed8b00;
+
+@background-color: @zkb-dark-blue; //rgb(6,63,134);
+@repeating-background-image: none; //url(../images/metalMesh.png);
+@bodyBackground:        @zkb-dark-blue; //rgb(6,63,134);
+@textColor:             rgb(51,51,51); // #333
+@inverseTextColor:      rgb(204,204,204);
+
+@small-font-size: 11px;
+@small-line-height: 15px;
+@small-button-height: 20px;
+
+@z-drag-proxy: 20000;
+@z-tooltip-history: 10000;
+@z-tooltip: 9999;
+@z-menu-dropdown-pointer: 1000;
+@z-menu-dropdown-layer: 999;
+@z-popup: 800;
+@z-shield: 700;
+@z-sheet: 500;
+@z-login-logo: 30;
+@z-scroll-bar: 10;
+
+@loading-logo-font-size: 29px;
+@loading-logo-height: 60px;
+
+@login-width: 260px;
+@login-height: 300px;
+@login-bg-color: rgb(241,241,241);
+
+@tradez-logo-color: rgb(0,106,218);
+@tradez-logo-width: 150px;
+@tradez-logo-font-size: 3em;
+@tradez-logo-height: @baseFontSize * (@tradez-logo-font-size / 1em);
+
+@login-tradez-logo-width: 150px;
+@login-tradez-logo-font-size: 50px;
+@login-tradez-logo-line-height: 60px;
+
+@topnav-button-width: 40px;
+@topnav-button-height: 40px;
+@topnav-tooltip-bg-color: rgb(0,128,256);
+@topnav-tooltip-color: white;
+@topnav-indent: 240px;
+@top-header-padding-top: 15px;
+@top-header-padding-bottom: 15px;
+@top-header-logo-font-size: 16px;
+@top-header-logo-height: 34px;
+@top-header-height: @top-header-padding-top + @topnav-button-width + @top-header-padding-bottom;
+
+@top-header-logo-font-family: 'Frutiger Neue W02 Light', Frutiger45LightRegular, "Frutiger Light", Arial, sans-serif;
+@top-header-logo-color: rgb(245,245,245);
+@footer-copyright-color: rgb(245,245,245);
+@footer-width: 300px;
+@footer-font-size: 11px;
+
+@notifications-height: 50px;
+@notifications-gap: 5px;
+@notifications-border: 1px solid @zkb-light-blue;
+@notifications-color: @zkb-light-blue;
+@notifications-background-color: white;
+
+//TODO
+@connection-indicator-green-color: @zkb-green;
+@connection-indicator-yellow-color: @zkb-orange;
+@connection-indicator-red-color: @zkb-red;
+@account-button-width: 33px;
+@account-button-height: 33px;
+
+// Left Nav Menu
+@leftnav-width: 150px;
+
+// Context Menu
+@context-menu-border: 1px solid #DDD;
+@context-menu-bg-color: #EEE;
+@context-menu-hover-bg-color: #39F;
+@context-menu-color: rgb(51,51,51); 
+@context-menu-disabled-color: #BBB;
+@context-menu-box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+@context-menu-font-size: 11px;
+
+@screen-transition-duration: 0.4s;
+
+// Common Form Variables
+@common-head-height: 50px;
+@common-padding: 20px;
+@common-form-from-bg-color: white;
+@common-form-to-bg-color: rgb(238,238,238);
+@common-form-border: 1px solid rgb(204,204,204);
+@common-form-border-radius: 10px;
+@common-form-divider-color: #C2C2C2;
+@common-form-divider-bottom-color: #FFF;
+@common-form-grid-odd-bg-color: rgb(246,246,246);
+@common-form-grid-even-bg-color: white;
+@common-form-grid-border-color: #D1D1D1;
+@common-label-color: rgb(102,102,102); // #666
+@common-picker-border: #ccc; //TODO rgb
+@common-picker-border-radius: 3px;
+@common-datepicker-bg-color: @common-form-to-bg-color;
+@common-datepicker-border: 1px solid rgb(194,194,194);
+@common-datepicker-out-of-range-color: rgb(169, 169, 169);
+@common-datepicker-out-of-range-start-color: @common-datepicker-out-of-range-color;
+@common-datepicker-out-of-range-end-color: @common-datepicker-out-of-range-color;
+@common-datepicker-excluded-color: rgb(139, 0, 0);
+@common-datepicker-extended-color: rgb(144, 238, 144);
+@common-slider-border: @common-element-border;
+@common-slider-min-from-range-color: rgb(255, 0, 0);
+@common-slider-from-range-color: rgb(139, 0, 0);
+@common-slider-to-range-color: rgb(139, 0, 0);
+@common-slider-min-from-range-color: @common-slider-to-range-color;
+@common-slider-min-to-range-color: @common-slider-to-range-color;
+@common-slider-max-from-range-color: @common-slider-to-range-color;
+@common-slider-max-to-range-color: @common-slider-to-range-color;
+@common-form-field-bottom-margin: 0.5em;
+
+// Form Variables
+@common-element-focus-outline-color: #52A8EC;
+@common-element-focus-outline-alpha: 0.8;
+@common-element-error-outline-color: @zkb-red;
+@common-element-error-outline-alpha: @common-element-focus-outline-alpha;
+@common-element-revalidating-outline-color: rgb(255, 165, 0);
+@common-element-border-color: rgb(189,189,189);
+@common-element-border: 1px solid @common-element-border-color;
+@common-disabled-element-border-color: rgb(204,204,204);
+@common-checkbox-size: 18px;
+
+// Countdown bar varaibles
+@common-countdown-width: 149px;
+@common-countdown-height: 28px;
+
+@button-height: 28px;
+@button-border-radius: 2px;
+@button-border-color: rgb(204,204,204);
+@button-border: 1px solid @button-border-color;
+@button-bg-color: #eee;
+@button-disabled-bg-color: #aaa;
+@button-disabled-color: rgb(153,153,153);
+@button-execute-bg-color: rgb(0,128,256);
+
+@input-border-radius: 2px;
+@input-bg-color: white;
+@input-color: rgb(102,102,102);
+@input-disabled-bg-color: rgb(235,235,235);
+@input-readonly-bg-color: rgb(245,245,245); //TODO change?
+@input-border: @common-element-border;
+@input-border-color: @common-element-border-color;
+@input-disabled-border-color: @common-disabled-element-border-color;
+@input-invalid-border-color: @zkb-red;
+
+// dropdown, combo, date-picker
+@input-button-width: 22px;
+@input-button-height: 28px;
+@small-input-button-height: 20px;
+
+@slider-font-size: 10px;
+@slider-line-height: .65em;
+@slider-line-color: white;
+@slider-disabled-line-color: rgb(245,245,245);
+@slider-line-border: @common-element-border;
+@slider-invalid-border-color: @zkb-red;
+@slider-vertical-align: baseline;
+
+@slider-button-width: 1.2em;
+@slider-button-height: 1.2em;
+@slider-button-color: #aaa;
+@slider-disabled-button-color: #ccc;
+@slider-invalid-button-color: @zkb-red;
+
+@page-main-from-bg-color: @common-form-from-bg-color;
+@page-main-from-bg-color: @common-form-to-bg-color;
+@page-background-color: #FBFBFB; // obsolete
+@page-border-radius: @common-form-border-radius;
+@page-border: @common-form-border;
+
+
+@explorer-head-height : @common-head-height*2;
+@explorer-search-bar-width: 500px;
+@small-explorer-search-bar-width: 350px;
+@explorer-padding: @common-padding;
+@explorer-border: @common-form-border;
+@explorer-border-radius: @common-form-border-radius;
+@explorer-from-bg-color: @common-form-from-bg-color;
+@explorer-to-bg-color: @common-form-to-bg-color;
+@explorer-filter-background: url(../images/drawerTexture.png);
+@explorer-form-divider-color: @common-form-divider-color;
+@explorer-matrix-border-color: @common-form-grid-border-color; 
+@explorer-matrix-row-height: 40px;
+@explorer-matrix-underlyings-currency-border-color: #EEE;
+@explorer-matrix-header-bg-color: @common-form-grid-odd-bg-color;
+@explorer-matrix-odd-description-bg-color: @common-form-grid-even-bg-color;
+@explorer-matrix-even-description-bg-color: @common-form-grid-odd-bg-color;
+@explorer-matrix-odd-value-bg-color:  @common-form-grid-odd-bg-color;
+@explorer-matrix-even-value-bg-color:  @common-form-grid-even-bg-color;
+
+//TODO hover graph
+@published-page-padding: @common-padding;
+@published-head-height : @common-head-height;
+@published-border: @common-form-border;
+@published-filter-background: url(../images/drawerTexture.png);
+@published-form-divider-color: @common-form-divider-color;
+@published-border-radius: @common-form-border-radius;
+@published-from-bg-color: @common-form-from-bg-color;
+@published-to-bg-color: @common-form-to-bg-color;
+@published-grid-header-bg-color: @common-form-grid-odd-bg-color;
+@published-grid-odd-bg-color:  @common-form-grid-odd-bg-color;
+@published-grid-odd-border-color:  @common-form-grid-odd-bg-color;
+@published-grid-even-bg-color: @common-form-grid-even-bg-color;
+@published-grid-even-border-color:  rgb(237, 237, 237);
+@published-grid-border-color: @common-form-grid-border-color;
+@published-grid-row-height: 40px;
+@published-grid-row-activerow-bg-color: rgb(238,238,238);
+@published-grid-row-activerow-border-color: @common-form-grid-border-color;
+
+
