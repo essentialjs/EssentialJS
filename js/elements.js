@@ -300,7 +300,10 @@
 		"configured": true,
 		"fullscreen": false,
 		"launching": false, 
-		"launched": false
+		"launched": false,
+
+		"loadingScriptsUrl": {},
+		"loadingConfigUrl": {}
 		});
 
 	pageResolver.reference("map.class.state").mixin({
@@ -1161,8 +1164,6 @@
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		state.on("change",this,this.onStateChange);
-		this.state.set("loadingScriptsUrl",{});
-		this.state.set("loadingConfigUrl",{});
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
