@@ -845,6 +845,8 @@
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
 		while(element) {
+			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
+
 			var role = element.getAttribute("role");
 			switch(role) {
 				case "button":
