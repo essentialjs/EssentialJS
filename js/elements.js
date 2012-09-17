@@ -367,7 +367,7 @@
 	function _queueDelayedAssets()
 	{
 		//TODO move this to pageResolver("state.ready")
-
+		ApplicationConfig();//TODO move the state transitions here
 		console.debug("loading phased scripts");
 		var links = document.getElementsByTagName("link");
 		//TODO phase
@@ -869,7 +869,7 @@
 					}
 					break;
 			}
-			element = element.parentNode;
+			if (element) element = element.parentNode;
 		}
 		if (this.commandElement == undefined) return this; // no command
 
@@ -881,7 +881,7 @@
 				this.actionElement = element;
 				element = null;
 			}			
-			element = element.parentNode;
+			if (element) element = element.parentNode;
 		}
 
 		return this;
