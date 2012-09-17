@@ -23,7 +23,7 @@
 	Resolver("page").on("change","state.launching",function(ev){
 		if (ev.value == true) console.log("Launching application");
 	});
-	Resolver("page").on("change","state.launching",function(ev){
+	Resolver("page").on("change","state.launched",function(ev){
 		if (ev.value == true) console.log("Application launched.");
 	});
 
