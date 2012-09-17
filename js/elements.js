@@ -402,21 +402,16 @@
 	essential.set("_queueDelayedAssets",_queueDelayedAssets);
 
 
-	var requiredConfigs = {};
-
 	function configRequired(url)
 	{
 		pageResolver.set(["state","loadingConfig"],true);
 		pageResolver.set(["state","loadingConfigUrl",url],true);
-		//requiredConfigs[url] = false;
 	}
 	essential.set("configRequired",configRequired);
 
 	function configLoaded(url)
 	{
 		pageResolver.set(["state","loadingConfigUrl",url],false);
-		//requiredConfigs[url] = true;
-		console.debug("config loaded:"+url);
 	}
 	essential.set("configLoaded",configLoaded);
 
