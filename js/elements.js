@@ -1206,7 +1206,8 @@
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();	
 					enhanceUnhandledElements();
-					if (ev.base.configured == true && ev.base.authenticated == true && ev.base.authorised == true && ev.base.launched == false) {
+					if (ev.base.configured == true && ev.base.authenticated == true 
+						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
 						if (document.body) essential("instantiatePageSingletons")();
@@ -1218,7 +1219,7 @@
 			case "authorised":
 			case "configured":
 				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
-					&& ev.base.authorised == true && ev.base.launched == false) {
+					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 					this.set("state.launching",true);
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
@@ -1233,7 +1234,7 @@
 					if (ev.symbol == "launched") this.set("state.launching",false);
 				}
 				break;
-			//TODO authenticated, authorised, connected
+			
 			default:
 				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
 					if (document.body) essential("instantiatePageSingletons")();
