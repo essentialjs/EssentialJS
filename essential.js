@@ -334,9 +334,10 @@ function Resolver(name,ns,options)
 	    }
 
 	    function trigger(type) {
-	    	var value = _resolve(names,null,onundefined);
+	    	var base = _resolve(baseNames,null,onundefined);
+            var value = base[leafName];
 
-	    	this._callListener(type,baseNames,leafName,value);
+	    	this._callListener(type,baseNames,base,leafName,value);
 			var parentRef = resolver.references[baseRefName];
 			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
 	    }    
@@ -2050,7 +2051,10 @@ Generator.ObjectGenerator = Generator(Object);
 		"configured": true,
 		"fullscreen": false,
 		"launching": false, 
-		"launched": false
+		"launched": false,
+
+		"loadingScriptsUrl": {},
+		"loadingConfigUrl": {}
 		});
 
 	pageResolver.reference("map.class.state").mixin({
@@ -2117,7 +2121,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function _queueDelayedAssets()
 	{
 		//TODO move this to pageResolver("state.ready")
-
+		ApplicationConfig();//TODO move the state transitions here
 		console.debug("loading phased scripts");
 		var links = document.getElementsByTagName("link");
 		//TODO phase
@@ -2149,21 +2153,16 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.set("_queueDelayedAssets",_queueDelayedAssets);
 
 
-	var requiredConfigs = {};
-
 	function configRequired(url)
 	{
 		pageResolver.set(["state","loadingConfig"],true);
 		pageResolver.set(["state","loadingConfigUrl",url],true);
-		//requiredConfigs[url] = false;
 	}
 	essential.set("configRequired",configRequired);
 
 	function configLoaded(url)
 	{
 		pageResolver.set(["state","loadingConfigUrl",url],false);
-		//requiredConfigs[url] = true;
-		console.debug("config loaded:"+url);
 	}
 	essential.set("configLoaded",configLoaded);
 
@@ -2473,7 +2472,25 @@ Generator.ObjectGenerator = Generator(Object);
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
-					this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+					var now = (new Date()).getTime();
+					var throttle = this.handlers.layout[desc.role].throttle;
+					if (desc.layout.delayed) {
+						// set dimensions and let delayed do it
+					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
+						// call now
+						this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+						desc.layout.lastDirectCall = now;
+					} else {
+						// call in a bit
+						(function(desc){
+							desc.layout.delayed = true;
+							setTimeout(function(){
+								DocumentRoles().handlers.layout[desc.role].call(DocumentRoles(),desc.el,desc.layout,desc.instance);
+								desc.layout.lastDirectCall = now;
+								desc.layout.delayed = false;
+							},now - desc.layout.lastDirectCall);
+						})(desc);
+					}
 				}
 			}
 		}
@@ -2595,6 +2612,8 @@ Generator.ObjectGenerator = Generator(Object);
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
 		while(element) {
+			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
+
 			var role = element.getAttribute("role");
 			switch(role) {
 				case "button":
@@ -2619,7 +2638,7 @@ Generator.ObjectGenerator = Generator(Object);
 					}
 					break;
 			}
-			element = element.parentNode;
+			if (element) element = element.parentNode;
 		}
 		if (this.commandElement == undefined) return this; // no command
 
@@ -2631,7 +2650,7 @@ Generator.ObjectGenerator = Generator(Object);
 				this.actionElement = element;
 				element = null;
 			}			
-			element = element.parentNode;
+			if (element) element = element.parentNode;
 		}
 
 		return this;
@@ -2909,8 +2928,6 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		state.on("change",this,this.onStateChange);
-		this.state.set("loadingScriptsUrl",{});
-		this.state.set("loadingConfigUrl",{});
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
@@ -2956,7 +2973,8 @@ Generator.ObjectGenerator = Generator(Object);
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();	
 					enhanceUnhandledElements();
-					if (ev.base.configured == true && ev.base.authenticated == true && ev.base.authorised == true && ev.base.launched == false) {
+					if (ev.base.configured == true && ev.base.authenticated == true 
+						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
 						if (document.body) essential("instantiatePageSingletons")();
@@ -2968,7 +2986,7 @@ Generator.ObjectGenerator = Generator(Object);
 			case "authorised":
 			case "configured":
 				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
-					&& ev.base.authorised == true && ev.base.launched == false) {
+					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 					this.set("state.launching",true);
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
@@ -2983,7 +3001,7 @@ Generator.ObjectGenerator = Generator(Object);
 					if (ev.symbol == "launched") this.set("state.launching",false);
 				}
 				break;
-			//TODO authenticated, authorised, connected
+			
 			default:
 				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
 					if (document.body) essential("instantiatePageSingletons")();

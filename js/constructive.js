@@ -310,9 +310,10 @@ function Resolver(name,ns,options)
 	    }
 
 	    function trigger(type) {
-	    	var value = _resolve(names,null,onundefined);
+	    	var base = _resolve(baseNames,null,onundefined);
+            var value = base[leafName];
 
-	    	this._callListener(type,baseNames,leafName,value);
+	    	this._callListener(type,baseNames,base,leafName,value);
 			var parentRef = resolver.references[baseRefName];
 			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
 	    }    
