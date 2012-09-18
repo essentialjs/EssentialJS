@@ -721,7 +721,25 @@
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
-					this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+					var now = (new Date()).getTime();
+					var throttle = this.handlers.layout[desc.role].throttle;
+					if (desc.layout.delayed) {
+						// set dimensions and let delayed do it
+					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
+						// call now
+						this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+						desc.layout.lastDirectCall = now;
+					} else {
+						// call in a bit
+						(function(desc){
+							desc.layout.delayed = true;
+							setTimeout(function(){
+								DocumentRoles().handlers.layout[desc.role].call(DocumentRoles(),desc.el,desc.layout,desc.instance);
+								desc.layout.lastDirectCall = now;
+								desc.layout.delayed = false;
+							},now - desc.layout.lastDirectCall);
+						})(desc);
+					}
 				}
 			}
 		}

@@ -29,6 +29,7 @@
 	{
 		console.log("layout presentation");
 	};
+	PresentationLoader.layout_presentation.throttle = 200;
 
 	PresentationLoader.discard_presentation = function(el,role,instance) 
 	{
