@@ -331,6 +331,20 @@ test("Resolver mixinto",function() {
 	ok(mixtarget.on);
 })
 
+//TODO get event
+
+test("Resolver proxying",function(){
+	ok(1,"r.proxy puts the value of a foreign reference locally")
+});
+
+test("Resolver entries locally stored",function(){
+	ok(1)
+});
+
+test("Resolver entries server stored",function(){
+	ok(1)
+});
+
 //TODO test setEntry morphing "number", "boolean", "string" into builtin
 
 		// Resolver("abc")
