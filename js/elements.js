@@ -437,8 +437,6 @@
 	}
 
 	function copyKeyEvent(src) {
-		this.target = src.target || src.srcElement;
-		this.relatedTarget = src.relatedTarget;
 		this.altKey = src.altKey;
 		this.shiftKey = src.shiftKey;
 		this.ctrlKey = src.ctrlKey;
@@ -452,15 +450,20 @@
 		copyKeyEvent.call(this,src);
 	}
 	function copyMouseEvent(src) {
-		this.target = src.target || src.srcElement;
-		this.relatedTarget = src.relatedTarget;
+		this.clientX = src.clientX;
+		this.clientY = src.clientY;
+		this.screenX = src.screenX;
+		this.screenY = src.screenY;
+		this.button = BUTTON_MAP[src.button]; //TODO check map
+		this.buttons = src.button;
 	}
 	function copyMouseEventOverOut(src) {
 		copyMouseEvent.call(this,src);
 		this.fromElement = src.fromElement;
 		this.toElement = src.toElement;
+		this.relatedTarget = src.relatedTarget;
 	}
-
+	var BUTTON_MAP = { "0":0, "1":1, "2":2, "4": 3 };
 	var EVENTS = {
 		"click" : {
 			copyEvent: copyMouseEvent
@@ -571,24 +574,29 @@
 		"":{}
 	};
 
-	function _MutableEvent() {}
+	function _MutableEvent(src) {
+		this._original = src;
+		this.type = src.type;
+		this.target = src.target || src.srcElement;
+		this.currentTarget = src.currentTarget|| src.target; 
+		EVENTS[src.type].copyEvent.call(this,src);
+	}
+	_MutableEvent.prototype.relatedTarget = null;
 	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
 	_MutableEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
 
 	function MutableEvent(sourceEvent) {
+		function ClonedEvent() { }
 		var ev;
 		// IE event support
-		if (sourceEvent && sourceEvent.srcElement != undefined) {
-			ev = new _MutableEvent();
-			EVENTS[sourceEvent.type].copyEvent.call(ev,sourceEvent);
+		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
+			ev = new _MutableEvent(sourceEvent);
 		} else
-		if (window.event && window.event.srcElement != undefined && sourceEvent==undefined) {
-			ev = new _MutableEvent();
-			EVENTS[sourceEvent.type].copyEvent.call(ev,window.event);
+		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
+			ev = new _MutableEvent(window.event);
 		}
 		// other browsers, or not in listener 
 		else {
-			function ClonedEvent() { }
 			ClonedEvent.prototype = sourceEvent || window.event; 
 			ev = new ClonedEvent();
 			ev.withActionInfo = MutableEvent_withActionInfo;

@@ -1,5 +1,25 @@
 module('Element constructors');
 
+test("MutableEvent construction click",function(){
+	var HTMLElement = Resolver("essential")("HTMLElement");
+	var MutableEvent = Resolver("essential")("MutableEvent");
+
+	var div = HTMLElement("div");
+
+	function onclick(ev) {
+		var event = MutableEvent(ev);
+		equal(event.target,div);
+		equal(event.currentTarget,div);
+		equal(event.type,"click");
+	}
+
+	if (div.attachEvent) div.attachEvent("onclick",onclick);
+	else if (div.addEventListener) div.addEventListener("click",onclick);
+
+	//div.click();
+	simulateClick(div);
+});
+
 test('Basic element construction',function(){
 	var HTMLElement = Resolver("essential")("HTMLElement");
 
