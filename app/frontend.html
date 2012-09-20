@@ -7,7 +7,9 @@
   <meta content="Novo Bank" name="description">
   <meta content="Henrik Vendelbo" name="author">
 
-	<meta name="enhanced roles" content="dialog navigation spinner application"> 
+	<meta name="enhanced roles" content="dialog navigation spinner application">
+  <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
+  <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
 
 	<link rel="stylesheet" href="qunit/qunit.css" media="screen">
@@ -78,6 +80,7 @@
 
   <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
   </div>
+  <output data-proxy="html: body.connection.loadingProgress"></output>
 
   <div id="sessionBadge">
    <form action="dialogs/login" autocomplete="off" id="login" method="client" name="login" role="dialog">
