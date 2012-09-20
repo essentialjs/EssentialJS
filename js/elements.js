@@ -436,16 +436,164 @@
 		return cleaner;
 	}
 
+	function copyKeyEvent(src) {
+		this.target = src.target || src.srcElement;
+		this.relatedTarget = src.relatedTarget;
+		this.altKey = src.altKey;
+		this.shiftKey = src.shiftKey;
+		this.ctrlKey = src.ctrlKey;
+		this.metaKey = src.metaKey;
+		this.charCode = src.charCode;
+	}
+	function copyInputEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyNavigateEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyMouseEvent(src) {
+		this.target = src.target || src.srcElement;
+		this.relatedTarget = src.relatedTarget;
+	}
+	function copyMouseEventOverOut(src) {
+		copyMouseEvent.call(this,src);
+		this.fromElement = src.fromElement;
+		this.toElement = src.toElement;
+	}
+
+	var EVENTS = {
+		"click" : {
+			copyEvent: copyMouseEvent
+		},
+		"dblclick" : {
+			copyEvent: copyMouseEvent
+		},
+		"contextmenu": {
+			copyEvent: copyMouseEvent
+		},
+		"mousemove": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseup": {
+			copyEvent: copyMouseEvent
+		},
+		"mousedown": {
+			copyEvent: copyMouseEvent
+		},
+		"mousewheel": {
+			copyEvent: copyMouseEvent
+		},
+		"wheel": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseenter": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseleave": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseout": {
+			copyEvent: copyMouseEventOverOut
+		},
+		"mouseover": {
+			copyEvent: copyMouseEventOverOut
+		},
+
+		"keyup": {
+			copyEvent: copyKeyEvent
+		},
+		"keydown": {
+			copyEvent: copyKeyEvent
+		},
+		"keypress": {
+			copyEvent: copyKeyEvent
+		},
+
+		"blur": {
+			copyEvent: copyInputEvent
+		},
+		"focus": {
+			copyEvent: copyInputEvent
+		},
+		"focusin": {
+			copyEvent: copyInputEvent
+		},
+		"focusout": {
+			copyEvent: copyInputEvent
+		},
+
+		"copy": {
+			copyEvent: copyInputEvent
+		},
+		"cut": {
+			copyEvent: copyInputEvent
+		},
+		"change": {
+			copyEvent: copyInputEvent
+		},
+		"input": {
+			copyEvent: copyInputEvent
+		},
+		"textinput": {
+			copyEvent: copyInputEvent
+		},
+
+		"scroll": {
+			copyEvent: copyNavigateEvent
+		},
+		"reset": {
+			copyEvent: copyNavigateEvent
+		},
+		"submit": {
+			copyEvent: copyNavigateEvent
+		},
+		"select": {
+			copyEvent: copyNavigateEvent
+		},
+
+		"error": {
+			copyEvent: copyNavigateEvent
+		},
+		"haschange": {
+			copyEvent: copyNavigateEvent
+		},
+		"load": {
+			copyEvent: copyNavigateEvent
+		},
+		"unload": {
+			copyEvent: copyNavigateEvent
+		},
+		"resize": {
+			copyEvent: copyNavigateEvent
+		},
+
+
+		"":{}
+	};
+
+	function _MutableEvent() {}
+	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
+	_MutableEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
 	function MutableEvent(sourceEvent) {
-		function ClonedEvent() { }
-		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
-		var ev = new ClonedEvent();
-		if (sourceEvent == undefined) {		// IE event object
-			ev.target = ev.srcElement;
-			//TODO ev.button 1,2,3 vs 1,2,4
+		var ev;
+		// IE event support
+		if (sourceEvent && sourceEvent.srcElement != undefined) {
+			ev = new _MutableEvent();
+			EVENTS[sourceEvent.type].copyEvent.call(ev,sourceEvent);
+		} else
+		if (window.event && window.event.srcElement != undefined && sourceEvent==undefined) {
+			ev = new _MutableEvent();
+			EVENTS[sourceEvent.type].copyEvent.call(ev,window.event);
 		}
-		ev.withActionInfo = MutableEvent_withActionInfo;
-		ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		// other browsers, or not in listener 
+		else {
+			function ClonedEvent() { }
+			ClonedEvent.prototype = sourceEvent || window.event; 
+			ev = new ClonedEvent();
+			ev.withActionInfo = MutableEvent_withActionInfo;
+			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		}
 		return ev;		
 	}
 	essential.declare("MutableEvent",MutableEvent)
@@ -600,6 +748,9 @@
 	function enhanceStatefulFields(parent) {
 
 		for(var el = parent.firstChild; el; el = el.nextSibling) {
+			//TODO avoid non elements, firstChildNode. Skip non type 1 (comments) on old IE
+			//TODO do not enhance nested enhanced roles
+
 			var name = el.name || el.getAttribute("data-name") || el.getAttribute("name");
 			if (name) {
 				var role = el.getAttribute("role");
