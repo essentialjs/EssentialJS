@@ -245,6 +245,9 @@
 	function fireUnload()
 	{
 		discardRestricted();
+		for(var n in Resolver) {
+			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
+		}
 	}
 
     function doScrollCheck() {

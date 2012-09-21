@@ -146,6 +146,7 @@ function Resolver(name,ns,options)
         }
     };
 
+    resolver.get = resolver;
     resolver.named = options.name;
     if (options.name) Resolver[options.name] = resolver;
     resolver.namespace = arguments[0];
@@ -451,6 +452,13 @@ function Resolver(name,ns,options)
 		Resolver[name] = Resolver(ns,options);
 		Resolver[name].named = name;
 		return Resolver[name];
+    };
+
+    resolver.destroy = function()
+    {
+        //TODO break down listeners
+        //TODO clean up references
+        for(var n in this.references) delete this.references[n];
     };
 
     if (options.mixinto) {

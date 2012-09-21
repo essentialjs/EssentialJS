@@ -222,10 +222,6 @@
 		return field;
 	}
 
-	function Stateful_destroy() {
-
-	}
-
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
 		if (el._cleaners == undefined) el._cleaners = [];
@@ -252,7 +248,6 @@
 			this.stateful.destroy();
 			this.stateful.fireAction = undefined;
 			this.stateful.setField = undefined;
-			this.stateful.destroy = undefined;
 			this.stateful = undefined;
 		}
 	}
@@ -278,7 +273,6 @@
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.setField = Stateful_setField;
 		stateful.reflectStateOn = Stateful_reflectStateOn;
-		stateful.destroy = Stateful_destroy;
 
 		if (el) stateful.reflectStateOn(el);
 		
