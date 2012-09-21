@@ -436,6 +436,14 @@ function Resolver(name,ns,options)
     	return this.references[ref] = makeReference(name,onundefined,defaultRef.listeners);
     };
 
+    resolver.proxy = function(dest,other,src) {
+        other.on("change",src,this,function(ev){
+            ev.data.set(dest,ev.value);
+        });
+
+        //TODO make proxy removable
+    };
+
     resolver.override = function(ns,options)
     {
         options = options || {};

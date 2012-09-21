@@ -334,7 +334,19 @@ test("Resolver mixinto",function() {
 //TODO get event
 
 test("Resolver proxying",function(){
+
+	var resolver = Resolver({ connectivity: { status: "connected" } });
+	var resolver2 = Resolver({});
+
+	resolver2.proxy("state.text",resolver,"connectivity.status");
+	resolver.set("connectivity.status","limited");
+	equal(proxy2("state.text"),"connectivity.status")
+
+	resolver2.proxy("state.connectivityStatus",resolver,"connectivity.status");
+
 	ok(1,"r.proxy puts the value of a foreign reference locally")
+
+	ok(1,"when resolver is destroyed the proxies are deregistered")
 });
 
 test("Resolver entries locally stored",function(){
