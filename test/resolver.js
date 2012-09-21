@@ -304,6 +304,8 @@ test('Resolver change listener',function() {
 	ok(1,"Change listener is only called if values have changed")
 	ok(1,"Change listener is only called recursively for 3 levels")
 
+	ok(1,"Specific condition listener on({ loading:false, authorised:false })")
+
 });
 
 //TODO reference.trigger
@@ -339,10 +341,12 @@ test("Resolver proxying",function(){
 	var resolver2 = Resolver({});
 
 	resolver2.proxy("state.text",resolver,"connectivity.status");
-	resolver.set("connectivity.status","limited");
-	equal(proxy2("state.text"),"connectivity.status")
-
 	resolver2.proxy("state.connectivityStatus",resolver,"connectivity.status");
+
+	resolver.set("connectivity.status","limited");
+	equal(resolver2("state.text"),"limited")
+	equal(resolver2("state.connectivityStatus"),"limited")
+
 
 	ok(1,"r.proxy puts the value of a foreign reference locally")
 
@@ -355,6 +359,10 @@ test("Resolver entries locally stored",function(){
 
 test("Resolver entries server stored",function(){
 	ok(1)
+});
+
+test("Resolver reference logging changes",function(){
+	ok(1,'ref.log("change","info")')
 });
 
 //TODO test setEntry morphing "number", "boolean", "string" into builtin
