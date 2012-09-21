@@ -305,6 +305,13 @@
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+	pageResolver.reference("connection").mixin({
+		"loadingProgress": "",
+		"status": "connected",
+		"detail": "",
+		"userName": "",
+		"logStatus": false
+	});
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",

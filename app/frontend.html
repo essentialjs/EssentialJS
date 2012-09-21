@@ -12,7 +12,8 @@
   <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
 
-	<link rel="stylesheet" href="qunit/qunit.css" media="screen">
+	<link rel="stylesheet" href="css/basic.css" media="screen">
+  <link rel="stylesheet" href="css/enhanced.css" media="screen">
 
 	<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
 	<script type="text/javascript" src="../js/modernizr.js"></script>
@@ -24,6 +25,8 @@
   <script type="text/javascript" src="js/spin.min.js"></script>
 
   <script type="text/javascript" src="js/demo-logging.js"></script>
+
+  <script type="text/javascript" src="js/early.js"></script>
 
   <script>(function(){
 	  //Resolver("page").set(["state","connected"],false);
@@ -80,7 +83,7 @@
 
   <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
   </div>
-  <output data-proxy="html: body.connection.loadingProgress"></output>
+  <output data-proxy="html: body.connection.loadingProgress" id="loadingProgress"></output>
 
   <div id="sessionBadge">
    <form action="dialogs/login" autocomplete="off" id="login" method="client" name="login" role="dialog">
