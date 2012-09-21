@@ -456,6 +456,8 @@
 		this.screenY = src.screenY;
 		this.button = BUTTON_MAP[src.button]; //TODO check map
 		this.buttons = src.button;
+		//detail is repetitions
+		//which == 1,2,3
 	}
 	function copyMouseEventOverOut(src) {
 		copyMouseEvent.call(this,src);
@@ -463,7 +465,7 @@
 		this.toElement = src.toElement;
 		this.relatedTarget = src.relatedTarget;
 	}
-	var BUTTON_MAP = { "0":0, "1":1, "2":2, "4": 3 };
+	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
 	var EVENTS = {
 		"click" : {
 			copyEvent: copyMouseEvent
