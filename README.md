@@ -32,6 +32,11 @@ or the [Website](http://essentialjs.com)
 
 Make sure that you have NodeJS/npm installed and install the build tools `npm install jake uglify-js`.
 
-   ./node_modules/.bin/jake
+    ./node_modules/.bin/jake
 
 This will build plain and minified versions.
+
+## Building demo apps
+
+    ./node_modules/.bin/lessc app/css/basic.less app/css/basic.css
+    ./node_modules/.bin/lessc app/css/enhanced.less app/css/enhanced.css

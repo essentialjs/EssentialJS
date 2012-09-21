@@ -16,6 +16,22 @@
 	}
 }
 
+#loadingProgress {
+	display: block;
+	position: absolute;
+	top: 50%; left: 50%;
+	width: 300px;
+	margin-left: -150px;
+	margin-top: 70px;
+	color: #ccc;
+	text-align: center;
+	font-weight: bold;
+
+	.launched & {
+		display: none;
+	}
+}
+
 body {
 	background-color: @background-color;
 	background-image: @repeating-background-image;
