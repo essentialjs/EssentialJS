@@ -31,5 +31,6 @@
 		}
 	});
 
+	Resolver("page").reference("preference").stored("load unload","local");
 
 })();

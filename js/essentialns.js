@@ -237,6 +237,12 @@
 			console.error("Failed to launch delayed assets and singletons",ex);
 			//debugger;
 		}
+		// stored entires	
+		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
+			for(var n in ref.readloads) {
+				ref.readloads[n].call(ref);
+			}
+		}
 	}
 	function fireLoad()
 	{
@@ -244,7 +250,17 @@
 	}
 	function fireUnload()
 	{
+		//TODO singleton deconstruct / before discard?
+
+		// stored entires	
+		for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
+			for(var n in ref.storeunloads) {
+				ref.storeunloads[n].call(ref);
+			}
+		}
+
 		discardRestricted();
+
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
 		}
