@@ -512,7 +512,7 @@ nav#zkb-logo h1 {
 .login nav#zkb-logo h1 {
   font-size: 16px;
 }
-nav#tradez-logo {
+nav#app-logo {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -536,8 +536,8 @@ nav#tradez-logo {
   -ms-user-select: none;
   user-select: none;
 }
-.launching nav#tradez-logo,
-.launched nav#tradez-logo {
+.launching nav#app-logo,
+.launched nav#app-logo {
   text-shadow: 1px 1px #323232;
   text-shadow: 1px 1px rgba(50, 50, 50, 0.7);
   top: 0;
@@ -549,7 +549,7 @@ nav#tradez-logo {
   filter: alpha(opacity=100);
   line-height: 1;
 }
-.login nav#tradez-logo {
+.login nav#app-logo {
   width: 150px;
   height: auto;
   margin-top: -140px;
