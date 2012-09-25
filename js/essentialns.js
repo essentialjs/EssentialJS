@@ -227,6 +227,13 @@
 		if (_readyFired) return;
 		_readyFired = true;
 		
+		// stored entires	
+		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
+			for(var n in ref.readloads) {
+				ref.readloads[n].call(ref);
+			}
+		}
+
 		try {
 			essential("_queueDelayedAssets")();
 			essential.set("_queueDelayedAssets",function(){});
@@ -236,12 +243,6 @@
 		catch(ex) {
 			console.error("Failed to launch delayed assets and singletons",ex);
 			//debugger;
-		}
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
-			for(var n in ref.readloads) {
-				ref.readloads[n].call(ref);
-			}
 		}
 	}
 	function fireLoad()
