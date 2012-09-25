@@ -212,8 +212,10 @@ function Resolver(name,ns,options)
                 if (_setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value);
                     //TODO test for triggering specific listeners
-                    var parentRef = resolver.references[baseRefName];
-                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    if (baseRefName) {
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
                 }
         	}
 			return value;
@@ -244,8 +246,10 @@ function Resolver(name,ns,options)
                     if (_setValue(value,baseNames,base,leafName)) {
                         this._callListener("change",baseNames,base,leafName,value);
                         //TODO test for triggering specific listeners
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (baseRefName) {
+                            var parentRef = resolver.references[baseRefName];
+                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        }
                     }
                 }
                 return base[leafName];
