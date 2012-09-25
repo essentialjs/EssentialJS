@@ -1,6 +1,7 @@
 (function(){
 	var console = Resolver("essential")("console");
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
+	var DialogAction = Resolver("essential")("DialogAction");
 	var pageState = Resolver("page").reference("state");
 	var pageProgress = Resolver("page").reference("connection.loadingProgress");
 
@@ -9,6 +10,16 @@
 			ev.data.innerHTML = ev.value;
 		});
 	}).restrict({ "singleton":true, "lifecycle":"page" });
+
+	function _LoginDialog() {
+
+	}
+	var LoginDialog = DialogAction.variant("dialogs/login",Generator(_LoginDialog,DialogAction));
+
+	LoginDialog.prototype.login = function(dialogElement) {
+		Resolver().reference("demo-session").set("loggedIn",true);
+		pageState.set("authenticated",true);
+	};
 
 	// manage the loading of the application
 	pageState.on("change",function(ev){
@@ -31,6 +42,13 @@
 		}
 	});
 
-	Resolver("page").reference("preference").stored("load unload","local");
+	Resolver("page").declare("preferences",{});
+	Resolver("page").reference("preferences").stored("load unload","local");
 
+	var demoSession = Resolver().reference("demo-session");
+	demoSession.declare(false);
+	demoSession.on("change",function() {
+		pageState.set("authenticated",demoSession.get("loggedIn"));
+	});
+	demoSession.stored("load change unload","local");
 })();

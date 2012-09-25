@@ -30,7 +30,7 @@
 
   <script>(function(){
 	  //Resolver("page").set(["state","connected"],false);
-	  //Resolver("page").set(["state","authenticated"],false); assume that login page passed
+	  Resolver("page").set(["state","authenticated"],false); //assume that login page passed
 	  Resolver("page").set(["state","authorised"],false);
 	  Resolver("page").set(["state","configured"],false);
     Resolver(window).reference("app.APPLICATION_PROPERTIES").mixin({
@@ -68,8 +68,7 @@
   </div>
   
   <nav id="zkb-logo">
-  	<span class="image-wrap"><img height="50" name="menu" role="button" 
-  	src="images/zkb184white.png" width="50"/></span>
+  	<figure name="app-menu" role="button">B</figure> 
 	<span><h1>Essential<br/>JavaScript</h1></span>
   </nav>
 
@@ -95,13 +94,13 @@
 	<output name="loginErrors">The username or password you entered is incorrect, please try again</output>
 
 	<label class="details">User Name</label>
-	<input autofocus="" maxlength="20" name="j_username"/>
+	<input autofocus="" maxlength="20" name="j_username" type="text">
 
 	<label class="details password">Password</label>
-	<input maxlength="20" name="j_password" type="password"/>
+	<input maxlength="20" name="j_password" type="password">
 
 	<label class="details onetime">OTP</label>
-	<input maxlength="20" name="j_password_onetime" type="password"/>
+	<input maxlength="20" name="j_password_onetime" type="password">
 
 	<h5 name="forgottenPassword">Can't access your account?</h5>
 
@@ -164,6 +163,34 @@
   To avoid them in older browsers, especially Internet Explorer you should 
   take special care to call destroy on unnamed resolvers that you create
   yourself.
+
+
+  Loading stored resolver data declared after load
+
+  The references defined while initial scripts are loaded can be read from
+  previously stored data through the `stored` method.
+
+  Once the page is completed the data for these are read and applied. If you 
+  define a reference as stored after this point it will be immediately loaded.
+
+  This way it doesn't matter where you define that a reference is initialised
+  with a previously stored data set. It will be loaded by the time the page
+  is launched.
+
+
+  Page singletons used in roles early
+
+  Whenever you use a page singleton you should fetch it by calling its generator.
+  If you do this while loading scripts you will get the usual problems with
+  singletons. So you want to wait until constructors or role enhancers are run.
+
+  This way the order is irrelevant. If the document DOM is ready and the roles
+  and singletons are being constructed. Anything needing a singleton calls the 
+  generator and the instance is returned. The only thing you have to avoid is
+  circular dependencies, and your loading and construction can be nicely 
+  decoupled.
+
+
 
 </body>
 </html>
