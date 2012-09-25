@@ -1045,6 +1045,13 @@
 						case "BUTTON":
 						case "button":
 							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							if (element.type == "submit") {
+								this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.commandElement = element;
+								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+								element = null;
+							}
 							break;
 					}
 					break;
