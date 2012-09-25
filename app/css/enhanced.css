@@ -127,7 +127,7 @@ html {
   overflow: hidden;
 }
 body {
-  font-family: 'Frutiger Neue W02 Light', Frutiger55RomanRegular, Frutiger, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: FjordOne, sans-serif;
   overflow: hidden;
   position: relative;
   height: 100%;
@@ -149,6 +149,7 @@ body {
   display: none;
 }
 #loadingProgress {
+  display: block;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -158,6 +159,9 @@ body {
   color: #ccc;
   text-align: center;
   font-weight: bold;
+}
+.launched #loadingProgress {
+  display: none;
 }
 body {
   background-color: #054696;
@@ -449,7 +453,7 @@ article#main-stage {
 .notifications-open article#main-stage {
   top: 125px;
 }
-nav#zkb-logo {
+nav#app-logo {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -468,18 +472,18 @@ nav#zkb-logo {
   -ms-user-select: none;
   user-select: none;
 }
-.launching nav#zkb-logo,
-.launched nav#zkb-logo {
+.launching nav#app-logo,
+.launched nav#app-logo {
   top: 0;
   left: 0;
   margin-top: 18px;
   margin-left: 60px;
   padding-left: 38px;
 }
-.login nav#zkb-logo {
+.login nav#app-logo {
   margin-top: -194px;
 }
-nav#zkb-logo .image-wrap img {
+nav#app-logo .image-wrap img {
   display: block;
   position: absolute;
   left: 0;
@@ -487,17 +491,17 @@ nav#zkb-logo .image-wrap img {
   width: 60px !important;
   height: 60px !important;
 }
-.launching nav#zkb-logo .image-wrap img,
-.launched nav#zkb-logo .image-wrap img {
+.launching nav#app-logo .image-wrap img,
+.launched nav#app-logo .image-wrap img {
   width: 34px !important;
   height: 34px !important;
 }
-.login nav#zkb-logo .image-wrap img {
+.login nav#app-logo .image-wrap img {
   width: 34px !important;
   height: 34px !important;
 }
-nav#zkb-logo h1 {
-  font-family: 'Frutiger Neue W02 Light', Frutiger45LightRegular, "Frutiger Light", Arial, sans-serif;
+nav#app-logo h1 {
+  font-family: FjordOne, Arial, sans-serif;
   font-size: 29px;
   color: #f5f5f5;
   line-height: 1.1;
@@ -505,11 +509,11 @@ nav#zkb-logo h1 {
   text-shadow: 1px 1px #323232;
   text-shadow: 1px 1px rgba(50, 50, 50, 0.7);
 }
-.launching nav#zkb-logo h1,
-.launched nav#zkb-logo h1 {
+.launching nav#app-logo h1,
+.launched nav#app-logo h1 {
   font-size: 16px;
 }
-.login nav#zkb-logo h1 {
+.login nav#app-logo h1 {
   font-size: 16px;
 }
 nav#app-logo {
@@ -521,7 +525,7 @@ nav#app-logo {
   opacity: 0;
   -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
   filter: alpha(opacity=0);
-  font-family: 'Frutiger Neue W02 Light', Frutiger45LightRegular, "Frutiger Light", Arial, sans-serif;
+  font-family: FjordOne, Arial, sans-serif;
   font-size: 3em;
   color: #f5f5f5;
   -webkit-transition: all 0.4s ease-in-out;
@@ -597,7 +601,6 @@ nav[action="navigation/logo"] button[name="menu"] {
   height: 40px;
   padding: 0;
   background-color: transparent;
-  background-image: url(../images/ZKB_Menu.png);
   background-position: 0 0;
   border: none;
   display: none;

@@ -1,98 +1,21 @@
 @font-face {
-  font-family: 'Frutiger45LightBoldItalic';
-  src: url('fonts/frutiger-bolditalic-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-bolditalic-webfont.woff') format('woff'), url('fonts/frutiger-bolditalic-webfont.ttf') format('truetype'), url('fonts/frutiger-bolditalic-webfont.svg#webfontR2tDy7QH') format('svg');
+  font-family: 'entyporegular';
+  src: url('fonts/entypo-webfont.eot');
+  src: url('fonts/entypo-webfont.eot?#iefix') format('embedded-opentype'), url('fonts/entypo-webfont.woff') format('woff'), url('fonts/entypo-webfont.ttf') format('truetype'), url('fonts/entypo-webfont.svg#entyporegular') format('svg');
   font-weight: normal;
   font-style: normal;
 }
 @font-face {
-  font-family: 'Frutiger57CnRegular';
-  src: url('fonts/frutiger-cn-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-cn-webfont.woff') format('woff'), url('fonts/frutiger-cn-webfont.ttf') format('truetype'), url('fonts/frutiger-cn-webfont.svg#webfontiD0t8Rg6') format('svg');
+  font-family: 'InconsolataMedium';
+  src: url('fonts/Inconsolata-webfont.eot');
+  src: url('fonts/Inconsolata-webfont.eot?#iefix') format('embedded-opentype'), url('fonts/Inconsolata-webfont.woff') format('woff'), url('fonts/Inconsolata-webfont.ttf') format('truetype'), url('fonts/Inconsolata-webfont.svg#InconsolataMedium') format('svg');
   font-weight: normal;
   font-style: normal;
 }
 @font-face {
-  font-family: 'Frutiger87ExtraBlackCnRegular';
-  src: url('fonts/frutiger-extrablackcn-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-extrablackcn-webfont.woff') format('woff'), url('fonts/frutiger-extrablackcn-webfont.ttf') format('truetype'), url('fonts/frutiger-extrablackcn-webfont.svg#webfontipxH6oyg') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger55RomanItalic';
-  src: url('fonts/frutiger-italic-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-italic-webfont.woff') format('woff'), url('fonts/frutiger-italic-webfont.ttf') format('truetype'), url('fonts/frutiger-italic-webfont.svg#webfontDC0lbTa5') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger45LightRegular';
-  src: url('fonts/frutiger-light-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-light-webfont.woff') format('woff'), url('fonts/frutiger-light-webfont.ttf') format('truetype'), url('fonts/frutiger-light-webfont.svg#webfontZyy4cpE6') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger47LightCnRegular';
-  src: url('fonts/frutiger-lightcn-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-lightcn-webfont.woff') format('woff'), url('fonts/frutiger-lightcn-webfont.ttf') format('truetype'), url('fonts/frutiger-lightcn-webfont.svg#webfonte7dT14vz') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger45LightItalic';
-  src: url('fonts/frutiger-lightitalic-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-lightitalic-webfont.woff') format('woff'), url('fonts/frutiger-lightitalic-webfont.ttf') format('truetype'), url('fonts/frutiger-lightitalic-webfont.svg#webfontforIoSy1') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger55RomanRegular';
-  src: url('fonts/frutiger-roman-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-roman-webfont.woff') format('woff'), url('fonts/frutiger-roman-webfont.ttf') format('truetype'), url('fonts/frutiger-roman-webfont.svg#webfontImvg65za') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger95UltraBlackRegular';
-  src: url('fonts/frutiger-ultrablack-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-ultrablack-webfont.woff') format('woff'), url('fonts/frutiger-ultrablack-webfont.ttf') format('truetype'), url('fonts/frutiger-ultrablack-webfont.svg#webfontihohK8cV') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger47LightCnBold';
-  src: url('fonts/frutiger-boldcn-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-boldcn-webfont.woff') format('woff'), url('fonts/frutiger-boldcn-webfont.ttf') format('truetype'), url('fonts/frutiger-boldcn-webfont.svg#webfontONyivBNX') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger55RomanBold';
-  src: url('fonts/frutiger-black-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-black-webfont.woff') format('woff'), url('fonts/frutiger-black-webfont.ttf') format('truetype'), url('fonts/frutiger-black-webfont.svg#webfontpp5g9zR4') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger57CnBold';
-  src: url('fonts/frutiger-blackcn-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-blackcn-webfont.woff') format('woff'), url('fonts/frutiger-blackcn-webfont.ttf') format('truetype'), url('fonts/frutiger-blackcn-webfont.svg#webfontWejhPfsv') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger55RomanBoldItalic';
-  src: url('fonts/frutiger-blackitalic-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-blackitalic-webfont.woff') format('woff'), url('fonts/frutiger-blackitalic-webfont.ttf') format('truetype'), url('fonts/frutiger-blackitalic-webfont.svg#webfontRJA7BfbV') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Frutiger45LightBold';
-  src: url('fonts/frutiger-bold-webfont.eot');
-  src: local('☺'), url('fonts/frutiger-bold-webfont.woff') format('woff'), url('fonts/frutiger-bold-webfont.ttf') format('truetype'), url('fonts/frutiger-bold-webfont.svg#webfontknE8ad3X') format('svg');
+  font-family: 'FjordOne';
+  src: url('fonts/FjordOne-Regular-webfont.eot');
+  src: url('fonts/FjordOne-Regular-webfont.eot?#iefix') format('embedded-opentype'), url('fonts/FjordOne-Regular-webfont.woff') format('woff'), url('fonts/FjordOne-Regular-webfont.ttf') format('truetype'), url('fonts/FjordOne-Regular-webfont.svg#FjordOne') format('svg');
   font-weight: normal;
   font-style: normal;
 }
@@ -222,7 +145,7 @@ textarea {
 }
 body {
   margin: 0;
-  font-family: 'Frutiger Neue W02 Light', Frutiger55RomanRegular, Frutiger, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: FjordOne, sans-serif;
   font-size: 13px;
   line-height: 18px;
   color: #333333;
@@ -522,7 +445,7 @@ input,
 button,
 select,
 textarea {
-  font-family: 'Frutiger Neue W02 Light', Frutiger55RomanRegular, Frutiger, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: FjordOne, sans-serif;
 }
 label {
   display: block;
