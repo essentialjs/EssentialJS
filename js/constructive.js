@@ -324,12 +324,18 @@ function Resolver(name,ns,options)
 	    }
 
         function read_session(ref) {
-            var value = JSON.parse(sessionStorage[this.id]);
-            ref.set(value);
+            var v = sessionStorage[this.id];
+            if (v != undefined) {
+                var value = JSON.parse(v);
+                ref.set(value);
+            }
         }
         function read_local(ref) {
-            var value = JSON.parse(localStorage[this.id]);
-            ref.set(value);
+            var v = localStorage[this.id];
+            if (v != undefined) {
+                var value = JSON.parse(v);
+                ref.set(value);
+            }
         }
         function read_cookie(ref) {
             function readIt(id) {
@@ -376,7 +382,7 @@ function Resolver(name,ns,options)
             options = options || {};
             if (/change/.test(type)) {
                 if (this.storechanges == undefined) this.storechanges = {};
-                var id = "resolver." + resolver.name + "#" + name;
+                var id = "resolver." + resolver.named + "#" + name;
                 if (options.id) id = options.id;
                 if (options.name) id = options.name;
                 switch(dest) {
@@ -393,7 +399,7 @@ function Resolver(name,ns,options)
                     this.readloads = {};
                     Resolver.readloads.push(this);
                 }
-                var id = "resolver." + resolver.name + "#" + name;
+                var id = "resolver." + resolver.named + "#" + name;
                 if (options.id) id = options.id;
                 if (options.name) id = options.name;
                 switch(dest) {
@@ -410,7 +416,7 @@ function Resolver(name,ns,options)
                     this.storeunloads = {};
                     Resolver.storeunloads.push(this);
                 }
-                var id = "resolver." + resolver.name + "#" + name;
+                var id = "resolver." + resolver.named + "#" + name;
                 if (options.id) id = options.id;
                 if (options.name) id = options.name;
                 switch(dest) {
