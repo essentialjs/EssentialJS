@@ -867,7 +867,9 @@
 					"role": role,
 					"el": e,
 					"instance": null,
-					"layout": {},
+					"layout": {
+						"lastDirectCall": 0
+					},
 					"enhanced": false,
 					"discarded": false
 				});
@@ -893,13 +895,15 @@
 						desc.layout.lastDirectCall = now;
 					} else {
 						// call in a bit
+						var delay = now + throttle - desc.layout.lastDirectCall
+						// console.log("resizing in",delay);
 						(function(desc){
 							desc.layout.delayed = true;
 							setTimeout(function(){
 								DocumentRoles().handlers.layout[desc.role].call(DocumentRoles(),desc.el,desc.layout,desc.instance);
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
-							},now - desc.layout.lastDirectCall);
+							},delay);
 						})(desc);
 					}
 				}
