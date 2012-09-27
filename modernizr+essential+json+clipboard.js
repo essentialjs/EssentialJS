@@ -1290,6 +1290,7 @@ function Resolver(name,ns,options)
         }
     };
 
+    resolver.get = resolver;
     resolver.named = options.name;
     if (options.name) Resolver[options.name] = resolver;
     resolver.namespace = arguments[0];
@@ -1355,8 +1356,10 @@ function Resolver(name,ns,options)
                 if (_setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value);
                     //TODO test for triggering specific listeners
-                    var parentRef = resolver.references[baseRefName];
-                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    if (baseRefName) {
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
                 }
         	}
 			return value;
@@ -1387,8 +1390,10 @@ function Resolver(name,ns,options)
                     if (_setValue(value,baseNames,base,leafName)) {
                         this._callListener("change",baseNames,base,leafName,value);
                         //TODO test for triggering specific listeners
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (baseRefName) {
+                            var parentRef = resolver.references[baseRefName];
+                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        }
                     }
                 }
                 return base[leafName];
@@ -1460,7 +1465,114 @@ function Resolver(name,ns,options)
 	    	this._callListener(type,baseNames,base,leafName,value);
 			var parentRef = resolver.references[baseRefName];
 			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
-	    }    
+	    }
+
+        function read_session(ref) {
+            var v = sessionStorage[this.id];
+            if (v != undefined) {
+                var value = JSON.parse(v);
+                ref.set(value);
+            }
+        }
+        function read_local(ref) {
+            var v = localStorage[this.id];
+            if (v != undefined) {
+                var value = JSON.parse(v);
+                ref.set(value);
+            }
+        }
+        function read_cookie(ref) {
+            function readIt(id) {
+                var wEQ = id + "=";
+                var ca = document.cookie.split(';');
+                for(var i=0;i < ca.length;i++) {
+                    var c = ca[i];
+                    while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                    if (c.indexOf(wEQ) == 0) return c.substring(wEQ.length,c.length);
+                }
+                return undefined;
+            }
+            var value = readIt(this.id);
+            //TODO type coercion
+            if (value != undefined) ref.set(value);
+        }
+
+        function store_session(ref) {
+            //TODO if (ref is defined)
+            sessionStorage[this.id] = JSON.stringify(ref());
+        }
+        function store_local(ref) {
+            //TODO if (ref is defined)
+            localStorage[this.id] = JSON.stringify(ref());
+        }
+        function store_cookie(ref) {
+            var value = JSON.stringify(ref());
+            var days = this.options.days;
+
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime()+(days*24*60*60*1000));
+                var expires = "; expires="+date.toGMTString();
+            }
+            else var expires = "";
+            document.cookie = this.id+"="+value+expires+"; path=/";
+        }
+
+        //TODO support server remote storage mechanism
+
+        // type = change/load/unload
+        // dest = local/session/cookie
+        function stored(type,dest,options) {
+            options = options || {};
+            if (/change/.test(type)) {
+                if (this.storechanges == undefined) this.storechanges = {};
+                var id = "resolver." + resolver.named + "#" + name;
+                if (options.id) id = options.id;
+                if (options.name) id = options.name;
+                switch(dest) {
+                    case "session": 
+                        this.storechanges.session = { call: store_session, id:id, options: options }; break;
+                    case "local":
+                        this.storechanges.local = { call: store_local, id:id, options: options }; break;
+                    case "cookie":
+                        this.storechanges.cookie = { call: store_cookie, id:id, options: options }; break;
+                }
+            }
+            if (/^load| load/.test(type)) {
+                if (this.readloads == undefined) {
+                    this.readloads = {};
+                    Resolver.readloads.push(this);
+                }
+                var id = "resolver." + resolver.named + "#" + name;
+                if (options.id) id = options.id;
+                if (options.name) id = options.name;
+                switch(dest) {
+                    case "session": 
+                        this.readloads.session = { call: read_session, id:id, options: options }; break;
+                    case "local":
+                        this.readloads.local = { call: read_local, id:id, options: options }; break;
+                    case "cookie":
+                        this.readloads.cookie = { call: read_cookie, id:id, options: options }; break;
+                }
+            }
+            if (/unload/.test(type)) {
+                if (this.storeunloads == undefined) {
+                    this.storeunloads = {};
+                    Resolver.storeunloads.push(this);
+                }
+                var id = "resolver." + resolver.named + "#" + name;
+                if (options.id) id = options.id;
+                if (options.name) id = options.name;
+                switch(dest) {
+                    case "session": 
+                        this.storeunloads.session = { call: store_session, id:id, options: options || {} }; break;
+                    case "local":
+                        this.storeunloads.local = { call: store_local, id:id, options: options || {} }; break;
+                    case "cookie":
+                        this.storeunloads.cookie = { call: store_cookie, id:id, options: options || {} }; break;
+                }
+            }
+        }    
 
         get.set = set;
         get.get = get;
@@ -1471,15 +1583,21 @@ function Resolver(name,ns,options)
         get.setEntry = setEntry;
         get.on = on;
         get.trigger = trigger;
+        get.stored = stored;
+
         get.listeners = listeners || _makeListeners();
 
 	    function _callListener(type,names,base,symbol,value) {
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
 	    		event.trigger(base,symbol,value);
 	    	}
+            if (this.storechanges && type == "change") {
+                for(var n in this.storechanges) this.storechanges[n].call(this);
+            }
 	    }
 	    get._callListener = _callListener;
-	    function _addListener(type,selector,data,callback) {
+	    
+        function _addListener(type,selector,data,callback) {
 	    	/*
 	    		selector
 	    		*
@@ -1580,6 +1698,14 @@ function Resolver(name,ns,options)
     	return this.references[ref] = makeReference(name,onundefined,defaultRef.listeners);
     };
 
+    resolver.proxy = function(dest,other,src) {
+        other.on("change",src,this,function(ev){
+            ev.data.set(dest,ev.value);
+        });
+
+        //TODO make proxy removable
+    };
+
     resolver.override = function(ns,options)
     {
         options = options || {};
@@ -1587,6 +1713,13 @@ function Resolver(name,ns,options)
 		Resolver[name] = Resolver(ns,options);
 		Resolver[name].named = name;
 		return Resolver[name];
+    };
+
+    resolver.destroy = function()
+    {
+        //TODO break down listeners
+        //TODO clean up references
+        for(var n in this.references) delete this.references[n];
     };
 
     if (options.mixinto) {
@@ -1600,13 +1733,17 @@ function Resolver(name,ns,options)
 
     return resolver;
 }
-Resolver({},{ name:"default" });
+
+Resolver.readloads = [];
+Resolver.storeunloads = [];
 
 Resolver.hasGenerator = function(subject) {
 	if (subject.__generator__) return true;
 	if (typeof subject == "function" && typeof subject.type == "function") return true;
 	return false;
 };
+
+Resolver({},{ name:"default" });
 
 /**
  * Generator(constr) - get cached or new generator
@@ -2173,6 +2310,13 @@ Generator.ObjectGenerator = Generator(Object);
 		if (_readyFired) return;
 		_readyFired = true;
 		
+		// stored entires	
+		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
+			for(var n in ref.readloads) {
+				ref.readloads[n].call(ref);
+			}
+		}
+
 		try {
 			essential("_queueDelayedAssets")();
 			essential.set("_queueDelayedAssets",function(){});
@@ -2190,7 +2334,20 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	function fireUnload()
 	{
+		//TODO singleton deconstruct / before discard?
+
+		// stored entires	
+		for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
+			for(var n in ref.storeunloads) {
+				ref.storeunloads[n].call(ref);
+			}
+		}
+
 		discardRestricted();
+
+		for(var n in Resolver) {
+			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
+		}
 	}
 
     function doScrollCheck() {
@@ -3093,10 +3250,6 @@ Generator.ObjectGenerator = Generator(Object);
 		return field;
 	}
 
-	function Stateful_destroy() {
-
-	}
-
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
 		if (el._cleaners == undefined) el._cleaners = [];
@@ -3123,7 +3276,6 @@ Generator.ObjectGenerator = Generator(Object);
 			this.stateful.destroy();
 			this.stateful.fireAction = undefined;
 			this.stateful.setField = undefined;
-			this.stateful.destroy = undefined;
 			this.stateful = undefined;
 		}
 	}
@@ -3149,7 +3301,6 @@ Generator.ObjectGenerator = Generator(Object);
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.setField = Stateful_setField;
 		stateful.reflectStateOn = Stateful_reflectStateOn;
-		stateful.destroy = Stateful_destroy;
 
 		if (el) stateful.reflectStateOn(el);
 		
@@ -3176,6 +3327,13 @@ Generator.ObjectGenerator = Generator(Object);
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+	pageResolver.reference("connection").mixin({
+		"loadingProgress": "",
+		"status": "connected",
+		"detail": "",
+		"userName": "",
+		"logStatus": false
+	});
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
@@ -3307,16 +3465,174 @@ Generator.ObjectGenerator = Generator(Object);
 		return cleaner;
 	}
 
+	function copyKeyEvent(src) {
+		this.altKey = src.altKey;
+		this.shiftKey = src.shiftKey;
+		this.ctrlKey = src.ctrlKey;
+		this.metaKey = src.metaKey;
+		this.charCode = src.charCode;
+	}
+	function copyInputEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyNavigateEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyMouseEvent(src) {
+		this.clientX = src.clientX;
+		this.clientY = src.clientY;
+		this.screenX = src.screenX;
+		this.screenY = src.screenY;
+		this.button = BUTTON_MAP[src.button]; //TODO check map
+		this.buttons = src.button;
+		//detail is repetitions
+		//which == 1,2,3
+	}
+	function copyMouseEventOverOut(src) {
+		copyMouseEvent.call(this,src);
+		this.fromElement = src.fromElement;
+		this.toElement = src.toElement;
+		this.relatedTarget = src.relatedTarget;
+	}
+	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
+	var EVENTS = {
+		"click" : {
+			copyEvent: copyMouseEvent
+		},
+		"dblclick" : {
+			copyEvent: copyMouseEvent
+		},
+		"contextmenu": {
+			copyEvent: copyMouseEvent
+		},
+		"mousemove": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseup": {
+			copyEvent: copyMouseEvent
+		},
+		"mousedown": {
+			copyEvent: copyMouseEvent
+		},
+		"mousewheel": {
+			copyEvent: copyMouseEvent
+		},
+		"wheel": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseenter": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseleave": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseout": {
+			copyEvent: copyMouseEventOverOut
+		},
+		"mouseover": {
+			copyEvent: copyMouseEventOverOut
+		},
+
+		"keyup": {
+			copyEvent: copyKeyEvent
+		},
+		"keydown": {
+			copyEvent: copyKeyEvent
+		},
+		"keypress": {
+			copyEvent: copyKeyEvent
+		},
+
+		"blur": {
+			copyEvent: copyInputEvent
+		},
+		"focus": {
+			copyEvent: copyInputEvent
+		},
+		"focusin": {
+			copyEvent: copyInputEvent
+		},
+		"focusout": {
+			copyEvent: copyInputEvent
+		},
+
+		"copy": {
+			copyEvent: copyInputEvent
+		},
+		"cut": {
+			copyEvent: copyInputEvent
+		},
+		"change": {
+			copyEvent: copyInputEvent
+		},
+		"input": {
+			copyEvent: copyInputEvent
+		},
+		"textinput": {
+			copyEvent: copyInputEvent
+		},
+
+		"scroll": {
+			copyEvent: copyNavigateEvent
+		},
+		"reset": {
+			copyEvent: copyNavigateEvent
+		},
+		"submit": {
+			copyEvent: copyNavigateEvent
+		},
+		"select": {
+			copyEvent: copyNavigateEvent
+		},
+
+		"error": {
+			copyEvent: copyNavigateEvent
+		},
+		"haschange": {
+			copyEvent: copyNavigateEvent
+		},
+		"load": {
+			copyEvent: copyNavigateEvent
+		},
+		"unload": {
+			copyEvent: copyNavigateEvent
+		},
+		"resize": {
+			copyEvent: copyNavigateEvent
+		},
+
+
+		"":{}
+	};
+
+	function _MutableEvent(src) {
+		this._original = src;
+		this.type = src.type;
+		this.target = src.target || src.srcElement;
+		this.currentTarget = src.currentTarget|| src.target; 
+		EVENTS[src.type].copyEvent.call(this,src);
+	}
+	_MutableEvent.prototype.relatedTarget = null;
+	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
+	_MutableEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
-		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
-		var ev = new ClonedEvent();
-		if (sourceEvent == undefined) {		// IE event object
-			ev.target = ev.srcElement;
-			//TODO ev.button 1,2,3 vs 1,2,4
+		var ev;
+		// IE event support
+		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
+			ev = new _MutableEvent(sourceEvent);
+		} else
+		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
+			ev = new _MutableEvent(window.event);
 		}
-		ev.withActionInfo = MutableEvent_withActionInfo;
-		ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		// other browsers, or not in listener 
+		else {
+			ClonedEvent.prototype = sourceEvent || window.event; 
+			ev = new ClonedEvent();
+			ev.withActionInfo = MutableEvent_withActionInfo;
+			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		}
 		return ev;		
 	}
 	essential.declare("MutableEvent",MutableEvent)
@@ -3471,6 +3787,9 @@ Generator.ObjectGenerator = Generator(Object);
 	function enhanceStatefulFields(parent) {
 
 		for(var el = parent.firstChild; el; el = el.nextSibling) {
+			//TODO avoid non elements, firstChildNode. Skip non type 1 (comments) on old IE
+			//TODO do not enhance nested enhanced roles
+
 			var name = el.name || el.getAttribute("data-name") || el.getAttribute("name");
 			if (name) {
 				var role = el.getAttribute("role");
@@ -3576,7 +3895,9 @@ Generator.ObjectGenerator = Generator(Object);
 					"role": role,
 					"el": e,
 					"instance": null,
-					"layout": {},
+					"layout": {
+						"lastDirectCall": 0
+					},
 					"enhanced": false,
 					"discarded": false
 				});
@@ -3602,13 +3923,15 @@ Generator.ObjectGenerator = Generator(Object);
 						desc.layout.lastDirectCall = now;
 					} else {
 						// call in a bit
+						var delay = now + throttle - desc.layout.lastDirectCall
+						// console.log("resizing in",delay);
 						(function(desc){
 							desc.layout.delayed = true;
 							setTimeout(function(){
 								DocumentRoles().handlers.layout[desc.role].call(DocumentRoles(),desc.el,desc.layout,desc.instance);
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
-							},now - desc.layout.lastDirectCall);
+							},delay);
 						})(desc);
 					}
 				}
@@ -3754,6 +4077,13 @@ Generator.ObjectGenerator = Generator(Object);
 						case "BUTTON":
 						case "button":
 							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							if (element.type == "submit") {
+								this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.commandElement = element;
+								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+								element = null;
+							}
 							break;
 					}
 					break;
@@ -3813,6 +4143,8 @@ Generator.ObjectGenerator = Generator(Object);
 			default:
 				// make sure no submit buttons outside form, or enter key will fire the first one.
 				forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+				applyDefaultRole(el.getElementsByTagName("BUTTON"));
+				applyDefaultRole(el.getElementsByTagName("A"));
 
 				el.submit = dialog_submit;
 				// debugger;
@@ -3833,6 +4165,20 @@ Generator.ObjectGenerator = Generator(Object);
 	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
+	function applyDefaultRole(elements) {
+		for(var i=0,el; el = elements[i]; ++i) switch(el.tagName) {
+			case "button":
+			case "BUTTON":
+				el.setAttribute("role","button");
+				break;
+			case "a":
+			case "A":
+				el.setAttribute("role","link");
+				break;
+			// menuitem
+		}
+	}
+
 	/* convert listed button elements */
 	function forceNoSubmitType(buttons) {
 
@@ -3845,6 +4191,8 @@ Generator.ObjectGenerator = Generator(Object);
 	DocumentRoles.enhance_toolbar = _DocumentRoles.enhance_toolbar = function(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+		applyDefaultRole(el.getElementsByTagName("BUTTON"));
+		applyDefaultRole(el.getElementsByTagName("A"));
 
 		el.submit = toolbar_submit;
 
@@ -3861,6 +4209,10 @@ Generator.ObjectGenerator = Generator(Object);
 	DocumentRoles.discard_toolbar = _DocumentRoles.discard_toolbar = function(el,role,instance) {
 		
 	};
+
+	// menu, menubar
+	DocumentRoles.enhance_navigation = _DocumentRoles.enhance_navigation = 
+	DocumentRoles.enhance_menu = _DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = _DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
 
 	DocumentRoles.enhance_sheet = _DocumentRoles.enhance_sheet = function(el,role,config) {
 		

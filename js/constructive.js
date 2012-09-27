@@ -146,6 +146,7 @@ function Resolver(name,ns,options)
         }
     };
 
+    resolver.get = resolver;
     resolver.named = options.name;
     if (options.name) Resolver[options.name] = resolver;
     resolver.namespace = arguments[0];
@@ -211,8 +212,10 @@ function Resolver(name,ns,options)
                 if (_setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value);
                     //TODO test for triggering specific listeners
-                    var parentRef = resolver.references[baseRefName];
-                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    if (baseRefName) {
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
                 }
         	}
 			return value;
@@ -243,8 +246,10 @@ function Resolver(name,ns,options)
                     if (_setValue(value,baseNames,base,leafName)) {
                         this._callListener("change",baseNames,base,leafName,value);
                         //TODO test for triggering specific listeners
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (baseRefName) {
+                            var parentRef = resolver.references[baseRefName];
+                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        }
                     }
                 }
                 return base[leafName];
@@ -316,7 +321,114 @@ function Resolver(name,ns,options)
 	    	this._callListener(type,baseNames,base,leafName,value);
 			var parentRef = resolver.references[baseRefName];
 			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
-	    }    
+	    }
+
+        function read_session(ref) {
+            var v = sessionStorage[this.id];
+            if (v != undefined) {
+                var value = JSON.parse(v);
+                ref.set(value);
+            }
+        }
+        function read_local(ref) {
+            var v = localStorage[this.id];
+            if (v != undefined) {
+                var value = JSON.parse(v);
+                ref.set(value);
+            }
+        }
+        function read_cookie(ref) {
+            function readIt(id) {
+                var wEQ = id + "=";
+                var ca = document.cookie.split(';');
+                for(var i=0;i < ca.length;i++) {
+                    var c = ca[i];
+                    while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                    if (c.indexOf(wEQ) == 0) return c.substring(wEQ.length,c.length);
+                }
+                return undefined;
+            }
+            var value = readIt(this.id);
+            //TODO type coercion
+            if (value != undefined) ref.set(value);
+        }
+
+        function store_session(ref) {
+            //TODO if (ref is defined)
+            sessionStorage[this.id] = JSON.stringify(ref());
+        }
+        function store_local(ref) {
+            //TODO if (ref is defined)
+            localStorage[this.id] = JSON.stringify(ref());
+        }
+        function store_cookie(ref) {
+            var value = JSON.stringify(ref());
+            var days = this.options.days;
+
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime()+(days*24*60*60*1000));
+                var expires = "; expires="+date.toGMTString();
+            }
+            else var expires = "";
+            document.cookie = this.id+"="+value+expires+"; path=/";
+        }
+
+        //TODO support server remote storage mechanism
+
+        // type = change/load/unload
+        // dest = local/session/cookie
+        function stored(type,dest,options) {
+            options = options || {};
+            if (/change/.test(type)) {
+                if (this.storechanges == undefined) this.storechanges = {};
+                var id = "resolver." + resolver.named + "#" + name;
+                if (options.id) id = options.id;
+                if (options.name) id = options.name;
+                switch(dest) {
+                    case "session": 
+                        this.storechanges.session = { call: store_session, id:id, options: options }; break;
+                    case "local":
+                        this.storechanges.local = { call: store_local, id:id, options: options }; break;
+                    case "cookie":
+                        this.storechanges.cookie = { call: store_cookie, id:id, options: options }; break;
+                }
+            }
+            if (/^load| load/.test(type)) {
+                if (this.readloads == undefined) {
+                    this.readloads = {};
+                    Resolver.readloads.push(this);
+                }
+                var id = "resolver." + resolver.named + "#" + name;
+                if (options.id) id = options.id;
+                if (options.name) id = options.name;
+                switch(dest) {
+                    case "session": 
+                        this.readloads.session = { call: read_session, id:id, options: options }; break;
+                    case "local":
+                        this.readloads.local = { call: read_local, id:id, options: options }; break;
+                    case "cookie":
+                        this.readloads.cookie = { call: read_cookie, id:id, options: options }; break;
+                }
+            }
+            if (/unload/.test(type)) {
+                if (this.storeunloads == undefined) {
+                    this.storeunloads = {};
+                    Resolver.storeunloads.push(this);
+                }
+                var id = "resolver." + resolver.named + "#" + name;
+                if (options.id) id = options.id;
+                if (options.name) id = options.name;
+                switch(dest) {
+                    case "session": 
+                        this.storeunloads.session = { call: store_session, id:id, options: options || {} }; break;
+                    case "local":
+                        this.storeunloads.local = { call: store_local, id:id, options: options || {} }; break;
+                    case "cookie":
+                        this.storeunloads.cookie = { call: store_cookie, id:id, options: options || {} }; break;
+                }
+            }
+        }    
 
         get.set = set;
         get.get = get;
@@ -327,15 +439,21 @@ function Resolver(name,ns,options)
         get.setEntry = setEntry;
         get.on = on;
         get.trigger = trigger;
+        get.stored = stored;
+
         get.listeners = listeners || _makeListeners();
 
 	    function _callListener(type,names,base,symbol,value) {
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
 	    		event.trigger(base,symbol,value);
 	    	}
+            if (this.storechanges && type == "change") {
+                for(var n in this.storechanges) this.storechanges[n].call(this);
+            }
 	    }
 	    get._callListener = _callListener;
-	    function _addListener(type,selector,data,callback) {
+	    
+        function _addListener(type,selector,data,callback) {
 	    	/*
 	    		selector
 	    		*
@@ -436,6 +554,14 @@ function Resolver(name,ns,options)
     	return this.references[ref] = makeReference(name,onundefined,defaultRef.listeners);
     };
 
+    resolver.proxy = function(dest,other,src) {
+        other.on("change",src,this,function(ev){
+            ev.data.set(dest,ev.value);
+        });
+
+        //TODO make proxy removable
+    };
+
     resolver.override = function(ns,options)
     {
         options = options || {};
@@ -443,6 +569,13 @@ function Resolver(name,ns,options)
 		Resolver[name] = Resolver(ns,options);
 		Resolver[name].named = name;
 		return Resolver[name];
+    };
+
+    resolver.destroy = function()
+    {
+        //TODO break down listeners
+        //TODO clean up references
+        for(var n in this.references) delete this.references[n];
     };
 
     if (options.mixinto) {
@@ -456,13 +589,17 @@ function Resolver(name,ns,options)
 
     return resolver;
 }
-Resolver({},{ name:"default" });
+
+Resolver.readloads = [];
+Resolver.storeunloads = [];
 
 Resolver.hasGenerator = function(subject) {
 	if (subject.__generator__) return true;
 	if (typeof subject == "function" && typeof subject.type == "function") return true;
 	return false;
 };
+
+Resolver({},{ name:"default" });
 
 /**
  * Generator(constr) - get cached or new generator

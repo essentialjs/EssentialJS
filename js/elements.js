@@ -222,10 +222,6 @@
 		return field;
 	}
 
-	function Stateful_destroy() {
-
-	}
-
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
 		if (el._cleaners == undefined) el._cleaners = [];
@@ -252,7 +248,6 @@
 			this.stateful.destroy();
 			this.stateful.fireAction = undefined;
 			this.stateful.setField = undefined;
-			this.stateful.destroy = undefined;
 			this.stateful = undefined;
 		}
 	}
@@ -278,7 +273,6 @@
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.setField = Stateful_setField;
 		stateful.reflectStateOn = Stateful_reflectStateOn;
-		stateful.destroy = Stateful_destroy;
 
 		if (el) stateful.reflectStateOn(el);
 		
@@ -305,6 +299,13 @@
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+	pageResolver.reference("connection").mixin({
+		"loadingProgress": "",
+		"status": "connected",
+		"detail": "",
+		"userName": "",
+		"logStatus": false
+	});
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
@@ -436,16 +437,174 @@
 		return cleaner;
 	}
 
+	function copyKeyEvent(src) {
+		this.altKey = src.altKey;
+		this.shiftKey = src.shiftKey;
+		this.ctrlKey = src.ctrlKey;
+		this.metaKey = src.metaKey;
+		this.charCode = src.charCode;
+	}
+	function copyInputEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyNavigateEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyMouseEvent(src) {
+		this.clientX = src.clientX;
+		this.clientY = src.clientY;
+		this.screenX = src.screenX;
+		this.screenY = src.screenY;
+		this.button = BUTTON_MAP[src.button]; //TODO check map
+		this.buttons = src.button;
+		//detail is repetitions
+		//which == 1,2,3
+	}
+	function copyMouseEventOverOut(src) {
+		copyMouseEvent.call(this,src);
+		this.fromElement = src.fromElement;
+		this.toElement = src.toElement;
+		this.relatedTarget = src.relatedTarget;
+	}
+	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
+	var EVENTS = {
+		"click" : {
+			copyEvent: copyMouseEvent
+		},
+		"dblclick" : {
+			copyEvent: copyMouseEvent
+		},
+		"contextmenu": {
+			copyEvent: copyMouseEvent
+		},
+		"mousemove": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseup": {
+			copyEvent: copyMouseEvent
+		},
+		"mousedown": {
+			copyEvent: copyMouseEvent
+		},
+		"mousewheel": {
+			copyEvent: copyMouseEvent
+		},
+		"wheel": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseenter": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseleave": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseout": {
+			copyEvent: copyMouseEventOverOut
+		},
+		"mouseover": {
+			copyEvent: copyMouseEventOverOut
+		},
+
+		"keyup": {
+			copyEvent: copyKeyEvent
+		},
+		"keydown": {
+			copyEvent: copyKeyEvent
+		},
+		"keypress": {
+			copyEvent: copyKeyEvent
+		},
+
+		"blur": {
+			copyEvent: copyInputEvent
+		},
+		"focus": {
+			copyEvent: copyInputEvent
+		},
+		"focusin": {
+			copyEvent: copyInputEvent
+		},
+		"focusout": {
+			copyEvent: copyInputEvent
+		},
+
+		"copy": {
+			copyEvent: copyInputEvent
+		},
+		"cut": {
+			copyEvent: copyInputEvent
+		},
+		"change": {
+			copyEvent: copyInputEvent
+		},
+		"input": {
+			copyEvent: copyInputEvent
+		},
+		"textinput": {
+			copyEvent: copyInputEvent
+		},
+
+		"scroll": {
+			copyEvent: copyNavigateEvent
+		},
+		"reset": {
+			copyEvent: copyNavigateEvent
+		},
+		"submit": {
+			copyEvent: copyNavigateEvent
+		},
+		"select": {
+			copyEvent: copyNavigateEvent
+		},
+
+		"error": {
+			copyEvent: copyNavigateEvent
+		},
+		"haschange": {
+			copyEvent: copyNavigateEvent
+		},
+		"load": {
+			copyEvent: copyNavigateEvent
+		},
+		"unload": {
+			copyEvent: copyNavigateEvent
+		},
+		"resize": {
+			copyEvent: copyNavigateEvent
+		},
+
+
+		"":{}
+	};
+
+	function _MutableEvent(src) {
+		this._original = src;
+		this.type = src.type;
+		this.target = src.target || src.srcElement;
+		this.currentTarget = src.currentTarget|| src.target; 
+		EVENTS[src.type].copyEvent.call(this,src);
+	}
+	_MutableEvent.prototype.relatedTarget = null;
+	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
+	_MutableEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
-		ClonedEvent.prototype = sourceEvent || window.event; // IE event support
-		var ev = new ClonedEvent();
-		if (sourceEvent == undefined) {		// IE event object
-			ev.target = ev.srcElement;
-			//TODO ev.button 1,2,3 vs 1,2,4
+		var ev;
+		// IE event support
+		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
+			ev = new _MutableEvent(sourceEvent);
+		} else
+		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
+			ev = new _MutableEvent(window.event);
 		}
-		ev.withActionInfo = MutableEvent_withActionInfo;
-		ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		// other browsers, or not in listener 
+		else {
+			ClonedEvent.prototype = sourceEvent || window.event; 
+			ev = new ClonedEvent();
+			ev.withActionInfo = MutableEvent_withActionInfo;
+			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		}
 		return ev;		
 	}
 	essential.declare("MutableEvent",MutableEvent)
@@ -600,6 +759,9 @@
 	function enhanceStatefulFields(parent) {
 
 		for(var el = parent.firstChild; el; el = el.nextSibling) {
+			//TODO avoid non elements, firstChildNode. Skip non type 1 (comments) on old IE
+			//TODO do not enhance nested enhanced roles
+
 			var name = el.name || el.getAttribute("data-name") || el.getAttribute("name");
 			if (name) {
 				var role = el.getAttribute("role");
@@ -705,7 +867,9 @@
 					"role": role,
 					"el": e,
 					"instance": null,
-					"layout": {},
+					"layout": {
+						"lastDirectCall": 0
+					},
 					"enhanced": false,
 					"discarded": false
 				});
@@ -731,13 +895,15 @@
 						desc.layout.lastDirectCall = now;
 					} else {
 						// call in a bit
+						var delay = now + throttle - desc.layout.lastDirectCall
+						// console.log("resizing in",delay);
 						(function(desc){
 							desc.layout.delayed = true;
 							setTimeout(function(){
 								DocumentRoles().handlers.layout[desc.role].call(DocumentRoles(),desc.el,desc.layout,desc.instance);
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
-							},now - desc.layout.lastDirectCall);
+							},delay);
 						})(desc);
 					}
 				}
@@ -883,6 +1049,13 @@
 						case "BUTTON":
 						case "button":
 							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							if (element.type == "submit") {
+								this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.commandElement = element;
+								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+								element = null;
+							}
 							break;
 					}
 					break;
@@ -942,6 +1115,8 @@
 			default:
 				// make sure no submit buttons outside form, or enter key will fire the first one.
 				forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+				applyDefaultRole(el.getElementsByTagName("BUTTON"));
+				applyDefaultRole(el.getElementsByTagName("A"));
 
 				el.submit = dialog_submit;
 				// debugger;
@@ -962,6 +1137,20 @@
 	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
+	function applyDefaultRole(elements) {
+		for(var i=0,el; el = elements[i]; ++i) switch(el.tagName) {
+			case "button":
+			case "BUTTON":
+				el.setAttribute("role","button");
+				break;
+			case "a":
+			case "A":
+				el.setAttribute("role","link");
+				break;
+			// menuitem
+		}
+	}
+
 	/* convert listed button elements */
 	function forceNoSubmitType(buttons) {
 
@@ -974,6 +1163,8 @@
 	DocumentRoles.enhance_toolbar = _DocumentRoles.enhance_toolbar = function(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+		applyDefaultRole(el.getElementsByTagName("BUTTON"));
+		applyDefaultRole(el.getElementsByTagName("A"));
 
 		el.submit = toolbar_submit;
 
@@ -990,6 +1181,10 @@
 	DocumentRoles.discard_toolbar = _DocumentRoles.discard_toolbar = function(el,role,instance) {
 		
 	};
+
+	// menu, menubar
+	DocumentRoles.enhance_navigation = _DocumentRoles.enhance_navigation = 
+	DocumentRoles.enhance_menu = _DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = _DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
 
 	DocumentRoles.enhance_sheet = _DocumentRoles.enhance_sheet = function(el,role,config) {
 		

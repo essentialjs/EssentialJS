@@ -116,7 +116,7 @@ article#main-stage {
 @top-header-logo-top: (@top-header-height / 2) - (@top-header-logo-height / 2);
 @top-header-nav-top: (@top-header-height / 2) - (@topnav-button-width / 2);
 
-nav#zkb-logo {
+nav#cpny-logo {
 	position: absolute;
 	
 	top: 50%;
@@ -184,18 +184,18 @@ nav#zkb-logo {
 	
 }
 
-nav#tradez-logo {
+nav#app-logo {
 	position: absolute;
 	top: 50%;
 	left: 50%;
-	width: @tradez-logo-width;
-	height: @tradez-logo-height;
+	width: @app-logo-width;
+	height: @app-logo-height;
 	opacity: 0;
   	-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
   	filter: alpha(opacity=0);
 	
 	font-family: @top-header-logo-font-family;
-	font-size: @tradez-logo-font-size;
+	font-size: @app-logo-font-size;
 	color: @top-header-logo-color;
 
   	.transition(~"all 0.4s ease-in-out");
@@ -211,8 +211,8 @@ nav#tradez-logo {
 	
 		top: 0;
 		left: 100%;
-		margin-left: -(@tradez-logo-width + 15px);
-		margin-top: (@top-header-height - @tradez-logo-height)/2;
+		margin-left: -(@app-logo-width + 15px);
+		margin-top: (@top-header-height - @app-logo-height)/2;
 		opacity: 1;
 		-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
 		filter: alpha(opacity=100);
@@ -220,20 +220,20 @@ nav#tradez-logo {
 	}
 	
 	.login & {
-		width: @login-tradez-logo-width;
+		width: @login-app-logo-width;
 		height: auto;
 		margin-top: -(@login-height/2 - 10px);
-		margin-left: -(@login-tradez-logo-width/2);
+		margin-left: -(@login-app-logo-width/2);
 		opacity: 1;
 		-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
 		filter: alpha(opacity=100);
 		z-index: @z-login-logo;
 		
-		font-size: @login-tradez-logo-font-size;
+		font-size: @login-app-logo-font-size;
 		-webkit-font-smoothing: antialiased;
 		//-webkit-text-stroke: 1px #fff;
-		line-height: @login-tradez-logo-line-height;
-		color: @tradez-logo-color;
+		line-height: @login-app-logo-line-height;
+		color: @app-logo-color;
 		text-align: center;
 }
 }
@@ -267,7 +267,6 @@ nav[action="navigation/logo"] {
 		padding: 0;
 
 		background-color: transparent;
-		background-image: url(../images/ZKB_Menu.png);
 		background-position: 0 0; 
 		border: none;
 		
@@ -352,10 +351,15 @@ nav[action="navigation/application"] {
 
 }
 
-#account {
+nav[action="navigation/account"] {
+
 	display: none;
 	position: absolute;
 	top:10px; right:40px;
+
+	right: @app-logo-width + 15px + 5px;
+	top: (@top-header-height - @app-logo-height)/2;
+
 	//height: 60px;
 	
 	.no-user-selection();
@@ -420,7 +424,7 @@ section.sheet {
 
 #warnings-and-alerts {
 	//.center-top-scroll(500px,0px,5px);
-	background-color: @zkb-light-blue;
+	background-color: @light-blue;
 	
 	position:absolute;
 	left: @leftnav-width; right:0;
