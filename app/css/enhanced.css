@@ -453,7 +453,7 @@ article#main-stage {
 .notifications-open article#main-stage {
   top: 125px;
 }
-nav#app-logo {
+nav#cpny-logo {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -472,18 +472,18 @@ nav#app-logo {
   -ms-user-select: none;
   user-select: none;
 }
-.launching nav#app-logo,
-.launched nav#app-logo {
+.launching nav#cpny-logo,
+.launched nav#cpny-logo {
   top: 0;
   left: 0;
   margin-top: 18px;
   margin-left: 60px;
   padding-left: 38px;
 }
-.login nav#app-logo {
+.login nav#cpny-logo {
   margin-top: -194px;
 }
-nav#app-logo .image-wrap img {
+nav#cpny-logo .image-wrap img {
   display: block;
   position: absolute;
   left: 0;
@@ -491,16 +491,16 @@ nav#app-logo .image-wrap img {
   width: 60px !important;
   height: 60px !important;
 }
-.launching nav#app-logo .image-wrap img,
-.launched nav#app-logo .image-wrap img {
+.launching nav#cpny-logo .image-wrap img,
+.launched nav#cpny-logo .image-wrap img {
   width: 34px !important;
   height: 34px !important;
 }
-.login nav#app-logo .image-wrap img {
+.login nav#cpny-logo .image-wrap img {
   width: 34px !important;
   height: 34px !important;
 }
-nav#app-logo h1 {
+nav#cpny-logo h1 {
   font-family: FjordOne, Arial, sans-serif;
   font-size: 29px;
   color: #f5f5f5;
@@ -509,11 +509,11 @@ nav#app-logo h1 {
   text-shadow: 1px 1px #323232;
   text-shadow: 1px 1px rgba(50, 50, 50, 0.7);
 }
-.launching nav#app-logo h1,
-.launched nav#app-logo h1 {
+.launching nav#cpny-logo h1,
+.launched nav#cpny-logo h1 {
   font-size: 16px;
 }
-.login nav#app-logo h1 {
+.login nav#cpny-logo h1 {
   font-size: 16px;
 }
 nav#app-logo {
