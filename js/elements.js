@@ -1115,6 +1115,8 @@
 			default:
 				// make sure no submit buttons outside form, or enter key will fire the first one.
 				forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+				applyDefaultRole(el.getElementsByTagName("BUTTON"));
+				applyDefaultRole(el.getElementsByTagName("A"));
 
 				el.submit = dialog_submit;
 				// debugger;
@@ -1135,6 +1137,20 @@
 	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
+	function applyDefaultRole(elements) {
+		for(var i=0,el; el = elements[i]; ++i) switch(el.tagName) {
+			case "button":
+			case "BUTTON":
+				el.setAttribute("role","button");
+				break;
+			case "a":
+			case "A":
+				el.setAttribute("role","link");
+				break;
+			// menuitem
+		}
+	}
+
 	/* convert listed button elements */
 	function forceNoSubmitType(buttons) {
 
@@ -1147,6 +1163,8 @@
 	DocumentRoles.enhance_toolbar = _DocumentRoles.enhance_toolbar = function(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
+		applyDefaultRole(el.getElementsByTagName("BUTTON"));
+		applyDefaultRole(el.getElementsByTagName("A"));
 
 		el.submit = toolbar_submit;
 
