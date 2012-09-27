@@ -1164,6 +1164,10 @@
 		
 	};
 
+	// menu, menubar
+	DocumentRoles.enhance_navigation = _DocumentRoles.enhance_navigation = 
+	DocumentRoles.enhance_menu = _DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = _DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
+
 	DocumentRoles.enhance_sheet = _DocumentRoles.enhance_sheet = function(el,role,config) {
 		
 		return {};
