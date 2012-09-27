@@ -3923,7 +3923,7 @@ Generator.ObjectGenerator = Generator(Object);
 						desc.layout.lastDirectCall = now;
 					} else {
 						// call in a bit
-						var delay = now + throttle - desc.layout.lastDirectCall
+						var delay = now + throttle - desc.layout.lastDirectCall;
 						// console.log("resizing in",delay);
 						(function(desc){
 							desc.layout.delayed = true;
