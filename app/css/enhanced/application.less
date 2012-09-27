@@ -351,10 +351,15 @@ nav[action="navigation/application"] {
 
 }
 
-#account {
+nav[action="navigation/account"] {
+
 	display: none;
 	position: absolute;
 	top:10px; right:40px;
+
+	right: @app-logo-width + 15px + 5px;
+	top: (@top-header-height - @app-logo-height)/2;
+
 	//height: 60px;
 	
 	.no-user-selection();

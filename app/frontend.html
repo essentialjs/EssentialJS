@@ -7,7 +7,7 @@
   <meta content="Novo Bank" name="description">
   <meta content="Henrik Vendelbo" name="author">
 
-	<meta name="enhanced roles" content="dialog navigation spinner application">
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application">
   <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
   <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
@@ -53,12 +53,13 @@
     <nav action="navigation/application" role="navigation">
       <button name="designer" role="button"><span class="icon"></span><label>Designer</label></button>
       <button name="explorer" role="button"><span class="icon"></span><label>Explorer</label></button>
-      <button name="products" role="button"><span class="icon"></span><label>Active Products</label></button>
-      <button name="reports" role="button"><span class="icon"></span><label>Reports</label></button>
+      <button name="ongoing" role="button"><span class="icon"></span><label>Ongoing</label></button>
+      <button name="history" role="button"><span class="icon"></span><label>History</label></button>
     </nav>
 
-    <div action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="presentation">
-    </div>
+    <nav action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="navigation">
+      <button name="logout">Logout</button>
+    </nav>
 
    </header>
    <aside id="warnings-and-alerts" role="application">
