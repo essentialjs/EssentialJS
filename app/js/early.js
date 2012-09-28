@@ -61,7 +61,14 @@
 	var demoSession = Resolver().reference("demo-session");
 	demoSession.declare(false);
 	demoSession.on("change",function() {
-		pageState.set("authenticated",demoSession.get("loggedIn"));
+		if (demoSession.get("loggedIn")) {
+			// log in
+			pageState.set("authenticated",true);
+		} else {
+			// log out
+			pageState.set("authenticated",false);
+			pageState.set("launched",false);
+		}
 	});
 	demoSession.stored("load change unload","local");
 })();
