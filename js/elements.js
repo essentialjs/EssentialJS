@@ -586,7 +586,11 @@
 	}
 	_MutableEvent.prototype.relatedTarget = null;
 	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
-	_MutableEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+	_MutableEvent.prototype.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
+	_MutableEvent.prototype.stopPropagation = function() {
+		this._original.cancelBubble= true;
+	};
 
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
@@ -1086,6 +1090,7 @@
 			if (ev.ariaDisabled) return; //TODO fold into stateful
 
 			this.submit(ev); //TODO action context
+			ev.stopPropagation();
 		}
 	}
 

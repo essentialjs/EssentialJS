@@ -3614,7 +3614,11 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	_MutableEvent.prototype.relatedTarget = null;
 	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
-	_MutableEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+	_MutableEvent.prototype.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
+	_MutableEvent.prototype.stopPropagation = function() {
+		this._original.cancelBubble= true;
+	};
 
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
@@ -4114,6 +4118,7 @@ Generator.ObjectGenerator = Generator(Object);
 			if (ev.ariaDisabled) return; //TODO fold into stateful
 
 			this.submit(ev); //TODO action context
+			ev.stopPropagation();
 		}
 	}
 
