@@ -36,10 +36,11 @@ function Resolver(name,ns,options)
 
 	function _resolve(names,subnames,onundefined) {
         var top = ns;
-        for (var j = 0, n; n = names[j]; ++j) {
+        for (var j = 0, n; j<names.length; ++j) {
+            n = names[j];
             var prev_top = top;
             top = top[n];
-            if (top == undefined) { 
+            if (top == undefined) { // catching null as well (not sure if it's desirable)
                 switch(onundefined) {
                 case undefined:
                 case "generate":

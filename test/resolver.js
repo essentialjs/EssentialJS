@@ -146,6 +146,9 @@ test('Resolver set/declare value',function(){
 	strictEqual(klm_value,"klm","returned value from declare");
 	equal(resolver(["k","l","m"]), "klm");	
 
+	var opq = resolver.declare(["o",null,"q"],"opq");
+	equal(resolver(["o",null,"q"]),"opq")
+
 	//TODO try string like objects for get/set/declare
 	//TODO try array like objects for get/set/declare
 })
