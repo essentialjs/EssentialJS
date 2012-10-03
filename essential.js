@@ -60,10 +60,11 @@ function Resolver(name,ns,options)
 
 	function _resolve(names,subnames,onundefined) {
         var top = ns;
-        for (var j = 0, n; n = names[j]; ++j) {
+        for (var j = 0, n; j<names.length; ++j) {
+            n = names[j];
             var prev_top = top;
             top = top[n];
-            if (top == undefined) { 
+            if (top == undefined) { // catching null as well (not sure if it's desirable)
                 switch(onundefined) {
                 case undefined:
                 case "generate":
@@ -1358,6 +1359,63 @@ Generator.ObjectGenerator = Generator(Object);
 	
 	if (window.console) setWindowConsole();
 	else setStubConsole();
+
+	var translations = Resolver("translations",{});
+	translations.declare("locale","en");
+
+	/*
+		locales.de = { chain:"en" }
+	*/
+	translations.declare("locales",{});
+	translations.declare("keys",{});	// [ context, key, locale] 
+	translations.declare("phrases",{});	// [ context, phrase, locale]
+
+	// (key,params)
+	// ({ key:key },params)
+	// ({ key:key, context:context },params)
+	// ({ phrase:phrase },params)
+	function translate(key,params) {
+		var phrase = null;
+		var context = null;
+		if (typeof key == "object") {
+			phrase = key.phrase;
+			context = key.context || null;
+			key = key.key;
+		}
+		var locales = translations("locales");
+		var locale = translations("locale");
+		var t,l;
+		var base;
+		if (key) {
+			base = translations.get(["keys",context,key],"undefined")
+			while(t == undefined && base && locale) {
+				t = base[locale];
+				if (locales[locale]) locale = locales[locale].chain;
+				else locale = null;
+			}
+		} else if (phrase) {
+			base = translations.get(["phrases",context,phrase],"undefined");
+			while(t == undefined && base && locale) {
+				t = base[locale];
+				if (locales[locale]) locale = locales[locale].chain;
+				else locale = null;
+			}
+		}
+		if (t) {
+			if (params) {
+				if (base.begin && base.end)
+					for(var n in params) {
+						t = t.replace(base.begin + n + base.end,params[n]);
+					}
+			}
+			return t;
+		}
+
+		return phrase;
+	}
+	translations.translate = translate;
+	translations._ = translate;
+	essential.set("translate",translate); 
  
  })(window);
 
@@ -3000,6 +3058,7 @@ Generator.ObjectGenerator = Generator(Object);
 			this.submit(ev); //TODO action context
 			ev.stopPropagation();
 		}
+		if (ev.defaultDisabled) return false;
 	}
 
 	DocumentRoles.useBuiltins = function(list) {
