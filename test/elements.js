@@ -276,3 +276,14 @@ test('Role navigation action',function(){
 });
 
 
+test("Language choice",function(){
+	var pager = Resolver("page");
+
+	equal(pager("state.lang"),"en");
+	pager.set("state.lang","de");
+	equal(document.documentElement.lang,"de");
+	pager.set("state.lang","fr");
+	equal(document.documentElement.lang,"fr");
+
+});
+

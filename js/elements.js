@@ -297,6 +297,8 @@
 		"launching": false, 
 		"launched": false,
 
+		"lang": document.documentElement.lang || "en",
+
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
@@ -1481,6 +1483,10 @@
 					enhanceUnhandledElements();
 					if (ev.symbol == "launched") this.set("state.launching",false);
 				}
+				break;
+
+			case "lang":
+				document.documentElement.lang = ev.value;
 				break;
 			
 			default:
