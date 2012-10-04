@@ -38,6 +38,7 @@ test("Static Translations english",function(){
 	equal(_("login.error",{ user:"user1" }),"Not logged in with user1 URL [url]")
 
 	ok(1,"{cache:true, key:'abc' } saves resulting template on object")
+	ok(1,"reverse translate, phrase -> key -> phrase")
 })
 
 module("Console tests");

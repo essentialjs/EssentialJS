@@ -2254,6 +2254,7 @@ Generator.ObjectGenerator = Generator(Object);
 		"authorised": true,
 		"connected": true,
 		"online": true, //TODO update
+		"preloading": false,
 		"loading": true,
 		"loadingConfig": false,
 		"loadingScripts": false,
@@ -2338,24 +2339,42 @@ Generator.ObjectGenerator = Generator(Object);
 	{
 		//TODO move this to pageResolver("state.ready")
 		ApplicationConfig();//TODO move the state transitions here
-		console.debug("loading phased scripts");
 		var links = document.getElementsByTagName("link");
-		//TODO phase
-		for(var i=0,l; l=links[i]; ++i) if (l.rel == "pastload") {
+
+		//TODO differentiate on type == "text/javascript"
+		for(var i=0,l; l=links[i]; ++i) if (l.rel == "pastload" || l.rel == "preload") {
+			//TODO differentiate on lang
 			var attrsStr = l.getAttribute("attrs");
 			var attrs = {};
 			if (attrsStr) {
 				eval("attrs = {" + attrsStr + "}");
 			}
-			attrs["type"] = "text/javascript";
+			attrs["type"] = l.getAttribute("type") || "text/javascript";
 			attrs["src"] = l.getAttribute("src");
 			//attrs["id"] = l.getAttribute("script-id");
 			attrs["onload"] = delayedScriptOnload(l.rel);
 			var relSrc = attrs["src"].replace(baseUrl,"");
 			pageResolver.set(["state","loadingScripts"],true);
-			pageResolver.set(["state","loadingScriptsUrl",relSrc],true);
-			document.body.appendChild(HTMLScriptElement(attrs));
+			pageResolver.set(["state","loadingScriptsUrl",relSrc],l); //TODO props .pre = true
+			if (l.rel == "preload") {
+				pageResolver.set(["state","preloading"],true);
+				document.body.appendChild(HTMLScriptElement(attrs));
+				l.added = true;
+			} else {
+				l.attrs = attrs;
+			}
 		}
+		if (! pageResolver(["state","preloading"])) {
+			var scripts = pageResolver(["state","loadingScriptsUrl"]);
+			for(var n in scripts) {
+				var link = scripts[n];
+				if (link.rel == "pastload") {
+					document.body.appendChild(HTMLScriptElement(link.attrs));
+					link.added = true;
+				}
+			}
+		}
+		if (pageResolver(["state","loadingScripts"])) console.debug("loading phased scripts");
 
 		var metas = document.getElementsByTagName("meta");
 		for(var i=0,m; m = metas[i]; ++i) {
@@ -3385,6 +3404,18 @@ Generator.ObjectGenerator = Generator(Object);
 				++ev.inTrigger;
 				break;
 
+			case "preloading":
+				if (! ev.value) {
+					for(var n in ev.base.loadingScriptsUrl) {
+						var link = ev.base.loadingScriptsUrl[n];
+						if (link.rel == "pastload" && !link.added) {
+							document.body.appendChild(HTMLScriptElement(link.attrs));
+							link.added = true;
+						}
+					}
+				}
+				break;
+
 			case "loading":
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();	
@@ -3429,10 +3460,14 @@ Generator.ObjectGenerator = Generator(Object);
 		var loadingScriptsUrl = this("state.loadingScriptsUrl");
 			
 		var loadingScripts = false;
+		var preloading = false;
 		for(var url in loadingScriptsUrl) {
-			if (loadingScriptsUrl[url]) loadingScripts = true;
+			var link = loadingScriptsUrl[url];
+			if (link.rel == "preload") preloading = true;
+			if (link) loadingScripts = true;
 		}
 		this.set("state.loadingScripts",loadingScripts);
+		this.set("state.preloading",preloading);
 		if (ev.value==false) {
 			// finished loading a script
 			if (document.body) essential("instantiatePageSingletons")();

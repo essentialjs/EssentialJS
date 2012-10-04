@@ -1,0 +1,1 @@
+Resolver("translations").declare(["keys",null,"abc","en"],"My ABC");

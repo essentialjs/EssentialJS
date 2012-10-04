@@ -43,8 +43,17 @@
 	})();
   </script>
 	<script src="js/auth-state.js" type="text/javascript"></script>
+
+  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
+  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
+  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
+
 </head>
 <body class="loading">
+  <div id="menu-driven">
+    
+    <article role="presentation">
+    </article>
 
    <header>
    	<nav action="navigation/logo" role="navigation">
@@ -62,14 +71,13 @@
     </nav>
 
    </header>
-   <aside id="warnings-and-alerts" role="application">
+   <aside id="warnings-and-alerts" role="toolbar" action="info/alerts">
    </aside>
    <aside class="leftmenu">
    </aside>
 
-  <article role="presentation">
-  </article>
-  
+  </div>
+
   <nav id="cpny-logo">
   	<figure name="get-started" role="img"></figure> 
 	<span><h1>Essential<br/>JavaScript</h1></span>
@@ -118,9 +126,9 @@
   </div>
   	<script src="js/jquery-1.7.2.min.js" type="text/javascript"></script>
 
-  	<link rel="pastload" src="js/knockout.js"/>
-  	<link rel="pastload" src="js/raphael.min.js"/>
-  	<link rel="pastload" src="js/frontend.js"/>
+  	<link rel="pastload" type="text/javascript" src="js/knockout.js"/>
+  	<link rel="pastload" type="text/javascript" src="js/raphael.min.js"/>
+  	<link rel="pastload" type="text/javascript" src="js/frontend.js"/>
 
 	<script type="application/config">
 		declare("logo",{"charset": "utf-8"});
@@ -193,7 +201,15 @@
   circular dependencies, and your loading and construction can be nicely 
   decoupled.
 
+  Named Raphäel Images
 
+  If you put `role="img"` on an element that isn't and IMG tag, for instance a
+  figure tag, and give it a name, it can be enhanced with a named raphael image.
+
+      Resolver("essential").set("images.my_logo",'M16,1.466C7.973,1.466,1.466,7.973,1.466,16c0,8.027,6.507,14.534,14.534,14.534c8.027,0,14.534-6.507,14.534-14.534C30.534,7.973,24.027,1.466,16,1.466z M17.328,24.371h-2.707v-2.596h2.707V24.371zM17.328,19.003v0.858h-2.707v-1.057c0-3.19,3.63-3.696,3.63-5.963c0-1.034-0.924-1.826-2.134-1.826c-1.254,0-2.354,0.924-2.354,0.924l-1.541-1.915c0,0,1.519-1.584,4.137-1.584c2.487,0,4.796,1.54,4.796,4.136C21.156,16.208,17.328,16.627,17.328,19.003z');
+
+  This registers a questionmark icon which will be rendered whereever you place
+  `<figure name="my_logo" role="img"></figure>`
 
 </body>
 </html>
