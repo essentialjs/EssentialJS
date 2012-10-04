@@ -3383,6 +3383,8 @@ Generator.ObjectGenerator = Generator(Object);
 		"launching": false, 
 		"launched": false,
 
+		"lang": document.documentElement.lang || "en",
+
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
@@ -3474,14 +3476,24 @@ Generator.ObjectGenerator = Generator(Object);
 			//attrs["id"] = l.getAttribute("script-id");
 			attrs["onload"] = delayedScriptOnload(l.rel);
 			var relSrc = attrs["src"].replace(baseUrl,"");
-			pageResolver.set(["state","loadingScripts"],true);
-			pageResolver.set(["state","loadingScriptsUrl",relSrc],l); //TODO props .pre = true
 			if (l.rel == "preload") {
-				pageResolver.set(["state","preloading"],true);
-				document.body.appendChild(HTMLScriptElement(attrs));
-				l.added = true;
+				var langOk = true;
+				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+				if (langOk) {
+					pageResolver.set(["state","preloading"],true);
+					pageResolver.set(["state","loadingScripts"],true);
+					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+					document.body.appendChild(HTMLScriptElement(attrs));
+					l.added = true;
+				} 
 			} else {
-				l.attrs = attrs;
+				var langOk = true;
+				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+				if (langOk) {
+					pageResolver.set(["state","loadingScripts"],true);
+					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+					l.attrs = attrs;
+				} 
 			}
 		}
 		if (! pageResolver(["state","preloading"])) {
@@ -3489,8 +3501,12 @@ Generator.ObjectGenerator = Generator(Object);
 			for(var n in scripts) {
 				var link = scripts[n];
 				if (link.rel == "pastload") {
-					document.body.appendChild(HTMLScriptElement(link.attrs));
-					link.added = true;
+					var langOk = true;
+					if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
+					if (langOk) {
+						document.body.appendChild(HTMLScriptElement(link.attrs));
+						link.added = true;
+					} 
 				}
 			}
 		}
@@ -4529,8 +4545,10 @@ Generator.ObjectGenerator = Generator(Object);
 					for(var n in ev.base.loadingScriptsUrl) {
 						var link = ev.base.loadingScriptsUrl[n];
 						if (link.rel == "pastload" && !link.added) {
-							document.body.appendChild(HTMLScriptElement(link.attrs));
-							link.added = true;
+							var langOk = true;
+							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
+							if (langOk) document.body.appendChild(HTMLScriptElement(link.attrs));
+							link.added = langOk;
 						}
 					}
 				}
@@ -4567,6 +4585,10 @@ Generator.ObjectGenerator = Generator(Object);
 					enhanceUnhandledElements();
 					if (ev.symbol == "launched") this.set("state.launching",false);
 				}
+				break;
+
+			case "lang":
+				document.documentElement.lang = ev.value;
 				break;
 			
 			default:
