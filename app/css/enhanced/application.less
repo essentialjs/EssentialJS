@@ -8,17 +8,30 @@
 	margin-bottom: 0.8%;
 }
 
-textarea, input {
-	.user-selection();
-}
-
-#with-menu {
+.withLeftMenu(@menu-width) {
 	position: relative;
 	width:100%;
 	height:100%;
 	overflow: hidden;
 
 	padding-left: @leftnav-width;
+	left: -@leftnav-width;
+
+	&.menu-closed {
+		left: -@leftnav-width;
+	}
+	&.menu-open {
+		left: 0;
+	}
+	
+}
+
+textarea, input {
+	.user-selection();
+}
+
+#menu-driven {
+	.withLeftMenu(@leftnav-width);
 
   	.transition( left 0.2s ease-in-out );
 
@@ -34,13 +47,6 @@ textarea, input {
   		.transition(~"top 0.4s ease-in-out, left 0.4s ease-in-out");
 	}
 
-	&.menu-closed {
-		left: -@leftnav-width;
-	}
-	&.menu-open {
-		left: 0;
-	}
-	
 	aside.leftmenu {
 		position: absolute;
 		top: 0;
@@ -48,27 +54,21 @@ textarea, input {
 		left: 0;
 		width: @leftnav-width;
 	}
-	.sheet-shield {
-		.sectionSheet();
-		background-color: @background-color;
-		z-index: @z-sheet - 1;
-		.transition( ~"left 0.5s ease-in-out,opacity 0.8s linear");
-	}
 }
 
-#with-menu > header {
+#menu-driven > header {
 	.livepage & {
 		visibility: visible;
 	}
 }
 
-.login #with-menu > header {
+.login #menu-driven > header {
 	margin-top: -(3 * @top-header-height + 5px);
 	height: 3 * @top-header-height;
 }
 
-.launching #with-menu > header, 
-.launched #with-menu > header {
+.launching #menu-driven > header, 
+.launched #menu-driven > header {
 	top:0;
 	margin-top: 0;
 	height: @top-header-height;
@@ -96,10 +96,9 @@ textarea, input {
 
 article#main-stage {
 	position: absolute;
-	left:@leftnav-width;
-	right:0;
-	top: @top-header-height;
-	bottom:0;
+	left: @leftnav-width + 20px; right: 20px;
+	top: @top-header-height + 10px; bottom: 20px;
+	background-color: white;
 
 	.transition(~"top 0.3s ease-in-out, opacity 0.3s ease-in-out");
 	
@@ -110,6 +109,13 @@ article#main-stage {
   	}
 	.notifications-open & {
 		top: @top-header-height + @notifications-height + @notifications-gap;
+	}
+
+	.sheet-shield {
+		.sectionSheet();
+		background-color: @background-color;
+		z-index: @z-sheet - 1;
+		.transition( ~"left 0.5s ease-in-out,opacity 0.8s linear");
 	}
 }
 
@@ -235,7 +241,7 @@ nav#app-logo {
 		line-height: @login-app-logo-line-height;
 		color: @app-logo-color;
 		text-align: center;
-}
+	}
 }
 
 nav[action="navigation/logo"] {

@@ -324,19 +324,26 @@ input {
   -ms-user-select: text;
   user-select: text;
 }
-#with-menu {
+#menu-driven {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
   padding-left: 150px;
+  left: -150px;
   -webkit-transition: left 0.2s ease-in-out;
   -moz-transition: left 0.2s ease-in-out;
   -ms-transition: left 0.2s ease-in-out;
   -o-transition: left 0.2s ease-in-out;
   transition: left 0.2s ease-in-out;
 }
-#with-menu > header {
+#menu-driven.menu-closed {
+  left: -150px;
+}
+#menu-driven.menu-open {
+  left: 0;
+}
+#menu-driven > header {
   position: absolute;
   visibility: hidden;
   top: 50%;
@@ -350,44 +357,22 @@ input {
   -o-transition: top 0.4s ease-in-out, left 0.4s ease-in-out;
   transition: top 0.4s ease-in-out, left 0.4s ease-in-out;
 }
-#with-menu.menu-closed {
-  left: -150px;
-}
-#with-menu.menu-open {
-  left: 0;
-}
-#with-menu aside.leftmenu {
+#menu-driven aside.leftmenu {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   width: 150px;
 }
-#with-menu .sheet-shield {
-  position: absolute;
-  width: 98%;
-  height: 99.2%;
-  margin-top: 0;
-  margin-left: 1%;
-  margin-right: 1%;
-  margin-bottom: 0.8%;
-  background-color: #054696;
-  z-index: 499;
-  -webkit-transition: left 0.5s ease-in-out,opacity 0.8s linear;
-  -moz-transition: left 0.5s ease-in-out,opacity 0.8s linear;
-  -ms-transition: left 0.5s ease-in-out,opacity 0.8s linear;
-  -o-transition: left 0.5s ease-in-out,opacity 0.8s linear;
-  transition: left 0.5s ease-in-out,opacity 0.8s linear;
-}
-.livepage #with-menu > header {
+.livepage #menu-driven > header {
   visibility: visible;
 }
-.login #with-menu > header {
+.login #menu-driven > header {
   margin-top: -215px;
   height: 210px;
 }
-.launching #with-menu > header,
-.launched #with-menu > header {
+.launching #menu-driven > header,
+.launched #menu-driven > header {
   top: 0;
   margin-top: 0;
   height: 70px;
@@ -436,10 +421,11 @@ input {
 }
 article#main-stage {
   position: absolute;
-  left: 150px;
-  right: 0;
+  left: 170px;
+  right: 20px;
   top: 70px;
-  bottom: 0;
+  bottom: 20px;
+  background-color: white;
   -webkit-transition: top 0.3s ease-in-out, opacity 0.3s ease-in-out;
   -moz-transition: top 0.3s ease-in-out, opacity 0.3s ease-in-out;
   -ms-transition: top 0.3s ease-in-out, opacity 0.3s ease-in-out;
@@ -452,6 +438,22 @@ article#main-stage {
 }
 .notifications-open article#main-stage {
   top: 125px;
+}
+article#main-stage .sheet-shield {
+  position: absolute;
+  width: 98%;
+  height: 99.2%;
+  margin-top: 0;
+  margin-left: 1%;
+  margin-right: 1%;
+  margin-bottom: 0.8%;
+  background-color: #054696;
+  z-index: 499;
+  -webkit-transition: left 0.5s ease-in-out,opacity 0.8s linear;
+  -moz-transition: left 0.5s ease-in-out,opacity 0.8s linear;
+  -ms-transition: left 0.5s ease-in-out,opacity 0.8s linear;
+  -o-transition: left 0.5s ease-in-out,opacity 0.8s linear;
+  transition: left 0.5s ease-in-out,opacity 0.8s linear;
 }
 nav#cpny-logo {
   position: absolute;
