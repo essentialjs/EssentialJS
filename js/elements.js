@@ -1412,6 +1412,7 @@
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
+		document.documentElement.lang = this.state("lang");
 		state.on("change",this,this.onStateChange);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
