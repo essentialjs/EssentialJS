@@ -351,14 +351,18 @@ function Resolver(name,ns,options)
         function read_session(ref) {
             var v = sessionStorage[this.id];
             if (v != undefined) {
-                var value = JSON.parse(v);
+                var value;
+                try { value = JSON.parse(value); }
+                catch(ex) {} //TODO consider parse issue
                 ref.set(value);
             }
         }
         function read_local(ref) {
             var v = localStorage[this.id];
             if (v != undefined) {
-                var value = JSON.parse(v);
+                var value;
+                try { value = JSON.parse(value); }
+                catch(ex) {} //TODO consider parse issue
                 ref.set(value);
             }
         }
@@ -374,20 +378,45 @@ function Resolver(name,ns,options)
                 return undefined;
             }
             var value = readIt(this.id);
-            //TODO type coercion
-            if (value != undefined) ref.set(value);
+            if (value != undefined) {
+                value = decodeURI(value);
+                if (this.options.encoding == "string") {
+                    // just use the string
+                } else {
+                    try { value = JSON.parse(value); }
+                    catch(ex) {} //TODO consider parse issue
+                }
+
+                //TODO type coercion
+                ref._reading_cookie = true;
+                ref.set(value);
+                delete ref._reading_cookie;
+            }
         }
 
         function store_session(ref) {
             //TODO if (ref is defined)
-            sessionStorage[this.id] = JSON.stringify(ref());
+            try {
+                sessionStorage[this.id] = JSON.stringify(ref());
+            } catch(ex) {} //TODO consider feedback
         }
         function store_local(ref) {
             //TODO if (ref is defined)
-            localStorage[this.id] = JSON.stringify(ref());
+            try {
+                localStorage[this.id] = JSON.stringify(ref());
+            } catch(ex) {} //TODO consider feedback
         }
         function store_cookie(ref) {
-            var value = JSON.stringify(ref());
+            if (ref._reading_cookie) return; //TODO only if same cookie
+
+            var value;
+            if (this.options.encoding == "string") {
+                // just use the string
+                value = encodeURI(ref());
+            } else {
+                try { value = JSON.stringify(encodeURI(ref())); }
+                catch(ex) {} //TODO consider parse issue
+            }
             var days = this.options.days;
 
             if (days) {
@@ -3378,6 +3407,7 @@ Generator.ObjectGenerator = Generator(Object);
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
+		document.documentElement.lang = this.state("lang");
 		state.on("change",this,this.onStateChange);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
