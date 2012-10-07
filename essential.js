@@ -215,6 +215,9 @@ function Resolver(name,ns,options)
 	        	return base;
     		}
         }
+        function toggle() {
+
+        }
         function set(value) {
         	if (arguments.length > 1) {
         		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
@@ -426,6 +429,11 @@ function Resolver(name,ns,options)
             }
             else var expires = "";
             document.cookie = this.id+"="+value+expires+"; path=/";
+
+            //TODO force an upload if this is unload
+            if (this.options.touchURL) {
+                //TODO reload script with url / frequency for uploading cookies
+            }
         }
 
         //TODO support server remote storage mechanism
@@ -485,6 +493,7 @@ function Resolver(name,ns,options)
         }    
 
         get.set = set;
+        get.toggle = toggle;
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
@@ -586,6 +595,11 @@ function Resolver(name,ns,options)
 			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
 		}
 		return value;
+    };
+
+    resolver.toggle = function(name,onundefined)
+    {
+
     };
 
     resolver.reference = function(name,onundefined) 
@@ -861,6 +875,8 @@ function Generator(mainConstr,options)
 
 		// migrate prototype
 		for(var n in mainConstr.prototype) generator.prototype[n] = mainConstr.prototype[n];
+        if (options.prototype)
+            for(var n in options.prototype) generator.prototype[n] = options.prototype[n];
 		mainConstr.prototype = generator.prototype;
 		//TODO generator.fn = generator.prototype
 		
@@ -2622,6 +2638,14 @@ Generator.ObjectGenerator = Generator(Object);
 		this._original.cancelBubble= true;
 	};
 
+	_MutableEvent.prototype.preventDefault = function() {
+		this.defaultPrevented = true;
+	};
+
+	_MutableEvent.prototype.CAPTURING_PHASE = 1;
+	_MutableEvent.prototype.AT_TARGET = 2;
+	_MutableEvent.prototype.BUBBLING_PHASE = 3;
+
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
 		var ev;
@@ -3122,7 +3146,7 @@ Generator.ObjectGenerator = Generator(Object);
 			this.submit(ev); //TODO action context
 			ev.stopPropagation();
 		}
-		if (ev.defaultDisabled) return false;
+		if (ev.defaultPrevented) return false;
 	}
 
 	DocumentRoles.useBuiltins = function(list) {

@@ -837,6 +837,8 @@ function Generator(mainConstr,options)
 
 		// migrate prototype
 		for(var n in mainConstr.prototype) generator.prototype[n] = mainConstr.prototype[n];
+        if (options.prototype)
+            for(var n in options.prototype) generator.prototype[n] = options.prototype[n];
 		mainConstr.prototype = generator.prototype;
 		//TODO generator.fn = generator.prototype
 		

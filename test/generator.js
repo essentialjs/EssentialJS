@@ -55,6 +55,21 @@ test('Generator inherit from generator defined on main constructor',function(){
 	ok(_Rectangle.calledWith(1,2,3,4))
 })
 
+test('Generator with passed prototype',function(){
+	function constr() {
+
+	}
+	function method() {
+
+	}
+
+	var gen = Generator(constr, { prototype: { method:method }});
+
+	equal(gen.info.constructors[-1],constr);
+	equal(gen.prototype.method,method);
+	equal(constr.prototype.method,method);
+})
+
 test('Shape generator with parameters',function() {
 
 	var NumberType = Resolver("essential")("Type").variant("Number");
