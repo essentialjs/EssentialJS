@@ -627,6 +627,14 @@
 		this._original.cancelBubble= true;
 	};
 
+	_MutableEvent.prototype.preventDefault = function() {
+		this.defaultPrevented = true;
+	};
+
+	_MutableEvent.prototype.CAPTURING_PHASE = 1;
+	_MutableEvent.prototype.AT_TARGET = 2;
+	_MutableEvent.prototype.BUBBLING_PHASE = 3;
+
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
 		var ev;
@@ -1127,7 +1135,7 @@
 			this.submit(ev); //TODO action context
 			ev.stopPropagation();
 		}
-		if (ev.defaultDisabled) return false;
+		if (ev.defaultPrevented) return false;
 	}
 
 	DocumentRoles.useBuiltins = function(list) {
