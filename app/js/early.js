@@ -52,6 +52,9 @@
 			case "launched":
 				if (ev.value == true) pageProgress.set("Done.");
 				break;
+			case "lang":
+				pageProgress.set("Language selected: "+ev.value);
+				break;
 		}
 	});
 

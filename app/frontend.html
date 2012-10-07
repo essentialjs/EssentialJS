@@ -95,6 +95,23 @@
   </div>
   <output data-proxy="html: body.connection.loadingProgress" id="loadingProgress"></output>
 
+  <nav role="navigation" action="navigation/lang"> 
+    <a name="en">English</a> ◦ 
+    <a name="de">Deutch</a> ◦  
+    <a name="fr">Francais</a> 
+  </nav>
+  <script type="text/javascript">
+  Resolver("essential")("DialogAction").variant("navigation/lang",Generator(
+    function(){},Resolver("essential")("DialogAction"),
+    {
+      "prototype": {
+        "en": function(){ Resolver("page").set("state.lang","en"); },
+        "de": function(){ Resolver("page").set("state.lang","de"); },
+        "fr": function(){ Resolver("page").set("state.lang","fr"); },
+      }
+    }));
+  </script>
+
   <div id="sessionBadge">
    <form action="dialogs/login" autocomplete="off" id="login" method="client" name="login" role="dialog">
    	<div class="connection-status">
@@ -104,14 +121,12 @@
 	<h1></h1>
 	<output name="loginErrors">The username or password you entered is incorrect, please try again</output>
 
-	<label class="details">User Name</label>
+	<label class="details"><span lang="en">User Name</span><span lang="de">Benutzer</span><span lang="fr">Utilisateur</span></label>
 	<input autofocus="" maxlength="20" name="j_username" type="text">
 
-	<label class="details password">Password</label>
+	<label class="details password"><span lang="en">Password</span><span lang="de">Passwort</span><span lang="fr">Mot de passe</span></label>
 	<input maxlength="20" name="j_password" type="password">
 
-	<label class="details onetime">OTP</label>
-	<input maxlength="20" name="j_password_onetime" type="password">
 
 	<h5 name="forgottenPassword">Can't access your account?</h5>
 

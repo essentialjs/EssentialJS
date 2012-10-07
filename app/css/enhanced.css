@@ -315,6 +315,36 @@ body > footer {
   width: 100%;
   height: 100%;
 }
+html[lang=en] *[lang=not-en],
+html[lang=en] .not-lang-en {
+  display: none;
+}
+html[lang=en] *[lang=de] {
+  display: none;
+}
+html[lang=en] *[lang=fr] {
+  display: none;
+}
+html[lang=de] *[lang=not-de],
+html[lang=de] .not-lang-de {
+  display: none;
+}
+html[lang=de] *[lang=en] {
+  display: none;
+}
+html[lang=de] *[lang=fr] {
+  display: none;
+}
+html[lang=fr] *[lang=not-fr],
+html[lang=fr] .not-lang-fr {
+  display: none;
+}
+html[lang=fr] *[lang=de] {
+  display: none;
+}
+html[lang=fr] *[lang=en] {
+  display: none;
+}
 textarea,
 input {
   -webkit-touch-callout: text;
@@ -423,7 +453,7 @@ article#main-stage {
   position: absolute;
   left: 170px;
   right: 20px;
-  top: 70px;
+  top: 80px;
   bottom: 20px;
   background-color: white;
   -webkit-transition: top 0.3s ease-in-out, opacity 0.3s ease-in-out;
@@ -569,6 +599,21 @@ nav#app-logo {
   line-height: 60px;
   color: #006ada;
   text-align: center;
+}
+nav[action="navigation/lang"] {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: white;
+}
+nav[action="navigation/lang"] a {
+  font-weight: bold;
+}
+nav[action="navigation/lang"] a:hover,
+html[lang=en] nav[action="navigation/lang"] a[name=en],
+html[lang=de] nav[action="navigation/lang"] a[name=de],
+html[lang=fr] nav[action="navigation/lang"] a[name=fr] {
+  color: white;
 }
 nav[action="navigation/logo"] {
   position: absolute;
