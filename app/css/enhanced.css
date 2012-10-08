@@ -239,7 +239,6 @@ body > footer {
   zoom: 1;
   margin-bottom: 0;
   color: #666666;
-  padding-top: 60px;
 }
 #login label.details {
   vertical-align: bottom;
@@ -253,7 +252,7 @@ body > footer {
 }
 #login input[name=j_password] {
   width: 100px;
-  position: absolute;
+  /*position: absolute;*/
   left: 0;
   margin-top: 2.2em;
 }
