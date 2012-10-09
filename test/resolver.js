@@ -7,22 +7,31 @@ test ("Anonymous resolver",function(){
 })
 
 test ("Named resolver",function(){
+
+	ok(! Resolver.exists("A"))
+	ok(! Resolver.exists("B"))
+	ok(! Resolver.exists("C"))
+
 	var r = Resolver("A",{});
 	var a = r.set("a","a");
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("A"));
+	ok(Resolver.exists("A"))
 
 	var r = Resolver({},{name:"B"});
 	r.set("a","a");
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("B"));
 	notEqual(r,Resolver("A"));
+	ok(Resolver.exists("B"))
 
 	var r = Resolver("C",null); // check for non-existent 
 	equal(r, null);
 
 	var r = Resolver("C"); // create blank one 
 	equal(typeof r, "function");
+
+	ok(Resolver.exists("C"))
 })
 
 test("Window resolver",function(){
