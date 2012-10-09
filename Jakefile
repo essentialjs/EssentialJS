@@ -7,7 +7,8 @@ var MODERNIZR_FILES = [
   'modernizr.js'];
 
 var ESSENTIAL_FILES = [
-  'constructive.js',
+  'resolver.js',
+  'generator.js',
   'essentialns.js',
   'xhr.js',
   'elements.js'];
