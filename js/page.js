@@ -11,11 +11,13 @@
 	var HTMLElement = essential("HTMLElement");
 	var HTMLScriptElement = essential("HTMLScriptElement");
 
+	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
 
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
+	/* Laid out element within a container */
 	function _Laidout(key,el,conf) {
 
 	}
