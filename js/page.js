@@ -11,6 +11,16 @@
 	var HTMLElement = essential("HTMLElement");
 	var HTMLScriptElement = essential("HTMLScriptElement");
 
+	function _Layouter(key,el,conf) {
+
+	}
+	var Layouter = essential.declare("Layouter",Generator(_Layouter));
+
+	function _Laidout(key,el,conf) {
+
+	}
+	var Laidout = essential.declare("Laidout",Generator(_Laidout));
+
 	var nativeClassList = !!document.documentElement.classList;
 
 	function readElementState(el,state) {
@@ -489,10 +499,10 @@
 			var el = this.getElement(k);
 
 			if (conf.layouter) {
-				el.layouter = LayouterGenerator.variant(conf.layouter)(k,el,conf);
+				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
 			}
 			if (conf.laidout) {
-				el.laidout = LaidoutGenerator.variant(conf.laidout)(k,el,conf);
+				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
 			}
 		}
 	};

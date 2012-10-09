@@ -13,6 +13,8 @@
 	var statefulCleaner = essential("statefulCleaner");
 	var HTMLElement = essential("HTMLElement");
 	var HTMLScriptElement = essential("HTMLScriptElement");
+	var Layouter = essential("Layouter");
+	var Laidout = essential("Laidout");
 
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
@@ -694,12 +696,7 @@
 		
 	};
 	
-	function Layouter(key,el,conf) {
-
-	}
-	var LayouterGenerator = essential.declare("Layouter",Generator(Layouter));
-
-	function StageLayouter(key,el,conf) {
+	function _StageLayouter(key,el,conf) {
 		this.key = key;
 		this.type = conf.layouter;
 		this.areaNames = conf["area-names"];
@@ -711,10 +708,10 @@
 
 		essential("stages").push(this); // for area updates
 	}
-	var StageLayouterGenerator = essential.declare("StageLayouter",Generator(StageLayouter));
-	LayouterGenerator.variant("area-stage",StageLayouterGenerator);
+	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
+	Layouter.variant("area-stage",StageLayouter);
 
-	StageLayouter.prototype.refreshClass = function(el) {
+	_StageLayouter.prototype.refreshClass = function(el) {
 		var areaClasses = [];
 		for(var i=0,a; a = this.areaNames[i]; ++i) {
 			if (a == this.activeArea) areaClasses.push(a + "-area-active");
@@ -724,17 +721,12 @@
 		if (el.className != newClass) el.className = newClass;
 	};
 
-	StageLayouter.prototype.updateActiveArea = function(areaName) {
+	_StageLayouter.prototype.updateActiveArea = function(areaName) {
 		this.activeArea = areaName;
 		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
-	}
+	};
 
-	function Laidout(key,el,conf) {
-
-	}
-	var LaidoutGenerator = essential.declare("Laidout",Generator(Laidout));
-
-	function MemberLaidout(key,el,conf) {
+	function _MemberLaidout(key,el,conf) {
 		this.key = key;
 		this.type = conf.laidout;
 		this.areaNames = conf["area-names"];
@@ -745,8 +737,8 @@
 
 		el.className = this.baseClass + el.className;
 	}
-	var MemberLaidoutGenerator = essential.declare("MemberLaidout",Generator(MemberLaidout));
-	LaidoutGenerator.variant("area-member",MemberLaidoutGenerator);
+	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
+	Laidout.variant("area-member",MemberLaidout);
 
 })();
 

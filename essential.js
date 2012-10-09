@@ -1906,6 +1906,16 @@ Generator.ObjectGenerator = Generator(Object);
 	var HTMLElement = essential("HTMLElement");
 	var HTMLScriptElement = essential("HTMLScriptElement");
 
+	function _Layouter(key,el,conf) {
+
+	}
+	var Layouter = essential.declare("Layouter",Generator(_Layouter));
+
+	function _Laidout(key,el,conf) {
+
+	}
+	var Laidout = essential.declare("Laidout",Generator(_Laidout));
+
 	var nativeClassList = !!document.documentElement.classList;
 
 	function readElementState(el,state) {
@@ -2384,10 +2394,10 @@ Generator.ObjectGenerator = Generator(Object);
 			var el = this.getElement(k);
 
 			if (conf.layouter) {
-				el.layouter = LayouterGenerator.variant(conf.layouter)(k,el,conf);
+				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
 			}
 			if (conf.laidout) {
-				el.laidout = LaidoutGenerator.variant(conf.laidout)(k,el,conf);
+				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
 			}
 		}
 	};
@@ -3007,6 +3017,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	var statefulCleaner = essential("statefulCleaner");
 	var HTMLElement = essential("HTMLElement");
 	var HTMLScriptElement = essential("HTMLScriptElement");
+	var Layouter = essential("Layouter");
+	var Laidout = essential("Laidout");
 
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 
@@ -3688,12 +3700,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		
 	};
 	
-	function Layouter(key,el,conf) {
-
-	}
-	var LayouterGenerator = essential.declare("Layouter",Generator(Layouter));
-
-	function StageLayouter(key,el,conf) {
+	function _StageLayouter(key,el,conf) {
 		this.key = key;
 		this.type = conf.layouter;
 		this.areaNames = conf["area-names"];
@@ -3705,10 +3712,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 		essential("stages").push(this); // for area updates
 	}
-	var StageLayouterGenerator = essential.declare("StageLayouter",Generator(StageLayouter));
-	LayouterGenerator.variant("area-stage",StageLayouterGenerator);
+	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
+	Layouter.variant("area-stage",StageLayouter);
 
-	StageLayouter.prototype.refreshClass = function(el) {
+	_StageLayouter.prototype.refreshClass = function(el) {
 		var areaClasses = [];
 		for(var i=0,a; a = this.areaNames[i]; ++i) {
 			if (a == this.activeArea) areaClasses.push(a + "-area-active");
@@ -3718,17 +3725,12 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		if (el.className != newClass) el.className = newClass;
 	};
 
-	StageLayouter.prototype.updateActiveArea = function(areaName) {
+	_StageLayouter.prototype.updateActiveArea = function(areaName) {
 		this.activeArea = areaName;
 		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
-	}
+	};
 
-	function Laidout(key,el,conf) {
-
-	}
-	var LaidoutGenerator = essential.declare("Laidout",Generator(Laidout));
-
-	function MemberLaidout(key,el,conf) {
+	function _MemberLaidout(key,el,conf) {
 		this.key = key;
 		this.type = conf.laidout;
 		this.areaNames = conf["area-names"];
@@ -3739,8 +3741,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 		el.className = this.baseClass + el.className;
 	}
-	var MemberLaidoutGenerator = essential.declare("MemberLaidout",Generator(MemberLaidout));
-	LaidoutGenerator.variant("area-member",MemberLaidoutGenerator);
+	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
+	Laidout.variant("area-member",MemberLaidout);
 
 })();
 
