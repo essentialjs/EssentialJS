@@ -191,6 +191,36 @@ function Resolver(name,ns,options)
 	        	return base;
     		}
         }
+        function toggle() {
+            if (arguments.length > 1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                value = !arguments[1]; //TODO configurable toggle
+
+                if (_setValue(value,combined,base,symbol)) {
+                    var childRef = resolver.references[parentName + "." + symbol];
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    var parentRef = resolver.references[parentName];
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                }
+            } else {
+                var base = _resolve(baseNames,null,onundefinedSet);
+
+                if (_setValue(value,baseNames,base,leafName)) {
+                    this._callListener("change",baseNames,base,leafName,value);
+                    //TODO test for triggering specific listeners
+                    if (baseRefName) {
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                    }
+                }
+            }
+            return value;
+        }
         function set(value) {
         	if (arguments.length > 1) {
         		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
@@ -328,7 +358,7 @@ function Resolver(name,ns,options)
             var v = sessionStorage[this.id];
             if (v != undefined) {
                 var value;
-                try { value = JSON.parse(value); }
+                try { value = JSON.parse(v); }
                 catch(ex) {} //TODO consider parse issue
                 ref.set(value);
             }
@@ -337,7 +367,7 @@ function Resolver(name,ns,options)
             var v = localStorage[this.id];
             if (v != undefined) {
                 var value;
-                try { value = JSON.parse(value); }
+                try { value = JSON.parse(v); }
                 catch(ex) {} //TODO consider parse issue
                 ref.set(value);
             }
@@ -402,6 +432,11 @@ function Resolver(name,ns,options)
             }
             else var expires = "";
             document.cookie = this.id+"="+value+expires+"; path=/";
+
+            //TODO force an upload if this is unload
+            if (this.options.touchURL) {
+                //TODO reload script with url / frequency for uploading cookies
+            }
         }
 
         //TODO support server remote storage mechanism
@@ -461,6 +496,7 @@ function Resolver(name,ns,options)
         }    
 
         get.set = set;
+        get.toggle = toggle;
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
@@ -562,6 +598,26 @@ function Resolver(name,ns,options)
 			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
 		}
 		return value;
+    };
+
+    resolver.toggle = function(name,onundefined)
+    {
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else names = name.split(".");
+        var symbol = names.pop();
+        var base = _resolve(names,null,onundefined);
+        var value = ! base[symbol]; //TODO configurable toggle
+        if (_setValue(value,names,base,symbol)) {
+            var ref = resolver.references[name];
+            if (ref) ref._callListener("change",names,base,symbol,value);
+            var parentName = names.join(".");
+            var parentRef = resolver.references[parentName];
+            if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+        }
+        return value;
     };
 
     resolver.reference = function(name,onundefined) 
@@ -842,7 +898,7 @@ function Generator(mainConstr,options)
 		mainConstr.prototype = generator.prototype;
 		//TODO generator.fn = generator.prototype
 		
-		
+
 		return generator;
 	})(arguments);
 

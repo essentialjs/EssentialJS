@@ -153,6 +153,21 @@ test('Resolver set/declare value',function(){
 	//TODO try array like objects for get/set/declare
 })
 
+test('Resolver toggle value',function(){
+	var resolver = Resolver({});
+
+	var abc_value = resolver.set("a.b.c",false);
+	strictEqual(abc_value,false,"returned value from set");
+	equal(resolver("a.b.c"), false);	
+	resolver.toggle("a.b.c");
+	equal(resolver("a.b.c"), true);	
+	resolver.toggle("a.b.c");
+	equal(resolver("a.b.c"), false);	
+
+	resolver.toggle("a.b.d");
+	equal(resolver("a.b.d"), true);	
+})
+
 test('Resolver reference set/declare value',function(){
 	var resolver = Resolver({});
 
