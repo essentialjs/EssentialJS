@@ -192,6 +192,368 @@
 		}
 	}
 	
+	//TODO regScriptOnnotfound (onerror, status=404)
+	
+	// (tagName,{attributes},content)
+	// ({attributes},content)
+	function HTMLElement(tagName,from,content_list,_document) {
+		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
+		
+		// optional document arg
+		var d = arguments[c_to];
+		var _doc = document;
+		if (typeof d == "object" && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		
+		// optional tagName arg
+		if (typeof _tagName == "object") { 
+			_from = _tagName; 
+			_tagName = _from.tagName || "span"; 
+			--c_from; 
+		}
+		
+		var e = _doc.createElement(_tagName);
+		for(var n in _from) {
+			switch(n) {
+				case "tagName": break; // already used
+				case "class":
+					if (_from[n] !== undefined) e.className = _from[n]; 
+					break;
+				case "style":
+					//TODO support object
+					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
+					break;
+					
+				case "id":
+				case "className":
+				case "rel":
+				case "lang":
+				case "language":
+				case "src":
+				case "type":
+					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+				//TODO case "onprogress": // partial script progress
+				case "onload":
+					regScriptOnload(e,_from.onload);
+					break;
+				default:
+					e.setAttribute(n,_from[n]);
+					break;
+			}
+		}
+		var l = [];
+		for(var i=c_from; i<=c_to; ++i) {
+			var p = arguments[i];
+			if (typeof p == "object" && "length" in p) l.concat(p);
+			else if (typeof p == "string") l.push(arguments[i]);
+		}
+		if (l.length) e.innerHTML = l.join("");
+		
+		//TODO .appendTo function
+		
+		return e;
+	}
+	essential.set("HTMLElement",HTMLElement);
+	
+	
+	//TODO element cleaner must remove .el references from listeners
+
+	// this = element
+	function regScriptOnload(domscript,trigger) {
+
+		domscript.onload = function(ev) { 
+			if ( ! this.onloadDone ) {
+				this.onloadDone = true;
+				trigger.call(this,ev || event); 
+			}
+		};
+		domscript.onreadystatechange = function(ev) { 
+			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
+				this.onloadDone = true; 
+				trigger.call(this,ev || event);
+			}
+		}
+
+	}
+
+	//TODO regScriptOnnotfound (onerror, status=404)
+
+	function HTMLScriptElement(from,doc) {
+		return HTMLElement("SCRIPT",from,doc);
+	}
+	essential.set("HTMLScriptElement",HTMLScriptElement);
+
+	/*
+		DOM Events
+	*/
+	function copyKeyEvent(src) {
+		this.altKey = src.altKey;
+		this.shiftKey = src.shiftKey;
+		this.ctrlKey = src.ctrlKey;
+		this.metaKey = src.metaKey;
+		this.charCode = src.charCode;
+	}
+	function copyInputEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyNavigateEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyMouseEvent(src) {
+		this.clientX = src.clientX;
+		this.clientY = src.clientY;
+		this.screenX = src.screenX;
+		this.screenY = src.screenY;
+		this.button = BUTTON_MAP[src.button]; //TODO check map
+		this.buttons = src.button;
+		//detail is repetitions
+		//which == 1,2,3
+	}
+	function copyMouseEventOverOut(src) {
+		copyMouseEvent.call(this,src);
+		this.fromElement = src.fromElement;
+		this.toElement = src.toElement;
+		this.relatedTarget = src.relatedTarget;
+	}
+	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
+	var EVENTS = {
+		"click" : {
+			copyEvent: copyMouseEvent
+		},
+		"dblclick" : {
+			copyEvent: copyMouseEvent
+		},
+		"contextmenu": {
+			copyEvent: copyMouseEvent
+		},
+		"mousemove": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseup": {
+			copyEvent: copyMouseEvent
+		},
+		"mousedown": {
+			copyEvent: copyMouseEvent
+		},
+		"mousewheel": {
+			copyEvent: copyMouseEvent
+		},
+		"wheel": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseenter": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseleave": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseout": {
+			copyEvent: copyMouseEventOverOut
+		},
+		"mouseover": {
+			copyEvent: copyMouseEventOverOut
+		},
+
+		"keyup": {
+			copyEvent: copyKeyEvent
+		},
+		"keydown": {
+			copyEvent: copyKeyEvent
+		},
+		"keypress": {
+			copyEvent: copyKeyEvent
+		},
+
+		"blur": {
+			copyEvent: copyInputEvent
+		},
+		"focus": {
+			copyEvent: copyInputEvent
+		},
+		"focusin": {
+			copyEvent: copyInputEvent
+		},
+		"focusout": {
+			copyEvent: copyInputEvent
+		},
+
+		"copy": {
+			copyEvent: copyInputEvent
+		},
+		"cut": {
+			copyEvent: copyInputEvent
+		},
+		"change": {
+			copyEvent: copyInputEvent
+		},
+		"input": {
+			copyEvent: copyInputEvent
+		},
+		"textinput": {
+			copyEvent: copyInputEvent
+		},
+
+		"scroll": {
+			copyEvent: copyNavigateEvent
+		},
+		"reset": {
+			copyEvent: copyNavigateEvent
+		},
+		"submit": {
+			copyEvent: copyNavigateEvent
+		},
+		"select": {
+			copyEvent: copyNavigateEvent
+		},
+
+		"error": {
+			copyEvent: copyNavigateEvent
+		},
+		"haschange": {
+			copyEvent: copyNavigateEvent
+		},
+		"load": {
+			copyEvent: copyNavigateEvent
+		},
+		"unload": {
+			copyEvent: copyNavigateEvent
+		},
+		"resize": {
+			copyEvent: copyNavigateEvent
+		},
+
+
+		"":{}
+	};
+
+	function MutableEvent_withActionInfo() {
+		var element = this.target;
+		// role of element or ancestor
+		// TODO minor tags are traversed; Stop at document, header, aside etc
+		
+		while(element) {
+			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
+
+			var role = element.getAttribute("role");
+			switch(role) {
+				case "button":
+				case "link":
+				case "menuitem":
+					//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+					this.commandRole = role;
+					this.commandElement = element;
+					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+
+					//determine commandName within action object
+					this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+					//TODO should links deduct actions and name from href
+					element = null;
+					break;
+				case null:
+					switch(element.tagName) {
+						case "BUTTON":
+						case "button":
+							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							if (element.type == "submit") {
+								//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.commandElement = element;
+								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+								element = null;
+							}
+							break;
+					}
+					break;
+			}
+			if (element) element = element.parentNode;
+		}
+		if (this.commandElement == undefined) return this; // no command
+
+		element = this.commandElement;
+		while(element) {
+			var action = element.getAttribute("action");
+			if (action) {
+				this.action = action;
+				this.actionElement = element;
+				element = null;
+			}			
+			if (element) element = element.parentNode;
+		}
+
+		return this;
+	}
+
+	function MutableEvent_withDefaultSubmit(form) {
+		var commandName = "trigger";
+		var commandElement = null;
+
+		if (form.elements) {
+			for(var i=0,e; e=form.elements[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		} else {
+			var buttons = form.getElementsByTagName("button");
+			for(var i=0,e; e=buttons[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+			var inputs = form.getElementsByTagName("input");
+			if (commandElement) for(var i=0,e; e=inputs[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		}
+		this.action = form.action;
+		this.actionElement = form;
+		this.commandElement = commandElement;
+		this.commandName = commandName;
+
+		return this;
+	}
+
+
+	function _MutableEvent(src) {
+		this._original = src;
+		this.type = src.type;
+		this.target = src.target || src.srcElement;
+		this.currentTarget = src.currentTarget|| src.target; 
+		EVENTS[src.type].copyEvent.call(this,src);
+	}
+	_MutableEvent.prototype.relatedTarget = null;
+	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
+	_MutableEvent.prototype.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
+	_MutableEvent.prototype.stopPropagation = function() {
+		this._original.cancelBubble= true;
+	};
+
+	_MutableEvent.prototype.preventDefault = function() {
+		this.defaultPrevented = true;
+	};
+
+	_MutableEvent.prototype.CAPTURING_PHASE = 1;
+	_MutableEvent.prototype.AT_TARGET = 2;
+	_MutableEvent.prototype.BUBBLING_PHASE = 3;
+
+	function MutableEvent(sourceEvent) {
+		function ClonedEvent() { }
+		var ev;
+		// IE event support
+		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
+			ev = new _MutableEvent(sourceEvent);
+		} else
+		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
+			ev = new _MutableEvent(window.event);
+		}
+		// other browsers, or not in listener 
+		else {
+			ClonedEvent.prototype = sourceEvent || window.event; 
+			ev = new ClonedEvent();
+			ev.withActionInfo = MutableEvent_withActionInfo;
+			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		}
+		return ev;		
+	}
+	essential.declare("MutableEvent",MutableEvent)
+
 
 	function instantiatePageSingletons()
 	{
@@ -416,9 +778,10 @@
 		for(var i=0,l; l = locales[i]; ++i) this.declare(["locales",l],{}); //TODO auto chaining
 	}
 
-	function setKeysForLocale(locale,context,keys) {
+	function setKeysForLocale(locale,context,keys,BucketGenerator) {
 		for(var key in keys) {
-			this.set(["keys",context, key, locale],keys[key]);
+			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
+			this.set(["keys",context, key, locale],keys[key]); //TODO { generator: BucketGenerator }
 			//TODO reverse lookup
 		}
 	}

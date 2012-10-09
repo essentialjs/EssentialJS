@@ -2367,6 +2367,368 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 	
+	//TODO regScriptOnnotfound (onerror, status=404)
+	
+	// (tagName,{attributes},content)
+	// ({attributes},content)
+	function HTMLElement(tagName,from,content_list,_document) {
+		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
+		
+		// optional document arg
+		var d = arguments[c_to];
+		var _doc = document;
+		if (typeof d == "object" && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		
+		// optional tagName arg
+		if (typeof _tagName == "object") { 
+			_from = _tagName; 
+			_tagName = _from.tagName || "span"; 
+			--c_from; 
+		}
+		
+		var e = _doc.createElement(_tagName);
+		for(var n in _from) {
+			switch(n) {
+				case "tagName": break; // already used
+				case "class":
+					if (_from[n] !== undefined) e.className = _from[n]; 
+					break;
+				case "style":
+					//TODO support object
+					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
+					break;
+					
+				case "id":
+				case "className":
+				case "rel":
+				case "lang":
+				case "language":
+				case "src":
+				case "type":
+					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+				//TODO case "onprogress": // partial script progress
+				case "onload":
+					regScriptOnload(e,_from.onload);
+					break;
+				default:
+					e.setAttribute(n,_from[n]);
+					break;
+			}
+		}
+		var l = [];
+		for(var i=c_from; i<=c_to; ++i) {
+			var p = arguments[i];
+			if (typeof p == "object" && "length" in p) l.concat(p);
+			else if (typeof p == "string") l.push(arguments[i]);
+		}
+		if (l.length) e.innerHTML = l.join("");
+		
+		//TODO .appendTo function
+		
+		return e;
+	}
+	essential.set("HTMLElement",HTMLElement);
+	
+	
+	//TODO element cleaner must remove .el references from listeners
+
+	// this = element
+	function regScriptOnload(domscript,trigger) {
+
+		domscript.onload = function(ev) { 
+			if ( ! this.onloadDone ) {
+				this.onloadDone = true;
+				trigger.call(this,ev || event); 
+			}
+		};
+		domscript.onreadystatechange = function(ev) { 
+			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
+				this.onloadDone = true; 
+				trigger.call(this,ev || event);
+			}
+		}
+
+	}
+
+	//TODO regScriptOnnotfound (onerror, status=404)
+
+	function HTMLScriptElement(from,doc) {
+		return HTMLElement("SCRIPT",from,doc);
+	}
+	essential.set("HTMLScriptElement",HTMLScriptElement);
+
+	/*
+		DOM Events
+	*/
+	function copyKeyEvent(src) {
+		this.altKey = src.altKey;
+		this.shiftKey = src.shiftKey;
+		this.ctrlKey = src.ctrlKey;
+		this.metaKey = src.metaKey;
+		this.charCode = src.charCode;
+	}
+	function copyInputEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyNavigateEvent(src) {
+		copyKeyEvent.call(this,src);
+	}
+	function copyMouseEvent(src) {
+		this.clientX = src.clientX;
+		this.clientY = src.clientY;
+		this.screenX = src.screenX;
+		this.screenY = src.screenY;
+		this.button = BUTTON_MAP[src.button]; //TODO check map
+		this.buttons = src.button;
+		//detail is repetitions
+		//which == 1,2,3
+	}
+	function copyMouseEventOverOut(src) {
+		copyMouseEvent.call(this,src);
+		this.fromElement = src.fromElement;
+		this.toElement = src.toElement;
+		this.relatedTarget = src.relatedTarget;
+	}
+	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
+	var EVENTS = {
+		"click" : {
+			copyEvent: copyMouseEvent
+		},
+		"dblclick" : {
+			copyEvent: copyMouseEvent
+		},
+		"contextmenu": {
+			copyEvent: copyMouseEvent
+		},
+		"mousemove": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseup": {
+			copyEvent: copyMouseEvent
+		},
+		"mousedown": {
+			copyEvent: copyMouseEvent
+		},
+		"mousewheel": {
+			copyEvent: copyMouseEvent
+		},
+		"wheel": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseenter": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseleave": {
+			copyEvent: copyMouseEvent
+		},
+		"mouseout": {
+			copyEvent: copyMouseEventOverOut
+		},
+		"mouseover": {
+			copyEvent: copyMouseEventOverOut
+		},
+
+		"keyup": {
+			copyEvent: copyKeyEvent
+		},
+		"keydown": {
+			copyEvent: copyKeyEvent
+		},
+		"keypress": {
+			copyEvent: copyKeyEvent
+		},
+
+		"blur": {
+			copyEvent: copyInputEvent
+		},
+		"focus": {
+			copyEvent: copyInputEvent
+		},
+		"focusin": {
+			copyEvent: copyInputEvent
+		},
+		"focusout": {
+			copyEvent: copyInputEvent
+		},
+
+		"copy": {
+			copyEvent: copyInputEvent
+		},
+		"cut": {
+			copyEvent: copyInputEvent
+		},
+		"change": {
+			copyEvent: copyInputEvent
+		},
+		"input": {
+			copyEvent: copyInputEvent
+		},
+		"textinput": {
+			copyEvent: copyInputEvent
+		},
+
+		"scroll": {
+			copyEvent: copyNavigateEvent
+		},
+		"reset": {
+			copyEvent: copyNavigateEvent
+		},
+		"submit": {
+			copyEvent: copyNavigateEvent
+		},
+		"select": {
+			copyEvent: copyNavigateEvent
+		},
+
+		"error": {
+			copyEvent: copyNavigateEvent
+		},
+		"haschange": {
+			copyEvent: copyNavigateEvent
+		},
+		"load": {
+			copyEvent: copyNavigateEvent
+		},
+		"unload": {
+			copyEvent: copyNavigateEvent
+		},
+		"resize": {
+			copyEvent: copyNavigateEvent
+		},
+
+
+		"":{}
+	};
+
+	function MutableEvent_withActionInfo() {
+		var element = this.target;
+		// role of element or ancestor
+		// TODO minor tags are traversed; Stop at document, header, aside etc
+		
+		while(element) {
+			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
+
+			var role = element.getAttribute("role");
+			switch(role) {
+				case "button":
+				case "link":
+				case "menuitem":
+					//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+					this.commandRole = role;
+					this.commandElement = element;
+					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+
+					//determine commandName within action object
+					this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+					//TODO should links deduct actions and name from href
+					element = null;
+					break;
+				case null:
+					switch(element.tagName) {
+						case "BUTTON":
+						case "button":
+							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							if (element.type == "submit") {
+								//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.commandElement = element;
+								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
+								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
+								element = null;
+							}
+							break;
+					}
+					break;
+			}
+			if (element) element = element.parentNode;
+		}
+		if (this.commandElement == undefined) return this; // no command
+
+		element = this.commandElement;
+		while(element) {
+			var action = element.getAttribute("action");
+			if (action) {
+				this.action = action;
+				this.actionElement = element;
+				element = null;
+			}			
+			if (element) element = element.parentNode;
+		}
+
+		return this;
+	}
+
+	function MutableEvent_withDefaultSubmit(form) {
+		var commandName = "trigger";
+		var commandElement = null;
+
+		if (form.elements) {
+			for(var i=0,e; e=form.elements[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		} else {
+			var buttons = form.getElementsByTagName("button");
+			for(var i=0,e; e=buttons[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+			var inputs = form.getElementsByTagName("input");
+			if (commandElement) for(var i=0,e; e=inputs[i]; ++i) {
+				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
+			}
+		}
+		this.action = form.action;
+		this.actionElement = form;
+		this.commandElement = commandElement;
+		this.commandName = commandName;
+
+		return this;
+	}
+
+
+	function _MutableEvent(src) {
+		this._original = src;
+		this.type = src.type;
+		this.target = src.target || src.srcElement;
+		this.currentTarget = src.currentTarget|| src.target; 
+		EVENTS[src.type].copyEvent.call(this,src);
+	}
+	_MutableEvent.prototype.relatedTarget = null;
+	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
+	_MutableEvent.prototype.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
+	_MutableEvent.prototype.stopPropagation = function() {
+		this._original.cancelBubble= true;
+	};
+
+	_MutableEvent.prototype.preventDefault = function() {
+		this.defaultPrevented = true;
+	};
+
+	_MutableEvent.prototype.CAPTURING_PHASE = 1;
+	_MutableEvent.prototype.AT_TARGET = 2;
+	_MutableEvent.prototype.BUBBLING_PHASE = 3;
+
+	function MutableEvent(sourceEvent) {
+		function ClonedEvent() { }
+		var ev;
+		// IE event support
+		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
+			ev = new _MutableEvent(sourceEvent);
+		} else
+		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
+			ev = new _MutableEvent(window.event);
+		}
+		// other browsers, or not in listener 
+		else {
+			ClonedEvent.prototype = sourceEvent || window.event; 
+			ev = new ClonedEvent();
+			ev.withActionInfo = MutableEvent_withActionInfo;
+			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+		}
+		return ev;		
+	}
+	essential.declare("MutableEvent",MutableEvent)
+
 
 	function instantiatePageSingletons()
 	{
@@ -2591,9 +2953,10 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var i=0,l; l = locales[i]; ++i) this.declare(["locales",l],{}); //TODO auto chaining
 	}
 
-	function setKeysForLocale(locale,context,keys) {
+	function setKeysForLocale(locale,context,keys,BucketGenerator) {
 		for(var key in keys) {
-			this.set(["keys",context, key, locale],keys[key]);
+			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
+			this.set(["keys",context, key, locale],keys[key]); //TODO { generator: BucketGenerator }
 			//TODO reverse lookup
 		}
 	}
@@ -2649,6 +3012,561 @@ Generator.ObjectGenerator = Generator(Object);
  
  })(window);
 
+
+/*
+	StatefulResolver and ApplicationConfig
+*/
+!function() {
+
+	var essential = Resolver("essential",{});
+	var console = essential("console");
+	var DOMTokenList = essential("DOMTokenList");
+	var MutableEvent = essential("MutableEvent");
+	var arrayContains = essential("arrayContains");
+	var HTMLElement = essential("HTMLElement");
+	var HTMLScriptElement = essential("HTMLScriptElement");
+
+	var nativeClassList = !!document.documentElement.classList;
+
+	function readElementState(el,state) {
+		state.disabled = el.disabled || false; // undefined before attach
+		state.readOnly = el.readOnly || false;
+		state.hidden = el.getAttribute("hidden") != null;
+		state.required = el.getAttribute("required") != null;
+	}
+
+	function reflectProperty(el,key,value) {
+		el[key] = !!value;
+	}
+
+	/*
+		Reflect on the property if present otherwise the attribute. 
+	*/
+	function reflectAttribute(el,key,value) {
+		if (typeof el[key] == "boolean") {
+			el[key] = !!value;
+			return;
+		}
+		if (value) {
+			el.setAttribute(key,key);
+		} else {
+			el.removeAttribute(key);
+		}
+	}
+
+	/*
+		Reflect only aria property 
+	*/
+	function reflectAria(el,key,value) {
+		if (value) {
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
+	/*
+		Reflect on property or attribute and aria equivalent. 
+	*/
+	function reflectAttributeAria(el,key,value) {
+		if (typeof el[key] == "boolean") {
+			el[key] = !!value;
+		} else {
+			if (value) {
+				el.setAttribute(key,key);
+			} else {
+				el.removeAttribute(key);
+			}
+		}
+		if (value) {
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
+	var state_treatment = {
+		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
+		readOnly: { index: 1, reflect: reflectProperty },
+		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
+		required: { index: 3, reflect: reflectAttributeAria }
+		//TODO draggable
+		//TODO contenteditable
+		//TODO checked ariaChecked
+		//TODO tooltip
+		//TODO hover
+		//TODO down ariaPressed
+		//TODO ariaHidden
+		//TODO ariaDisabled
+		//TODO ariaRequired
+		//TODO ariaExpanded
+		//TODO ariaSelected
+
+		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
+		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
+
+		/*TODO IE aria props
+			string:
+			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
+			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
+
+
+		*/
+
+		//TODO restricted/forbidden tie in with session specific permissions
+
+		//TODO focus for elements with focus
+	};
+
+	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
+	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
+
+	function reflectElementState(event) {
+		var el = event.data;
+		var treatment = state_treatment[event.symbol];
+		if (treatment) {
+			// known props
+			treatment.reflect(el,event.symbol,event.value);
+		} else {
+			// extra state
+		}
+
+		var mapClass = el.stateful("map.class","undefined");
+		if (mapClass) {
+			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+		} 
+	}
+
+	/*
+		class = <prefix classes> <model classes> <state classes>
+	*/
+	function reflectElementClass(event) {
+		// state-hover state-active state-disabled
+		var stateClasses = [];
+		stateClasses[0] = state.disabled? "state-disabled" : "";
+	}
+
+	function ClassForState() {
+
+	}
+	ClassForState.prototype.disabled = "state-disabled";
+	ClassForState.prototype.readOnly = "state-readOnly";
+	ClassForState.prototype.hidden = "state-hidden";
+	ClassForState.prototype.required = "state-required";
+
+	function ClassForNotState() {
+
+	}
+	ClassForNotState.prototype.disabled = "";
+	ClassForNotState.prototype.readOnly = "";
+	ClassForNotState.prototype.hidden = "";
+	ClassForNotState.prototype.required = "";
+
+	function make_Stateful_fireAction(el) {
+		return function() {
+			var ev = MutableEvent({
+				"target":el
+			}).withActionInfo(); 
+			fireAction(ev);
+		};
+	}
+
+	function Stateful_setField(field) {
+		this.field = field;
+		return field;
+	}
+
+	function Stateful_reflectStateOn(el,useAsSource) {
+		var stateful = el.stateful = this;
+		if (el._cleaners == undefined) el._cleaners = [];
+		//TODO consider when to clean body element
+		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+		if (useAsSource != false) readElementState(el,stateful("state"));
+		stateful.on("change","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
+		if (!nativeClassList) {
+			el.classList = DOMTokenList();
+			DOMTokenList_mixin(el.classList,el.className);
+		}
+		var mapClass = el.stateful("map.class","undefined");
+		if (mapClass) StatefulResolver.updateClass(stateful,el); //TODO move 
+	}
+ 
+	// all stateful elements whether field or not get a cleaner
+	function statefulCleaner() {
+		if (this.stateful) {
+			if (this.stateful.field) {
+				this.stateful.field.destroy();
+				this.stateful.field.discard();
+			}
+			this.stateful.field = undefined;
+			this.stateful.destroy();
+			this.stateful.fireAction = undefined;
+			this.stateful.setField = undefined;
+			this.stateful = undefined;
+		}
+	}
+	essential.declare("statefulCleaner",statefulCleaner);
+
+	/*
+	  StatefulResolver()
+	  StatefulResolver(el)
+	  StatefulResolver(el,true)
+	*/
+	function StatefulResolver(el,mapClassForState) {
+		if (el && el.stateful) return el.stateful;
+
+		var resolverOptions = {};
+		if (typeof mapClassForState == "object") {
+			resolverOptions = mapClassForState;
+			mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
+		}
+		var stateful = Resolver({ state: {} },resolverOptions);
+		if (mapClassForState) {
+			stateful.set("map.class.state", new ClassForState());
+			stateful.set("map.class.notstate", new ClassForNotState());
+		}
+		stateful.fireAction = make_Stateful_fireAction(el);
+		stateful.setField = Stateful_setField;
+		stateful.reflectStateOn = Stateful_reflectStateOn;
+
+		if (el) stateful.reflectStateOn(el);
+		
+		return stateful;
+	}
+	essential.declare("StatefulResolver",StatefulResolver);
+
+	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
+	pageResolver.declare("config",{});
+	pageResolver.reference("state").mixin({
+		"livepage": false,
+		"authenticated": true,
+		"authorised": true,
+		"connected": true,
+		"online": true, //TODO update
+		"preloading": false,
+		"loading": true,
+		"loadingConfig": false,
+		"loadingScripts": false,
+		"configured": true,
+		"fullscreen": false,
+		"launching": false, 
+		"launched": false,
+
+		"lang": document.documentElement.lang || "en",
+
+		"loadingScriptsUrl": {},
+		"loadingConfigUrl": {}
+		});
+	pageResolver.reference("connection").mixin({
+		"loadingProgress": "",
+		"status": "connected",
+		"detail": "",
+		"userName": "",
+		"logStatus": false
+	});
+
+	pageResolver.reference("map.class.state").mixin({
+		authenticated: "authenticated",
+		loading: "loading",
+		//login-error
+		launched: "launched",
+		launching: "launching",
+		livepage: "livepage"
+	});
+
+	pageResolver.reference("map.class.notstate").mixin({
+		authenticated: "login"
+	});
+
+	StatefulResolver.updateClass = function(stateful,el) {
+		var triggers = {};
+		for(var n in state_treatment) triggers[n] = true;
+		for(var n in stateful("map.class.state")) triggers[n] = true;
+		for(var n in stateful("map.class.notstate")) triggers[n] = true;
+		for(var n in triggers) {
+			stateful.reference("state."+n,"null").trigger("change");
+		}
+	};
+
+	var _activeAreaName,_liveAreas=false, stages = [];
+	essential.set("stages",stages);
+
+	function activateArea(areaName) {
+		if (! _liveAreas) {
+			_activeAreaName = areaName;
+			return;
+		}
+		
+		for(var i=0,s; s = stages[i]; ++i) {
+			s.updateActiveArea(areaName);
+		}
+		_activeAreaName = areaName;
+		// only use DocumentRoles layout if DOM is ready
+		if (document.body) essential("DocumentRoles")()._layout_descs(); //TODO could this be done somewhere else?
+	}
+	essential.set("activateArea",activateArea);
+	
+	function getActiveArea() {
+		return _activeAreaName;
+	}
+	essential.set("getActiveArea",getActiveArea);
+
+	function bringLive() {
+		var ap = ApplicationConfig();
+
+		// Allow the browser to render the page, preventing initial transitions
+		_liveAreas = true;
+		ap.state.set("livepage",true);
+
+	}
+
+	function onPageLoad(ev) {
+		var ap = ApplicationConfig();
+		_liveAreas = true;
+		ap.state.set("livepage",true);
+	}
+
+	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
+	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+
+
+	function _ApplicationConfig() {
+		this.resolver = pageResolver;
+
+		// copy state presets for backwards compatibility
+		var state = this.resolver.reference("state","undefined");
+		for(var n in this.state) state.set(n,this.state[n]);
+		this.state = state;
+		document.documentElement.lang = this.state("lang");
+		state.on("change",this,this.onStateChange);
+		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
+		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
+
+		this.config = this.resolver.reference("config","undefined");
+		this._gather();
+		this._apply();
+
+		setTimeout(bringLive,60);
+	}
+//    _ApplicationConfig.args = [
+// 	    ObjectType({ name:"state" })
+// 	    ];
+
+	var ApplicationConfig = Generator(_ApplicationConfig);
+	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
+	
+	// preset on instance (old api)
+	ApplicationConfig.presets.declare("state", { });
+
+	function enhanceUnhandledElements() {
+		// debugger;
+		var statefuls = ApplicationConfig(); // Ensure that config is present
+		//var handlers = DocumentRoles.presets("handlers");
+		//TODO listener to presets -> Doc Roles additional handlers
+		essential("DocumentRoles")()._enhance_descs();
+		//TODO time to default_enhance yet?
+	}
+
+	ApplicationConfig.prototype.onStateChange = function(ev) {
+		switch(ev.symbol) {
+			case "livepage":
+				pageResolver.reflectStateOn(document.body,false);
+				var ap = ev.data;
+				//if (ev.value == true) ap.reflectState();
+				if (_activeAreaName) {
+					activateArea(_activeAreaName);
+				} else {
+					//TODO scan config to determine these
+					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
+				}
+				break;
+			case "loadingScripts":
+			case "loadingConfig":
+				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
+				--ev.inTrigger;
+				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
+				++ev.inTrigger;
+				break;
+
+			case "preloading":
+				if (! ev.value) {
+					for(var n in ev.base.loadingScriptsUrl) {
+						var link = ev.base.loadingScriptsUrl[n];
+						if (link.rel == "pastload" && !link.added) {
+							var langOk = true;
+							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
+							if (langOk) document.body.appendChild(HTMLScriptElement(link.attrs));
+							link.added = langOk;
+						}
+					}
+				}
+				break;
+
+			case "loading":
+				if (ev.value == false) {
+					if (document.body) essential("instantiatePageSingletons")();	
+					enhanceUnhandledElements();
+					if (ev.base.configured == true && ev.base.authenticated == true 
+						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+						this.set("state.launching",true);
+						// do the below as recursion is prohibited
+						if (document.body) essential("instantiatePageSingletons")();
+						enhanceUnhandledElements();
+					}
+				} 
+				break;
+			case "authenticated":
+			case "authorised":
+			case "configured":
+				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
+					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+					this.set("state.launching",true);
+					// do the below as recursion is prohibited
+					if (document.body) essential("instantiatePageSingletons")();
+					enhanceUnhandledElements();
+				}
+				break;			
+			case "launching":
+			case "launched":
+				if (ev.value == true) {
+					if (document.body) essential("instantiatePageSingletons")();
+					enhanceUnhandledElements();
+					if (ev.symbol == "launched") this.set("state.launching",false);
+				}
+				break;
+
+			case "lang":
+				document.documentElement.lang = ev.value;
+				break;
+			
+			default:
+				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
+					if (document.body) essential("instantiatePageSingletons")();
+				}
+		}
+	};
+
+	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
+		var loadingScriptsUrl = this("state.loadingScriptsUrl");
+			
+		var loadingScripts = false;
+		var preloading = false;
+		for(var url in loadingScriptsUrl) {
+			var link = loadingScriptsUrl[url];
+			if (link.rel == "preload") preloading = true;
+			if (link) loadingScripts = true;
+		}
+		this.set("state.loadingScripts",loadingScripts);
+		this.set("state.preloading",preloading);
+		if (ev.value==false) {
+			// finished loading a script
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
+
+	ApplicationConfig.prototype.onLoadingConfig = function(ev) {
+		var loadingConfigUrl = this("state.loadingConfigUrl");
+			
+		var loadingConfig = false;
+		for(var url in loadingConfigUrl) {
+			if (loadingConfigUrl[url]) loadingConfig = true;
+		}
+		this.set("state.loadingConfig",loadingConfig);
+		if (ev.value==false) {
+			// finished loading a config
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
+
+	ApplicationConfig.prototype.isPageState = function(whichState) {
+		return this.resolver("state."+whichState);
+	};
+	ApplicationConfig.prototype.setPageState = function(whichState,v) {
+		this.resolver.set(["state",whichState],v);
+	};
+	ApplicationConfig.prototype.getAuthenticatedArea = function() {
+		// return "edit";
+		return "sp-explorer";
+	};
+	ApplicationConfig.prototype.getIntroductionArea = function() {
+		//return "signup";
+		return "sp-explorer";
+	};
+
+	ApplicationConfig.prototype.declare = function(key,value) {
+		this.config.declare(key,value);
+	};
+
+	ApplicationConfig.prototype._apply = function() {
+		for(var k in this.config()) {
+			var conf = this.config()[k];
+			var el = this.getElement(k);
+
+			if (conf.layouter) {
+				el.layouter = LayouterGenerator.variant(conf.layouter)(k,el,conf);
+			}
+			if (conf.laidout) {
+				el.laidout = LaidoutGenerator.variant(conf.laidout)(k,el,conf);
+			}
+		}
+	};
+
+	var _singleQuotesRe = new RegExp("'","g");
+
+	ApplicationConfig.prototype._getElementRoleConfig = function(element) {
+
+		var dataRole = element.getAttribute("data-role");
+		if (dataRole) try {
+			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+			//TODO extend this.config for elements with id?
+			if (element.id) {
+				this.config()[element.id] = map;
+			}
+			return map;
+		} catch(ex) {
+			console.debug("Invalid config: ",dataRole,ex);
+			return { "invalid-config":dataRole };
+		}
+		return {};
+	};
+
+	ApplicationConfig.prototype.getConfig = function(element) {
+		//TODO mixin data-role
+		if (element.id) {
+			return this.config()[element.id] || this._getElementRoleConfig(element);
+		}
+		var name = element.getAttribute("name");
+		if (name) {
+			var p = element.parentNode;
+			while(p) {
+				if (p.id) {
+					return this.config()[p.id + "." + name] || this._getElementRoleConfig(element);
+				} 
+				p = p.parentNode;
+			} 
+		}
+		return this._getElementRoleConfig(element);
+	};
+
+	ApplicationConfig.prototype.getElement = function(key) {
+		var keys = key.split(".");
+		var el = document.getElementById(keys[0]);
+		if (keys.length > 1) el = el.getElementByName(keys[1]);
+		return el;
+	};
+
+}();
+
+// need with context not supported in strict mode
+Resolver("essential")("ApplicationConfig").prototype._gather = function() {
+	var scripts = document.getElementsByTagName("script");
+	for(var i=0,s; s = scripts[i]; ++i) {
+		if (s.getAttribute("type") == "application/config") {
+			with(this) eval(s.text);
+		}
+	}
+};
 
 /**
 * XMLHttpRequest.js Copyright (C) 2011 Sergey Ilinsky (http://www.ilinsky.com)
@@ -3200,361 +4118,17 @@ Generator.ObjectGenerator = Generator(Object);
 	var essential = Resolver("essential",{});
 	var ObjectType = essential("ObjectType");
 	var console = essential("console");
-	var ArraySet = essential("ArraySet");
-	var DOMTokenList = essential("DOMTokenList");
+	var MutableEvent = essential("MutableEvent");
+	var StatefulResolver = essential("StatefulResolver");
+	var ApplicationConfig = essential("ApplicationConfig");
+	var pageResolver = Resolver("page");
+	var getActiveArea = essential("getActiveArea");
+	var arrayContains = essential("arrayContains");
+	var statefulCleaner = essential("statefulCleaner");
+	var HTMLElement = essential("HTMLElement");
+	var HTMLScriptElement = essential("HTMLScriptElement");
+
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
-
-	//TODO regScriptOnnotfound (onerror, status=404)
-	
-	// (tagName,{attributes},content)
-	// ({attributes},content)
-	function HTMLElement(tagName,from,content_list,_document) {
-		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
-		
-		// optional document arg
-		var d = arguments[c_to];
-		var _doc = document;
-		if (typeof d == "object" && "doctype" in d && c_to>1) { _doc = d; --c_to; }
-		
-		// optional tagName arg
-		if (typeof _tagName == "object") { 
-			_from = _tagName; 
-			_tagName = _from.tagName || "span"; 
-			--c_from; 
-		}
-		
-		var e = _doc.createElement(_tagName);
-		for(var n in _from) {
-			switch(n) {
-				case "tagName": break; // already used
-				case "class":
-					if (_from[n] !== undefined) e.className = _from[n]; 
-					break;
-				case "style":
-					//TODO support object
-					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
-					break;
-					
-				case "id":
-				case "className":
-				case "rel":
-				case "lang":
-				case "language":
-				case "src":
-				case "type":
-					if (_from[n] !== undefined) e[n] = _from[n]; 
-					break;
-				//TODO case "onprogress": // partial script progress
-				case "onload":
-					regScriptOnload(e,_from.onload);
-					break;
-				default:
-					e.setAttribute(n,_from[n]);
-					break;
-			}
-		}
-		var l = [];
-		for(var i=c_from; i<=c_to; ++i) {
-			var p = arguments[i];
-			if (typeof p == "object" && "length" in p) l.concat(p);
-			else if (typeof p == "string") l.push(arguments[i]);
-		}
-		if (l.length) e.innerHTML = l.join("");
-		
-		//TODO .appendTo function
-		
-		return e;
-	}
-	essential.set("HTMLElement",HTMLElement);
-	
-	
-	var nativeClassList = !!document.documentElement.classList;
-
-	function readElementState(el,state) {
-		state.disabled = el.disabled || false; // undefined before attach
-		state.readOnly = el.readOnly || false;
-		state.hidden = el.getAttribute("hidden") != null;
-		state.required = el.getAttribute("required") != null;
-	}
-
-	function reflectProperty(el,key,value) {
-		el[key] = !!value;
-	}
-
-	/*
-		Reflect on the property if present otherwise the attribute. 
-	*/
-	function reflectAttribute(el,key,value) {
-		if (typeof el[key] == "boolean") {
-			el[key] = !!value;
-			return;
-		}
-		if (value) {
-			el.setAttribute(key,key);
-		} else {
-			el.removeAttribute(key);
-		}
-	}
-
-	/*
-		Reflect only aria property 
-	*/
-	function reflectAria(el,key,value) {
-		if (value) {
-			el.setAttribute("aria-"+key,key);
-		} else {
-			el.removeAttribute("aria-"+key);
-		}
-	}
-
-	/*
-		Reflect on property or attribute and aria equivalent. 
-	*/
-	function reflectAttributeAria(el,key,value) {
-		if (typeof el[key] == "boolean") {
-			el[key] = !!value;
-		} else {
-			if (value) {
-				el.setAttribute(key,key);
-			} else {
-				el.removeAttribute(key);
-			}
-		}
-		if (value) {
-			el.setAttribute("aria-"+key,key);
-		} else {
-			el.removeAttribute("aria-"+key);
-		}
-	}
-
-	var state_treatment = {
-		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
-		readOnly: { index: 1, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria }
-		//TODO draggable
-		//TODO contenteditable
-		//TODO checked ariaChecked
-		//TODO tooltip
-		//TODO hover
-		//TODO down ariaPressed
-		//TODO ariaHidden
-		//TODO ariaDisabled
-		//TODO ariaRequired
-		//TODO ariaExpanded
-		//TODO ariaSelected
-
-		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
-		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
-
-		/*TODO IE aria props
-			string:
-			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
-			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
-
-
-		*/
-
-		//TODO restricted/forbidden tie in with session specific permissions
-
-		//TODO focus for elements with focus
-	};
-
-	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
-	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
-
-	function reflectElementState(event) {
-		var el = event.data;
-		var treatment = state_treatment[event.symbol];
-		if (treatment) {
-			// known props
-			treatment.reflect(el,event.symbol,event.value);
-		} else {
-			// extra state
-		}
-
-		var mapClass = el.stateful("map.class","undefined");
-		if (mapClass) {
-			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
-		} 
-	}
-
-	/*
-		class = <prefix classes> <model classes> <state classes>
-	*/
-	function reflectElementClass(event) {
-		// state-hover state-active state-disabled
-		var stateClasses = [];
-		stateClasses[0] = state.disabled? "state-disabled" : "";
-	}
-
-	function ClassForState() {
-
-	}
-	ClassForState.prototype.disabled = "state-disabled";
-	ClassForState.prototype.readOnly = "state-readOnly";
-	ClassForState.prototype.hidden = "state-hidden";
-	ClassForState.prototype.required = "state-required";
-
-	function ClassForNotState() {
-
-	}
-	ClassForNotState.prototype.disabled = "";
-	ClassForNotState.prototype.readOnly = "";
-	ClassForNotState.prototype.hidden = "";
-	ClassForNotState.prototype.required = "";
-
-	function make_Stateful_fireAction(el) {
-		return function() {
-			var ev = MutableEvent({
-				"target":el
-			}).withActionInfo(); 
-			fireAction(ev);
-		};
-	}
-
-	function Stateful_setField(field) {
-		this.field = field;
-		return field;
-	}
-
-	function Stateful_reflectStateOn(el,useAsSource) {
-		var stateful = el.stateful = this;
-		if (el._cleaners == undefined) el._cleaners = [];
-		//TODO consider when to clean body element
-		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
-		if (useAsSource != false) readElementState(el,stateful("state"));
-		stateful.on("change","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
-		if (!nativeClassList) {
-			el.classList = DOMTokenList();
-			DOMTokenList_mixin(el.classList,el.className);
-		}
-		var mapClass = el.stateful("map.class","undefined");
-		if (mapClass) StatefulResolver.updateClass(stateful,el); //TODO move 
-	}
- 
-	// all stateful elements whether field or not get a cleaner
-	function statefulCleaner() {
-		if (this.stateful) {
-			if (this.stateful.field) {
-				this.stateful.field.destroy();
-				this.stateful.field.discard();
-			}
-			this.stateful.field = undefined;
-			this.stateful.destroy();
-			this.stateful.fireAction = undefined;
-			this.stateful.setField = undefined;
-			this.stateful = undefined;
-		}
-	}
-
-	/*
-	  StatefulResolver()
-	  StatefulResolver(el)
-	  StatefulResolver(el,true)
-	*/
-	function StatefulResolver(el,mapClassForState) {
-		if (el && el.stateful) return el.stateful;
-
-		var resolverOptions = {};
-		if (typeof mapClassForState == "object") {
-			resolverOptions = mapClassForState;
-			mapClassForState = mapClassForState.mapClassForState;//TODO consider different name 
-		}
-		var stateful = Resolver({ state: {} },resolverOptions);
-		if (mapClassForState) {
-			stateful.set("map.class.state", new ClassForState());
-			stateful.set("map.class.notstate", new ClassForNotState());
-		}
-		stateful.fireAction = make_Stateful_fireAction(el);
-		stateful.setField = Stateful_setField;
-		stateful.reflectStateOn = Stateful_reflectStateOn;
-
-		if (el) stateful.reflectStateOn(el);
-		
-		return stateful;
-	}
-	essential.declare("StatefulResolver",StatefulResolver);
-
-	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
-	pageResolver.declare("config",{});
-	pageResolver.reference("state").mixin({
-		"livepage": false,
-		"authenticated": true,
-		"authorised": true,
-		"connected": true,
-		"online": true, //TODO update
-		"preloading": false,
-		"loading": true,
-		"loadingConfig": false,
-		"loadingScripts": false,
-		"configured": true,
-		"fullscreen": false,
-		"launching": false, 
-		"launched": false,
-
-		"lang": document.documentElement.lang || "en",
-
-		"loadingScriptsUrl": {},
-		"loadingConfigUrl": {}
-		});
-	pageResolver.reference("connection").mixin({
-		"loadingProgress": "",
-		"status": "connected",
-		"detail": "",
-		"userName": "",
-		"logStatus": false
-	});
-
-	pageResolver.reference("map.class.state").mixin({
-		authenticated: "authenticated",
-		loading: "loading",
-		//login-error
-		launched: "launched",
-		launching: "launching",
-		livepage: "livepage"
-	});
-
-	pageResolver.reference("map.class.notstate").mixin({
-		authenticated: "login"
-	});
-
-	StatefulResolver.updateClass = function(stateful,el) {
-		var triggers = {};
-		for(var n in state_treatment) triggers[n] = true;
-		for(var n in stateful("map.class.state")) triggers[n] = true;
-		for(var n in stateful("map.class.notstate")) triggers[n] = true;
-		for(var n in triggers) {
-			stateful.reference("state."+n,"null").trigger("change");
-		}
-	};
-
-	//TODO element cleaner must remove .el references from listeners
-
-	// this = element
-	function regScriptOnload(domscript,trigger) {
-
-		domscript.onload = function(ev) { 
-			if ( ! this.onloadDone ) {
-				this.onloadDone = true;
-				trigger.call(this,ev || event); 
-			}
-		};
-		domscript.onreadystatechange = function(ev) { 
-			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
-				this.onloadDone = true; 
-				trigger.call(this,ev || event);
-			}
-		}
-
-	}
-
-	//TODO regScriptOnnotfound (onerror, status=404)
-
-	function HTMLScriptElement(from,doc) {
-		return HTMLElement("SCRIPT",from,doc);
-	}
-	essential.set("HTMLScriptElement",HTMLScriptElement);
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
@@ -3668,190 +4242,6 @@ Generator.ObjectGenerator = Generator(Object);
 		return cleaner;
 	}
 
-	function copyKeyEvent(src) {
-		this.altKey = src.altKey;
-		this.shiftKey = src.shiftKey;
-		this.ctrlKey = src.ctrlKey;
-		this.metaKey = src.metaKey;
-		this.charCode = src.charCode;
-	}
-	function copyInputEvent(src) {
-		copyKeyEvent.call(this,src);
-	}
-	function copyNavigateEvent(src) {
-		copyKeyEvent.call(this,src);
-	}
-	function copyMouseEvent(src) {
-		this.clientX = src.clientX;
-		this.clientY = src.clientY;
-		this.screenX = src.screenX;
-		this.screenY = src.screenY;
-		this.button = BUTTON_MAP[src.button]; //TODO check map
-		this.buttons = src.button;
-		//detail is repetitions
-		//which == 1,2,3
-	}
-	function copyMouseEventOverOut(src) {
-		copyMouseEvent.call(this,src);
-		this.fromElement = src.fromElement;
-		this.toElement = src.toElement;
-		this.relatedTarget = src.relatedTarget;
-	}
-	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
-	var EVENTS = {
-		"click" : {
-			copyEvent: copyMouseEvent
-		},
-		"dblclick" : {
-			copyEvent: copyMouseEvent
-		},
-		"contextmenu": {
-			copyEvent: copyMouseEvent
-		},
-		"mousemove": {
-			copyEvent: copyMouseEvent
-		},
-		"mouseup": {
-			copyEvent: copyMouseEvent
-		},
-		"mousedown": {
-			copyEvent: copyMouseEvent
-		},
-		"mousewheel": {
-			copyEvent: copyMouseEvent
-		},
-		"wheel": {
-			copyEvent: copyMouseEvent
-		},
-		"mouseenter": {
-			copyEvent: copyMouseEvent
-		},
-		"mouseleave": {
-			copyEvent: copyMouseEvent
-		},
-		"mouseout": {
-			copyEvent: copyMouseEventOverOut
-		},
-		"mouseover": {
-			copyEvent: copyMouseEventOverOut
-		},
-
-		"keyup": {
-			copyEvent: copyKeyEvent
-		},
-		"keydown": {
-			copyEvent: copyKeyEvent
-		},
-		"keypress": {
-			copyEvent: copyKeyEvent
-		},
-
-		"blur": {
-			copyEvent: copyInputEvent
-		},
-		"focus": {
-			copyEvent: copyInputEvent
-		},
-		"focusin": {
-			copyEvent: copyInputEvent
-		},
-		"focusout": {
-			copyEvent: copyInputEvent
-		},
-
-		"copy": {
-			copyEvent: copyInputEvent
-		},
-		"cut": {
-			copyEvent: copyInputEvent
-		},
-		"change": {
-			copyEvent: copyInputEvent
-		},
-		"input": {
-			copyEvent: copyInputEvent
-		},
-		"textinput": {
-			copyEvent: copyInputEvent
-		},
-
-		"scroll": {
-			copyEvent: copyNavigateEvent
-		},
-		"reset": {
-			copyEvent: copyNavigateEvent
-		},
-		"submit": {
-			copyEvent: copyNavigateEvent
-		},
-		"select": {
-			copyEvent: copyNavigateEvent
-		},
-
-		"error": {
-			copyEvent: copyNavigateEvent
-		},
-		"haschange": {
-			copyEvent: copyNavigateEvent
-		},
-		"load": {
-			copyEvent: copyNavigateEvent
-		},
-		"unload": {
-			copyEvent: copyNavigateEvent
-		},
-		"resize": {
-			copyEvent: copyNavigateEvent
-		},
-
-
-		"":{}
-	};
-
-	function _MutableEvent(src) {
-		this._original = src;
-		this.type = src.type;
-		this.target = src.target || src.srcElement;
-		this.currentTarget = src.currentTarget|| src.target; 
-		EVENTS[src.type].copyEvent.call(this,src);
-	}
-	_MutableEvent.prototype.relatedTarget = null;
-	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
-	_MutableEvent.prototype.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-
-	_MutableEvent.prototype.stopPropagation = function() {
-		this._original.cancelBubble= true;
-	};
-
-	_MutableEvent.prototype.preventDefault = function() {
-		this.defaultPrevented = true;
-	};
-
-	_MutableEvent.prototype.CAPTURING_PHASE = 1;
-	_MutableEvent.prototype.AT_TARGET = 2;
-	_MutableEvent.prototype.BUBBLING_PHASE = 3;
-
-	function MutableEvent(sourceEvent) {
-		function ClonedEvent() { }
-		var ev;
-		// IE event support
-		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
-			ev = new _MutableEvent(sourceEvent);
-		} else
-		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
-			ev = new _MutableEvent(window.event);
-		}
-		// other browsers, or not in listener 
-		else {
-			ClonedEvent.prototype = sourceEvent || window.event; 
-			ev = new ClonedEvent();
-			ev.withActionInfo = MutableEvent_withActionInfo;
-			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-		}
-		return ev;		
-	}
-	essential.declare("MutableEvent",MutableEvent)
-
 	/**
 	 * Register map of event listeners 
 	 * { event: function }
@@ -3924,22 +4314,13 @@ Generator.ObjectGenerator = Generator(Object);
 	function DialogAction(actionName) {
 		this.actionName = actionName;
 	} 
-	DialogAction.prototype.activateArea = activateArea; // shortcut to global essential function
+	DialogAction.prototype.activateArea = essential("activateArea"); // shortcut to global essential function
 	var DialogActionGenerator = essential.set("DialogAction",Generator(DialogAction));
 
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
 		DocumentRoles()._resize_descs();
-	}
-
-	function enhanceUnhandledElements() {
-		// debugger;
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-		var handlers = DocumentRoles.presets("handlers");
-		//TODO listener to presets -> Doc Roles additional handlers
-		DocumentRoles()._enhance_descs();
-		//TODO time to default_enhance yet?
 	}
 
 	/*
@@ -3995,8 +4376,6 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
 	StatefulField.variant("*[role=button]",Generator(_CommandField,_StatefulField));
-
-	var arrayContains = essential("arrayContains");
 
 	/* Enhance all stateful fields of a parent */
 	function enhanceStatefulFields(parent) {
@@ -4168,8 +4547,8 @@ Generator.ObjectGenerator = Generator(Object);
 					desc.layout.height = oh;
 					updateLayout = true
 				}
-				if (desc.layout.area != _activeAreaName) { 
-					desc.layout.area = _activeAreaName;
+				if (desc.layout.area != getActiveArea()) { 
+					desc.layout.area = getActiveArea();
 					updateLayout = true;
 				}
 				if (updateLayout) this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
@@ -4180,7 +4559,7 @@ Generator.ObjectGenerator = Generator(Object);
 	_DocumentRoles.prototype._area_changed_descs = function() {
 		for(var i=0,desc; desc = this.descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
-				desc.layout.area = _activeAreaName;
+				desc.layout.area = getActiveArea();
 				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
@@ -4222,32 +4601,6 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
-	function MutableEvent_withDefaultSubmit(form) {
-		var commandName = "trigger";
-		var commandElement = null;
-
-		if (form.elements) {
-			for(var i=0,e; e=form.elements[i]; ++i) {
-				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
-			}
-		} else {
-			var buttons = form.getElementsByTagName("button");
-			for(var i=0,e; e=buttons[i]; ++i) {
-				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
-			}
-			var inputs = form.getElementsByTagName("input");
-			if (commandElement) for(var i=0,e; e=inputs[i]; ++i) {
-				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
-			}
-		}
-		this.action = form.action;
-		this.actionElement = form;
-		this.commandElement = commandElement;
-		this.commandName = commandName;
-
-		return this;
-	}
-
 	function toolbar_submit(ev) {
 		return dialog_submit.call(this,ev);
 	}
@@ -4264,63 +4617,6 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 	
-	function MutableEvent_withActionInfo() {
-		var element = this.target;
-		// role of element or ancestor
-		// TODO minor tags are traversed; Stop at document, header, aside etc
-		
-		while(element) {
-			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
-
-			var role = element.getAttribute("role");
-			switch(role) {
-				case "button":
-				case "link":
-				case "menuitem":
-					this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
-					this.commandRole = role;
-					this.commandElement = element;
-					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
-
-					//determine commandName within action object
-					this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
-					//TODO should links deduct actions and name from href
-					element = null;
-					break;
-				case null:
-					switch(element.tagName) {
-						case "BUTTON":
-						case "button":
-							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
-							if (element.type == "submit") {
-								this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
-								this.commandElement = element;
-								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
-								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
-								element = null;
-							}
-							break;
-					}
-					break;
-			}
-			if (element) element = element.parentNode;
-		}
-		if (this.commandElement == undefined) return this; // no command
-
-		element = this.commandElement;
-		while(element) {
-			var action = element.getAttribute("action");
-			if (action) {
-				this.action = action;
-				this.actionElement = element;
-				element = null;
-			}			
-			if (element) element = element.parentNode;
-		}
-
-		return this;
-	}
-
 	function dialog_button_click(ev) {
 		ev = MutableEvent(ev).withActionInfo();
 
@@ -4517,8 +4813,6 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var LayouterGenerator = essential.declare("Layouter",Generator(Layouter));
 
-	var stages = [];
-
 	function StageLayouter(key,el,conf) {
 		this.key = key;
 		this.type = conf.layouter;
@@ -4529,7 +4823,7 @@ Generator.ObjectGenerator = Generator(Object);
 		if (this.baseClass) this.baseClass += " ";
 		else this.baseClass = "";
 
-		stages.push(this); // for area updates
+		essential("stages").push(this); // for area updates
 	}
 	var StageLayouterGenerator = essential.declare("StageLayouter",Generator(StageLayouter));
 	LayouterGenerator.variant("area-stage",StageLayouterGenerator);
@@ -4568,274 +4862,8 @@ Generator.ObjectGenerator = Generator(Object);
 	var MemberLaidoutGenerator = essential.declare("MemberLaidout",Generator(MemberLaidout));
 	LaidoutGenerator.variant("area-member",MemberLaidoutGenerator);
 
-	var _activeAreaName,_liveAreas=false;
-
-	function activateArea(areaName) {
-		if (! _liveAreas) {
-			_activeAreaName = areaName;
-			return;
-		}
-		
-		for(var i=0,s; s = stages[i]; ++i) {
-			s.updateActiveArea(areaName);
-		}
-		_activeAreaName = areaName;
-		// only use DocumentRoles layout if DOM is ready
-		if (document.body) DocumentRoles()._layout_descs();
-	}
-	essential.set("activateArea",activateArea);
-	
-	function getActiveArea() {
-		return _activeAreaName;
-	}
-	essential.set("getActiveArea",getActiveArea);
-
-	function bringLive() {
-		var ap = ApplicationConfig();
-
-		// Allow the browser to render the page, preventing initial transitions
-		_liveAreas = true;
-		ap.state.set("livepage",true);
-
-	}
-
-	function onPageLoad(ev) {
-		var ap = ApplicationConfig();
-		_liveAreas = true;
-		ap.state.set("livepage",true);
-	}
-
-	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
-
-
-	function _ApplicationConfig() {
-		this.resolver = pageResolver;
-
-		// copy state presets for backwards compatibility
-		var state = this.resolver.reference("state","undefined");
-		for(var n in this.state) state.set(n,this.state[n]);
-		this.state = state;
-		document.documentElement.lang = this.state("lang");
-		state.on("change",this,this.onStateChange);
-		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
-		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
-
-		this.config = this.resolver.reference("config","undefined");
-		this._gather();
-		this._apply();
-
-		setTimeout(bringLive,60);
-	}
-//    _ApplicationConfig.args = [
-// 	    ObjectType({ name:"state" })
-// 	    ];
-
-	var ApplicationConfig = Generator(_ApplicationConfig);
-	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
-	
-	// preset on instance (old api)
-	ApplicationConfig.presets.declare("state", { });
-
-	ApplicationConfig.prototype.onStateChange = function(ev) {
-		switch(ev.symbol) {
-			case "livepage":
-				pageResolver.reflectStateOn(document.body,false);
-				var ap = ev.data;
-				//if (ev.value == true) ap.reflectState();
-				if (_activeAreaName) {
-					activateArea(_activeAreaName);
-				} else {
-					//TODO scan config to determine these
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
-				}
-				break;
-			case "loadingScripts":
-			case "loadingConfig":
-				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
-				--ev.inTrigger;
-				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
-				++ev.inTrigger;
-				break;
-
-			case "preloading":
-				if (! ev.value) {
-					for(var n in ev.base.loadingScriptsUrl) {
-						var link = ev.base.loadingScriptsUrl[n];
-						if (link.rel == "pastload" && !link.added) {
-							var langOk = true;
-							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
-							if (langOk) document.body.appendChild(HTMLScriptElement(link.attrs));
-							link.added = langOk;
-						}
-					}
-				}
-				break;
-
-			case "loading":
-				if (ev.value == false) {
-					if (document.body) essential("instantiatePageSingletons")();	
-					enhanceUnhandledElements();
-					if (ev.base.configured == true && ev.base.authenticated == true 
-						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
-						this.set("state.launching",true);
-						// do the below as recursion is prohibited
-						if (document.body) essential("instantiatePageSingletons")();
-						enhanceUnhandledElements();
-					}
-				} 
-				break;
-			case "authenticated":
-			case "authorised":
-			case "configured":
-				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
-					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
-					this.set("state.launching",true);
-					// do the below as recursion is prohibited
-					if (document.body) essential("instantiatePageSingletons")();
-					enhanceUnhandledElements();
-				}
-				break;			
-			case "launching":
-			case "launched":
-				if (ev.value == true) {
-					if (document.body) essential("instantiatePageSingletons")();
-					enhanceUnhandledElements();
-					if (ev.symbol == "launched") this.set("state.launching",false);
-				}
-				break;
-
-			case "lang":
-				document.documentElement.lang = ev.value;
-				break;
-			
-			default:
-				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
-					if (document.body) essential("instantiatePageSingletons")();
-				}
-		}
-	};
-
-	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
-		var loadingScriptsUrl = this("state.loadingScriptsUrl");
-			
-		var loadingScripts = false;
-		var preloading = false;
-		for(var url in loadingScriptsUrl) {
-			var link = loadingScriptsUrl[url];
-			if (link.rel == "preload") preloading = true;
-			if (link) loadingScripts = true;
-		}
-		this.set("state.loadingScripts",loadingScripts);
-		this.set("state.preloading",preloading);
-		if (ev.value==false) {
-			// finished loading a script
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	};
-
-	ApplicationConfig.prototype.onLoadingConfig = function(ev) {
-		var loadingConfigUrl = this("state.loadingConfigUrl");
-			
-		var loadingConfig = false;
-		for(var url in loadingConfigUrl) {
-			if (loadingConfigUrl[url]) loadingConfig = true;
-		}
-		this.set("state.loadingConfig",loadingConfig);
-		if (ev.value==false) {
-			// finished loading a config
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	};
-
-	ApplicationConfig.prototype.isPageState = function(whichState) {
-		return this.resolver("state."+whichState);
-	};
-	ApplicationConfig.prototype.setPageState = function(whichState,v) {
-		this.resolver.set(["state",whichState],v);
-	};
-	ApplicationConfig.prototype.getAuthenticatedArea = function() {
-		// return "edit";
-		return "sp-explorer";
-	};
-	ApplicationConfig.prototype.getIntroductionArea = function() {
-		//return "signup";
-		return "sp-explorer";
-	};
-
-	ApplicationConfig.prototype.declare = function(key,value) {
-		this.config.declare(key,value);
-	};
-
-	ApplicationConfig.prototype._apply = function() {
-		for(var k in this.config()) {
-			var conf = this.config()[k];
-			var el = this.getElement(k);
-
-			if (conf.layouter) {
-				el.layouter = LayouterGenerator.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout) {
-				el.laidout = LaidoutGenerator.variant(conf.laidout)(k,el,conf);
-			}
-		}
-	};
-
-	var _singleQuotesRe = new RegExp("'","g");
-
-	ApplicationConfig.prototype._getElementRoleConfig = function(element) {
-
-		var dataRole = element.getAttribute("data-role");
-		if (dataRole) try {
-			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			//TODO extend this.config for elements with id?
-			if (element.id) {
-				this.config()[element.id] = map;
-			}
-			return map;
-		} catch(ex) {
-			console.debug("Invalid config: ",dataRole,ex);
-			return { "invalid-config":dataRole };
-		}
-		return {};
-	};
-
-	ApplicationConfig.prototype.getConfig = function(element) {
-		//TODO mixin data-role
-		if (element.id) {
-			return this.config()[element.id] || this._getElementRoleConfig(element);
-		}
-		var name = element.getAttribute("name");
-		if (name) {
-			var p = element.parentNode;
-			while(p) {
-				if (p.id) {
-					return this.config()[p.id + "." + name] || this._getElementRoleConfig(element);
-				} 
-				p = p.parentNode;
-			} 
-		}
-		return this._getElementRoleConfig(element);
-	};
-
-	ApplicationConfig.prototype.getElement = function(key) {
-		var keys = key.split(".");
-		var el = document.getElementById(keys[0]);
-		if (keys.length > 1) el = el.getElementByName(keys[1]);
-		return el;
-	};
 })();
 
-// need with context not supported in strict mode
-Resolver("essential")("ApplicationConfig").prototype._gather = function() {
-	var scripts = document.getElementsByTagName("script");
-	for(var i=0,s; s = scripts[i]; ++i) {
-		if (s.getAttribute("type") == "application/config") {
-			with(this) eval(s.text);
-		}
-	}
-};
 
 
 
