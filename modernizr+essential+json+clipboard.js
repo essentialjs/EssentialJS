@@ -1829,6 +1829,10 @@ Resolver.hasGenerator = function(subject) {
 	return false;
 };
 
+Resolver.exists = function(name) {
+    return this[name] != undefined;
+};
+
 Resolver({},{ name:"default" });
 
 /**
@@ -2570,12 +2574,31 @@ Generator.ObjectGenerator = Generator(Object);
 	var translations = Resolver("translations",{});
 	translations.declare("locale","en");
 
+	translations.on("change","locale",function(ev) {
+		var s = ev.value.split("-");
+		if (s.length == 1) s = ev.value.split("_");
+		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+	});
+
 	/*
 		locales.de = { chain:"en" }
 	*/
 	translations.declare("locales",{});
 	translations.declare("keys",{});	// [ context, key, locale] 
 	translations.declare("phrases",{});	// [ context, phrase, locale]
+
+	function setLocales(locales) {
+		for(var i=0,l; l = locales[i]; ++i) this.declare(["locales",l],{}); //TODO auto chaining
+	}
+
+	function setKeysForLocale(locale,context,keys) {
+		for(var key in keys) {
+			this.set(["keys",context, key, locale],keys[key]);
+			//TODO reverse lookup
+		}
+	}
+	translations.setLocales = setLocales;
+	translations.setKeysForLocale = setKeysForLocale;
 
 	// (key,params)
 	// ({ key:key },params)

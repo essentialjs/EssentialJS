@@ -105,9 +105,15 @@
     function(){},Resolver("essential")("DialogAction"),
     {
       "prototype": {
-        "en": function(){ Resolver("page").set("state.lang","en"); },
-        "de": function(){ Resolver("page").set("state.lang","de"); },
-        "fr": function(){ Resolver("page").set("state.lang","fr"); },
+        "en": function(){ 
+          Resolver("translations").set("locale","en"); 
+        },
+        "de": function(){ 
+          Resolver("translations").set("locale","de"); 
+        },
+        "fr": function(){ 
+          Resolver("translations").set("locale","fr"); 
+        }
       }
     }));
   </script>

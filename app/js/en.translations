@@ -1,1 +1,7 @@
-Resolver("translations").declare(["keys",null,"abc","en"],"My ABC");
+Resolver("translations").setLocales([
+	"en", "de", "fr"
+]);
+
+Resolver("translations").setKeysForLocale("en",null,{
+	"abc":"My ABC"
+});

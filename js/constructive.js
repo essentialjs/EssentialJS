@@ -685,6 +685,10 @@ Resolver.hasGenerator = function(subject) {
 	return false;
 };
 
+Resolver.exists = function(name) {
+    return this[name] != undefined;
+};
+
 Resolver({},{ name:"default" });
 
 /**
