@@ -29,7 +29,6 @@ function Generator(mainConstr,options)
 			} else {
 				instance = generator.info.existing[id] = new generator.type();
 				//TODO consider different strategies for JS engine
-				instance.constructor = info.constructors[0]; // make the correct constructor appear in debuggers
 			}
 		} else {
 			instance = new generator.type();
@@ -199,6 +198,7 @@ function Generator(mainConstr,options)
 
 		// simple type with inheritance chain, fresh prototype
 		function type() {}
+		//TODO if (generator.info.constructors[-1].name) type.name = generator.info.constructors[-1].name;
 		generator.type = type;
 		generator.type.prototype = generator.prototype;
 
