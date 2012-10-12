@@ -333,6 +333,7 @@
 		var incomplete = false, enhancedCount = 0;
 
 		for(var i=0,desc; desc=this.descs[i]; ++i) {
+			StatefulResolver(desc.el,true);
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
 				desc.enhanced = desc.instance === false? false:true;
@@ -509,7 +510,7 @@
 		ev = MutableEvent(ev).withActionInfo();
 
 		if (ev.commandElement) {
-			if (ev.stateful("state.disabled")) return; // disable
+			if (ev.stateful && ev.stateful("state.disabled")) return; // disable
 			if (ev.ariaDisabled) return; //TODO fold into stateful
 
 			this.submit(ev); //TODO action context

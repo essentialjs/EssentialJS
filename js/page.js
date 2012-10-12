@@ -86,7 +86,8 @@
 		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria }
+		required: { index: 3, reflect: reflectAttributeAria }, //TODO ariaRequired
+		expanded: { index: 4, reflect: reflectAttributeAria } //TODO ariaExpanded
 		//TODO draggable
 		//TODO contenteditable
 		//TODO checked ariaChecked
@@ -95,8 +96,6 @@
 		//TODO down ariaPressed
 		//TODO ariaHidden
 		//TODO ariaDisabled
-		//TODO ariaRequired
-		//TODO ariaExpanded
 		//TODO ariaSelected
 
 		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
@@ -150,6 +149,7 @@
 	ClassForState.prototype.readOnly = "state-readOnly";
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
+	ClassForState.prototype.expanded = "state-expanded";
 
 	function ClassForNotState() {
 
@@ -158,6 +158,7 @@
 	ClassForNotState.prototype.readOnly = "";
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
+	ClassForNotState.prototype.expanded = "";
 
 	function make_Stateful_fireAction(el) {
 		return function() {

@@ -1866,7 +1866,6 @@ function Generator(mainConstr,options)
 			} else {
 				instance = generator.info.existing[id] = new generator.type();
 				//TODO consider different strategies for JS engine
-				instance.constructor = info.constructors[0]; // make the correct constructor appear in debuggers
 			}
 		} else {
 			instance = new generator.type();
@@ -2036,6 +2035,7 @@ function Generator(mainConstr,options)
 
 		// simple type with inheritance chain, fresh prototype
 		function type() {}
+		//TODO if (generator.info.constructors[-1].name) type.name = generator.info.constructors[-1].name;
 		generator.type = type;
 		generator.type.prototype = generator.prototype;
 
@@ -2614,7 +2614,8 @@ Generator.ObjectGenerator = Generator(Object);
 				case "button":
 				case "link":
 				case "menuitem":
-					//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+					this.stateful = element.stateful;
+					//TODO configuration option for if state class map
 					this.commandRole = role;
 					this.commandElement = element;
 					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
@@ -2629,8 +2630,10 @@ Generator.ObjectGenerator = Generator(Object);
 						case "BUTTON":
 						case "button":
 							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							//TODO which submit buttons to turn stateful
 							if (element.type == "submit") {
-								//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.stateful = element.stateful;
+								//TODO configuration option for if state class map
 								this.commandElement = element;
 								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
 								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
@@ -2742,7 +2745,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 	function discardRestricted()
 	{
-		for(var i=0,g; g = Generator.restricted[i]; ++i) {
+		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
 			var discarded = g.info.constructors[-1].discarded;
 			for(var n in g.info.existing) {
 				var instance = g.info.existing[n];
@@ -2763,6 +2766,8 @@ Generator.ObjectGenerator = Generator(Object);
 	{
 		if (_readyFired) return;
 		_readyFired = true;
+
+		//TODO derive state.lang and locale from html.lang
 		
 		// stored entires	
 		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
@@ -3026,11 +3031,13 @@ Generator.ObjectGenerator = Generator(Object);
 	var HTMLElement = essential("HTMLElement");
 	var HTMLScriptElement = essential("HTMLScriptElement");
 
+	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
 
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
+	/* Laid out element within a container */
 	function _Laidout(key,el,conf) {
 
 	}
@@ -3099,7 +3106,8 @@ Generator.ObjectGenerator = Generator(Object);
 		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria }
+		required: { index: 3, reflect: reflectAttributeAria }, //TODO ariaRequired
+		expanded: { index: 4, reflect: reflectAttributeAria } //TODO ariaExpanded
 		//TODO draggable
 		//TODO contenteditable
 		//TODO checked ariaChecked
@@ -3108,8 +3116,6 @@ Generator.ObjectGenerator = Generator(Object);
 		//TODO down ariaPressed
 		//TODO ariaHidden
 		//TODO ariaDisabled
-		//TODO ariaRequired
-		//TODO ariaExpanded
 		//TODO ariaSelected
 
 		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
@@ -3163,6 +3169,7 @@ Generator.ObjectGenerator = Generator(Object);
 	ClassForState.prototype.readOnly = "state-readOnly";
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
+	ClassForState.prototype.expanded = "state-expanded";
 
 	function ClassForNotState() {
 
@@ -3171,6 +3178,7 @@ Generator.ObjectGenerator = Generator(Object);
 	ClassForNotState.prototype.readOnly = "";
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
+	ClassForNotState.prototype.expanded = "";
 
 	function make_Stateful_fireAction(el) {
 		return function() {
@@ -4457,6 +4465,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		var incomplete = false, enhancedCount = 0;
 
 		for(var i=0,desc; desc=this.descs[i]; ++i) {
+			StatefulResolver(desc.el,true);
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
 				desc.enhanced = desc.instance === false? false:true;
@@ -4633,7 +4642,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		ev = MutableEvent(ev).withActionInfo();
 
 		if (ev.commandElement) {
-			if (ev.stateful("state.disabled")) return; // disable
+			if (ev.stateful && ev.stateful("state.disabled")) return; // disable
 			if (ev.ariaDisabled) return; //TODO fold into stateful
 
 			this.submit(ev); //TODO action context

@@ -234,6 +234,30 @@ body > footer {
   padding-left: 30px;
   padding-top: 10px;
 }
+#sessionBadge .supportDetails {
+  position: relative;
+  overflow: hidden;
+  height: 2.5em;
+  cursor: pointer;
+}
+#sessionBadge .supportDetails.state-expanded {
+  height: auto;
+}
+nav[action="navigation/lang"] {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: white;
+}
+nav[action="navigation/lang"] a {
+  font-weight: bold;
+}
+nav[action="navigation/lang"] a:hover,
+html[lang=en] nav[action="navigation/lang"] a[name=en],
+html[lang=de] nav[action="navigation/lang"] a[name=de],
+html[lang=fr] nav[action="navigation/lang"] a[name=fr] {
+  color: white;
+}
 #login {
   position: relative;
   zoom: 1;
@@ -598,21 +622,6 @@ nav#app-logo {
   line-height: 60px;
   color: #006ada;
   text-align: center;
-}
-nav[action="navigation/lang"] {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  color: white;
-}
-nav[action="navigation/lang"] a {
-  font-weight: bold;
-}
-nav[action="navigation/lang"] a:hover,
-html[lang=en] nav[action="navigation/lang"] a[name=en],
-html[lang=de] nav[action="navigation/lang"] a[name=de],
-html[lang=fr] nav[action="navigation/lang"] a[name=fr] {
-  color: white;
 }
 nav[action="navigation/logo"] {
   position: absolute;

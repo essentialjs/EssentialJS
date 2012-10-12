@@ -439,7 +439,8 @@
 				case "button":
 				case "link":
 				case "menuitem":
-					//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+					this.stateful = element.stateful;
+					//TODO configuration option for if state class map
 					this.commandRole = role;
 					this.commandElement = element;
 					this.ariaDisabled = element.getAttribute("aria-disabled") != null;
@@ -454,8 +455,10 @@
 						case "BUTTON":
 						case "button":
 							//TODO if element.type == "submit" && element.tagName == "BUTTON", set commandElement
+							//TODO which submit buttons to turn stateful
 							if (element.type == "submit") {
-								//TODO this.stateful = StatefulResolver(element,true); //TODO configuration option for if state class map
+								this.stateful = element.stateful;
+								//TODO configuration option for if state class map
 								this.commandElement = element;
 								this.ariaDisabled = element.getAttribute("aria-disabled") != null;
 								this.commandName = element.getAttribute("data-name") || element.getAttribute("name"); //TODO name or id
@@ -567,7 +570,7 @@
 
 	function discardRestricted()
 	{
-		for(var i=0,g; g = Generator.restricted[i]; ++i) {
+		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
 			var discarded = g.info.constructors[-1].discarded;
 			for(var n in g.info.existing) {
 				var instance = g.info.existing[n];
@@ -588,6 +591,8 @@
 	{
 		if (_readyFired) return;
 		_readyFired = true;
+
+		//TODO derive state.lang and locale from html.lang
 		
 		// stored entires	
 		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {

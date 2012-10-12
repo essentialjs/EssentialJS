@@ -77,6 +77,16 @@ test("Stateful element state",function(){
 	ok(!el.required);
 	equal(el.getAttribute("required"),null);
 	equal(el.className,"");
+
+	ok(! stateful("state.expanded","undefined"));
+	stateful.set("state.expanded",true);
+	ok(el.expanded || (el.getAttribute("expanded") == "expanded"));
+	equal(el.getAttribute("aria-expanded"),"expanded");
+	equal(el.className,"state-expanded");
+	stateful.set("state.expanded",false);
+	ok(!el.required);
+	equal(el.getAttribute("expanded"),null);
+	equal(el.className,"");
 })
 
 test("Stateful element state with custom class",function(){
