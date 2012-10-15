@@ -4,13 +4,19 @@ test("Default locale",function() {
 	var translations = Resolver("translations");
 
 	equal(translations("locale"),navigator.language || navigator.userLanguage);
+
+	translations.setLocales(["en-US","en-GB"]);
+	ok(translations(["locales","en-us"]));
+	ok(translations(["locales","en-gb"]));
+	ok(! translations(["locales","de-fr"],"undefined"));
+
+	equal(translations(["locales","en-us"]).chain,"en");
+	equal(translations(["locales","en-gb"]).chain,"en");
 })
 
 !function(){
 	var translations = Resolver("translations");
 	var lcl = translations("locale");
-
-	// TODO translations.setLocales(["en-US","en-GB"]);
 
 	translations.set(["locales","en-US"],{ chain:"en" });
 	translations.set(["locales","en-GB"],{ chain:"en" });
@@ -31,6 +37,22 @@ test("Default locale",function() {
 	translations.declare(["phrases",null,"login error","en"],"Not logged in with [user] URL [url]");
 
 }();
+
+test("Configuring translations",function() {
+	var translations = Resolver("translations");
+
+	function BucketGenerator() {
+		return {};
+	}
+	translations.setKeysForLocale("en-US",null,{
+		"some-key-1": "First Phrase",
+		"some-key-2": "Second Phrase"
+	},BucketGenerator);
+
+	var _ = Resolver("essential")("translate");
+	equal(_("some-key-1"),"First Phrase");
+	equal(_("some-key-2"),"Second Phrase");
+});
 
 test("Static Translations english",function(){
 	var translations = Resolver("translations");
