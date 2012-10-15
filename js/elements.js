@@ -23,7 +23,14 @@
 			var el = this;
 			setTimeout(function(){
 				// make sure it's not called before script executes
-				pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+				var scripts = pageResolver(["state","loadingScriptsUrl"]);
+				if (scripts[el.src.replace(baseUrl,"")] != undefined) {
+					// relative url
+					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
+					// absolute url
+					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
+				}
 			},0);
 		}
 		return delayedOnload;       

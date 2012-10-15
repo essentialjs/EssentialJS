@@ -10,6 +10,8 @@ test("Default locale",function() {
 	var translations = Resolver("translations");
 	var lcl = translations("locale");
 
+	// TODO translations.setLocales(["en-US","en-GB"]);
+
 	translations.set(["locales","en-US"],{ chain:"en" });
 	translations.set(["locales","en-GB"],{ chain:"en" });
 	translations.set(["locales",navigator.language || navigator.userLanguage],{ chain:"en" });
