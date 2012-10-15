@@ -764,7 +764,9 @@
 	else setStubConsole();
 
 	var translations = Resolver("translations",{});
-	translations.declare("locale","en");
+	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
+	translations.declare("defaultLocale",defaultLocale);
+	translations.declare("locale",defaultLocale);
 
 	translations.on("change","locale",function(ev) {
 		var s = ev.value.split("-");
@@ -779,8 +781,27 @@
 	translations.declare("keys",{});	// [ context, key, locale] 
 	translations.declare("phrases",{});	// [ context, phrase, locale]
 
+	function defaultLocaleConfig(locale) {
+		var config = {};
+		var split = locale.split("-");
+		if (locale == "en") {
+			// English has no default
+		} if (split.length == 1) {
+			// default to english
+			config.chain = "en";
+		} else {
+			// chain to base language
+			config.chain = split[0];
+		}
+
+		return config;
+	}
+
 	function setLocales(locales) {
-		for(var i=0,l; l = locales[i]; ++i) this.declare(["locales",l],{}); //TODO auto chaining
+		for(var i=0,l; l = locales[i]; ++i) {
+			l = l.toLowerCase().replace("_","-");
+			this.declare(["locales",l],defaultLocaleConfig(l));
+		} 
 	}
 
 	function setKeysForLocale(locale,context,keys,BucketGenerator) {

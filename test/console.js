@@ -1,7 +1,18 @@
 module("Translation tests");
 
-(function(){
+test("Default locale",function() {
 	var translations = Resolver("translations");
+
+	equal(translations("locale"),navigator.language || navigator.userLanguage);
+})
+
+!function(){
+	var translations = Resolver("translations");
+	var lcl = translations("locale");
+
+	translations.set(["locales","en-US"],{ chain:"en" });
+	translations.set(["locales","en-GB"],{ chain:"en" });
+	translations.set(["locales",navigator.language || navigator.userLanguage],{ chain:"en" });
 
 	translations.declare(["keys",null,"abc","en"],"My ABC");
 	translations.declare(["phrases",null,"my abc","en"],"My ABC");
@@ -17,7 +28,7 @@ module("Translation tests");
 	translations.declare(["keys",null,"login.error","en"],"Not logged in with [user] URL [url]");
 	translations.declare(["phrases",null,"login error","en"],"Not logged in with [user] URL [url]");
 
-})()
+}();
 
 test("Static Translations english",function(){
 	var translations = Resolver("translations");
