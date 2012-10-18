@@ -17,6 +17,7 @@
 	var Laidout = essential("Laidout");
 
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
+	var serverUrl = location.protocol + "//" + location.host;
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
