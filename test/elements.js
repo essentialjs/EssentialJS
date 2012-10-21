@@ -1,5 +1,31 @@
 module('Element constructors');
 
+test("HTMLElement construction",function(){
+	var HTMLElement = Resolver("essential")("HTMLElement");
+
+	var div = HTMLElement("div");
+	ok(div);
+	equal(div.tagName,"DIV");
+	equal(div.childNodes.length,0)
+
+	var div = HTMLElement("div",null);
+	ok(div);
+	equal(div.tagName,"DIV");
+	equal(div.childNodes.length,0)
+	
+	var div = HTMLElement("div",{});
+	ok(div);
+	equal(div.tagName,"DIV");
+	equal(div.childNodes.length,0)
+	
+	var div = HTMLElement("div",{ "class":"test", "id":"myId", "name":"myName" });
+	ok(div);
+	equal(div.className,"test");
+	equal(div.id,"myId")
+	equal(div.getAttribute("name"),"myName")
+	
+})
+
 test("MutableEvent construction click",function(){
 	var HTMLElement = Resolver("essential")("HTMLElement");
 	var MutableEvent = Resolver("essential")("MutableEvent");

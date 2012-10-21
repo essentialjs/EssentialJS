@@ -1257,7 +1257,7 @@ Generator.ObjectGenerator = Generator(Object);
 		// optional document arg
 		var d = arguments[c_to];
 		var _doc = document;
-		if (typeof d == "object" && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
 		
 		// optional tagName arg
 		if (typeof _tagName == "object") { 
