@@ -172,11 +172,14 @@ function Resolver(name,ns,options)
     // relies of resolver
     function makeReference(name,onundefined,listeners)
     {
-        var names = name.split(".");
-        var leafName = names.pop();
-        var baseRefName = names.join(".");
-        var baseNames = names.slice(0);
-        names.push(leafName);
+        var names = [], leafName, baseRefName = "", baseNames = [];
+        if (name!=="" && name!=null) {
+            names = name.split(".");
+            leafName = names.pop();
+            baseRefName = names.join(".");
+            baseNames = names.slice(0);
+            names.push(leafName);
+        }
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
@@ -335,6 +338,12 @@ function Resolver(name,ns,options)
         	names.pop(); // return names to unchanged
 	    	this._callListener("change",names,null,mods);
 	    	//TODO parent listeners
+        }
+        function mixinto(target) {
+            var base = _resolve(names,null,onundefined);
+            for(var n in base) {
+                target[n] = base[n];
+            }
         }
 	    function on(type,data,callback) {
 	    	if (! type in VALID_LISTENERS) return;//fail
@@ -500,6 +509,7 @@ function Resolver(name,ns,options)
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
+        get.mixinto = mixinto;
         get.getEntry = getEntry;
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
@@ -620,11 +630,29 @@ function Resolver(name,ns,options)
         return value;
     };
 
+    function clone(src) {
+        switch(src) {
+            case "function":
+                // if (src is reference) src()
+                return src;
+            case "object":
+                var r = {};
+                for(var n in src) r[n] = src[n];
+                return r;
+
+            // "undefined"   "boolean"  "number"  case "string"
+            default:
+                return src;
+        }
+    }
+
+
     resolver.reference = function(name,onundefined) 
     {
+        name = name || "";
     	if (typeof name == "object") {
-    		onundefined = name.onundefined;
-    		name = name.name;
+            onundefined = name.onundefined;
+            name = name.name;
     	}
     	var ref = onundefined? name+":"+onundefined : name;
     	var entry = this.references[ref];

@@ -242,6 +242,14 @@ test('Resolver reference',function(){
 	notEqual(my(), undefined, "namespace replaced");
 	notEqual(my.get(), undefined, "namespace replaced");
 
+	var top = resolver.reference(null);
+	equal(typeof top(),"object");
+	equal(top().my,my())
+
+	var top = resolver.reference("");
+	equal(typeof top(),"object");
+	equal(top().my,my())
+
 	var num = resolver.reference("num");
 	num.set(5);
 	equal(num(),5);

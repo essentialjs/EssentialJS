@@ -93,7 +93,7 @@ function Generator(mainConstr,options)
 	}
 
 	function presetMembersInfo() {
-		for(var n in info.presets) this[n] = info.presets[n];
+		generator.presets.reference("").mixinto(this);
 	}
 
 	function presetMembersArgs() {
