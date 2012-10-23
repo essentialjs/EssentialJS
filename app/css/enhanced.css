@@ -986,3 +986,27 @@ section.sheet {
   color: #333;
   text-decoration: none;
 }
+.leftSide {
+  position: absolute;
+  left: 0;
+  width: 30%;
+  top: 0;
+  bottom: 0;
+  overflow: auto;
+}
+.leftSide table th,
+.leftSide table td {
+  padding: 7px;
+  font-size: 1.2em;
+}
+.leftSide table th {
+  border-bottom: 1px solid grey;
+}
+.rightSide {
+  position: absolute;
+  right: 0;
+  width: 30%;
+  top: 0;
+  bottom: 0;
+  overflow: auto;
+}
