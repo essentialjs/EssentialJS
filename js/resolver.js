@@ -446,6 +446,16 @@ function Resolver(name,ns,options)
             if (this.options.touchURL) {
                 //TODO reload script with url / frequency for uploading cookies
             }
+
+            //TODO different name? reloadResource
+            if (this.options.touchScript) {
+                //TODO swap script with the id. If cachebuster param update timestamp
+                var script = document.getElementById(this.options.touchScript);
+                if (script) {
+                    var newScript = Resolver("essential")("HTMLScriptElement")(script);
+                    script.parentNode.replaceChild(newScript,script);
+                }
+            }
         }
 
         //TODO support server remote storage mechanism

@@ -58,6 +58,7 @@
 		}
 	});
 
+	Resolver("translations").reference("locale").stored("load unload change","cookie",{ id:"locale", encoding:"string", days:1000, touchScript:"cookie-reload" });
 	Resolver("page").declare("preferences",{});
 	Resolver("page").reference("preferences").stored("load unload","local");
 

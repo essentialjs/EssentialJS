@@ -196,11 +196,14 @@ function Resolver(name,ns,options)
     // relies of resolver
     function makeReference(name,onundefined,listeners)
     {
-        var names = name.split(".");
-        var leafName = names.pop();
-        var baseRefName = names.join(".");
-        var baseNames = names.slice(0);
-        names.push(leafName);
+        var names = [], leafName, baseRefName = "", baseNames = [];
+        if (name!=="" && name!=null) {
+            names = name.split(".");
+            leafName = names.pop();
+            baseRefName = names.join(".");
+            baseNames = names.slice(0);
+            names.push(leafName);
+        }
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
 
@@ -360,6 +363,12 @@ function Resolver(name,ns,options)
 	    	this._callListener("change",names,null,mods);
 	    	//TODO parent listeners
         }
+        function mixinto(target) {
+            var base = _resolve(names,null,onundefined);
+            for(var n in base) {
+                target[n] = base[n];
+            }
+        }
 	    function on(type,data,callback) {
 	    	if (! type in VALID_LISTENERS) return;//fail
 
@@ -461,6 +470,16 @@ function Resolver(name,ns,options)
             if (this.options.touchURL) {
                 //TODO reload script with url / frequency for uploading cookies
             }
+
+            //TODO different name? reloadResource
+            if (this.options.touchScript) {
+                //TODO swap script with the id. If cachebuster param update timestamp
+                var script = document.getElementById(this.options.touchScript);
+                if (script) {
+                    var newScript = Resolver("essential")("HTMLScriptElement")(script);
+                    script.parentNode.replaceChild(newScript,script);
+                }
+            }
         }
 
         //TODO support server remote storage mechanism
@@ -524,6 +543,7 @@ function Resolver(name,ns,options)
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
+        get.mixinto = mixinto;
         get.getEntry = getEntry;
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
@@ -644,11 +664,29 @@ function Resolver(name,ns,options)
         return value;
     };
 
+    function clone(src) {
+        switch(src) {
+            case "function":
+                // if (src is reference) src()
+                return src;
+            case "object":
+                var r = {};
+                for(var n in src) r[n] = src[n];
+                return r;
+
+            // "undefined"   "boolean"  "number"  case "string"
+            default:
+                return src;
+        }
+    }
+
+
     resolver.reference = function(name,onundefined) 
     {
+        name = name || "";
     	if (typeof name == "object") {
-    		onundefined = name.onundefined;
-    		name = name.name;
+            onundefined = name.onundefined;
+            name = name.name;
     	}
     	var ref = onundefined? name+":"+onundefined : name;
     	var entry = this.references[ref];
@@ -810,7 +848,7 @@ function Generator(mainConstr,options)
 	}
 
 	function presetMembersInfo() {
-		for(var n in info.presets) this[n] = info.presets[n];
+		generator.presets.reference("").mixinto(this);
 	}
 
 	function presetMembersArgs() {
@@ -1265,6 +1303,15 @@ Generator.ObjectGenerator = Generator(Object);
 			_tagName = _from.tagName || "span"; 
 			--c_from; 
 		}
+
+		// real element with attributes
+		if (_from && _from.nodeName && _from.attributes && _from.nodeName[0] != "#") {
+			var __from = {};
+			for(var i=0,a; a = _from.attributes[i]; ++i) {
+				__from[a.name] = a.value;
+			}
+			_from = __from;
+		}
 		
 		var e = _doc.createElement(_tagName);
 		for(var n in _from) {
@@ -1278,12 +1325,20 @@ Generator.ObjectGenerator = Generator(Object);
 					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
 					break;
 					
+				case "src":
+					if (_from[n] !== undefined) {
+						e[n] = _from[n];
+						if (/cachebuster=/.test(_from[n])) {
+							e[n].src = e[n].src.replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
+						}
+					}
+					break;
+
 				case "id":
 				case "className":
 				case "rel":
 				case "lang":
 				case "language":
-				case "src":
 				case "type":
 					if (_from[n] !== undefined) e[n] = _from[n]; 
 					break;

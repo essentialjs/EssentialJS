@@ -210,6 +210,15 @@
 			_tagName = _from.tagName || "span"; 
 			--c_from; 
 		}
+
+		// real element with attributes
+		if (_from && _from.nodeName && _from.attributes && _from.nodeName[0] != "#") {
+			var __from = {};
+			for(var i=0,a; a = _from.attributes[i]; ++i) {
+				__from[a.name] = a.value;
+			}
+			_from = __from;
+		}
 		
 		var e = _doc.createElement(_tagName);
 		for(var n in _from) {
@@ -223,12 +232,20 @@
 					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
 					break;
 					
+				case "src":
+					if (_from[n] !== undefined) {
+						e[n] = _from[n];
+						if (/cachebuster=/.test(_from[n])) {
+							e[n].src = e[n].src.replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
+						}
+					}
+					break;
+
 				case "id":
 				case "className":
 				case "rel":
 				case "lang":
 				case "language":
-				case "src":
 				case "type":
 					if (_from[n] !== undefined) e[n] = _from[n]; 
 					break;
