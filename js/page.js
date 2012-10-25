@@ -374,9 +374,10 @@
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
-					//TODO scan config to determine these
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
+					for(var i=0,s; s = stages[i]; ++i) {
+						if (ev.base.authenticated) activateArea(s.getAuthenticatedArea());
+						else activateArea(s.getIntroductionArea());
+					}
 				}
 				break;
 			case "loadingScripts":
@@ -415,6 +416,8 @@
 				} 
 				break;
 			case "authenticated":
+				for(var i=0,s; s = stages[i]; ++i) activateArea(ev.base.authenticated? s.getAuthenticatedArea():s.getIntroductionArea());
+				// no break
 			case "authorised":
 			case "configured":
 				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
@@ -482,14 +485,6 @@
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
 		this.resolver.set(["state",whichState],v);
-	};
-	ApplicationConfig.prototype.getAuthenticatedArea = function() {
-		// return "edit";
-		return "sp-explorer";
-	};
-	ApplicationConfig.prototype.getIntroductionArea = function() {
-		//return "signup";
-		return "sp-explorer";
 	};
 
 	ApplicationConfig.prototype.declare = function(key,value) {

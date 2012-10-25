@@ -848,6 +848,8 @@ function Generator(mainConstr,options)
 	}
 
 	function presetMembersInfo() {
+		//TODO presets should be set on the reference. the reference should insert this function in the 
+		// chain when the first preset is declared
 		generator.presets.reference("").mixinto(this);
 	}
 
@@ -2352,9 +2354,10 @@ Generator.ObjectGenerator = Generator(Object);
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
-					//TODO scan config to determine these
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
+					for(var i=0,s; s = stages[i]; ++i) {
+						if (ev.base.authenticated) activateArea(s.getAuthenticatedArea());
+						else activateArea(s.getIntroductionArea());
+					}
 				}
 				break;
 			case "loadingScripts":
@@ -2393,6 +2396,8 @@ Generator.ObjectGenerator = Generator(Object);
 				} 
 				break;
 			case "authenticated":
+				for(var i=0,s; s = stages[i]; ++i) activateArea(ev.base.authenticated? s.getAuthenticatedArea():s.getIntroductionArea());
+				// no break
 			case "authorised":
 			case "configured":
 				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
@@ -2460,14 +2465,6 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 	ApplicationConfig.prototype.setPageState = function(whichState,v) {
 		this.resolver.set(["state",whichState],v);
-	};
-	ApplicationConfig.prototype.getAuthenticatedArea = function() {
-		// return "edit";
-		return "sp-explorer";
-	};
-	ApplicationConfig.prototype.getIntroductionArea = function() {
-		//return "signup";
-		return "sp-explorer";
 	};
 
 	ApplicationConfig.prototype.declare = function(key,value) {
@@ -3800,6 +3797,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		this.type = conf.layouter;
 		this.areaNames = conf["area-names"];
 		this.activeArea = null;
+		this.introductionArea = conf["introduction-area"] || "introduction";
+		this.authenticatedArea = conf["authenticated-area"] || "authenticated";
 
 		this.baseClass = conf["base-class"];
 		if (this.baseClass) this.baseClass += " ";
@@ -3809,6 +3808,14 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
 	Layouter.variant("area-stage",StageLayouter);
+
+	_StageLayouter.prototype.getIntroductionArea = function() {
+		return this.introductionArea;
+	};
+
+	_StageLayouter.prototype.getAuthenticatedArea = function() {
+		return this.authenticatedArea;
+	};
 
 	_StageLayouter.prototype.refreshClass = function(el) {
 		var areaClasses = [];

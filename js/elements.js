@@ -710,6 +710,8 @@
 		this.type = conf.layouter;
 		this.areaNames = conf["area-names"];
 		this.activeArea = null;
+		this.introductionArea = conf["introduction-area"] || "introduction";
+		this.authenticatedArea = conf["authenticated-area"] || "authenticated";
 
 		this.baseClass = conf["base-class"];
 		if (this.baseClass) this.baseClass += " ";
@@ -719,6 +721,14 @@
 	}
 	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
 	Layouter.variant("area-stage",StageLayouter);
+
+	_StageLayouter.prototype.getIntroductionArea = function() {
+		return this.introductionArea;
+	};
+
+	_StageLayouter.prototype.getAuthenticatedArea = function() {
+		return this.authenticatedArea;
+	};
 
 	_StageLayouter.prototype.refreshClass = function(el) {
 		var areaClasses = [];
