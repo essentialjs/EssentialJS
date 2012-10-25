@@ -2766,6 +2766,8 @@ Generator.ObjectGenerator = Generator(Object);
 	_MutableEvent.prototype.AT_TARGET = 2;
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
 
+	//TODO consider moving ClonedEvent out of call
+	//TODO switch implementation based on browser
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
 		var ev;
@@ -3037,7 +3039,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function setKeysForLocale(locale,context,keys,BucketGenerator) {
 		for(var key in keys) {
 			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
-			this.set(["keys",context, key, locale],keys[key]); //TODO { generator: BucketGenerator }
+			this.set(["keys",context, key, locale.toLowerCase()],keys[key]); //TODO { generator: BucketGenerator }
 			//TODO reverse lookup
 		}
 	}
@@ -4415,11 +4417,11 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	essential.declare("cleanRecursively",cleanRecursively);
 
 
-	function DialogAction(actionName) {
+	function _DialogAction(actionName) {
 		this.actionName = actionName;
 	} 
-	DialogAction.prototype.activateArea = essential("activateArea"); // shortcut to global essential function
-	var DialogActionGenerator = essential.set("DialogAction",Generator(DialogAction));
+	_DialogAction.prototype.activateArea = essential("activateArea"); // shortcut to global essential function
+	var DialogAction = essential.set("DialogAction",Generator(_DialogAction));
 
 
 	function resizeTriggersReflow(ev) {
@@ -4450,7 +4452,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				action = "submit";
 			}
 
-			el.actionVariant = DialogActionGenerator.variant(action)(action);
+			el.actionVariant = DialogAction.variant(action)(action);
 		}
 
 		if (el.actionVariant[name]) el.actionVariant[name](el);

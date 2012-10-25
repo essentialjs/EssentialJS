@@ -553,6 +553,8 @@
 	_MutableEvent.prototype.AT_TARGET = 2;
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
 
+	//TODO consider moving ClonedEvent out of call
+	//TODO switch implementation based on browser
 	function MutableEvent(sourceEvent) {
 		function ClonedEvent() { }
 		var ev;
@@ -824,7 +826,7 @@
 	function setKeysForLocale(locale,context,keys,BucketGenerator) {
 		for(var key in keys) {
 			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
-			this.set(["keys",context, key, locale],keys[key]); //TODO { generator: BucketGenerator }
+			this.set(["keys",context, key, locale.toLowerCase()],keys[key]); //TODO { generator: BucketGenerator }
 			//TODO reverse lookup
 		}
 	}

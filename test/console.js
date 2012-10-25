@@ -18,6 +18,7 @@ test("Default locale",function() {
 	var translations = Resolver("translations");
 	var lcl = translations("locale");
 
+	if (lcl != "en") translations.set(["locales",lcl],{ chain:"en" });
 	translations.set(["locales","en-US"],{ chain:"en" });
 	translations.set(["locales","en-GB"],{ chain:"en" });
 	translations.set(["locales",navigator.language || navigator.userLanguage],{ chain:"en" });
@@ -40,18 +41,26 @@ test("Default locale",function() {
 
 test("Configuring translations",function() {
 	var translations = Resolver("translations");
+	var _ = Resolver("essential")("translate");
 
 	function BucketGenerator() {
 		return {};
 	}
-	translations.setKeysForLocale("en-US",null,{
+	translations.setKeysForLocale("en",null,{
 		"some-key-1": "First Phrase",
 		"some-key-2": "Second Phrase"
 	},BucketGenerator);
 
-	var _ = Resolver("essential")("translate");
 	equal(_("some-key-1"),"First Phrase");
 	equal(_("some-key-2"),"Second Phrase");
+
+	translations.setKeysForLocale(translations("locale"),null,{
+		"some-key-1": "First Phrase 2",
+		"some-key-2": "Second Phrase 2"
+	},BucketGenerator);
+
+	equal(_("some-key-1"),"First Phrase 2");
+	equal(_("some-key-2"),"Second Phrase 2");
 });
 
 test("Static Translations english",function(){

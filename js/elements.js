@@ -207,11 +207,11 @@
 	essential.declare("cleanRecursively",cleanRecursively);
 
 
-	function DialogAction(actionName) {
+	function _DialogAction(actionName) {
 		this.actionName = actionName;
 	} 
-	DialogAction.prototype.activateArea = essential("activateArea"); // shortcut to global essential function
-	var DialogActionGenerator = essential.set("DialogAction",Generator(DialogAction));
+	_DialogAction.prototype.activateArea = essential("activateArea"); // shortcut to global essential function
+	var DialogAction = essential.set("DialogAction",Generator(_DialogAction));
 
 
 	function resizeTriggersReflow(ev) {
@@ -242,7 +242,7 @@
 				action = "submit";
 			}
 
-			el.actionVariant = DialogActionGenerator.variant(action)(action);
+			el.actionVariant = DialogAction.variant(action)(action);
 		}
 
 		if (el.actionVariant[name]) el.actionVariant[name](el);
