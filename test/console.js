@@ -19,8 +19,8 @@ test("Default locale",function() {
 	var lcl = translations("locale");
 
 	if (lcl != "en") translations.set(["locales",lcl],{ chain:"en" });
-	translations.set(["locales","en-US"],{ chain:"en" });
-	translations.set(["locales","en-GB"],{ chain:"en" });
+	translations.set(["locales","en-us"],{ chain:"en" });
+	translations.set(["locales","en-gb"],{ chain:"en" });
 	translations.set(["locales",navigator.language || navigator.userLanguage],{ chain:"en" });
 
 	translations.declare(["keys",null,"abc","en"],"My ABC");

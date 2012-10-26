@@ -826,7 +826,7 @@
 	function setKeysForLocale(locale,context,keys,BucketGenerator) {
 		for(var key in keys) {
 			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
-			this.set(["keys",context, key, locale.toLowerCase()],keys[key]); //TODO { generator: BucketGenerator }
+			this.set(["keys",context, key, locale.toLowerCase().replace("_","-")],keys[key]); //TODO { generator: BucketGenerator }
 			//TODO reverse lookup
 		}
 	}
@@ -847,6 +847,7 @@
 		}
 		var locales = translations("locales");
 		var locale = translations("locale");
+		if (locale) locale = locale.toLowerCase().replace("_","-");
 		var t,l;
 		var base;
 		if (key) {
