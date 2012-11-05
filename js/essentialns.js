@@ -554,27 +554,31 @@
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
 
 	//TODO consider moving ClonedEvent out of call
-	//TODO switch implementation based on browser
-	function MutableEvent(sourceEvent) {
-		function ClonedEvent() { }
-		var ev;
-		// IE event support
-		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
-			ev = new _MutableEvent(sourceEvent);
-		} else
-		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
-			ev = new _MutableEvent(window.event);
+	function MutableEventModern(sourceEvent) {
+		function ClonedEvent() { 
+			this.withActionInfo = MutableEvent_withActionInfo;
+			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
 		}
-		// other browsers, or not in listener 
-		else {
-			ClonedEvent.prototype = sourceEvent || window.event; 
-			ev = new ClonedEvent();
-			ev.withActionInfo = MutableEvent_withActionInfo;
-			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-		}
-		return ev;		
+		ClonedEvent.prototype = sourceEvent; 
+
+		return  new ClonedEvent();
 	}
-	essential.declare("MutableEvent",MutableEvent)
+
+	function MutableEventFF(sourceEvent) {
+		sourceEvent.withActionInfo = MutableEvent_withActionInfo;
+		sourceEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
+		return sourceEvent;
+	}
+
+	function MutableEventIE(sourceEvent) {
+		return new _MutableEvent(sourceEvent == null? window.event : sourceEvent);
+	}
+
+	var MutableEvent;
+	if (navigator.userAgent.match(/Firefox\//)) MutableEvent = essential.declare("MutableEvent",MutableEventFF);
+	else if (navigator.userAgent.match(/MSIE\//)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
+	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
 
 
 	function instantiatePageSingletons()
@@ -781,6 +785,18 @@
 	
 	if (window.console) setWindowConsole();
 	else setStubConsole();
+
+	function htmlEscape(str) {
+		if (str == null) return str;
+		return String(str)
+			.replace(/&/g,'&amp;')
+			.replace(/"/g,'&amp;')
+			.replace(/'/g,'&amp;')
+			.replace(/</g,'&amp;')
+			.replace(/>/g,'&amp;');
+		//TODO list of tags to retain, replace them back from escaped
+	}
+	essential.declare("htmlEscape",htmlEscape);
 
 	var translations = Resolver("translations",{});
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
