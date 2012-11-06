@@ -547,7 +547,19 @@ function Resolver(name,ns,options)
 	    		a.b
 	    		a.b.c
 	    	*/
-	   		this.listeners[type].push(_makeResolverEvent(resolver,type,selector,data,callback));
+            var ev = _makeResolverEvent(resolver,type,selector,data,callback);
+
+            if (/^bind | bind | bind$|^bind$/.test(type)) {
+                type = type.replace(" bind ","").replace("bind ","").replace(" bind","");
+                this.listeners[type].push(ev);
+
+                var baseNames = selector.split(".");
+                var leafName = baseNames.pop();
+                var base = _resolve(baseNames,null,"undefined");
+                ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
+            } else {
+                this.listeners[type].push(ev);
+            }
 	    }
 	    get._addListener = _addListener;
 

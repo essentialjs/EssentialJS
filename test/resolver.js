@@ -306,11 +306,16 @@ test('Resolver change listener',function() {
 	var _onabc = sinon.spy();
 	abc.on("change",_onabc);
 
-	abc.set(function(){});
+	var abcVal = abc.set(function(){});
 	equal(typeof abc(),"function");
 	equal(_onabc.callCount,1);
 	//ok(_onabc.calledWith({value:5}));
 	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	//ok(_onabc.calledWith({value:5}));
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
 
 	abc.setEntry("d","dd");
 	equal(resolver("a.b.c.d"), "dd");
@@ -336,12 +341,38 @@ test('Resolver change listener',function() {
 	ok(1,"Removing change listener")
 	ok(1,"Resolver change listener with 3 params")
 
-	ok(1,"Change listener is only called if values have changed")
 	ok(1,"Change listener is only called recursively for 3 levels")
 
 	ok(1,"Specific condition listener on({ loading:false, authorised:false })")
 
 });
+
+test('Resolver bind + change listener',function() {
+
+	var resolver = Resolver({ "b":{ "c": "bc" }});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("bind change",_onab);
+
+	equal(_onab.callCount,1); // base and value should be undefined
+
+	var abc = resolver.reference("a.b.c");
+
+	var abcVal = abc.set(function(){});
+	equal(typeof abc(),"function");
+	// equal(_onabc.callCount,2);
+	//ok(_onabc.calledWith({value:5}));
+	equal(_onab.callCount,2);
+
+	var bc = resolver.reference("b.c");
+	var _onbc = sinon.spy();
+	bc.on("bind change",_onbc);
+
+	equal(_onbc.callCount,1); // base should be object, value should be "bc"
+
+});
+
 
 //TODO reference.trigger
 //TODO test recursive triggers stopped
