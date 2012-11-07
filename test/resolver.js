@@ -352,7 +352,19 @@ test('Resolver bind + change listener',function() {
 	var resolver = Resolver({ "b":{ "c": "bc" }});
 
 	var ab = resolver.reference("a.b");
-	var _onab = sinon.spy();
+	var _onab = sinon.spy(function(ev) {
+		equal(typeof ev,"object");
+		if (_onab.callCount == 1) {
+			equal(typeof ev.base,"undefined");
+			equal(ev.symbol,"b");
+			equal(typeof ev.value,"undefined");
+		} else {
+			equal(typeof ev.base,"object");
+			equal(ev.base,resolver("a.b"));
+			equal(ev.symbol,"c");
+			equal(typeof ev.value,"function");
+		}
+	});
 	ab.on("bind change",_onab);
 
 	equal(_onab.callCount,1); // base and value should be undefined
@@ -366,7 +378,12 @@ test('Resolver bind + change listener',function() {
 	equal(_onab.callCount,2);
 
 	var bc = resolver.reference("b.c");
-	var _onbc = sinon.spy();
+	bc.set("bc")
+	var _onbc = sinon.spy(function(ev) {
+		equal(ev.base,resolver("b"));
+		equal(ev.symbol,"c")
+		equal(ev.value,"bc");
+	});
 	bc.on("bind change",_onbc);
 
 	equal(_onbc.callCount,1); // base should be object, value should be "bc"

@@ -571,7 +571,19 @@ function Resolver(name,ns,options)
 	    		a.b
 	    		a.b.c
 	    	*/
-	   		this.listeners[type].push(_makeResolverEvent(resolver,type,selector,data,callback));
+            var ev = _makeResolverEvent(resolver,type,selector,data,callback);
+
+            if (/^bind | bind | bind$|^bind$/.test(type)) {
+                type = type.replace(" bind ","").replace("bind ","").replace(" bind","");
+                this.listeners[type].push(ev);
+
+                var baseNames = selector.split(".");
+                var leafName = baseNames.pop();
+                var base = _resolve(baseNames,null,"undefined");
+                ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
+            } else {
+                this.listeners[type].push(ev);
+            }
 	    }
 	    get._addListener = _addListener;
 
@@ -1649,27 +1661,31 @@ Generator.ObjectGenerator = Generator(Object);
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
 
 	//TODO consider moving ClonedEvent out of call
-	//TODO switch implementation based on browser
-	function MutableEvent(sourceEvent) {
-		function ClonedEvent() { }
-		var ev;
-		// IE event support
-		if (sourceEvent && sourceEvent.srcElement && document.createEventObject) {
-			ev = new _MutableEvent(sourceEvent);
-		} else
-		if (window.event && window.event.srcElement && document.createEventObject && sourceEvent==undefined) {
-			ev = new _MutableEvent(window.event);
+	function MutableEventModern(sourceEvent) {
+		function ClonedEvent() { 
+			this.withActionInfo = MutableEvent_withActionInfo;
+			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
 		}
-		// other browsers, or not in listener 
-		else {
-			ClonedEvent.prototype = sourceEvent || window.event; 
-			ev = new ClonedEvent();
-			ev.withActionInfo = MutableEvent_withActionInfo;
-			ev.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-		}
-		return ev;		
+		ClonedEvent.prototype = sourceEvent; 
+
+		return  new ClonedEvent();
 	}
-	essential.declare("MutableEvent",MutableEvent)
+
+	function MutableEventFF(sourceEvent) {
+		sourceEvent.withActionInfo = MutableEvent_withActionInfo;
+		sourceEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+
+		return sourceEvent;
+	}
+
+	function MutableEventIE(sourceEvent) {
+		return new _MutableEvent(sourceEvent == null? window.event : sourceEvent);
+	}
+
+	var MutableEvent;
+	if (navigator.userAgent.match(/Firefox\//)) MutableEvent = essential.declare("MutableEvent",MutableEventFF);
+	else if (navigator.userAgent.match(/MSIE\//)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
+	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
 
 
 	function instantiatePageSingletons()
@@ -1877,6 +1893,18 @@ Generator.ObjectGenerator = Generator(Object);
 	if (window.console) setWindowConsole();
 	else setStubConsole();
 
+	function htmlEscape(str) {
+		if (str == null) return str;
+		return String(str)
+			.replace(/&/g,'&amp;')
+			.replace(/"/g,'&amp;')
+			.replace(/'/g,'&amp;')
+			.replace(/</g,'&amp;')
+			.replace(/>/g,'&amp;');
+		//TODO list of tags to retain, replace them back from escaped
+	}
+	essential.declare("htmlEscape",htmlEscape);
+
 	var translations = Resolver("translations",{});
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
 	translations.declare("defaultLocale",defaultLocale);
@@ -1921,7 +1949,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function setKeysForLocale(locale,context,keys,BucketGenerator) {
 		for(var key in keys) {
 			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
-			this.set(["keys",context, key, locale.toLowerCase()],keys[key]); //TODO { generator: BucketGenerator }
+			this.set(["keys",context, key, locale.toLowerCase().replace("_","-")],keys[key]); //TODO { generator: BucketGenerator }
 			//TODO reverse lookup
 		}
 	}
@@ -1942,6 +1970,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		var locales = translations("locales");
 		var locale = translations("locale");
+		if (locale) locale = locale.toLowerCase().replace("_","-");
 		var t,l;
 		var base;
 		if (key) {
