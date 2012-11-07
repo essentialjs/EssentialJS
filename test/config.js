@@ -1,5 +1,23 @@
 module("Config Tests");
 
+test("Application config using data-role",function() {
+
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var HTMLElement = Resolver("essential")("HTMLElement");
+
+	var div = HTMLElement("div",{ 
+		"data-role": '"from-attr":true,"attr-num":546' 
+	},'<input name="username" data-role="'+ "'enhanced':true" +'">');
+	var config = ApplicationConfig().getConfig(div);
+	equal(config.test,undefined);
+	ok(config["from-attr"]);	
+	equal(config["attr-num"],546);
+
+	var config = ApplicationConfig().getConfig(div.firstChild);
+	ok(!config["from-attr"]);	
+	ok(config["enhanced"]);
+});
+
 test("Application config using script",function(){
 	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 	var HTMLElement = Resolver("essential")("HTMLElement");
