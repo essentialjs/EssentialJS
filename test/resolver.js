@@ -352,20 +352,13 @@ test('Resolver bind + change listener',function() {
 	var resolver = Resolver({ "b":{ "c": "bc" }});
 
 	var ab = resolver.reference("a.b");
-	var _onab = sinon.spy(function(ev) {
-		equal(typeof ev,"object");
-		if (_onab.callCount == 1) {
-			equal(typeof ev.base,"undefined");
-			equal(ev.symbol,"b");
-			equal(typeof ev.value,"undefined");
-		} else {
-			equal(typeof ev.base,"object");
-			equal(ev.base,resolver("a.b"));
-			equal(ev.symbol,"c");
-			equal(typeof ev.value,"function");
-		}
-	});
+	var _onab = sinon.spy();
 	ab.on("bind change",_onab);
+	ok(_onab.calledWith(sinon.match({
+		"base": undefined,
+		"symbol": "b",
+		"value": undefined
+	})));
 
 	equal(_onab.callCount,1); // base and value should be undefined
 
@@ -373,8 +366,11 @@ test('Resolver bind + change listener',function() {
 
 	var abcVal = abc.set(function(){});
 	equal(typeof abc(),"function");
-	// equal(_onabc.callCount,2);
-	//ok(_onabc.calledWith({value:5}));
+	ok(_onab.calledWith(sinon.match({
+		"base": resolver("a.b"),
+		"symbol": "c",
+		"value": abcVal
+	})));
 	equal(_onab.callCount,2);
 
 	var bc = resolver.reference("b.c");
