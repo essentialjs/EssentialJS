@@ -507,34 +507,42 @@
 
 	var _singleQuotesRe = new RegExp("'","g");
 
-	ApplicationConfig.prototype._getElementRoleConfig = function(element) {
+	ApplicationConfig.prototype._getElementRoleConfig = function(element,key) {
+		//TODO cache the config on element.stateful
 
+		var config = {};
+
+		// mixin the declared config
+		if (key) {
+			var declared = this.config(key);
+			if (declared) {
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		// mixin the data-role
 		var dataRole = element.getAttribute("data-role");
 		if (dataRole) try {
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			//TODO extend this.config for elements with id?
-			if (element.id) {
-				this.config()[element.id] = map;
-			}
-			return map;
+			for(var n in map) config[n] = map[n];
 		} catch(ex) {
 			console.debug("Invalid config: ",dataRole,ex);
-			return { "invalid-config":dataRole };
+			config["invalid-config"] = dataRole;
 		}
-		return {};
+
+		return config;
 	};
 
 	ApplicationConfig.prototype.getConfig = function(element) {
-		//TODO mixin data-role
 		if (element.id) {
-			return this.config()[element.id] || this._getElementRoleConfig(element);
+			return this._getElementRoleConfig(element,element.id);
 		}
 		var name = element.getAttribute("name");
 		if (name) {
 			var p = element.parentNode;
 			while(p) {
 				if (p.id) {
-					return this.config()[p.id + "." + name] || this._getElementRoleConfig(element);
+					return this._getElementRoleConfig(element,p.id + "." + name);
 				} 
 				p = p.parentNode;
 			} 

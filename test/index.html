@@ -21,6 +21,9 @@
 declare("logo",{"charset": "utf-8"});
 declare("login",{"charset": "utf-8"});
 declare("launched",{"charset": "utf-8"});
+declare("test-scripted",{"abc":"def", "from-script":true, "charset": "utf-8"});
+declare("test-both-ways",{"test":"test", "charset": "utf-8"});
+declare("test-scripted.username",{ "default-value":"123" });
 </script>
 
 <!-- test runner files -->
@@ -32,6 +35,7 @@ declare("launched",{"charset": "utf-8"});
 	<script src="generator.js"></script>
 	<script src="types.js"></script>
 	<script src="console.js"></script>
+	<script src="config.js"></script>
 	<script src="launching.js"></script>
 	<script src="elements.js"></script>
 	<script src="stateful.js"></script>
