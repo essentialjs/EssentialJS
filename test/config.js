@@ -16,6 +16,7 @@ test("Application config using data-role",function() {
 	var config = ApplicationConfig().getConfig(div.firstChild);
 	ok(!config["from-attr"]);	
 	ok(config["enhanced"]);
+	ok(1,"malformed config info")
 });
 
 test("Application config using script",function(){
