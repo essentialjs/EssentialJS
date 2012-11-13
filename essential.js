@@ -2091,12 +2091,16 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
+	function reflectAriaProp(el,key,value) {
+		el[this.property] = value;
+	}
+
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectAria, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria }, //TODO ariaRequired
-		expanded: { index: 4, reflect: reflectAttributeAria } //TODO ariaExpanded
+		required: { index: 3, reflect: reflectAttributeAria, property:"ariaRequired" }, //TODO ariaRequired
+		expanded: { index: 4, reflect: reflectAttributeAria, property:"ariaExpanded" } //TODO ariaExpanded
 		//TODO draggable
 		//TODO contenteditable
 		//TODO checked ariaChecked
@@ -2319,7 +2323,7 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.set("getActiveArea",getActiveArea);
 
 	function bringLive() {
-		var ap = ApplicationConfig();
+		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
@@ -2366,7 +2370,6 @@ Generator.ObjectGenerator = Generator(Object);
 	ApplicationConfig.presets.declare("state", { });
 
 	function enhanceUnhandledElements() {
-		// debugger;
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
@@ -2516,34 +2519,42 @@ Generator.ObjectGenerator = Generator(Object);
 
 	var _singleQuotesRe = new RegExp("'","g");
 
-	ApplicationConfig.prototype._getElementRoleConfig = function(element) {
+	ApplicationConfig.prototype._getElementRoleConfig = function(element,key) {
+		//TODO cache the config on element.stateful
 
+		var config = {};
+
+		// mixin the declared config
+		if (key) {
+			var declared = this.config(key);
+			if (declared) {
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		// mixin the data-role
 		var dataRole = element.getAttribute("data-role");
 		if (dataRole) try {
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			//TODO extend this.config for elements with id?
-			if (element.id) {
-				this.config()[element.id] = map;
-			}
-			return map;
+			for(var n in map) config[n] = map[n];
 		} catch(ex) {
 			console.debug("Invalid config: ",dataRole,ex);
-			return { "invalid-config":dataRole };
+			config["invalid-config"] = dataRole;
 		}
-		return {};
+
+		return config;
 	};
 
 	ApplicationConfig.prototype.getConfig = function(element) {
-		//TODO mixin data-role
 		if (element.id) {
-			return this.config()[element.id] || this._getElementRoleConfig(element);
+			return this._getElementRoleConfig(element,element.id);
 		}
 		var name = element.getAttribute("name");
 		if (name) {
 			var p = element.parentNode;
 			while(p) {
 				if (p.id) {
-					return this.config()[p.id + "." + name] || this._getElementRoleConfig(element);
+					return this._getElementRoleConfig(element,p.id + "." + name);
 				} 
 				p = p.parentNode;
 			} 
