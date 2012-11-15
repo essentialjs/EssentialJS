@@ -692,6 +692,211 @@
 		
 	};
 
+	var contains;
+	function doc_contains(a,b) {
+		return a !== b && (a.contains ? a.contains(b) : true);
+	}
+	function cdp_contains(a,b) {
+		return !!(a.compareDocumentPosition(b) & 16);
+	}
+	function false_contains(a,b) { return false; }
+
+	if (document.documentElement.contains) {
+		contains = doc_contains;
+	} else if (document.documentElement.compareDocumentPosition) {
+		contains = cdp_contains;
+	} else {
+		contains = false_contains;
+	}
+	essential.declare("contains",contains);
+
+	function getOfRole(el,role,parentProp) {
+		parentProp = parentProp || "parentNode";
+		while(el) {
+			if (el.getAttribute("role") == role) return el;
+			el = el[parentProp];
+		}
+		return null;
+	}
+
+	var is_inside = 0;
+
+	var ENHANCED_SCROLLER_PARENT_EVENTS = {
+		"mousemove": function(ev) {
+		},
+		"mouseover": function(ev) {
+			var scrolled = getOfRole(ev.target || ev.srcElement,"scrolled","offsetParent");
+
+			if (scrolled.stateful.movedOutInterval) clearTimeout(scrolled.stateful.movedOutInterval);
+			scrolled.stateful.movedOutInterval = null;
+			scrolled.stateful.set("over",true);
+			scrolled.enhanced.vert.show();
+			scrolled.enhanced.horz.show();
+		},
+		"mouseout": function(ev) {
+			var scrolled = getOfRole(ev.target || ev.srcElement,"scrolled","offsetParent");
+			
+			if (scrolled.stateful.movedOutInterval) clearTimeout(scrolled.stateful.movedOutInterval);
+			scrolled.stateful.movedOutInterval = setTimeout(function(){
+				scrolled.stateful.set("over",false);
+				if (scrolled.stateful("dragging") != true) {
+					scrolled.enhanced.vert.hide();
+					scrolled.enhanced.horz.hide();
+				}
+				console.log("mouse out of scrolled.");
+			},30);
+		}
+
+		// mousedown, scroll, mousewheel
+	};
+
+	var ENHANCED_SCROLLER_EVENTS = {
+		"scroll": function(ev) {
+			// if not shown, show and if not entered and not dragging, hide after 1500 ms
+		},
+		"mousewheel": function(ev) {
+			// if past limits prevent default
+		}
+
+		// mousedown, scroll, mousewheel
+	};
+
+	var ENHANCED_SCROLLBAR_EVENTS = {
+		"mousedown": function(ev) {
+
+			//start dragging
+		}
+		// "mouseleave": function(ev) {}
+
+		// mousedown, scroll, mousewheel
+	};
+
+	function EnhancedScrollbar(el,opts,trackScrolled,update) {
+		this.scrolled = el;
+		this.el = HTMLElement("div", { "class":opts["class"] }, '<nav><header></header><footer></footer></nav>');
+		el.parentNode.appendChild(this.el);
+		this.autoHide = opts.autoHide;
+		this.trackScrolled = trackScrolled;
+		this.update = update; // update method
+
+		this.trackScrolled(el);
+
+		addEventListeners(el,ENHANCED_SCROLLER_EVENTS);
+		addEventListeners(this.el,ENHANCED_SCROLLBAR_EVENTS);
+
+		if (this.scrolledContentSize > this.scrolledSize && opts.initialDisplay !== false) {
+			this.show();
+			this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
+		}
+	}
+
+	EnhancedScrollbar.prototype.show = function() {
+		if (!this.shown) {
+			this.update(this.scrolled);
+			this.el.className += " shown";
+			if (this.hiding) {
+				clearTimeout(this.hiding);
+				delete this.hiding;
+			}
+			this.shown = true;
+		}
+	};
+
+	EnhancedScrollbar.prototype.hide = function() {
+		if (this.autoHide !== false && this.shown) {
+			this.el.className = this.el.className.replace(" shown","");
+			if (this.hiding) {
+				clearTimeout(this.hiding);
+				delete this.hiding;
+			}
+			this.shown = false;
+		}
+	};
+
+	EnhancedScrollbar.prototype.destroy = function() {
+		this.el.parentNode.removeChild(this.el);
+		callCleaners(this.el);
+		delete this.el;
+	};
+
+	function vertTrackScrolled(scrolled) {
+		this.scrolledTo = scrolled.scrollTop;
+		this.scrolledSize = scrolled.offsetHeight;
+		this.scrolledContentSize = scrolled.scrollHeight;
+	}
+
+	function vertUpdateScrollbar(scrolled) {
+		this.el.firstChild.style.top = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+		this.el.firstChild.style.height = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+	}
+
+	function horzTrackScrolled(scrolled) {
+		this.scrolledTo = scrolled.scrollLeft;
+		this.scrolledSize = scrolled.offsetWidth;
+		this.scrolledContentSize = scrolled.scrollWidth;
+	}
+
+	function horzUpdateScrollbar(scrolled) {
+		this.el.firstChild.style.left = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+		this.el.firstChild.style.width = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+	}
+
+	function EnhancedScrolled(el,config) {
+		//? this.el = el
+		this.x = false !== config.x;
+		this.y = false !== config.y;
+		this.vert = new EnhancedScrollbar(el,{ "class":"vert-scroller", initialDisplay: config.initialDisplay },vertTrackScrolled,vertUpdateScrollbar);
+		this.horz = new EnhancedScrollbar(el,{ "class":"horz-scroller", initialDisplay: config.initialDisplay },horzTrackScrolled,horzUpdateScrollbar);
+
+		addEventListeners(el.parentNode,ENHANCED_SCROLLER_PARENT_EVENTS);
+		el.parentNode.scrollContainer = "top";
+
+		this.refresh(el);
+	}
+
+	EnhancedScrolled.prototype.refresh = function(el) {
+		this.vert.trackScrolled(el);
+		this.vert.update(el);
+		this.horz.trackScrolled(el);
+		this.horz.update(el);
+	};
+
+	EnhancedScrolled.prototype.layout = function(el,layout) {
+		//TODO update scrollbars
+
+		this.refresh(el);
+	};
+
+	EnhancedScrolled.prototype.discard = function(el) {
+		if (this.vert) this.vert.destroy();
+		if (this.horz) this.horz.destroy();
+		delete this.vert;
+		delete this.horz;
+
+		callCleaners(el.parentNode);
+		callCleaners(el);
+	};
+
+	DocumentRoles.enhance_scrolled = _DocumentRoles.enhance_scrolled = function(el,role,config) {
+		StatefulResolver(el,true);
+		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
+		var r = new EnhancedScrolled(el,config);
+		el.enhanced = r;
+
+		return r;
+	};
+
+	DocumentRoles.layout_scrolled = _DocumentRoles.layout_scrolled = function(el,layout,instance) {
+		instance.layout(el,layout);
+	};
+	
+	DocumentRoles.discard_scrolled = _DocumentRoles.discard_scrolled = function(el,role,instance) {
+		instance.discard(el);
+		el.stateful.destroy();
+		delete el.enhanced;
+	};
+	
+
 	_DocumentRoles.default_enhance = function(el,role,config) {
 		
 		return {};
@@ -704,6 +909,24 @@
 	_DocumentRoles.default_discard = function(el,role,instance) {
 		
 	};
+
+	var _scrollbarSize;
+	function scrollbarSize() {
+		if (_scrollbarSize === undefined) {
+			var div = HTMLElement("div",{ style: "width:50px;height:50px;overflow:hidden;position:absolute;top:-200px;left:-200px;visibility:hidden;" },
+				'<div style="height:100px;"></div>');
+			document.body.appendChild(div);
+			var w1 = div.firstChild.offsetWidth;
+			div.style["overflow-y"] = "scroll";
+			var w2 = div.firstChild.offsetWidth;
+			document.body.removeChild(div);
+			_scrollbarSize = w1 - w2;
+		}
+
+		return _scrollbarSize;
+	}
+	essential.declare("scrollbarSize",scrollbarSize);
+
 	
 	function _StageLayouter(key,el,conf) {
 		this.key = key;

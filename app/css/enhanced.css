@@ -989,10 +989,13 @@ section.sheet {
 .leftSide {
   position: absolute;
   left: 0;
-  width: 30%;
+  width: 35%;
   top: 0;
   bottom: 0;
-  overflow: auto;
+  overflow: hidden;
+}
+.leftSide table {
+  margin: 30px;
 }
 .leftSide table th,
 .leftSide table td {
@@ -1002,11 +1005,127 @@ section.sheet {
 .leftSide table th {
   border-bottom: 1px solid grey;
 }
+.leftSide .vert-scroller,
+.leftSide .horz-scroller {
+  background-color: #ffffff;
+}
 .rightSide {
   position: absolute;
   right: 0;
-  width: 30%;
+  width: 35%;
   top: 0;
   bottom: 0;
-  overflow: auto;
+  overflow: hidden;
+}
+[role=scrolled] {
+  /*
+	position:absolute;
+	left:0; right:@scroll-bar-size;
+	top:0; bottom:0;
+	overflow: scroll;
+	*/
+
+}
+[role=scrolled]::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+[role=scrolled]::scrollbar {
+  width: 0;
+  height: 0;
+}
+.vert-scroller nav,
+.horz-scroller nav {
+  background: gray;
+  background: rgba(0, 0, 0, 0.5);
+  display: block;
+  position: absolute;
+  opacity: 0;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+  filter: alpha(opacity=0);
+  -webkit-transition: linear 300ms opacity;
+  -moz-transition: linear 300ms opacity;
+  -o-transition: linear 300ms opacity;
+  transition: linear 300ms opacity;
+}
+.vert-scroller.shown nav,
+.horz-scroller.shown nav {
+  opacity: 1;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
+  filter: alpha(opacity=100);
+}
+.vert-scroller {
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 9px;
+  bottom: 18px;
+  width: 15px;
+}
+.vert-scroller nav {
+  right: -1px;
+  top: 0;
+  bottom: 0;
+  overflow: visible;
+  width: 7px;
+  border: 1px solid transparent;
+}
+.vert-scroller nav header {
+  display: block;
+  position: absolute;
+  top: -9px;
+  left: -1px;
+  overflow: visible;
+  width: 7px;
+  height: 7px;
+  border: 1px solid transparent;
+  background-color: #777;
+}
+.vert-scroller nav footer {
+  display: block;
+  position: absolute;
+  bottom: -9px;
+  left: -1px;
+  overflow: visible;
+  width: 7px;
+  height: 7px;
+  border: 1px solid transparent;
+  background-color: #777;
+}
+.horz-scroller {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 9px;
+  right: 18px;
+  height: 15px;
+}
+.horz-scroller nav {
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  overflow: visible;
+  height: 7px;
+  border: 1px solid transparent;
+}
+.horz-scroller nav header {
+  display: block;
+  position: absolute;
+  left: -9px;
+  bottom: -1px;
+  overflow: visible;
+  width: 7px;
+  height: 7px;
+  border: 1px solid transparent;
+  background-color: #777;
+}
+.horz-scroller nav footer {
+  display: block;
+  position: absolute;
+  right: -9px;
+  bottom: -1px;
+  overflow: visible;
+  width: 7px;
+  height: 7px;
+  border: 1px solid transparent;
+  background-color: #777;
 }
