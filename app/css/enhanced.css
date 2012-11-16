@@ -1064,7 +1064,7 @@ section.sheet {
 .vert-scroller nav {
   right: -1px;
   top: 0;
-  bottom: 0;
+  height: 100%;
   overflow: visible;
   width: 7px;
   border: 1px solid transparent;
@@ -1102,7 +1102,7 @@ section.sheet {
 .horz-scroller nav {
   bottom: -1px;
   left: 0;
-  right: 0;
+  width: 100%;
   overflow: visible;
   height: 7px;
   border: 1px solid transparent;
