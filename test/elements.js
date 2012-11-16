@@ -78,6 +78,29 @@ test('Enhanced element config',function(){
 	ok(true,"TODO configure combining a base from application/config and a mixin using data-role");
 });
 
+test('addEventListeners catch',function() {
+	var HTMLElement = Resolver("essential")("HTMLElement");
+	var addEventListeners = Resolver("essential")("addEventListeners");
+	var removeEventListeners = Resolver("essential")("removeEventListeners");
+
+	var div = HTMLElement("div",{ "class":"abc"},"<span>","abc","</span>");
+	var events = {
+		"click": sinon.spy(function(ev) {
+			
+		})
+	};
+	simulateClick(div);
+	equal(events.click.callCount,0);
+
+	addEventListeners(div,events,false);
+	simulateClick(div);
+	equal(events.click.callCount,1);
+
+	removeEventListeners(div,events);
+	simulateClick(div);
+	equal(events.click.callCount,1);
+});
+
 test('Enhance element early or delayed',function() {
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
 

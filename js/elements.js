@@ -179,6 +179,19 @@
 	}
 	essential.declare("addEventListeners",addEventListeners);
 
+	function removeEventListeners(el, listeners) {
+		if (el.removeEventListener) {
+			for(var n in listeners) {
+				el.removeEventListener(n, listeners[n]);
+			}
+		} else {
+			for(var n in listeners) {
+				el.detachEvent('on'+n,listeners[n]);
+			}
+		}
+	}
+	essential.declare("removeEventListeners",removeEventListeners);
+
 	//TODO removeEventListeners (eControl, listeners, bubble)
 
 	/**
