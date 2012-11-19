@@ -12,7 +12,8 @@ var ESSENTIAL_FILES = [
   'essentialns.js',
   'page.js',
   'xhr.js',
-  'elements.js'];
+  'elements.js',
+  'roles.js'];
 
 var EXTRAS_FILES = [
   'json2.js',
