@@ -82,12 +82,16 @@
 		}
 	}
 
+	function reflectAriaProp(el,key,value) {
+		el[this.property] = value;
+	}
+
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectAria }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectAria, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria }, //TODO ariaRequired
-		expanded: { index: 4, reflect: reflectAttributeAria } //TODO ariaExpanded
+		required: { index: 3, reflect: reflectAttributeAria, property:"ariaRequired" }, //TODO ariaRequired
+		expanded: { index: 4, reflect: reflectAttributeAria, property:"ariaExpanded" } //TODO ariaExpanded
 		//TODO draggable
 		//TODO contenteditable
 		//TODO checked ariaChecked
@@ -310,7 +314,7 @@
 	essential.set("getActiveArea",getActiveArea);
 
 	function bringLive() {
-		var ap = ApplicationConfig();
+		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
@@ -357,7 +361,6 @@
 	ApplicationConfig.presets.declare("state", { });
 
 	function enhanceUnhandledElements() {
-		// debugger;
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
