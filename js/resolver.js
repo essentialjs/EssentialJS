@@ -373,7 +373,8 @@ function Resolver(name,ns,options)
             }
         }
         function read_local(ref) {
-            var v = localStorage[this.id];
+            var v;
+            if (window.localStorage) v = localStorage[this.id];
             if (v != undefined) {
                 var value;
                 try { value = JSON.parse(v); }
