@@ -2463,7 +2463,7 @@ Generator.ObjectGenerator = Generator(Object);
 					if (_from[n] !== undefined) {
 						e[n] = _from[n];
 						if (/cachebuster=/.test(_from[n])) {
-							e[n].src = e[n].src.replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
+							e[n] = e[n].replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
 						}
 					}
 					break;
@@ -2782,6 +2782,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 	//TODO consider moving ClonedEvent out of call
 	function MutableEventModern(sourceEvent) {
+		if (sourceEvent.withActionInfo) return sourceEvent;
 		function ClonedEvent() { 
 			this.withActionInfo = MutableEvent_withActionInfo;
 			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
@@ -2799,6 +2800,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	function MutableEventIE(sourceEvent) {
+		if (sourceEvent && sourceEvent.withActionInfo) return sourceEvent;
 		return new _MutableEvent(sourceEvent == null? window.event : sourceEvent);
 	}
 
@@ -4266,6 +4268,28 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 	var serverUrl = location.protocol + "//" + location.host;
 
+	function getScrollOffsets(el) {
+		var left=0,top=0;
+		while(el && !isNaN(el.scrollTop)){
+			top += el.scrollTop;
+			left += el.scrollLeft;
+			el = el.parentNode;
+		}
+		return { left:left, top:top };
+	}
+
+	function getPageOffsets(el) {
+		var scrolls = getScrollOffsets(el);
+
+		var left=0,top=0;
+		while(el){
+			top += el.offsetTop;
+			left += el.offsetLeft;
+			el = el.offsetParent
+		}
+		return { left:left - scrolls.left, top:top - scrolls.top };
+	}
+
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
 			var el = this;
@@ -4426,6 +4450,24 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 	essential.declare("addEventListeners",addEventListeners);
 
+	function removeEventListeners(el, listeners,bubble) {
+		if (el.removeEventListener) {
+			for(var n in listeners) {
+				el.removeEventListener(n, listeners[n], bubble || false);
+			}
+		} else {
+			for(var n in listeners) {
+				el.detachEvent('on'+n,listeners[n]);
+			}
+		}
+		if (el._cleaners) {
+			for(var i=0,c; c = el._cleaners[i]; ++i) if (c.listeners == listeners) {
+				el._cleaners.splice(i,1);
+			}
+		}
+	}
+	essential.declare("removeEventListeners",removeEventListeners);
+
 	//TODO removeEventListeners (eControl, listeners, bubble)
 
 	/**
@@ -4471,7 +4513,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement) {
+		if (ev.commandElement && ev.comandElement == ev.actionElement) {
 
 			//TODO action event filtering
 			//TODO disabled
@@ -4939,6 +4981,330 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		
 	};
 
+	var contains;
+	function doc_contains(a,b) {
+		return a !== b && (a.contains ? a.contains(b) : true);
+	}
+	function cdp_contains(a,b) {
+		return !!(a.compareDocumentPosition(b) & 16);
+	}
+	function false_contains(a,b) { return false; }
+
+	if (document.documentElement.contains) {
+		contains = doc_contains;
+	} else if (document.documentElement.compareDocumentPosition) {
+		contains = cdp_contains;
+	} else {
+		contains = false_contains;
+	}
+	essential.declare("contains",contains);
+
+	//TODO find parent of scrolled role
+
+	function getOfRole(el,role,parentProp) {
+		parentProp = parentProp || "parentNode";
+		while(el) {
+			if (el.getAttribute && el.getAttribute("role") == role) return el;
+			el = el[parentProp];
+		}
+		return null;
+	}
+
+	var is_inside = 0;
+
+	var ENHANCED_SCROLLED_PARENT_EVENTS = {
+		"mousemove": function(ev) {
+		},
+		"mouseover": function(ev) {
+			var enhanced = this.scrolled.enhanced;
+
+			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
+			this.stateful.movedOutInterval = null;
+			this.stateful.set("over",true);
+			enhanced.vert.show();
+			enhanced.horz.show();
+		},
+		"mouseout": function(ev) {
+			var sp = this;
+			var enhanced = this.scrolled.enhanced;
+			
+			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
+			this.stateful.movedOutInterval = setTimeout(function(){
+				sp.stateful.set("over",false);
+				if (sp.stateful("dragging") != true) {
+					enhanced.vert.hide();
+					enhanced.horz.hide();
+				}
+				console.log("mouse out of scrolled.");
+			},30);
+		}
+
+		// mousedown, scroll, mousewheel
+	};
+
+	var ENHANCED_SCROLLED_EVENTS = {
+		"scroll": function(ev) {
+			// if not shown, show and if not entered and not dragging, hide after 1500 ms
+			if (!this.enhanced.vert.shown) {
+				this.enhanced.vert.show();
+				this.enhanced.horz.show();
+				if (!this.stateful("over") && !this.stateful("dragging")) {
+					this.enhanced.vert.delayedHide();
+					this.enhanced.horz.delayedHide();
+				}
+			}
+			this.enhanced.refresh(this);
+		},
+		"mousewheel": function(ev) {
+			var delta = ev.delta, deltaX = ev.x, deltaY = ev.y;
+			// calcs from jquery.mousewheel.js
+
+			// Old school scrollwheel delta
+			if (ev.wheelDelta) { delta = ev.wheelDelta/120; }
+			if (ev.detail) { delta = -ev.detail/3; }
+
+			// New school multidim scroll (touchpads) deltas
+			deltaY = delta;
+
+			// Gecko
+			if (ev.axis != undefined && ev.axis == ev.HORIZONTAL_AXIS) {
+				deltaY = 0;
+				deltaX = -1 * delta;
+			}
+
+			// Webkit
+			if (ev.wheelDeltaY !== undefined) { deltaY = ev.wheelDeltaY/120; }
+			if (ev.wheelDeltaX !== undefined) { deltaX = -1 * ev.wheelDeltaX/120; }
+
+			if ((deltaX < 0 && 0 == this.scrollLeft) || 
+				(deltaX > 0 && (this.scrollLeft + Math.ceil(this.offsetWidth) == this.scrollWidth))) {
+
+				if (ev.preventDefault) ev.preventDefault();
+				return false;
+			}
+			// if webkitDirectionInvertedFromDevice == false do the inverse
+			/*
+			if ((deltaY < 0 && 0 == this.scrollTop) || 
+				(deltaY > 0 && (this.scrollTop + Math.ceil(this.offsetHeight) == this.scrollHeight))) {
+
+				if (ev.preventDefault) ev.preventDefault();
+				return false;
+			}
+			*/
+		}
+
+		// mousedown, scroll, mousewheel
+	};
+
+	// Current active Movement activity
+	var activeMovement = null;
+
+	function ElementMovement() {
+	}
+
+	ElementMovement.prototype.track = function(ev) {
+
+	};
+
+	ElementMovement.prototype.start = function(el,event) {
+		var movement = this;
+		this.el = el;
+		this.event = event;
+
+		// getPageOffsets
+		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
+		this.startPageX = event.pageX; //??
+		document.onselectstart = function(ev) { return false; };
+
+		//TODO capture in IE
+
+		if (el.stateful) el.stateful.set("dragging",true);
+
+		this.drag_events = {
+			//TODO  keyup ESC
+			"mousemove": function(ev) {
+				var maxY = 1000, maxX = 1000;
+				var y = Math.min( Math.max(ev.pageY - movement.startPageY,0), maxY );
+				var x = Math.min( Math.max(ev.pageX - movement.startPageX,0), maxX );
+				movement.track(ev,x,y);
+			},
+			"mouseup": function(ev) {
+				movement.end();
+			}
+		};
+		addEventListeners(document.body,this.drag_events);
+
+		activeMovement = this;
+
+		return this;
+	};
+
+	ElementMovement.prototype.end = function() {
+		if (this.el.stateful) this.el.stateful.set("dragging",false);
+		removeEventListeners(document.body,this.drag_events);
+
+		delete document.onselectstart ;
+
+		activeMovement = null;
+
+		return this;
+	};
+
+	
+	var ENHANCED_SCROLLBAR_EVENTS = {
+		"mousedown": function(ev) {
+			if (activeMovement != null) return;
+
+			if (ev.preventDefault) ev.preventDefault();
+			//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
+			var scrolled = this.parentNode.scrolled;
+			var movement = new ElementMovement();
+			movement.track = function(ev,x,y) {
+				scrolled.scrollTop = (scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
+				scrolled.scrollLeft = (scrolled.scrollWidth -  scrolled.clientWidth) * y / (scrolled.clientWidth - 9);
+			};
+			movement.start(this,ev);
+			return false; // prevent default
+		}
+	};
+
+	function EnhancedScrollbar(el,opts,trackScrolled,update) {
+		this.scrolled = el;
+		this.el = HTMLElement("div", { "class":opts["class"] }, '<nav><header></header><footer></footer></nav>');
+		el.parentNode.appendChild(this.el);
+		this.autoHide = opts.autoHide;
+		this.trackScrolled = trackScrolled;
+		this.update = update; // update method
+
+		this.trackScrolled(el);
+
+		addEventListeners(el,ENHANCED_SCROLLED_EVENTS);
+		addEventListeners(this.el,ENHANCED_SCROLLBAR_EVENTS);
+
+		if (opts.initialDisplay !== false) {
+			if (this.show()) {
+				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
+			}
+		}
+	}
+
+	EnhancedScrollbar.prototype.show = function() {
+		if (this.scrolledContentSize <= this.scrolledSize) return false;
+
+		if (!this.shown) {
+			this.update(this.scrolled);
+			this.el.className += " shown";
+			if (this.hiding) {
+				clearTimeout(this.hiding);
+				delete this.hiding;
+			}
+			this.shown = true;
+
+			return true;
+		}
+	};
+
+	EnhancedScrollbar.prototype.hide = function() {
+		if (this.autoHide !== false && this.shown) {
+			this.el.className = this.el.className.replace(" shown","");
+			if (this.hiding) {
+				clearTimeout(this.hiding);
+				delete this.hiding;
+			}
+			this.shown = false;
+		}
+	};
+
+	EnhancedScrollbar.prototype.delayedHide = function(delay) {
+		this.hiding = setTimeout(this.hide.bind(this), 1500);
+	};
+
+	EnhancedScrollbar.prototype.destroy = function() {
+		this.el.parentNode.removeChild(this.el);
+		callCleaners(this.el);
+		delete this.el;
+	};
+
+	function vertTrackScrolled(scrolled) {
+		this.scrolledTo = scrolled.scrollTop;
+		this.scrolledSize = scrolled.clientHeight; //scrolled.offsetHeight - scrollbarSize();
+		this.scrolledContentSize = scrolled.scrollHeight;
+	}
+
+	function vertUpdateScrollbar(scrolled) {
+		this.el.firstChild.style.top = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+		this.el.firstChild.style.height = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+	}
+
+	function horzTrackScrolled(scrolled) {
+		this.scrolledTo = scrolled.scrollLeft;
+		this.scrolledSize = scrolled.clientWidth; //scrolled.offsetWidth - scrollbarSize();
+		this.scrolledContentSize = scrolled.scrollWidth;
+	}
+
+	function horzUpdateScrollbar(scrolled) {
+		this.el.firstChild.style.left = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+		this.el.firstChild.style.width = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+	}
+
+	function EnhancedScrolled(el,config) {
+		//? this.el = el
+		this.x = false !== config.x;
+		this.y = false !== config.y;
+		this.vert = new EnhancedScrollbar(el,{ "class":"vert-scroller", initialDisplay: config.initialDisplay },vertTrackScrolled,vertUpdateScrollbar);
+		this.horz = new EnhancedScrollbar(el,{ "class":"horz-scroller", initialDisplay: config.initialDisplay },horzTrackScrolled,horzUpdateScrollbar);
+
+		el.parentNode.scrolled = el;
+		StatefulResolver(el.parentNode,true);
+		addEventListeners(el.parentNode,ENHANCED_SCROLLED_PARENT_EVENTS);
+		el.parentNode.scrollContainer = "top";
+
+		this.refresh(el);
+	}
+
+	EnhancedScrolled.prototype.refresh = function(el) {
+		this.vert.trackScrolled(el);
+		this.vert.update(el);
+		this.horz.trackScrolled(el);
+		this.horz.update(el);
+	};
+
+	EnhancedScrolled.prototype.layout = function(el,layout) {
+		//TODO update scrollbars
+
+		this.refresh(el);
+	};
+
+	EnhancedScrolled.prototype.discard = function(el) {
+		if (this.vert) this.vert.destroy();
+		if (this.horz) this.horz.destroy();
+		delete this.vert;
+		delete this.horz;
+
+		callCleaners(el.parentNode);
+		callCleaners(el);
+	};
+
+	DocumentRoles.enhance_scrolled = _DocumentRoles.enhance_scrolled = function(el,role,config) {
+		StatefulResolver(el,true);
+		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
+		var r = new EnhancedScrolled(el,config);
+		el.enhanced = r;
+
+		return r;
+	};
+
+	DocumentRoles.layout_scrolled = _DocumentRoles.layout_scrolled = function(el,layout,instance) {
+		instance.layout(el,layout);
+	};
+	
+	DocumentRoles.discard_scrolled = _DocumentRoles.discard_scrolled = function(el,role,instance) {
+		instance.discard(el);
+		el.stateful.destroy();
+		delete el.enhanced;
+	};
+	
+
 	_DocumentRoles.default_enhance = function(el,role,config) {
 		
 		return {};
@@ -4951,6 +5317,21 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	_DocumentRoles.default_discard = function(el,role,instance) {
 		
 	};
+
+	var _scrollbarSize;
+	function scrollbarSize() {
+		if (_scrollbarSize === undefined) {
+			var div = HTMLElement("div",{ style: "width:50px;height:50px;overflow:scroll;position:absolute;top:-200px;left:-200px;" },
+				'<div style="height:100px;"></div>');
+			document.body.appendChild(div);
+			_scrollbarSize = (div.offsetWidth - div.clientWidth) || /* OSX Lion */7; 
+			document.body.removeChild(div);
+		}
+
+		return _scrollbarSize;
+	}
+	essential.declare("scrollbarSize",scrollbarSize);
+
 	
 	function _StageLayouter(key,el,conf) {
 		this.key = key;

@@ -555,6 +555,7 @@
 
 	//TODO consider moving ClonedEvent out of call
 	function MutableEventModern(sourceEvent) {
+		if (sourceEvent.withActionInfo) return sourceEvent;
 		function ClonedEvent() { 
 			this.withActionInfo = MutableEvent_withActionInfo;
 			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
@@ -572,6 +573,7 @@
 	}
 
 	function MutableEventIE(sourceEvent) {
+		if (sourceEvent && sourceEvent.withActionInfo) return sourceEvent;
 		return new _MutableEvent(sourceEvent == null? window.event : sourceEvent);
 	}
 

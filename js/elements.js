@@ -264,7 +264,7 @@
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement) {
+		if (ev.commandElement && ev.comandElement == ev.actionElement) {
 
 			//TODO action event filtering
 			//TODO disabled
