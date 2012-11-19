@@ -4764,6 +4764,123 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	DocumentRoles.presets.declare("handlers.discard", {});
 
 
+	_DocumentRoles.default_enhance = function(el,role,config) {
+		
+		return {};
+	};
+
+	_DocumentRoles.default_layout = function(el,layout,instance) {
+		
+	};
+	
+	_DocumentRoles.default_discard = function(el,role,instance) {
+		
+	};
+
+	DocumentRoles.useBuiltins = function(list) {
+		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
+		for(var i=0,r; r = list[i]; ++i) {
+			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
+			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
+			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
+		}
+	}
+
+	var _scrollbarSize;
+	function scrollbarSize() {
+		if (_scrollbarSize === undefined) {
+			var div = HTMLElement("div",{ style: "width:50px;height:50px;overflow:scroll;position:absolute;top:-200px;left:-200px;" },
+				'<div style="height:100px;"></div>');
+			document.body.appendChild(div);
+			_scrollbarSize = (div.offsetWidth - div.clientWidth) || /* OSX Lion */7; 
+			document.body.removeChild(div);
+		}
+
+		return _scrollbarSize;
+	}
+	essential.declare("scrollbarSize",scrollbarSize);
+
+	
+	function _StageLayouter(key,el,conf) {
+		this.key = key;
+		this.type = conf.layouter;
+		this.areaNames = conf["area-names"];
+		this.activeArea = null;
+		this.introductionArea = conf["introduction-area"] || "introduction";
+		this.authenticatedArea = conf["authenticated-area"] || "authenticated";
+
+		this.baseClass = conf["base-class"];
+		if (this.baseClass) this.baseClass += " ";
+		else this.baseClass = "";
+
+		essential("stages").push(this); // for area updates
+	}
+	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
+	Layouter.variant("area-stage",StageLayouter);
+
+	_StageLayouter.prototype.getIntroductionArea = function() {
+		return this.introductionArea;
+	};
+
+	_StageLayouter.prototype.getAuthenticatedArea = function() {
+		return this.authenticatedArea;
+	};
+
+	_StageLayouter.prototype.refreshClass = function(el) {
+		var areaClasses = [];
+		for(var i=0,a; a = this.areaNames[i]; ++i) {
+			if (a == this.activeArea) areaClasses.push(a + "-area-active");
+			else areaClasses.push(a + "-area-inactive");
+		}
+		var newClass = this.baseClass + areaClasses.join(" ")
+		if (el.className != newClass) el.className = newClass;
+	};
+
+	_StageLayouter.prototype.updateActiveArea = function(areaName) {
+		this.activeArea = areaName;
+		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
+	};
+
+	function _MemberLaidout(key,el,conf) {
+		this.key = key;
+		this.type = conf.laidout;
+		this.areaNames = conf["area-names"];
+
+		this.baseClass = conf["base-class"];
+		if (this.baseClass) this.baseClass += " ";
+		else this.baseClass = "";
+
+		el.className = this.baseClass + el.className;
+	}
+	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
+	Laidout.variant("area-member",MemberLaidout);
+
+})();
+
+
+(function(){
+	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
+	var essential = Resolver("essential",{});
+	var ObjectType = essential("ObjectType");
+	var console = essential("console");
+	var MutableEvent = essential("MutableEvent");
+	var StatefulResolver = essential("StatefulResolver");
+	var statefulCleaner = essential("statefulCleaner");
+	var HTMLElement = essential("HTMLElement");
+	var HTMLScriptElement = essential("HTMLScriptElement");
+	var Layouter = essential("Layouter");
+	var Laidout = essential("Laidout");
+
+	var addEventListeners = essential("addEventListeners");
+	var removeEventListeners = essential("removeEventListeners");
+	var DocumentRoles = essential("DocumentRoles");
+	var fireAction = essential("fireAction");
+
+	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
+	var serverUrl = location.protocol + "//" + location.host;
+
+
 	function form_onsubmit(ev) {
 		var frm = this;
 		setTimeout(function(){
@@ -4816,17 +4933,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		if (ev.defaultPrevented) return false;
 	}
 
-	DocumentRoles.useBuiltins = function(list) {
-		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
-		for(var i=0,r; r = list[i]; ++i) {
-			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
-			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
-			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
-		}
-	}
 
-
-	DocumentRoles.enhance_dialog = _DocumentRoles.enhance_dialog = function (el,role,config) {
+	DocumentRoles.enhance_dialog = function (el,role,config) {
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -4858,10 +4966,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return {};
 	};
 
-	DocumentRoles.layout_dialog = _DocumentRoles.layout_dialog = function(el,layout,instance) {
+	DocumentRoles.layout_dialog = function(el,layout,instance) {
 		
 	};
-	DocumentRoles.discard_dialog = _DocumentRoles.discard_dialog = function (el,role,instance) {
+	DocumentRoles.discard_dialog = function (el,role,instance) {
 	};
 
 	function applyDefaultRole(elements) {
@@ -4887,7 +4995,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 	}
 
-	DocumentRoles.enhance_toolbar = _DocumentRoles.enhance_toolbar = function(el,role,config) {
+	DocumentRoles.enhance_toolbar = function(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -4902,30 +5010,30 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return {};
 	};
 
-	DocumentRoles.layout_toolbar = _DocumentRoles.layout_toolbar = function(el,layout,instance) {
+	DocumentRoles.layout_toolbar = function(el,layout,instance) {
 		
 	};
-	DocumentRoles.discard_toolbar = _DocumentRoles.discard_toolbar = function(el,role,instance) {
+	DocumentRoles.discard_toolbar = function(el,role,instance) {
 		
 	};
 
 	// menu, menubar
-	DocumentRoles.enhance_navigation = _DocumentRoles.enhance_navigation = 
-	DocumentRoles.enhance_menu = _DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = _DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
+	DocumentRoles.enhance_navigation = 
+	DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
 
-	DocumentRoles.enhance_sheet = _DocumentRoles.enhance_sheet = function(el,role,config) {
+	DocumentRoles.enhance_sheet = function(el,role,config) {
 		
 		return {};
 	};
 
-	DocumentRoles.layout_sheet = _DocumentRoles.layout_sheet = function(el,layout,instance) {
+	DocumentRoles.layout_sheet = function(el,layout,instance) {
 		
 	};
-	DocumentRoles.discard_sheet = _DocumentRoles.discard_sheet = function(el,role,instance) {
+	DocumentRoles.discard_sheet = function(el,role,instance) {
 		
 	};
 
-	DocumentRoles.enhance_spinner = _DocumentRoles.enhance_spinner = function(el,role,config) {
+	DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -4944,10 +5052,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return new Spinner(opts).spin(el);
 	};
 
-	DocumentRoles.layout_spinner = _DocumentRoles.layout_spinner = function(el,layout,instance) {
+	DocumentRoles.layout_spinner = function(el,layout,instance) {
 		
 	};
-	DocumentRoles.discard_spinner = _DocumentRoles.discard_spinner = function(el,role,instance) {
+	DocumentRoles.discard_spinner = function(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
 	};
@@ -4958,7 +5066,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRoles.enhance_application = _DocumentRoles.enhance_application = function(el,role,config) {
+	DocumentRoles.enhance_application = function(el,role,config) {
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
@@ -4974,10 +5082,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return {};
 	};
 
-	DocumentRoles.layout_application = _DocumentRoles.layout_application = function(el,layout,instance) {
+	DocumentRoles.layout_application = function(el,layout,instance) {
 		
 	};
-	DocumentRoles.discard_application = _DocumentRoles.discard_application = function(el,role,instance) {
+	DocumentRoles.discard_application = function(el,role,instance) {
 		
 	};
 
@@ -5035,7 +5143,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
-				console.log("mouse out of scrolled.");
+				//console.log("mouse out of scrolled.");
 			},30);
 		}
 
@@ -5112,11 +5220,15 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		this.event = event;
 
 		// getPageOffsets
+		this.startOffsetY = el.offsetTop;
+		this.startOffsetX = el.offsetLeft;
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
+		//console.log(event);
 		document.onselectstart = function(ev) { return false; };
 
 		//TODO capture in IE
+		movement.track(event,0,0);
 
 		if (el.stateful) el.stateful.set("dragging",true);
 
@@ -5150,36 +5262,50 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return this;
 	};
 
-	
-	var ENHANCED_SCROLLBAR_EVENTS = {
-		"mousedown": function(ev) {
-			if (activeMovement != null) return;
+	function mousedownVert(ev) {
+		if (activeMovement != null) return;
 
-			if (ev.preventDefault) ev.preventDefault();
-			//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
-			var scrolled = this.parentNode.scrolled;
-			var movement = new ElementMovement();
-			movement.track = function(ev,x,y) {
-				scrolled.scrollTop = (scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
-				scrolled.scrollLeft = (scrolled.scrollWidth -  scrolled.clientWidth) * y / (scrolled.clientWidth - 9);
-			};
-			movement.start(this,ev);
-			return false; // prevent default
-		}
-	};
+		if (ev.preventDefault) ev.preventDefault();
+		//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
+		var scrolled = this.parentNode.scrolled;
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			scrolled.scrollTop = this.startScrollTop + y; //(scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
+			//var posInfo = document.getElementById("pos-info");
+			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY;
+		};
+		movement.startScrollTop = scrolled.scrollTop;
+		movement.start(this,ev);
+		return false; // prevent default
+	}
+	function mousedownHorz(ev) {
+		if (activeMovement != null) return;
 
-	function EnhancedScrollbar(el,opts,trackScrolled,update) {
+		if (ev.preventDefault) ev.preventDefault();
+		//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
+		var scrolled = this.parentNode.scrolled;
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			scrolled.scrollLeft = this.startScrollLeft + x; //(scrolled.scrollWidth -  scrolled.clientWidth) * x / (scrolled.clientWidth - 9);
+		};
+		movement.startScrollLeft = scrolled.scrollLeft;
+		movement.start(this,ev);
+		return false; // prevent default
+	}
+
+
+	function EnhancedScrollbar(el,opts,mousedownEvent,update) {
 		this.scrolled = el;
 		this.el = HTMLElement("div", { "class":opts["class"] }, '<nav><header></header><footer></footer></nav>');
 		el.parentNode.appendChild(this.el);
+		this.sizeName = opts.sizeName; this.posName = opts.posName;
 		this.autoHide = opts.autoHide;
-		this.trackScrolled = trackScrolled;
 		this.update = update; // update method
 
 		this.trackScrolled(el);
 
 		addEventListeners(el,ENHANCED_SCROLLED_EVENTS);
-		addEventListeners(this.el,ENHANCED_SCROLLBAR_EVENTS);
+		addEventListeners(this.el,{ "mousedown": mousedownEvent });
 
 		if (opts.initialDisplay !== false) {
 			if (this.show()) {
@@ -5187,6 +5313,12 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			}
 		}
 	}
+
+	EnhancedScrollbar.prototype.trackScrolled = function(el) {
+		this.scrolledTo = el["scroll"+this.posName];
+		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
+		this.scrolledContentSize = el["scroll"+this.sizeName];
+	};
 
 	EnhancedScrollbar.prototype.show = function() {
 		if (this.scrolledContentSize <= this.scrolledSize) return false;
@@ -5225,21 +5357,9 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		delete this.el;
 	};
 
-	function vertTrackScrolled(scrolled) {
-		this.scrolledTo = scrolled.scrollTop;
-		this.scrolledSize = scrolled.clientHeight; //scrolled.offsetHeight - scrollbarSize();
-		this.scrolledContentSize = scrolled.scrollHeight;
-	}
-
 	function vertUpdateScrollbar(scrolled) {
 		this.el.firstChild.style.top = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
 		this.el.firstChild.style.height = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
-	}
-
-	function horzTrackScrolled(scrolled) {
-		this.scrolledTo = scrolled.scrollLeft;
-		this.scrolledSize = scrolled.clientWidth; //scrolled.offsetWidth - scrollbarSize();
-		this.scrolledContentSize = scrolled.scrollWidth;
 	}
 
 	function horzUpdateScrollbar(scrolled) {
@@ -5251,8 +5371,14 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		//? this.el = el
 		this.x = false !== config.x;
 		this.y = false !== config.y;
-		this.vert = new EnhancedScrollbar(el,{ "class":"vert-scroller", initialDisplay: config.initialDisplay },vertTrackScrolled,vertUpdateScrollbar);
-		this.horz = new EnhancedScrollbar(el,{ "class":"horz-scroller", initialDisplay: config.initialDisplay },horzTrackScrolled,horzUpdateScrollbar);
+		this.vert = new EnhancedScrollbar(el,{ 
+			"class":"vert-scroller", initialDisplay: config.initialDisplay,
+			sizeName: "Height", posName: "Top" 
+			},mousedownVert,vertUpdateScrollbar);
+		this.horz = new EnhancedScrollbar(el,{ 
+			"class":"horz-scroller", initialDisplay: config.initialDisplay, 
+			sizeName: "Width", posName: "Left" 
+			},mousedownHorz,horzUpdateScrollbar);
 
 		el.parentNode.scrolled = el;
 		StatefulResolver(el.parentNode,true);
@@ -5285,7 +5411,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		callCleaners(el);
 	};
 
-	DocumentRoles.enhance_scrolled = _DocumentRoles.enhance_scrolled = function(el,role,config) {
+	DocumentRoles.enhance_scrolled = function(el,role,config) {
 		StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
@@ -5294,102 +5420,18 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return r;
 	};
 
-	DocumentRoles.layout_scrolled = _DocumentRoles.layout_scrolled = function(el,layout,instance) {
+	DocumentRoles.layout_scrolled = function(el,layout,instance) {
 		instance.layout(el,layout);
 	};
 	
-	DocumentRoles.discard_scrolled = _DocumentRoles.discard_scrolled = function(el,role,instance) {
+	DocumentRoles.discard_scrolled = function(el,role,instance) {
 		instance.discard(el);
 		el.stateful.destroy();
 		delete el.enhanced;
 	};
 	
 
-	_DocumentRoles.default_enhance = function(el,role,config) {
-		
-		return {};
-	};
-
-	_DocumentRoles.default_layout = function(el,layout,instance) {
-		
-	};
-	
-	_DocumentRoles.default_discard = function(el,role,instance) {
-		
-	};
-
-	var _scrollbarSize;
-	function scrollbarSize() {
-		if (_scrollbarSize === undefined) {
-			var div = HTMLElement("div",{ style: "width:50px;height:50px;overflow:scroll;position:absolute;top:-200px;left:-200px;" },
-				'<div style="height:100px;"></div>');
-			document.body.appendChild(div);
-			_scrollbarSize = (div.offsetWidth - div.clientWidth) || /* OSX Lion */7; 
-			document.body.removeChild(div);
-		}
-
-		return _scrollbarSize;
-	}
-	essential.declare("scrollbarSize",scrollbarSize);
-
-	
-	function _StageLayouter(key,el,conf) {
-		this.key = key;
-		this.type = conf.layouter;
-		this.areaNames = conf["area-names"];
-		this.activeArea = null;
-		this.introductionArea = conf["introduction-area"] || "introduction";
-		this.authenticatedArea = conf["authenticated-area"] || "authenticated";
-
-		this.baseClass = conf["base-class"];
-		if (this.baseClass) this.baseClass += " ";
-		else this.baseClass = "";
-
-		essential("stages").push(this); // for area updates
-	}
-	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
-	Layouter.variant("area-stage",StageLayouter);
-
-	_StageLayouter.prototype.getIntroductionArea = function() {
-		return this.introductionArea;
-	};
-
-	_StageLayouter.prototype.getAuthenticatedArea = function() {
-		return this.authenticatedArea;
-	};
-
-	_StageLayouter.prototype.refreshClass = function(el) {
-		var areaClasses = [];
-		for(var i=0,a; a = this.areaNames[i]; ++i) {
-			if (a == this.activeArea) areaClasses.push(a + "-area-active");
-			else areaClasses.push(a + "-area-inactive");
-		}
-		var newClass = this.baseClass + areaClasses.join(" ")
-		if (el.className != newClass) el.className = newClass;
-	};
-
-	_StageLayouter.prototype.updateActiveArea = function(areaName) {
-		this.activeArea = areaName;
-		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
-	};
-
-	function _MemberLaidout(key,el,conf) {
-		this.key = key;
-		this.type = conf.laidout;
-		this.areaNames = conf["area-names"];
-
-		this.baseClass = conf["base-class"];
-		if (this.baseClass) this.baseClass += " ";
-		else this.baseClass = "";
-
-		el.className = this.baseClass + el.className;
-	}
-	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
-	Laidout.variant("area-member",MemberLaidout);
-
 })();
-
-
 
 
 if(!this.JSON){

@@ -283,7 +283,7 @@
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
-				console.log("mouse out of scrolled.");
+				//console.log("mouse out of scrolled.");
 			},30);
 		}
 
@@ -364,7 +364,7 @@
 		this.startOffsetX = el.offsetLeft;
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
-		console.log(event);
+		//console.log(event);
 		document.onselectstart = function(ev) { return false; };
 
 		//TODO capture in IE
@@ -411,6 +411,8 @@
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
 			scrolled.scrollTop = this.startScrollTop + y; //(scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
+			//var posInfo = document.getElementById("pos-info");
+			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY;
 		};
 		movement.startScrollTop = scrolled.scrollTop;
 		movement.start(this,ev);
