@@ -1053,9 +1053,23 @@ section.sheet {
   -o-transition: linear 300ms opacity;
   transition: linear 300ms opacity;
 }
+.vert-scroller nav header,
+.horz-scroller nav header,
+.vert-scroller nav footer,
+.horz-scroller nav footer {
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+  filter: alpha(opacity=0);
+}
 .vert-scroller.shown nav,
 .horz-scroller.shown nav {
   opacity: 1;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
+  filter: alpha(opacity=100);
+}
+.vert-scroller.shown nav header,
+.horz-scroller.shown nav header,
+.vert-scroller.shown nav footer,
+.horz-scroller.shown nav footer {
   -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
   filter: alpha(opacity=100);
 }
@@ -1073,14 +1087,15 @@ section.sheet {
   display: block;
   position: absolute;
   right: 0;
-  width: 15px;
+  width: 100%;
   height: 9px;
 }
 .vert-scroller > header {
   top: -9px;
 }
 .vert-scroller > footer {
-  bottom: -9px;
+  bottom: -18px;
+  height: 18px;
 }
 .vert-scroller nav {
   right: 1px;
@@ -1128,13 +1143,14 @@ section.sheet {
   position: absolute;
   bottom: 0;
   width: 9px;
-  height: 15px;
+  height: 100%;
 }
 .horz-scroller > header {
   left: -9px;
 }
 .horz-scroller > footer {
-  right: -9px;
+  right: -18px;
+  width: 18px;
 }
 .horz-scroller nav {
   bottom: 1px;
