@@ -16,6 +16,7 @@
 	var removeEventListeners = essential("removeEventListeners");
 	var DocumentRoles = essential("DocumentRoles");
 	var fireAction = essential("fireAction");
+	var scrollbarSize = essential("scrollbarSize");
 
 	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
 	var serverUrl = location.protocol + "//" + location.host;
@@ -359,25 +360,28 @@
 		this.el = el;
 		this.event = event;
 
-		// getPageOffsets
-		this.startOffsetY = el.offsetTop;
-		this.startOffsetX = el.offsetLeft;
+		// Start and bounding offset
+		this.startY = el.offsetTop; this.minY = 0; this.maxY = 1000;
+		this.startX = el.offsetLeft; this.minX = 0; this.maxX = 1000;
+
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
-		//console.log(event);
 		document.onselectstart = function(ev) { return false; };
 
 		//TODO capture in IE
-		movement.track(event,0,0);
+		//movement.track(event,0,0);
 
 		if (el.stateful) el.stateful.set("dragging",true);
 
 		this.drag_events = {
 			//TODO  keyup ESC
+			"keyup": function(ev) {
+
+			},
 			"mousemove": function(ev) {
 				var maxY = 1000, maxX = 1000;
-				var y = Math.min( Math.max(ev.pageY - movement.startPageY,0), maxY );
-				var x = Math.min( Math.max(ev.pageX - movement.startPageX,0), maxX );
+				var y = Math.min( Math.max(movement.startY + ev.pageY - movement.startPageY,movement.minY), movement.maxY );
+				var x = Math.min( Math.max(movement.startX + ev.pageX - movement.startPageX,movement.minX), movement.maxX );
 				movement.track(ev,x,y);
 			},
 			"mouseup": function(ev) {
@@ -410,12 +414,14 @@
 		var scrolled = this.parentNode.scrolled;
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
-			scrolled.scrollTop = this.startScrollTop + y; //(scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
+			scrolled.scrollTop = y; //(scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
 			//var posInfo = document.getElementById("pos-info");
-			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY;
+			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
 		};
-		movement.startScrollTop = scrolled.scrollTop;
 		movement.start(this,ev);
+		movement.startY = scrolled.scrollTop;
+		movement.startX = scrolled.scrollLeft;
+		movement.maxY = scrolled.scrollHeight - scrolled.clientHeight;
 		return false; // prevent default
 	}
 	function mousedownHorz(ev) {
@@ -426,21 +432,24 @@
 		var scrolled = this.parentNode.scrolled;
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
-			scrolled.scrollLeft = this.startScrollLeft + x; //(scrolled.scrollWidth -  scrolled.clientWidth) * x / (scrolled.clientWidth - 9);
+			scrolled.scrollLeft = x; //(scrolled.scrollWidth -  scrolled.clientWidth) * x / (scrolled.clientWidth - 9);
 		};
-		movement.startScrollLeft = scrolled.scrollLeft;
 		movement.start(this,ev);
+		movement.startY = scrolled.scrollTop;
+		movement.startX = scrolled.scrollLeft;
+		movement.maxY = scrolled.scrollWidth - scrolled.clientWidth;
 		return false; // prevent default
 	}
 
 
-	function EnhancedScrollbar(el,opts,mousedownEvent,update) {
+	function EnhancedScrollbar(el,opts,mousedownEvent) {
 		this.scrolled = el;
-		this.el = HTMLElement("div", { "class":opts["class"] }, '<nav><header></header><footer></footer></nav>');
+		this.el = HTMLElement("div", { "class":opts["class"] }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		el.parentNode.appendChild(this.el);
 		this.sizeName = opts.sizeName; this.posName = opts.posName;
+		this.sizeStyle = opts.sizeName.toLowerCase();
+		this.posStyle = opts.posName.toLowerCase();
 		this.autoHide = opts.autoHide;
-		this.update = update; // update method
 
 		this.trackScrolled(el);
 
@@ -458,6 +467,11 @@
 		this.scrolledTo = el["scroll"+this.posName];
 		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
 		this.scrolledContentSize = el["scroll"+this.sizeName];
+	};
+
+	EnhancedScrollbar.prototype.update = function(scrolled) {
+		this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+		this.el.lastChild.style[this.sizeStyle] = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
 	};
 
 	EnhancedScrollbar.prototype.show = function() {
@@ -497,15 +511,6 @@
 		delete this.el;
 	};
 
-	function vertUpdateScrollbar(scrolled) {
-		this.el.firstChild.style.top = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
-		this.el.firstChild.style.height = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
-	}
-
-	function horzUpdateScrollbar(scrolled) {
-		this.el.firstChild.style.left = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
-		this.el.firstChild.style.width = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
-	}
 
 	function EnhancedScrolled(el,config) {
 		//? this.el = el
@@ -514,11 +519,13 @@
 		this.vert = new EnhancedScrollbar(el,{ 
 			"class":"vert-scroller", initialDisplay: config.initialDisplay,
 			sizeName: "Height", posName: "Top" 
-			},mousedownVert,vertUpdateScrollbar);
+			},mousedownVert);
+		this.vert.el.style.width = scrollbarSize() + "px";
 		this.horz = new EnhancedScrollbar(el,{ 
 			"class":"horz-scroller", initialDisplay: config.initialDisplay, 
 			sizeName: "Width", posName: "Left" 
-			},mousedownHorz,horzUpdateScrollbar);
+			},mousedownHorz);
+		this.horz.el.style.height = scrollbarSize() + "px";
 
 		el.parentNode.scrolled = el;
 		StatefulResolver(el.parentNode,true);

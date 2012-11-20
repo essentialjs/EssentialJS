@@ -1009,6 +1009,12 @@ section.sheet {
 .leftSide .horz-scroller {
   background-color: #ffffff;
 }
+.leftSide .vert-scroller > header,
+.leftSide .horz-scroller > header,
+.leftSide .vert-scroller > footer,
+.leftSide .horz-scroller > footer {
+  background-color: #ffffff;
+}
 .rightSide {
   position: absolute;
   right: 0;
@@ -1059,37 +1065,53 @@ section.sheet {
   right: 0;
   top: 9px;
   bottom: 18px;
+  overflow: visible;
   width: 15px;
 }
+.vert-scroller > header,
+.vert-scroller > footer {
+  display: block;
+  position: absolute;
+  right: 0;
+  width: 15px;
+  height: 9px;
+}
+.vert-scroller > header {
+  top: -9px;
+}
+.vert-scroller > footer {
+  bottom: -9px;
+}
 .vert-scroller nav {
-  right: -1px;
+  right: 1px;
   top: 0;
   height: 100%;
   overflow: visible;
   width: 7px;
-  border: 1px solid transparent;
 }
 .vert-scroller nav header {
   display: block;
   position: absolute;
   top: -9px;
-  left: -1px;
+  right: 0;
   overflow: visible;
   width: 7px;
-  height: 7px;
-  border: 1px solid transparent;
+  height: 18px;
   background-color: #777;
+  border-radius: 7px;
+  -webkit-border-radius: 7px;
 }
 .vert-scroller nav footer {
   display: block;
   position: absolute;
   bottom: -9px;
-  left: -1px;
+  right: 0;
   overflow: visible;
   width: 7px;
-  height: 7px;
-  border: 1px solid transparent;
+  height: 18px;
   background-color: #777;
+  border-radius: 7px;
+  -webkit-border-radius: 7px;
 }
 .horz-scroller {
   display: block;
@@ -1097,35 +1119,51 @@ section.sheet {
   bottom: 0;
   left: 9px;
   right: 18px;
+  overflow: visible;
   height: 15px;
 }
+.horz-scroller > header,
+.horz-scroller > footer {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  width: 9px;
+  height: 15px;
+}
+.horz-scroller > header {
+  left: -9px;
+}
+.horz-scroller > footer {
+  right: -9px;
+}
 .horz-scroller nav {
-  bottom: -1px;
+  bottom: 1px;
   left: 0;
   width: 100%;
   overflow: visible;
   height: 7px;
-  border: 1px solid transparent;
 }
 .horz-scroller nav header {
   display: block;
   position: absolute;
   left: -9px;
-  bottom: -1px;
+  bottom: 0;
   overflow: visible;
-  width: 7px;
+  width: 18px;
   height: 7px;
-  border: 1px solid transparent;
   background-color: #777;
+  border-radius: 7px;
+  -webkit-border-radius: 7px;
 }
 .horz-scroller nav footer {
   display: block;
   position: absolute;
   right: -9px;
-  bottom: -1px;
+  bottom: 0;
   overflow: visible;
-  width: 7px;
+  width: 18px;
   height: 7px;
-  border: 1px solid transparent;
   background-color: #777;
+  border-radius: 7px;
+  -webkit-border-radius: 7px;
 }
