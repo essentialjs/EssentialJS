@@ -1,5 +1,6 @@
+/*jslint white: true */
 // types for describing generator arguments and generated properties
-(function(win){
+!function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	var essential = Resolver("essential",{});
@@ -128,7 +129,7 @@
 			delete this._set[value];
 			return;
 		}
-		// single existing different value
+		// single existing different value 
 		if (typeof entry != "object" || !entry.multiple_values) return;
 
 		// multiple existing
@@ -909,5 +910,5 @@
 	translations._ = translate;
 	essential.set("translate",translate); 
  
- })(window);
+ }(window);
 

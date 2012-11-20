@@ -18,7 +18,7 @@
 * https://github.com/ilinsky/xmlhttprequest/commit/9f1d0fd49b0583073c1ca19e220dc13fe0f509b4
 */
 
-(function () {
+!function () {
 	//"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	// Save reference to earlier defined object implementation (if any)
@@ -541,4 +541,4 @@
 	// Register new object with window
 	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
-})();
+}();

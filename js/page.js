@@ -1,15 +1,16 @@
+/*jslint white: true */
 /*
 	StatefulResolver and ApplicationConfig
 */
 !function() {
 
-	var essential = Resolver("essential",{});
-	var console = essential("console");
-	var DOMTokenList = essential("DOMTokenList");
-	var MutableEvent = essential("MutableEvent");
-	var arrayContains = essential("arrayContains");
-	var HTMLElement = essential("HTMLElement");
-	var HTMLScriptElement = essential("HTMLScriptElement");
+	var essential = Resolver("essential",{}),
+		console = essential("console"),
+		DOMTokenList = essential("DOMTokenList"),
+		MutableEvent = essential("MutableEvent"),
+		arrayContains = essential("arrayContains"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement");
 
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {

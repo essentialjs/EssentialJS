@@ -1,23 +1,23 @@
-(function(){
+/*jslint white: true */
+!function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{});
-	var ObjectType = essential("ObjectType");
-	var console = essential("console");
-	var MutableEvent = essential("MutableEvent");
-	var StatefulResolver = essential("StatefulResolver");
-	var ApplicationConfig = essential("ApplicationConfig");
-	var pageResolver = Resolver("page");
-	var getActiveArea = essential("getActiveArea");
-	var arrayContains = essential("arrayContains");
-	var statefulCleaner = essential("statefulCleaner");
-	var HTMLElement = essential("HTMLElement");
-	var HTMLScriptElement = essential("HTMLScriptElement");
-	var Layouter = essential("Layouter");
-	var Laidout = essential("Laidout");
-
-	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
-	var serverUrl = location.protocol + "//" + location.host;
+	var essential = Resolver("essential",{}),
+		ObjectType = essential("ObjectType"),
+		console = essential("console"),
+		MutableEvent = essential("MutableEvent"),
+		StatefulResolver = essential("StatefulResolver"),
+		ApplicationConfig = essential("ApplicationConfig"),
+		pageResolver = Resolver("page"),
+		getActiveArea = essential("getActiveArea"),
+		arrayContains = essential("arrayContains"),
+		statefulCleaner = essential("statefulCleaner"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
+		serverUrl = location.protocol + "//" + location.host;
 
 	function getScrollOffsets(el) {
 		var left=0,top=0;
@@ -606,5 +606,5 @@
 	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
 	Laidout.variant("area-member",MemberLaidout);
 
-})();
+}();
 

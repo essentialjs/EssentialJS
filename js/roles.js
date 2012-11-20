@@ -1,25 +1,24 @@
-(function(){
+/*jshint forin:true, eqnull:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, indent:4, maxerr:50, newcap:false, white:false, devel:true */
+!function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{});
-	var ObjectType = essential("ObjectType");
-	var console = essential("console");
-	var MutableEvent = essential("MutableEvent");
-	var StatefulResolver = essential("StatefulResolver");
-	var statefulCleaner = essential("statefulCleaner");
-	var HTMLElement = essential("HTMLElement");
-	var HTMLScriptElement = essential("HTMLScriptElement");
-	var Layouter = essential("Layouter");
-	var Laidout = essential("Laidout");
-
-	var addEventListeners = essential("addEventListeners");
-	var removeEventListeners = essential("removeEventListeners");
-	var DocumentRoles = essential("DocumentRoles");
-	var fireAction = essential("fireAction");
-	var scrollbarSize = essential("scrollbarSize");
-
-	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
-	var serverUrl = location.protocol + "//" + location.host;
+	var essential = Resolver("essential",{}),
+		ObjectType = essential("ObjectType"),
+		console = essential("console"),
+		MutableEvent = essential("MutableEvent"),
+		StatefulResolver = essential("StatefulResolver"),
+		statefulCleaner = essential("statefulCleaner"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		addEventListeners = essential("addEventListeners"),
+		removeEventListeners = essential("removeEventListeners"),
+		DocumentRoles = essential("DocumentRoles"),
+		fireAction = essential("fireAction"),
+		scrollbarSize = essential("scrollbarSize"),
+		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
+		serverUrl = location.protocol + "//" + location.host;
 
 
 	function form_onsubmit(ev) {
@@ -30,19 +29,20 @@
 		return false;
 	}
 	function form_submit(ev) {
-		if (document.activeElement) document.activeElement.blur();
+		if (document.activeElement) { document.activeElement.blur(); }
 		this.blur();
 
 		dialog_submit.call(this,ev);
 	}
 	function dialog_submit(clicked) {
-		if (clicked == undefined) clicked = MutableEvent().withDefaultSubmit(this);
+		if (clicked == undefined) { clicked = MutableEvent().withDefaultSubmit(this); }
 
 		if (clicked.commandElement) {
 			fireAction(clicked);
-		} else {
+		} 
+		//else {
 			//TODO default submit when no submit button or event
-		}
+		//}
 	}
 
 	function toolbar_submit(ev) {
@@ -50,12 +50,12 @@
 	}
 
 	function form_blur() {
-		for(var i=0,e; e=this.elements[i]; ++i) e.blur();
+		for(var i=0,e; (e=this.elements[i]); ++i) { e.blur(); }
 	}
 	function form_focus() {
-		for(var i=0,e; e=this.elements[i]; ++i) {
-			var autofocus = e.getAttribute("autofocus");
-			if (autofocus == undefined) continue;
+		for(var i=0,e; (e=this.elements[i]); ++i) {
+			var autofocus = e.getAttribute("autofocus"); // null/"" if undefined
+			if (!autofocus) continue;
 			e.focus();
 			break; 
 		}
@@ -114,25 +114,27 @@
 	};
 
 	function applyDefaultRole(elements) {
-		for(var i=0,el; el = elements[i]; ++i) switch(el.tagName) {
-			case "button":
-			case "BUTTON":
-				el.setAttribute("role","button");
-				break;
-			case "a":
-			case "A":
-				el.setAttribute("role","link");
-				break;
-			// menuitem
-		}
+		for(var i=0,el; (el = elements[i]); ++i) {
+			switch(el.tagName) {
+				case "button":
+				case "BUTTON":
+					el.setAttribute("role","button");
+					break;
+				case "a":
+				case "A":
+					el.setAttribute("role","link");
+					break;
+				// menuitem
+			}
+		} 
 	}
 
 	/* convert listed button elements */
 	function forceNoSubmitType(buttons) {
 
-		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") {
+		for(var i=0,button; (button = buttons[i]); ++i) if (button.type === "submit") {
 			button.setAttribute("type","button");
-			if (button.type == "submit") button.type = "submit";
+			if (button.type === "submit") button.type = "submit";
 		}
 	}
 
@@ -578,4 +580,4 @@
 	};
 	
 
-})();
+}();
