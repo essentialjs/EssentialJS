@@ -140,14 +140,14 @@
 	essential.set("configLoaded",configLoaded);
 
 
-	function _makeEventCleaner(listeners,bubble)
+	function _makeEventCleaner(listeners,sourceListeners,bubble)
 	{
 		// must be called with element as this
 		function cleaner() {
 			if (this.removeEventListener) {
 				for(var n in listeners) {
 					this.removeEventListener(n, listeners[n], bubble);
-					delete listeners[n];
+					// allow reusing listener object,  delete listeners[n];
 				}
 			} else {
 				for(var n in listeners) {
@@ -156,7 +156,7 @@
 				}
 			}
 		}
-		cleaner.listeners = listeners; // for removeEventListeners
+		cleaner.listeners = sourceListeners; // for removeEventListeners
 		return cleaner;
 	}
 
@@ -189,14 +189,14 @@
 			for(var n in listeners) {
 				eControl.addEventListener(n, listeners[n], bubble || false);
 			}
-			eControl._cleaners.push(_makeEventCleaner(listeners,bubble || false));
+			eControl._cleaners.push(_makeEventCleaner(listeners,listeners,bubble || false));
 		} else {
 			var listeners2 = {};
 			for(var n in listeners) {
 				listeners2[n] = makeIeListener(eControl,listeners[n]);
 				eControl.attachEvent('on'+n,listeners2[n]);
 			}
-			eControl._cleaners.push(_makeEventCleaner(listeners2,bubble || false));
+			eControl._cleaners.push(_makeEventCleaner(listeners2,listeners,bubble || false));
 		}   
 	}
 	essential.declare("addEventListeners",addEventListeners);
@@ -213,6 +213,7 @@
 		}
 		if (el._cleaners) {
 			for(var i=0,c; c = el._cleaners[i]; ++i) if (c.listeners == listeners) {
+				c.call(el);
 				el._cleaners.splice(i,1);
 			}
 		}

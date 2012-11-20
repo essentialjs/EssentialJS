@@ -1106,8 +1106,9 @@ Generator.ObjectGenerator = Generator(Object);
 
 
 
+/*jslint white: true */
 // types for describing generator arguments and generated properties
-(function(win){
+!function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	var essential = Resolver("essential",{});
@@ -1236,7 +1237,7 @@ Generator.ObjectGenerator = Generator(Object);
 			delete this._set[value];
 			return;
 		}
-		// single existing different value
+		// single existing different value 
 		if (typeof entry != "object" || !entry.multiple_values) return;
 
 		// multiple existing
@@ -1437,6 +1438,8 @@ Generator.ObjectGenerator = Generator(Object);
 	function copyMouseEvent(src) {
 		this.clientX = src.clientX;
 		this.clientY = src.clientY;
+		this.pageX = src.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+		this.pageY = src.clientY + document.body.scrollTop + document.documentElement.scrollTop;
 		this.screenX = src.screenX;
 		this.screenY = src.screenY;
 		this.button = BUTTON_MAP[src.button]; //TODO check map
@@ -2017,21 +2020,22 @@ Generator.ObjectGenerator = Generator(Object);
 	translations._ = translate;
 	essential.set("translate",translate); 
  
- })(window);
+ }(window);
 
 
+/*jslint white: true */
 /*
 	StatefulResolver and ApplicationConfig
 */
 !function() {
 
-	var essential = Resolver("essential",{});
-	var console = essential("console");
-	var DOMTokenList = essential("DOMTokenList");
-	var MutableEvent = essential("MutableEvent");
-	var arrayContains = essential("arrayContains");
-	var HTMLElement = essential("HTMLElement");
-	var HTMLScriptElement = essential("HTMLScriptElement");
+	var essential = Resolver("essential",{}),
+		console = essential("console"),
+		DOMTokenList = essential("DOMTokenList"),
+		MutableEvent = essential("MutableEvent"),
+		arrayContains = essential("arrayContains"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement");
 
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
@@ -2614,7 +2618,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 * https://github.com/ilinsky/xmlhttprequest/commit/9f1d0fd49b0583073c1ca19e220dc13fe0f509b4
 */
 
-(function () {
+!function () {
 	//"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	// Save reference to earlier defined object implementation (if any)
@@ -3137,27 +3141,27 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	// Register new object with window
 	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
-})();
-(function(){
+}();
+/*jslint white: true */
+!function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{});
-	var ObjectType = essential("ObjectType");
-	var console = essential("console");
-	var MutableEvent = essential("MutableEvent");
-	var StatefulResolver = essential("StatefulResolver");
-	var ApplicationConfig = essential("ApplicationConfig");
-	var pageResolver = Resolver("page");
-	var getActiveArea = essential("getActiveArea");
-	var arrayContains = essential("arrayContains");
-	var statefulCleaner = essential("statefulCleaner");
-	var HTMLElement = essential("HTMLElement");
-	var HTMLScriptElement = essential("HTMLScriptElement");
-	var Layouter = essential("Layouter");
-	var Laidout = essential("Laidout");
-
-	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
-	var serverUrl = location.protocol + "//" + location.host;
+	var essential = Resolver("essential",{}),
+		ObjectType = essential("ObjectType"),
+		console = essential("console"),
+		MutableEvent = essential("MutableEvent"),
+		StatefulResolver = essential("StatefulResolver"),
+		ApplicationConfig = essential("ApplicationConfig"),
+		pageResolver = Resolver("page"),
+		getActiveArea = essential("getActiveArea"),
+		arrayContains = essential("arrayContains"),
+		statefulCleaner = essential("statefulCleaner"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
+		serverUrl = location.protocol + "//" + location.host;
 
 	function getScrollOffsets(el) {
 		var left=0,top=0;
@@ -3280,14 +3284,14 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	essential.set("configLoaded",configLoaded);
 
 
-	function _makeEventCleaner(listeners,bubble)
+	function _makeEventCleaner(listeners,sourceListeners,bubble)
 	{
 		// must be called with element as this
 		function cleaner() {
 			if (this.removeEventListener) {
 				for(var n in listeners) {
 					this.removeEventListener(n, listeners[n], bubble);
-					delete listeners[n];
+					// allow reusing listener object,  delete listeners[n];
 				}
 			} else {
 				for(var n in listeners) {
@@ -3296,7 +3300,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				}
 			}
 		}
-		cleaner.listeners = listeners; // for removeEventListeners
+		cleaner.listeners = sourceListeners; // for removeEventListeners
 		return cleaner;
 	}
 
@@ -3329,14 +3333,14 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			for(var n in listeners) {
 				eControl.addEventListener(n, listeners[n], bubble || false);
 			}
-			eControl._cleaners.push(_makeEventCleaner(listeners,bubble || false));
+			eControl._cleaners.push(_makeEventCleaner(listeners,listeners,bubble || false));
 		} else {
 			var listeners2 = {};
 			for(var n in listeners) {
 				listeners2[n] = makeIeListener(eControl,listeners[n]);
 				eControl.attachEvent('on'+n,listeners2[n]);
 			}
-			eControl._cleaners.push(_makeEventCleaner(listeners2,bubble || false));
+			eControl._cleaners.push(_makeEventCleaner(listeners2,listeners,bubble || false));
 		}   
 	}
 	essential.declare("addEventListeners",addEventListeners);
@@ -3353,6 +3357,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 		if (el._cleaners) {
 			for(var i=0,c; c = el._cleaners[i]; ++i) if (c.listeners == listeners) {
+				c.call(el);
 				el._cleaners.splice(i,1);
 			}
 		}
@@ -3746,31 +3751,30 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
 	Laidout.variant("area-member",MemberLaidout);
 
-})();
+}();
 
 
-(function(){
+/*jshint forin:true, eqnull:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, indent:4, maxerr:50, newcap:false, white:false, devel:true */
+!function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{});
-	var ObjectType = essential("ObjectType");
-	var console = essential("console");
-	var MutableEvent = essential("MutableEvent");
-	var StatefulResolver = essential("StatefulResolver");
-	var statefulCleaner = essential("statefulCleaner");
-	var HTMLElement = essential("HTMLElement");
-	var HTMLScriptElement = essential("HTMLScriptElement");
-	var Layouter = essential("Layouter");
-	var Laidout = essential("Laidout");
-
-	var addEventListeners = essential("addEventListeners");
-	var removeEventListeners = essential("removeEventListeners");
-	var DocumentRoles = essential("DocumentRoles");
-	var fireAction = essential("fireAction");
-	var scrollbarSize = essential("scrollbarSize");
-
-	var baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1);
-	var serverUrl = location.protocol + "//" + location.host;
+	var essential = Resolver("essential",{}),
+		ObjectType = essential("ObjectType"),
+		console = essential("console"),
+		MutableEvent = essential("MutableEvent"),
+		StatefulResolver = essential("StatefulResolver"),
+		statefulCleaner = essential("statefulCleaner"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		addEventListeners = essential("addEventListeners"),
+		removeEventListeners = essential("removeEventListeners"),
+		DocumentRoles = essential("DocumentRoles"),
+		fireAction = essential("fireAction"),
+		scrollbarSize = essential("scrollbarSize"),
+		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
+		serverUrl = location.protocol + "//" + location.host;
 
 
 	function form_onsubmit(ev) {
@@ -3781,19 +3785,20 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return false;
 	}
 	function form_submit(ev) {
-		if (document.activeElement) document.activeElement.blur();
+		if (document.activeElement) { document.activeElement.blur(); }
 		this.blur();
 
 		dialog_submit.call(this,ev);
 	}
 	function dialog_submit(clicked) {
-		if (clicked == undefined) clicked = MutableEvent().withDefaultSubmit(this);
+		if (clicked == undefined) { clicked = MutableEvent().withDefaultSubmit(this); }
 
 		if (clicked.commandElement) {
 			fireAction(clicked);
-		} else {
+		} 
+		//else {
 			//TODO default submit when no submit button or event
-		}
+		//}
 	}
 
 	function toolbar_submit(ev) {
@@ -3801,12 +3806,12 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 
 	function form_blur() {
-		for(var i=0,e; e=this.elements[i]; ++i) e.blur();
+		for(var i=0,e; (e=this.elements[i]); ++i) { e.blur(); }
 	}
 	function form_focus() {
-		for(var i=0,e; e=this.elements[i]; ++i) {
-			var autofocus = e.getAttribute("autofocus");
-			if (autofocus == undefined) continue;
+		for(var i=0,e; (e=this.elements[i]); ++i) {
+			var autofocus = e.getAttribute("autofocus"); // null/"" if undefined
+			if (!autofocus) continue;
 			e.focus();
 			break; 
 		}
@@ -3865,25 +3870,27 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	};
 
 	function applyDefaultRole(elements) {
-		for(var i=0,el; el = elements[i]; ++i) switch(el.tagName) {
-			case "button":
-			case "BUTTON":
-				el.setAttribute("role","button");
-				break;
-			case "a":
-			case "A":
-				el.setAttribute("role","link");
-				break;
-			// menuitem
-		}
+		for(var i=0,el; (el = elements[i]); ++i) {
+			switch(el.tagName) {
+				case "button":
+				case "BUTTON":
+					el.setAttribute("role","button");
+					break;
+				case "a":
+				case "A":
+					el.setAttribute("role","link");
+					break;
+				// menuitem
+			}
+		} 
 	}
 
 	/* convert listed button elements */
 	function forceNoSubmitType(buttons) {
 
-		for(var i=0,button; button = buttons[i]; ++i) if (button.type == "submit") {
+		for(var i=0,button; (button = buttons[i]); ++i) if (button.type === "submit") {
 			button.setAttribute("type","button");
-			if (button.type == "submit") button.type = "submit";
+			if (button.type === "submit") button.type = "submit";
 		}
 	}
 
@@ -4329,4 +4336,4 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	};
 	
 
-})();
+}();

@@ -330,6 +330,8 @@
 	function copyMouseEvent(src) {
 		this.clientX = src.clientX;
 		this.clientY = src.clientY;
+		this.pageX = src.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+		this.pageY = src.clientY + document.body.scrollTop + document.documentElement.scrollTop;
 		this.screenX = src.screenX;
 		this.screenY = src.screenY;
 		this.button = BUTTON_MAP[src.button]; //TODO check map
