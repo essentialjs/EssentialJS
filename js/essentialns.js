@@ -264,7 +264,17 @@
 			if (typeof p == "object" && "length" in p) l.concat(p);
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
-		if (l.length) e.innerHTML = l.join("");
+		if (l.length) {
+			//TODO _document
+			_document = document;
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = l.join("");	
+			for(var c = drop.firstElementChild||drop.firstChild; c; c = drop.firstElementChild||drop.firstChild) e.appendChild(c);
+		} 
 		
 		//TODO .appendTo function
 		
