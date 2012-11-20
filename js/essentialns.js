@@ -579,7 +579,7 @@
 
 	var MutableEvent;
 	if (navigator.userAgent.match(/Firefox\//)) MutableEvent = essential.declare("MutableEvent",MutableEventFF);
-	else if (navigator.userAgent.match(/MSIE\//)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
+	else if (navigator.userAgent.match(/MSIE /) && !navigator.userAgent.match(/Opera/)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
 	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
 
 
