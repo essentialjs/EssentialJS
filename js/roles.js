@@ -529,6 +529,13 @@
 			},mousedownHorz);
 		this.horz.el.style.height = scrollbarSize() + "px";
 
+		if (config.obscured) {
+			el.style.right = "-" + scrollbarSize() + "px";
+			el.style.bottom = "-" + scrollbarSize() + "px";
+			this.vert.el.style.right = "-" + scrollbarSize() + "px";
+			this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
+		}
+
 		el.parentNode.scrolled = el;
 		StatefulResolver(el.parentNode,true);
 		addEventListeners(el.parentNode,ENHANCED_SCROLLED_PARENT_EVENTS);

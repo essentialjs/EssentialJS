@@ -991,8 +991,8 @@ section.sheet {
   left: 0;
   width: 35%;
   top: 0;
-  bottom: 0;
-  overflow: hidden;
+  bottom: 15px;
+  overflow: visible;
 }
 .leftSide table {
   margin: 30px;

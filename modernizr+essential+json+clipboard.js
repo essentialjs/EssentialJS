@@ -4411,7 +4411,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			if (this.removeEventListener) {
 				for(var n in listeners) {
 					this.removeEventListener(n, listeners[n], bubble);
-					// allow reusing listener object,  delete listeners[n];
+					delete listeners[n];
 				}
 			} else {
 				for(var n in listeners) {
@@ -4449,42 +4449,41 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			};
 		} 
 
+		var listeners2 = {};
 		if (eControl.addEventListener) {
 			for(var n in listeners) {
+				listeners2[n] = listeners[n];
 				eControl.addEventListener(n, listeners[n], bubble || false);
 			}
-			eControl._cleaners.push(_makeEventCleaner(listeners,listeners,bubble || false));
 		} else {
-			var listeners2 = {};
 			for(var n in listeners) {
 				listeners2[n] = makeIeListener(eControl,listeners[n]);
 				eControl.attachEvent('on'+n,listeners2[n]);
 			}
-			eControl._cleaners.push(_makeEventCleaner(listeners2,listeners,bubble || false));
 		}   
+		eControl._cleaners.push(_makeEventCleaner(listeners2,listeners,bubble || false));
 	}
 	essential.declare("addEventListeners",addEventListeners);
 
 	function removeEventListeners(el, listeners,bubble) {
-		if (el.removeEventListener) {
-			for(var n in listeners) {
-				el.removeEventListener(n, listeners[n], bubble || false);
-			}
-		} else {
-			for(var n in listeners) {
-				el.detachEvent('on'+n,listeners[n]);
-			}
-		}
 		if (el._cleaners) {
 			for(var i=0,c; c = el._cleaners[i]; ++i) if (c.listeners == listeners) {
 				c.call(el);
 				el._cleaners.splice(i,1);
 			}
+		} else {
+			if (el.removeEventListener) {
+				for(var n in listeners) {
+					el.removeEventListener(n, listeners[n], bubble || false);
+				}
+			} else {
+				for(var n in listeners) {
+					el.detachEvent('on'+n,listeners[n]);
+				}
+			}
 		}
 	}
 	essential.declare("removeEventListeners",removeEventListeners);
-
-	//TODO removeEventListeners (eControl, listeners, bubble)
 
 	/**
 	 * Cleans up registered event listeners and other references
@@ -5404,6 +5403,13 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			sizeName: "Width", posName: "Left" 
 			},mousedownHorz);
 		this.horz.el.style.height = scrollbarSize() + "px";
+
+		if (config.obscured) {
+			el.style.right = "-" + scrollbarSize() + "px";
+			el.style.bottom = "-" + scrollbarSize() + "px";
+			this.vert.el.style.right = "-" + scrollbarSize() + "px";
+			this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
+		}
 
 		el.parentNode.scrolled = el;
 		StatefulResolver(el.parentNode,true);
