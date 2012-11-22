@@ -3642,8 +3642,8 @@ Generator.ObjectGenerator = Generator(Object);
 
 	ApplicationConfig.prototype._apply = function() {
 		for(var k in this.config()) {
-			var conf = this.config()[k];
 			var el = this.getElement(k);
+			var conf = this._getElementRoleConfig(el,k);
 
 			if (conf.layouter) {
 				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
