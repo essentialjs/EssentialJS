@@ -498,7 +498,7 @@
 	ApplicationConfig.prototype._apply = function() {
 		for(var k in this.config()) {
 			var el = this.getElement(k);
-			var conf = this._getElementRoleConfig(el,k);
+			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
 
 			if (conf.layouter) {
 				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
