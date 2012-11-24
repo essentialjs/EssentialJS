@@ -695,6 +695,7 @@
 			if (desc.enhanced) {
 				if (inDom && !desc.discarded) {
 					// maintain it
+					desc.refresh();
 				} else {
 					// discard it
 					//TODO anything else ?

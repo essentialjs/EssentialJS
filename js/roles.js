@@ -284,7 +284,7 @@
 			if (!enhanced.vert.shown) {
 				enhanced.vert.show();
 				enhanced.horz.show();
-				if (!stateful("over") && !this.stateful("dragging")) {
+				if (!this.stateful("over") && !this.stateful("dragging")) {
 					enhanced.vert.delayedHide();
 					enhanced.horz.delayedHide();
 				}

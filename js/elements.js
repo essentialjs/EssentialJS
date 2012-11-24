@@ -362,6 +362,36 @@
 		//TODO
 	};
 
+	function refreshRoleLayoutCallback(dr,layoutHandler) {
+		// called on EnhancedDescription
+		return function() {
+			var updateLayout = false,
+				ow = this.el.offsetWidth, 
+				oh  = this.el.offsetHeight,
+				sw = this.el.scrollWidth,
+				sh = this.el.scrollHeight;
+			if (ow == 0 && oh == 0) {
+				if (this.layout.displayed) updateLayout = true;
+				this.layout.displayed = false;
+			}
+			if (this.layout.width != ow || this.layout.height != oh) {
+				this.layout.width = ow;
+				this.layout.height = oh;
+				updateLayout = true
+			}
+			if (this.layout.contentWidth != sw || this.layout.contentHeight != sh) {
+				this.layout.contentWidth = sw;
+				this.layout.contentHeight = sh;
+				updateLayout = true
+			}
+			if (this.layout.area != getActiveArea()) { 
+				this.layout.area = getActiveArea();
+				updateLayout = true;
+			}
+			if (updateLayout) layoutHandler.call(dr,this.el,this.layout,this.instance);		
+		};
+	}
+
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
 		var statefuls = ApplicationConfig(); // Ensure that config is present
@@ -375,6 +405,8 @@
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
 				desc.enhanced = desc.instance === false? false:true;
 				++enhancedCount;
+				var layoutHandler = this.handlers.layout[desc.role];
+				if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
 			}
 			if (! desc.enhanced) incomplete = true;
 		}
@@ -481,6 +513,11 @@
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
+					updateLayout = true
+				}
+				if (desc.layout.contentWidth != sw || desc.layout.contentHeight != sh) {
+					desc.layout.contentWidth = sw;
+					desc.layout.contentHeight = sh;
 					updateLayout = true
 				}
 				if (desc.layout.area != getActiveArea()) { 
