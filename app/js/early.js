@@ -75,4 +75,28 @@
 		}
 	});
 	demoSession.stored("load change unload","local");
+
+	Resolver().declare("UpdatingTable", Generator(function(el,role,config) {
+		this.el = el;
+		this.interval = setInterval(function(){
+			var tbody = document.createElement("TBODY");
+			tbody.innerHTML = ["<tr>",
+			"<td>10/1/2011<td>",
+			"<td>"+Math.ceil(Math.random()*1000)+"<td>",
+			"<td>Description<td>",
+			"<td>0<td>",
+			"<td>0<td>",
+			"<td>0<td>",
+			"<td>0<td>",
+			"</tr>"].join(""); 
+			el.appendChild(tbody);
+		},3000);
+	},{
+		discarded: function(instance) {
+			if (instance.interval) clearInterval(instance.interval);
+		},
+		prototype: {
+
+		}
+	}));
 })();
