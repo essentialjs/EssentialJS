@@ -3450,7 +3450,10 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		_activeAreaName = areaName;
 		// only use DocumentRoles layout if DOM is ready
-		if (document.body) essential("DocumentRoles")()._layout_descs(); //TODO could this be done somewhere else?
+		if (document.body) {
+			var dr = essential("DocumentRoles")();
+			dr._layout_descs(dr.descs); //TODO could this be done somewhere else?	
+		} 
 	}
 	essential.set("activateArea",activateArea);
 	
@@ -3510,7 +3513,8 @@ Generator.ObjectGenerator = Generator(Object);
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
-		essential("DocumentRoles")()._enhance_descs();
+		var dr = essential("DocumentRoles")()
+		dr._enhance_descs(dr.descs);
 		//TODO time to default_enhance yet?
 	}
 
@@ -3643,7 +3647,7 @@ Generator.ObjectGenerator = Generator(Object);
 	ApplicationConfig.prototype._apply = function() {
 		for(var k in this.config()) {
 			var el = this.getElement(k);
-			var conf = this._getElementRoleConfig(el,k);
+			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
 
 			if (conf.layouter) {
 				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
@@ -4520,7 +4524,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
-		DocumentRoles()._resize_descs();
+		DocumentRoles()._resize_descs(DocumentRoles().descs);
 	}
 
 	/*
@@ -4631,7 +4635,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		} else {
 			this.descs = this._role_descs(doc.getElementsByTagName("*"));
 		}
-		this._enhance_descs();
+		this._enhance_descs(this.descs);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -4639,12 +4643,27 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		ObjectType({ name:"handlers" })
 	];
 
-	_DocumentRoles.prototype._enhance_descs = function() 
+	_DocumentRoles.prototype.enhanceBranch = function(el) {
+		var descs;
+		if (doc.querySelectorAll) {
+			descs = this._role_descs(doc.querySelectorAll("*[role]"));
+		} else {
+			descs = this._role_descs(doc.getElementsByTagName("*"));
+		}
+		this._enhance_descs(descs);
+		//TODO reflow on resize etc
+	};
+
+	_DocumentRoles.prototype.discardBranch = function(el) {
+		//TODO
+	};
+
+	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
 
-		for(var i=0,desc; desc=this.descs[i]; ++i) {
+		for(var i=0,desc; desc=descs[i]; ++i) {
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
@@ -4656,10 +4675,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		
 		if (! incomplete && enhancedCount > 0) {
 			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				var descs = [];
-				for(var j=0,desc; desc=this.descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs.push(desc); 
+				var descs2 = [];
+				for(var j=0,desc; desc=descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs2.push(desc); 
 
-				if (oe.type == "enhanced") oe.func.call(this, this, descs);
+				if (oe.type == "enhanced") oe.func.call(this, this, descs2);
 			}
 		} 
 	};
@@ -4701,8 +4720,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return descs;
 	};
 
-	_DocumentRoles.prototype._resize_descs = function() {
-		for(var i=0,desc; desc = this.descs[i]; ++i) {
+	_DocumentRoles.prototype._resize_descs = function(descs) {
+		for(var i=0,desc; desc = descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
@@ -4734,8 +4753,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 	};
 
-	_DocumentRoles.prototype._layout_descs = function() {
-		for(var i=0,desc; desc = this.descs[i]; ++i) {
+	_DocumentRoles.prototype._layout_descs = function(descs) {
+		for(var i=0,desc; desc = descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var updateLayout = false;
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
@@ -4757,8 +4776,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 	};
 
-	_DocumentRoles.prototype._area_changed_descs = function() {
-		for(var i=0,desc; desc = this.descs[i]; ++i) {
+	_DocumentRoles.prototype._area_changed_descs = function(descs) {
+		for(var i=0,desc; desc = descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				desc.layout.area = getActiveArea();
 				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
@@ -5407,6 +5426,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		if (config.obscured) {
 			el.style.right = "-" + scrollbarSize() + "px";
 			el.style.bottom = "-" + scrollbarSize() + "px";
+			el.style.paddingRight = scrollbarSize() + "px";
+			el.style.paddingBottom = scrollbarSize() + "px";
 			this.vert.el.style.right = "-" + scrollbarSize() + "px";
 			this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
 		}

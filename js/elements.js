@@ -256,7 +256,7 @@
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
-		DocumentRoles()._resize_descs();
+		DocumentRoles()._resize_descs(DocumentRoles().descs);
 	}
 
 	/*
@@ -367,7 +367,7 @@
 		} else {
 			this.descs = this._role_descs(doc.getElementsByTagName("*"));
 		}
-		this._enhance_descs();
+		this._enhance_descs(this.descs);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -375,12 +375,27 @@
 		ObjectType({ name:"handlers" })
 	];
 
-	_DocumentRoles.prototype._enhance_descs = function() 
+	_DocumentRoles.prototype.enhanceBranch = function(el) {
+		var descs;
+		if (doc.querySelectorAll) {
+			descs = this._role_descs(doc.querySelectorAll("*[role]"));
+		} else {
+			descs = this._role_descs(doc.getElementsByTagName("*"));
+		}
+		this._enhance_descs(descs);
+		//TODO reflow on resize etc
+	};
+
+	_DocumentRoles.prototype.discardBranch = function(el) {
+		//TODO
+	};
+
+	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
 
-		for(var i=0,desc; desc=this.descs[i]; ++i) {
+		for(var i=0,desc; desc=descs[i]; ++i) {
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
@@ -392,10 +407,10 @@
 		
 		if (! incomplete && enhancedCount > 0) {
 			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				var descs = [];
-				for(var j=0,desc; desc=this.descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs.push(desc); 
+				var descs2 = [];
+				for(var j=0,desc; desc=descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs2.push(desc); 
 
-				if (oe.type == "enhanced") oe.func.call(this, this, descs);
+				if (oe.type == "enhanced") oe.func.call(this, this, descs2);
 			}
 		} 
 	};
@@ -437,8 +452,8 @@
 		return descs;
 	};
 
-	_DocumentRoles.prototype._resize_descs = function() {
-		for(var i=0,desc; desc = this.descs[i]; ++i) {
+	_DocumentRoles.prototype._resize_descs = function(descs) {
+		for(var i=0,desc; desc = descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
@@ -470,8 +485,8 @@
 		}
 	};
 
-	_DocumentRoles.prototype._layout_descs = function() {
-		for(var i=0,desc; desc = this.descs[i]; ++i) {
+	_DocumentRoles.prototype._layout_descs = function(descs) {
+		for(var i=0,desc; desc = descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var updateLayout = false;
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
@@ -493,8 +508,8 @@
 		}
 	};
 
-	_DocumentRoles.prototype._area_changed_descs = function() {
-		for(var i=0,desc; desc = this.descs[i]; ++i) {
+	_DocumentRoles.prototype._area_changed_descs = function(descs) {
+		for(var i=0,desc; desc = descs[i]; ++i) {
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				desc.layout.area = getActiveArea();
 				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);

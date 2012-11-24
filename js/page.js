@@ -305,7 +305,10 @@
 		}
 		_activeAreaName = areaName;
 		// only use DocumentRoles layout if DOM is ready
-		if (document.body) essential("DocumentRoles")()._layout_descs(); //TODO could this be done somewhere else?
+		if (document.body) {
+			var dr = essential("DocumentRoles")();
+			dr._layout_descs(dr.descs); //TODO could this be done somewhere else?	
+		} 
 	}
 	essential.set("activateArea",activateArea);
 	
@@ -365,7 +368,8 @@
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
-		essential("DocumentRoles")()._enhance_descs();
+		var dr = essential("DocumentRoles")()
+		dr._enhance_descs(dr.descs);
 		//TODO time to default_enhance yet?
 	}
 
