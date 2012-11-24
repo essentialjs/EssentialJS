@@ -504,8 +504,11 @@
 			var desc = enhancedElements[n];
 
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
-				var updateLayout = false;
-				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
+				var updateLayout = false,
+					ow = desc.el.offsetWidth, 
+					oh  = desc.el.offsetHeight,
+					sw = desc.el.scrollWidth,
+					sh = desc.el.scrollHeight;
 				if (ow == 0 && oh == 0) {
 					if (desc.layout.displayed) updateLayout = true;
 					desc.layout.displayed = false;

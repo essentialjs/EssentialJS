@@ -350,6 +350,8 @@
 		// Start and bounding offset
 		this.startY = el.offsetTop; this.minY = 0; this.maxY = 1000;
 		this.startX = el.offsetLeft; this.minX = 0; this.maxX = 1000;
+		this.factorX = 1;
+		this.factorY = 1;
 
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
@@ -367,9 +369,10 @@
 			},
 			"mousemove": function(ev) {
 				var maxY = 1000, maxX = 1000;
-				var y = Math.min( Math.max(movement.startY + ev.pageY - movement.startPageY,movement.minY), movement.maxY );
-				var x = Math.min( Math.max(movement.startX + ev.pageX - movement.startPageX,movement.minX), movement.maxX );
+				var y = Math.min( Math.max(movement.startY + movement.factorY*(ev.pageY - movement.startPageY),movement.minY), movement.maxY );
+				var x = Math.min( Math.max(movement.startX + movement.factorX*(ev.pageX - movement.startPageX),movement.minX), movement.maxX );
 				movement.track(ev,x,y);
+				console.log(movement.factorX,movement.factorY)
 			},
 			"mouseup": function(ev) {
 				movement.end();
@@ -408,6 +411,7 @@
 		movement.start(this,ev);
 		movement.startY = scrolled.scrollTop;
 		movement.startX = scrolled.scrollLeft;
+		movement.factorY = scrolled.scrollHeight / movement.el.offsetHeight;
 		movement.maxY = scrolled.scrollHeight - scrolled.clientHeight;
 		return false; // prevent default
 	}
@@ -424,7 +428,8 @@
 		movement.start(this,ev);
 		movement.startY = scrolled.scrollTop;
 		movement.startX = scrolled.scrollLeft;
-		movement.maxY = scrolled.scrollWidth - scrolled.clientWidth;
+		movement.factorX = scrolled.scrollWidth / movement.el.offsetWidth;
+		movement.maxX = scrolled.scrollWidth - scrolled.clientWidth;
 		return false; // prevent default
 	}
 
@@ -542,6 +547,7 @@
 		//TODO update scrollbars
 
 		this.refresh(el);
+		//TODO if movement happening update factors
 	};
 
 	EnhancedScrolled.prototype.discard = function(el) {
