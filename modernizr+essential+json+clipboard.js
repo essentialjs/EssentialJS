@@ -2539,6 +2539,24 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
+	var contains;
+	function doc_contains(a,b) {
+		return a !== b && (a.contains ? a.contains(b) : true);
+	}
+	function cdp_contains(a,b) {
+		return !!(a.compareDocumentPosition(b) & 16);
+	}
+	function false_contains(a,b) { return false; }
+
+	if (document.documentElement.contains) {
+		contains = doc_contains;
+	} else if (document.documentElement.compareDocumentPosition) {
+		contains = cdp_contains;
+	} else {
+		contains = false_contains;
+	}
+	essential.declare("contains",contains);
+
 	/*
 		DOM Events
 	*/
@@ -2896,6 +2914,27 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
+	function maintainEnhancedElements() {
+
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
+			var inDom = contains(document.body,desc.el);
+			if (desc.enhanced) {
+				if (inDom && !desc.discarded) {
+					// maintain it
+				} else {
+					// discard it
+					//TODO anything else ?
+					callCleaners(desc.el);
+					delete desc.el;
+					delete enhancedElements[n];
+				}
+			}
+		}
+	}
+	var enhancedElementsMaintainer = setInterval(maintainEnhancedElements,330); // minimum frequency 3 per sec
+
 	function instantiatePageSingletons()
 	{
 		for(var i=0,g; g = Generator.restricted[i]; ++i) {
@@ -2966,6 +3005,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 
 		discardRestricted();
+		clearInterval(enhancedElementsMaintainer);
 		discardEnhancedElements();
 
 		for(var n in Resolver) {
@@ -4740,31 +4780,35 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	};
 
 	_DocumentRoles.discarded = function(instance) {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
+			if (desc.role && desc.enhanced && !desc.discarded) {
 
-			if (!desc.discarded) {
-				if (instance.handlers.discard[desc.role]) {
-					instance.handlers.discard[desc.role].call(instance,desc.el,desc.role,desc.instance);
-				} else {
-					_DocumentRoles.default_discard.call(instance,desc.el,desc.role,desc.instance);
-				}
-				desc.discarded = true;
-				//TODO clean layouter/laidout
-				callCleaners(desc);
+				callCleaners(desc.el);
+				delete desc.el;
+				delete enhancedElements[n];
 			}
 		}
 	};
 
+	_DocumentRoles.prototype._roleEnhancedCleaner = function(desc) {
+		var dr = this, handler = this.handlers.discard[desc.role] || _DocumentRoles.default_discard;
+
+		return function() {
+			return handler.call(dr,desc.el,desc.role,desc.instance);
+		};
+	};
+
 	_DocumentRoles.prototype._role_descs = function(elements) {
 		var descs = [];
-		for(var i=0,e; e=elements[i]; ++i) {
-			var role = e.getAttribute("role");
+		for(var i=0,el; el=elements[i]; ++i) {
+			var role = el.getAttribute("role");
 			//TODO only in positive list
-			if (e.getAttribute("role")) {
-				descs.push(EnhancedDescriptor(e,true));
+			if (el.getAttribute("role")) {
+				var desc = EnhancedDescriptor(el,true);
+				descs.push(desc);
+				if (el._cleaners == undefined) el._cleaners = [];
+				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(this._roleEnhancedCleaner(desc)); 
 			}
 		}
 		return descs;
@@ -5183,24 +5227,6 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	DocumentRoles.discard_application = function(el,role,instance) {
 		
 	};
-
-	var contains;
-	function doc_contains(a,b) {
-		return a !== b && (a.contains ? a.contains(b) : true);
-	}
-	function cdp_contains(a,b) {
-		return !!(a.compareDocumentPosition(b) & 16);
-	}
-	function false_contains(a,b) { return false; }
-
-	if (document.documentElement.contains) {
-		contains = doc_contains;
-	} else if (document.documentElement.compareDocumentPosition) {
-		contains = cdp_contains;
-	} else {
-		contains = false_contains;
-	}
-	essential.declare("contains",contains);
 
 	//TODO find parent of scrolled role
 

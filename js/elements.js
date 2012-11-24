@@ -398,31 +398,35 @@
 	};
 
 	_DocumentRoles.discarded = function(instance) {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
+			if (desc.role && desc.enhanced && !desc.discarded) {
 
-			if (!desc.discarded) {
-				if (instance.handlers.discard[desc.role]) {
-					instance.handlers.discard[desc.role].call(instance,desc.el,desc.role,desc.instance);
-				} else {
-					_DocumentRoles.default_discard.call(instance,desc.el,desc.role,desc.instance);
-				}
-				desc.discarded = true;
-				//TODO clean layouter/laidout
-				callCleaners(desc);
+				callCleaners(desc.el);
+				delete desc.el;
+				delete enhancedElements[n];
 			}
 		}
 	};
 
+	_DocumentRoles.prototype._roleEnhancedCleaner = function(desc) {
+		var dr = this, handler = this.handlers.discard[desc.role] || _DocumentRoles.default_discard;
+
+		return function() {
+			return handler.call(dr,desc.el,desc.role,desc.instance);
+		};
+	};
+
 	_DocumentRoles.prototype._role_descs = function(elements) {
 		var descs = [];
-		for(var i=0,e; e=elements[i]; ++i) {
-			var role = e.getAttribute("role");
+		for(var i=0,el; el=elements[i]; ++i) {
+			var role = el.getAttribute("role");
 			//TODO only in positive list
-			if (e.getAttribute("role")) {
-				descs.push(EnhancedDescriptor(e,true));
+			if (el.getAttribute("role")) {
+				var desc = EnhancedDescriptor(el,true);
+				descs.push(desc);
+				if (el._cleaners == undefined) el._cleaners = [];
+				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(this._roleEnhancedCleaner(desc)); 
 			}
 		}
 		return descs;
