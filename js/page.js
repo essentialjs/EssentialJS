@@ -10,7 +10,8 @@
 		MutableEvent = essential("MutableEvent"),
 		arrayContains = essential("arrayContains"),
 		HTMLElement = essential("HTMLElement"),
-		HTMLScriptElement = essential("HTMLScriptElement");
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		enhancedElements = essential("enhancedElements");
 
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
@@ -307,7 +308,7 @@
 		// only use DocumentRoles layout if DOM is ready
 		if (document.body) {
 			var dr = essential("DocumentRoles")();
-			dr._layout_descs(dr.descs); //TODO could this be done somewhere else?	
+			dr._layout_descs(); //TODO could this be done somewhere else?	
 		} 
 	}
 	essential.set("activateArea",activateArea);
@@ -369,7 +370,7 @@
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
 		var dr = essential("DocumentRoles")()
-		dr._enhance_descs(dr.descs);
+		dr._enhance_descs(enhancedElements);
 		//TODO time to default_enhance yet?
 	}
 

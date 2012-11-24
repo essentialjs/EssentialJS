@@ -1703,6 +1703,78 @@ Generator.ObjectGenerator = Generator(Object);
 	else if (navigator.userAgent.match(/MSIE /) && !navigator.userAgent.match(/Opera/)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
 	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
 
+	/**
+	 * Cleans up registered event listeners and other references
+	 * 
+	 * @param {Element} el
+	 */
+	function callCleaners(el)
+	{
+		var _cleaners = el._cleaners;
+		if (_cleaners != undefined) {
+			for(var i=0,c; c = _cleaners[i]; ++i) {
+				c.call(el);
+			}
+			_cleaners = undefined;
+		}
+	};
+	essential.declare("callCleaners",callCleaners);
+
+	//TODO recursive clean of element and children?
+	function cleanRecursively(el) {
+		callCleaners(el);
+		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
+			callCleaners(child);
+			cleanRecursively(child);
+		}
+	}
+	essential.declare("cleanRecursively",cleanRecursively);
+
+	// map of uniqueId referenced
+	var enhancedElements = essential.declare("enhancedElements",{});
+
+	function defaultEnhancedRefresh(desc) {
+
+	}
+
+	// used to emulate IE uniqueId property
+	var lastUniqueId = 555;
+
+	// Get the enhanced descriptor for and element
+	function EnhancedDescriptor(el,force) {
+		var uniqueId = el.uniqueId;
+		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
+		var desc = enhancedElements[uniqueId];
+		if (desc && !force) return desc;
+
+		var desc = {
+			"role": el.getAttribute("role"),
+			"el": el,
+			"instance": null,
+			"layout": {
+				"lastDirectCall": 0
+			},
+
+			"refresh": defaultEnhancedRefresh,
+			"enhanced": false,
+			"discarded": false
+		};
+		desc.uniqueId = uniqueId;
+		enhancedElements[uniqueId] = desc;
+		return desc;
+	}
+	EnhancedDescriptor.all = enhancedElements;
+	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
+
+	function discardEnhancedElements() 
+	{
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+			callCleaners(desc.el); //TODO perhaps use cleanRecursively
+			delete desc.el;
+			delete enhancedElements[n];
+		}
+	}
 
 	function instantiatePageSingletons()
 	{
@@ -1774,6 +1846,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 
 		discardRestricted();
+		discardEnhancedElements();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
@@ -2035,7 +2108,8 @@ Generator.ObjectGenerator = Generator(Object);
 		MutableEvent = essential("MutableEvent"),
 		arrayContains = essential("arrayContains"),
 		HTMLElement = essential("HTMLElement"),
-		HTMLScriptElement = essential("HTMLScriptElement");
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		enhancedElements = essential("enhancedElements");
 
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
@@ -2332,7 +2406,7 @@ Generator.ObjectGenerator = Generator(Object);
 		// only use DocumentRoles layout if DOM is ready
 		if (document.body) {
 			var dr = essential("DocumentRoles")();
-			dr._layout_descs(dr.descs); //TODO could this be done somewhere else?	
+			dr._layout_descs(); //TODO could this be done somewhere else?	
 		} 
 	}
 	essential.set("activateArea",activateArea);
@@ -2394,7 +2468,7 @@ Generator.ObjectGenerator = Generator(Object);
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
 		var dr = essential("DocumentRoles")()
-		dr._enhance_descs(dr.descs);
+		dr._enhance_descs(enhancedElements);
 		//TODO time to default_enhance yet?
 	}
 
@@ -3165,7 +3239,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
-		serverUrl = location.protocol + "//" + location.host;
+		serverUrl = location.protocol + "//" + location.host,
+		callCleaners = essential("callCleaners"),
+		enhancedElements = essential("enhancedElements"),
+		EnhancedDescriptor = essential("EnhancedDescriptor");
 
 	function getScrollOffsets(el) {
 		var left=0,top=0;
@@ -3369,32 +3446,6 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 	essential.declare("removeEventListeners",removeEventListeners);
 
-	/**
-	 * Cleans up registered event listeners and other references
-	 * 
-	 * @param {Element} el
-	 */
-	function callCleaners(el)
-	{
-		var _cleaners = el._cleaners;
-		if (_cleaners != undefined) {
-			for(var i=0,c; c = _cleaners[i]; ++i) {
-				c.call(el);
-			}
-			_cleaners = undefined;
-		}
-	};
-
-	//TODO recursive clean of element and children?
-	function cleanRecursively(el) {
-		for(var child=el.firstChild; child; child = child.nextSibling) {
-			callCleaners(child);
-			cleanRecursively(child);
-		}
-	}
-	essential.declare("cleanRecursively",cleanRecursively);
-
-
 	function _DialogAction(actionName) {
 		this.actionName = actionName;
 	} 
@@ -3404,7 +3455,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
-		DocumentRoles()._resize_descs(DocumentRoles().descs);
+		DocumentRoles()._resize_descs();
 	}
 
 	/*
@@ -3510,12 +3561,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			doc.body.attachEvent("onclick",defaultButtonClick);
 		}
 
-		if (doc.querySelectorAll) {
-			this.descs = this._role_descs(doc.querySelectorAll("*[role]"));
-		} else {
-			this.descs = this._role_descs(doc.getElementsByTagName("*"));
-		}
-		this._enhance_descs(this.descs);
+		this.enhanceBranch(doc);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -3525,10 +3571,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 	_DocumentRoles.prototype.enhanceBranch = function(el) {
 		var descs;
-		if (doc.querySelectorAll) {
-			descs = this._role_descs(doc.querySelectorAll("*[role]"));
+		if (el.querySelectorAll) {
+			descs = this._role_descs(el.querySelectorAll("*[role]"));
 		} else {
-			descs = this._role_descs(doc.getElementsByTagName("*"));
+			descs = this._role_descs(el.getElementsByTagName("*"));
 		}
 		this._enhance_descs(descs);
 		//TODO reflow on resize etc
@@ -3543,7 +3589,9 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
 
-		for(var i=0,desc; desc=descs[i]; ++i) {
+		for(var n in descs) {
+			var desc = descs[n];
+
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
@@ -3553,12 +3601,20 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			if (! desc.enhanced) incomplete = true;
 		}
 		
+		// notify enhanced listeners
 		if (! incomplete && enhancedCount > 0) {
 			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				var descs2 = [];
-				for(var j=0,desc; desc=descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs2.push(desc); 
+				if (oe.type == "enhanced") {
+					var descs2 = [];
 
-				if (oe.type == "enhanced") oe.func.call(this, this, descs2);
+					// list of relevant descs
+					for(var n in descs) {
+						var desc = descs[n];
+						if (oe.role== null || oe.role==desc.role) descs2.push(desc);
+					}
+
+					oe.func.call(this, this, descs2);
+				}
 			}
 		} 
 	};
@@ -3566,7 +3622,9 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	_DocumentRoles.discarded = function(instance) {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
-		for(var i=0,desc; desc=instance.descs[i]; ++i) {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (!desc.discarded) {
 				if (instance.handlers.discard[desc.role]) {
 					instance.handlers.discard[desc.role].call(instance,desc.el,desc.role,desc.instance);
@@ -3584,24 +3642,18 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		var descs = [];
 		for(var i=0,e; e=elements[i]; ++i) {
 			var role = e.getAttribute("role");
-			if (role) {
-				descs.push({
-					"role": role,
-					"el": e,
-					"instance": null,
-					"layout": {
-						"lastDirectCall": 0
-					},
-					"enhanced": false,
-					"discarded": false
-				});
+			//TODO only in positive list
+			if (e.getAttribute("role")) {
+				descs.push(EnhancedDescriptor(e,true));
 			}
 		}
 		return descs;
 	};
 
-	_DocumentRoles.prototype._resize_descs = function(descs) {
-		for(var i=0,desc; desc = descs[i]; ++i) {
+	_DocumentRoles.prototype._resize_descs = function() {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
@@ -3633,8 +3685,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 	};
 
-	_DocumentRoles.prototype._layout_descs = function(descs) {
-		for(var i=0,desc; desc = descs[i]; ++i) {
+	_DocumentRoles.prototype._layout_descs = function() {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var updateLayout = false;
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
@@ -3656,8 +3710,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		}
 	};
 
-	_DocumentRoles.prototype._area_changed_descs = function(descs) {
-		for(var i=0,desc; desc = descs[i]; ++i) {
+	_DocumentRoles.prototype._area_changed_descs = function() {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				desc.layout.area = getActiveArea();
 				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
@@ -3786,6 +3842,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
+		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
 		DocumentRoles = essential("DocumentRoles"),
@@ -4041,7 +4099,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		"mousemove": function(ev) {
 		},
 		"mouseover": function(ev) {
-			var enhanced = this.scrolled.enhanced;
+			var enhanced = EnhancedDescriptor(this.scrolled).instance;
 
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = null;
@@ -4051,7 +4109,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		},
 		"mouseout": function(ev) {
 			var sp = this;
-			var enhanced = this.scrolled.enhanced;
+			var enhanced = EnhancedDescriptor(this.scrolled).instance;
 			
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
@@ -4069,16 +4127,17 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 	var ENHANCED_SCROLLED_EVENTS = {
 		"scroll": function(ev) {
+			var enhanced = EnhancedDescriptor(this).instance;
 			// if not shown, show and if not entered and not dragging, hide after 1500 ms
-			if (!this.enhanced.vert.shown) {
-				this.enhanced.vert.show();
-				this.enhanced.horz.show();
-				if (!this.stateful("over") && !this.stateful("dragging")) {
-					this.enhanced.vert.delayedHide();
-					this.enhanced.horz.delayedHide();
+			if (!enhanced.vert.shown) {
+				enhanced.vert.show();
+				enhanced.horz.show();
+				if (!stateful("over") && !this.stateful("dragging")) {
+					enhanced.vert.delayedHide();
+					enhanced.horz.delayedHide();
 				}
 			}
-			this.enhanced.refresh(this);
+			enhanced.refresh(this);
 		},
 		"mousewheel": function(ev) {
 			var delta = ev.delta, deltaX = ev.x, deltaY = ev.y;
@@ -4347,7 +4406,6 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
-		el.enhanced = r;
 
 		return r;
 	};
@@ -4359,7 +4417,6 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	DocumentRoles.discard_scrolled = function(el,role,instance) {
 		instance.discard(el);
 		el.stateful.destroy();
-		delete el.enhanced;
 	};
 	
 

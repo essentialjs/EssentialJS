@@ -17,7 +17,10 @@
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
-		serverUrl = location.protocol + "//" + location.host;
+		serverUrl = location.protocol + "//" + location.host,
+		callCleaners = essential("callCleaners"),
+		enhancedElements = essential("enhancedElements"),
+		EnhancedDescriptor = essential("EnhancedDescriptor");
 
 	function getScrollOffsets(el) {
 		var left=0,top=0;
@@ -221,32 +224,6 @@
 	}
 	essential.declare("removeEventListeners",removeEventListeners);
 
-	/**
-	 * Cleans up registered event listeners and other references
-	 * 
-	 * @param {Element} el
-	 */
-	function callCleaners(el)
-	{
-		var _cleaners = el._cleaners;
-		if (_cleaners != undefined) {
-			for(var i=0,c; c = _cleaners[i]; ++i) {
-				c.call(el);
-			}
-			_cleaners = undefined;
-		}
-	};
-
-	//TODO recursive clean of element and children?
-	function cleanRecursively(el) {
-		for(var child=el.firstChild; child; child = child.nextSibling) {
-			callCleaners(child);
-			cleanRecursively(child);
-		}
-	}
-	essential.declare("cleanRecursively",cleanRecursively);
-
-
 	function _DialogAction(actionName) {
 		this.actionName = actionName;
 	} 
@@ -256,7 +233,7 @@
 
 	function resizeTriggersReflow(ev) {
 		// debugger;
-		DocumentRoles()._resize_descs(DocumentRoles().descs);
+		DocumentRoles()._resize_descs();
 	}
 
 	/*
@@ -362,12 +339,7 @@
 			doc.body.attachEvent("onclick",defaultButtonClick);
 		}
 
-		if (doc.querySelectorAll) {
-			this.descs = this._role_descs(doc.querySelectorAll("*[role]"));
-		} else {
-			this.descs = this._role_descs(doc.getElementsByTagName("*"));
-		}
-		this._enhance_descs(this.descs);
+		this.enhanceBranch(doc);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -377,10 +349,10 @@
 
 	_DocumentRoles.prototype.enhanceBranch = function(el) {
 		var descs;
-		if (doc.querySelectorAll) {
-			descs = this._role_descs(doc.querySelectorAll("*[role]"));
+		if (el.querySelectorAll) {
+			descs = this._role_descs(el.querySelectorAll("*[role]"));
 		} else {
-			descs = this._role_descs(doc.getElementsByTagName("*"));
+			descs = this._role_descs(el.getElementsByTagName("*"));
 		}
 		this._enhance_descs(descs);
 		//TODO reflow on resize etc
@@ -395,7 +367,9 @@
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
 
-		for(var i=0,desc; desc=descs[i]; ++i) {
+		for(var n in descs) {
+			var desc = descs[n];
+
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
 				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
@@ -405,12 +379,20 @@
 			if (! desc.enhanced) incomplete = true;
 		}
 		
+		// notify enhanced listeners
 		if (! incomplete && enhancedCount > 0) {
 			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				var descs2 = [];
-				for(var j=0,desc; desc=descs[j]; ++j) if (oe.role== null || oe.role==desc.role) descs2.push(desc); 
+				if (oe.type == "enhanced") {
+					var descs2 = [];
 
-				if (oe.type == "enhanced") oe.func.call(this, this, descs2);
+					// list of relevant descs
+					for(var n in descs) {
+						var desc = descs[n];
+						if (oe.role== null || oe.role==desc.role) descs2.push(desc);
+					}
+
+					oe.func.call(this, this, descs2);
+				}
 			}
 		} 
 	};
@@ -418,7 +400,9 @@
 	_DocumentRoles.discarded = function(instance) {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 
-		for(var i=0,desc; desc=instance.descs[i]; ++i) {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (!desc.discarded) {
 				if (instance.handlers.discard[desc.role]) {
 					instance.handlers.discard[desc.role].call(instance,desc.el,desc.role,desc.instance);
@@ -436,24 +420,18 @@
 		var descs = [];
 		for(var i=0,e; e=elements[i]; ++i) {
 			var role = e.getAttribute("role");
-			if (role) {
-				descs.push({
-					"role": role,
-					"el": e,
-					"instance": null,
-					"layout": {
-						"lastDirectCall": 0
-					},
-					"enhanced": false,
-					"discarded": false
-				});
+			//TODO only in positive list
+			if (e.getAttribute("role")) {
+				descs.push(EnhancedDescriptor(e,true));
 			}
 		}
 		return descs;
 	};
 
-	_DocumentRoles.prototype._resize_descs = function(descs) {
-		for(var i=0,desc; desc = descs[i]; ++i) {
+	_DocumentRoles.prototype._resize_descs = function() {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
@@ -485,8 +463,10 @@
 		}
 	};
 
-	_DocumentRoles.prototype._layout_descs = function(descs) {
-		for(var i=0,desc; desc = descs[i]; ++i) {
+	_DocumentRoles.prototype._layout_descs = function() {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				var updateLayout = false;
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
@@ -508,8 +488,10 @@
 		}
 	};
 
-	_DocumentRoles.prototype._area_changed_descs = function(descs) {
-		for(var i=0,desc; desc = descs[i]; ++i) {
+	_DocumentRoles.prototype._area_changed_descs = function() {
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
 			if (desc.enhanced && this.handlers.layout[desc.role]) {
 				desc.layout.area = getActiveArea();
 				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);

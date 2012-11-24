@@ -79,17 +79,18 @@
 	Resolver().declare("UpdatingTable", Generator(function(el,role,config) {
 		this.el = el;
 		this.interval = setInterval(function(){
-			var tbody = document.createElement("TBODY");
-			tbody.innerHTML = ["<tr>",
+			var tbody = el.lastElementChild || el.lastChild;
+			var tr = document.createElement("TR");
+			tr.innerHTML = [
 			"<td>10/1/2011<td>",
 			"<td>"+Math.ceil(Math.random()*1000)+"<td>",
 			"<td>Description<td>",
 			"<td>0<td>",
 			"<td>0<td>",
 			"<td>0<td>",
-			"<td>0<td>",
-			"</tr>"].join(""); 
-			el.appendChild(tbody);
+			"<td>0<td>"
+			].join(""); 
+			tbody.appendChild(tr);
 		},3000);
 	},{
 		discarded: function(instance) {

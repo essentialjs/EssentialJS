@@ -12,6 +12,8 @@
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
+		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
 		DocumentRoles = essential("DocumentRoles"),
@@ -267,7 +269,7 @@
 		"mousemove": function(ev) {
 		},
 		"mouseover": function(ev) {
-			var enhanced = this.scrolled.enhanced;
+			var enhanced = EnhancedDescriptor(this.scrolled).instance;
 
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = null;
@@ -277,7 +279,7 @@
 		},
 		"mouseout": function(ev) {
 			var sp = this;
-			var enhanced = this.scrolled.enhanced;
+			var enhanced = EnhancedDescriptor(this.scrolled).instance;
 			
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
@@ -295,16 +297,17 @@
 
 	var ENHANCED_SCROLLED_EVENTS = {
 		"scroll": function(ev) {
+			var enhanced = EnhancedDescriptor(this).instance;
 			// if not shown, show and if not entered and not dragging, hide after 1500 ms
-			if (!this.enhanced.vert.shown) {
-				this.enhanced.vert.show();
-				this.enhanced.horz.show();
-				if (!this.stateful("over") && !this.stateful("dragging")) {
-					this.enhanced.vert.delayedHide();
-					this.enhanced.horz.delayedHide();
+			if (!enhanced.vert.shown) {
+				enhanced.vert.show();
+				enhanced.horz.show();
+				if (!stateful("over") && !this.stateful("dragging")) {
+					enhanced.vert.delayedHide();
+					enhanced.horz.delayedHide();
 				}
 			}
-			this.enhanced.refresh(this);
+			enhanced.refresh(this);
 		},
 		"mousewheel": function(ev) {
 			var delta = ev.delta, deltaX = ev.x, deltaY = ev.y;
@@ -573,7 +576,6 @@
 		StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
-		el.enhanced = r;
 
 		return r;
 	};
@@ -585,7 +587,6 @@
 	DocumentRoles.discard_scrolled = function(el,role,instance) {
 		instance.discard(el);
 		el.stateful.destroy();
-		delete el.enhanced;
 	};
 	
 

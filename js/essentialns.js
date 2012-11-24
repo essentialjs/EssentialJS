@@ -595,6 +595,78 @@
 	else if (navigator.userAgent.match(/MSIE /) && !navigator.userAgent.match(/Opera/)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
 	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
 
+	/**
+	 * Cleans up registered event listeners and other references
+	 * 
+	 * @param {Element} el
+	 */
+	function callCleaners(el)
+	{
+		var _cleaners = el._cleaners;
+		if (_cleaners != undefined) {
+			for(var i=0,c; c = _cleaners[i]; ++i) {
+				c.call(el);
+			}
+			_cleaners = undefined;
+		}
+	};
+	essential.declare("callCleaners",callCleaners);
+
+	//TODO recursive clean of element and children?
+	function cleanRecursively(el) {
+		callCleaners(el);
+		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
+			callCleaners(child);
+			cleanRecursively(child);
+		}
+	}
+	essential.declare("cleanRecursively",cleanRecursively);
+
+	// map of uniqueId referenced
+	var enhancedElements = essential.declare("enhancedElements",{});
+
+	function defaultEnhancedRefresh(desc) {
+
+	}
+
+	// used to emulate IE uniqueId property
+	var lastUniqueId = 555;
+
+	// Get the enhanced descriptor for and element
+	function EnhancedDescriptor(el,force) {
+		var uniqueId = el.uniqueId;
+		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
+		var desc = enhancedElements[uniqueId];
+		if (desc && !force) return desc;
+
+		var desc = {
+			"role": el.getAttribute("role"),
+			"el": el,
+			"instance": null,
+			"layout": {
+				"lastDirectCall": 0
+			},
+
+			"refresh": defaultEnhancedRefresh,
+			"enhanced": false,
+			"discarded": false
+		};
+		desc.uniqueId = uniqueId;
+		enhancedElements[uniqueId] = desc;
+		return desc;
+	}
+	EnhancedDescriptor.all = enhancedElements;
+	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
+
+	function discardEnhancedElements() 
+	{
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+			callCleaners(desc.el); //TODO perhaps use cleanRecursively
+			delete desc.el;
+			delete enhancedElements[n];
+		}
+	}
 
 	function instantiatePageSingletons()
 	{
@@ -666,6 +738,7 @@
 		}
 
 		discardRestricted();
+		discardEnhancedElements();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();

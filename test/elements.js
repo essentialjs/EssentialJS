@@ -103,6 +103,7 @@ test('addEventListeners catch',function() {
 
 test('Enhance element early or delayed',function() {
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
+	var enhancedElements = Resolver("essential")("enhancedElements");
 
 	var handlers = {
 		"enhance": {
@@ -140,7 +141,7 @@ test('Enhance element early or delayed',function() {
 
 	handlers.enhance.additional = sinon.stub();
 	handlers.enhance.delayed.returns({});
-	dr._enhance_descs();
+	dr._enhance_descs(enhancedElements);
 	equal(handlers.enhance.early.callCount,1,"enhance should be completed already");
 	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
@@ -221,6 +222,7 @@ test("Enhancing elements creating stateful fields",function() {
 
 test('Enhancing DocumentRoles with builtin handlers',function(){
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
+	var enhancedElements = Resolver("essential")("enhancedElements");
 
 	var handlers = {
 		"enhance": {
@@ -251,7 +253,7 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 	var dr = DocumentRoles(handlers,doc);
 
 
-	dr._enhance_descs();
+	dr._enhance_descs(enhancedElements);
 	// equal(handlers.enhance.sinon.callCount,0,"enhance should be completed already");
 	// equal(handlers.layout.sinon.callCount,0);
 	// equal(handlers.discard.sinon.callCount,0);
