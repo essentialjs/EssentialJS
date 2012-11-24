@@ -234,24 +234,6 @@
 		
 	};
 
-	var contains;
-	function doc_contains(a,b) {
-		return a !== b && (a.contains ? a.contains(b) : true);
-	}
-	function cdp_contains(a,b) {
-		return !!(a.compareDocumentPosition(b) & 16);
-	}
-	function false_contains(a,b) { return false; }
-
-	if (document.documentElement.contains) {
-		contains = doc_contains;
-	} else if (document.documentElement.compareDocumentPosition) {
-		contains = cdp_contains;
-	} else {
-		contains = false_contains;
-	}
-	essential.declare("contains",contains);
-
 	//TODO find parent of scrolled role
 
 	function getOfRole(el,role,parentProp) {

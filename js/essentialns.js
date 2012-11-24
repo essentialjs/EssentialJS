@@ -311,6 +311,24 @@
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
+	var contains;
+	function doc_contains(a,b) {
+		return a !== b && (a.contains ? a.contains(b) : true);
+	}
+	function cdp_contains(a,b) {
+		return !!(a.compareDocumentPosition(b) & 16);
+	}
+	function false_contains(a,b) { return false; }
+
+	if (document.documentElement.contains) {
+		contains = doc_contains;
+	} else if (document.documentElement.compareDocumentPosition) {
+		contains = cdp_contains;
+	} else {
+		contains = false_contains;
+	}
+	essential.declare("contains",contains);
+
 	/*
 		DOM Events
 	*/
@@ -668,6 +686,27 @@
 		}
 	}
 
+	function maintainEnhancedElements() {
+
+		for(var n in enhancedElements) {
+			var desc = enhancedElements[n];
+
+			var inDom = contains(document.body,desc.el);
+			if (desc.enhanced) {
+				if (inDom && !desc.discarded) {
+					// maintain it
+				} else {
+					// discard it
+					//TODO anything else ?
+					callCleaners(desc.el);
+					delete desc.el;
+					delete enhancedElements[n];
+				}
+			}
+		}
+	}
+	var enhancedElementsMaintainer = setInterval(maintainEnhancedElements,330); // minimum frequency 3 per sec
+
 	function instantiatePageSingletons()
 	{
 		for(var i=0,g; g = Generator.restricted[i]; ++i) {
@@ -738,6 +777,7 @@
 		}
 
 		discardRestricted();
+		clearInterval(enhancedElementsMaintainer);
 		discardEnhancedElements();
 
 		for(var n in Resolver) {
