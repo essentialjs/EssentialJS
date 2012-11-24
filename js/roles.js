@@ -532,6 +532,8 @@
 		if (config.obscured) {
 			el.style.right = "-" + scrollbarSize() + "px";
 			el.style.bottom = "-" + scrollbarSize() + "px";
+			el.style.paddingRight = scrollbarSize() + "px";
+			el.style.paddingBottom = scrollbarSize() + "px";
 			this.vert.el.style.right = "-" + scrollbarSize() + "px";
 			this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
 		}
