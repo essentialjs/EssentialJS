@@ -494,7 +494,9 @@
 	};
 
 	EnhancedScrollbar.prototype.delayedHide = function(delay) {
-		this.hiding = setTimeout(this.hide.bind(this), 1500);
+		var that = this;
+
+		this.hiding = setTimeout(function() { that.hide(); }, delay || 1500);
 	};
 
 	EnhancedScrollbar.prototype.destroy = function() {
@@ -544,10 +546,19 @@
 	};
 
 	EnhancedScrolled.prototype.layout = function(el,layout) {
-		//TODO update scrollbars
+
+		//TODO show scrollbars only if changed
+		if (!this.vert.shown) {
+			this.vert.show();
+			this.horz.show();
+			if (!el.stateful("over") && !el.stateful("dragging")) {
+				this.vert.delayedHide(750);
+				this.horz.delayedHide(750);
+			}
+		}
 
 		this.refresh(el);
-		//TODO if movement happening update factors
+		//TODO if movement happening update factors and max
 	};
 
 	EnhancedScrolled.prototype.discard = function(el) {
