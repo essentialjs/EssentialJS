@@ -1339,6 +1339,7 @@ function Resolver(name,ns,options)
     		}
         }
         function toggle() {
+            var value; //TODO
             if (arguments.length > 1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
                 var symbol = subnames.pop();
@@ -2895,6 +2896,19 @@ Generator.ObjectGenerator = Generator(Object);
 			},
 
 			"refresh": defaultEnhancedRefresh,
+
+			"liveCheck": function() {
+				if (!this.enhanced || this.discarded) return;
+				var inDom = contains(document.body,this.el);
+				if (!inDom) {
+					// discard it
+					//TODO anything else ?
+					callCleaners(this.el);
+					delete this.el;
+					this.discarded = true;					
+				}
+			},
+
 			"enhanced": false,
 			"discarded": false
 		};
@@ -2920,16 +2934,12 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			var inDom = contains(document.body,desc.el);
+			desc.liveCheck();
 			if (desc.enhanced) {
-				if (inDom && !desc.discarded) {
+				if (!desc.discarded) {
 					// maintain it
 					desc.refresh();
 				} else {
-					// discard it
-					//TODO anything else ?
-					callCleaners(desc.el);
-					delete desc.el;
 					delete enhancedElements[n];
 				}
 			}
@@ -4852,7 +4862,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !this.discarded && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
@@ -4887,7 +4897,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !desc.discarded && this.handlers.layout[desc.role]) {
 				var updateLayout = false,
 					ow = desc.el.offsetWidth, 
 					oh  = desc.el.offsetHeight,

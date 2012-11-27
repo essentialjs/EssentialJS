@@ -468,7 +468,7 @@
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !this.discarded && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
@@ -503,7 +503,7 @@
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !desc.discarded && this.handlers.layout[desc.role]) {
 				var updateLayout = false,
 					ow = desc.el.offsetWidth, 
 					oh  = desc.el.offsetHeight,

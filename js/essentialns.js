@@ -667,6 +667,19 @@
 			},
 
 			"refresh": defaultEnhancedRefresh,
+
+			"liveCheck": function() {
+				if (!this.enhanced || this.discarded) return;
+				var inDom = contains(document.body,this.el);
+				if (!inDom) {
+					// discard it
+					//TODO anything else ?
+					callCleaners(this.el);
+					delete this.el;
+					this.discarded = true;					
+				}
+			},
+
 			"enhanced": false,
 			"discarded": false
 		};
@@ -692,16 +705,12 @@
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			var inDom = contains(document.body,desc.el);
+			desc.liveCheck();
 			if (desc.enhanced) {
-				if (inDom && !desc.discarded) {
+				if (!desc.discarded) {
 					// maintain it
 					desc.refresh();
 				} else {
-					// discard it
-					//TODO anything else ?
-					callCleaners(desc.el);
-					delete desc.el;
 					delete enhancedElements[n];
 				}
 			}
