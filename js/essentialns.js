@@ -620,11 +620,12 @@
 	 */
 	function callCleaners(el)
 	{
-		var _cleaners = el._cleaners;
+		var _cleaners = el._cleaners, c;
 		if (_cleaners != undefined) {
-			for(var i=0,c; c = _cleaners[i]; ++i) {
-				c.call(el);
-			}
+			do {
+				c = _cleaners.pop();
+				if (c) c.call(el);
+			} while(c);
 			_cleaners = undefined;
 		}
 	};

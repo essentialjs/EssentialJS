@@ -434,10 +434,10 @@
 	}
 
 
-	function EnhancedScrollbar(el,opts,mousedownEvent) {
+	function EnhancedScrollbar(el,container,opts,mousedownEvent) {
 		this.scrolled = el;
 		this.el = HTMLElement("div", { "class":opts["class"] }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
-		el.parentNode.appendChild(this.el);
+		container.appendChild(this.el);
 		this.sizeName = opts.sizeName; this.posName = opts.posName;
 		this.sizeStyle = opts.sizeName.toLowerCase();
 		this.posStyle = opts.posName.toLowerCase();
@@ -508,32 +508,37 @@
 
 	function EnhancedScrolled(el,config) {
 		//? this.el = el
-		this.x = false !== config.x;
-		this.y = false !== config.y;
-		this.vert = new EnhancedScrollbar(el,{ 
-			"class":"vert-scroller", initialDisplay: config.initialDisplay,
-			sizeName: "Height", posName: "Top" 
-			},mousedownVert);
-		this.vert.el.style.width = scrollbarSize() + "px";
-		this.horz = new EnhancedScrollbar(el,{ 
-			"class":"horz-scroller", initialDisplay: config.initialDisplay, 
-			sizeName: "Width", posName: "Left" 
-			},mousedownHorz);
-		this.horz.el.style.height = scrollbarSize() + "px";
-
+		var container = el.parentNode;
 		if (config.obscured) {
+			el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
 			el.style.right = "-" + scrollbarSize() + "px";
 			el.style.bottom = "-" + scrollbarSize() + "px";
 			el.style.paddingRight = scrollbarSize() + "px";
 			el.style.paddingBottom = scrollbarSize() + "px";
-			this.vert.el.style.right = "-" + scrollbarSize() + "px";
-			this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
+			container = container.parentNode;
 		}
 
-		el.parentNode.scrolled = el;
-		StatefulResolver(el.parentNode,true);
-		addEventListeners(el.parentNode,ENHANCED_SCROLLED_PARENT_EVENTS);
-		el.parentNode.scrollContainer = "top";
+		this.x = false !== config.x;
+		this.y = false !== config.y;
+		this.vert = new EnhancedScrollbar(el,container,{ 
+			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
+			initialDisplay: config.initialDisplay,
+			sizeName: "Height", posName: "Top" 
+			},mousedownVert);
+		this.vert.el.style.width = scrollbarSize() + "px";
+		if (config.obscured) this.vert.el.style.right = "-" + scrollbarSize() + "px";
+		this.horz = new EnhancedScrollbar(el,container,{ 
+			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
+			initialDisplay: config.initialDisplay, 
+			sizeName: "Width", posName: "Left" 
+			},mousedownHorz);
+		this.horz.el.style.height = scrollbarSize() + "px";
+		if (config.obscured) this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
+
+		container.scrolled = el;
+		StatefulResolver(container,true);
+		addEventListeners(container,ENHANCED_SCROLLED_PARENT_EVENTS);
+		container.scrollContainer = "top";
 
 		this.refresh(el);
 	}
@@ -547,7 +552,7 @@
 
 	EnhancedScrolled.prototype.layout = function(el,layout) {
 
-		//TODO show scrollbars only if changed
+		//TODO show scrollbars only if changed && in play
 		if (!this.vert.shown) {
 			this.vert.show();
 			this.horz.show();
@@ -567,7 +572,7 @@
 		delete this.vert;
 		delete this.horz;
 
-		callCleaners(el.parentNode);
+		callCleaners(el.parentNode); //TODO do this with the autodiscarder after it's removed from DOM
 		callCleaners(el);
 	};
 
@@ -585,7 +590,7 @@
 	
 	DocumentRoles.discard_scrolled = function(el,role,instance) {
 		instance.discard(el);
-		el.stateful.destroy();
+		if (el.stateful) el.stateful.destroy();
 	};
 	
 
