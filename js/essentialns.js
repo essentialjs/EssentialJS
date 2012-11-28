@@ -694,8 +694,10 @@
 	{
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			callCleaners(desc.el); //TODO perhaps use cleanRecursively
-			delete desc.el;
+			if (desc.el) {
+				callCleaners(desc.el); //TODO perhaps use cleanRecursively
+				delete desc.el;
+			}
 			delete enhancedElements[n];
 		}
 	}
