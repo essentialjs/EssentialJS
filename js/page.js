@@ -549,7 +549,7 @@
 		var name = element.getAttribute("name");
 		if (name) {
 			var p = element.parentNode;
-			while(p) {
+			while(p && p.tagName) {
 				if (p.id) {
 					return this._getElementRoleConfig(element,p.id + "." + name);
 				} 

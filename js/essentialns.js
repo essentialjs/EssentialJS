@@ -479,7 +479,7 @@
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
-		while(element) {
+		while(element && element.tagName) {
 			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
 
 			var role = element.getAttribute("role");
@@ -521,7 +521,7 @@
 		if (this.commandElement == undefined) return this; // no command
 
 		element = this.commandElement;
-		while(element) {
+		while(element && element.tagName) {
 			var action = element.getAttribute("action");
 			if (action) {
 				this.action = action;
