@@ -442,6 +442,7 @@
 		this.sizeStyle = opts.sizeName.toLowerCase();
 		this.posStyle = opts.posName.toLowerCase();
 		this.autoHide = opts.autoHide;
+		this.trackScroll = opts.trackScroll == false? false : true;;
 
 		this.trackScrolled(el);
 
@@ -456,9 +457,11 @@
 	}
 
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
-		this.scrolledTo = el["scroll"+this.posName];
+		if (this.trackScroll) {
+			this.scrolledTo = el["scroll"+this.posName];
+			this.scrolledContentSize = el["scroll"+this.sizeName];
+		}
 		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
-		this.scrolledContentSize = el["scroll"+this.sizeName];
 	};
 
 	EnhancedScrollbar.prototype.update = function(scrolled) {
@@ -523,6 +526,7 @@
 		this.vert = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
 			initialDisplay: config.initialDisplay,
+			trackScroll: config.trackScroll,
 			sizeName: "Height", posName: "Top" 
 			},mousedownVert);
 		this.vert.el.style.width = scrollbarSize() + "px";
@@ -530,6 +534,7 @@
 		this.horz = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
 			initialDisplay: config.initialDisplay, 
+			trackScroll: config.trackScroll,
 			sizeName: "Width", posName: "Left" 
 			},mousedownHorz);
 		this.horz.el.style.height = scrollbarSize() + "px";
