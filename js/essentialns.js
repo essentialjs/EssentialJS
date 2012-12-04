@@ -651,6 +651,9 @@
 	// map of uniqueId referenced
 	var enhancedElements = essential.declare("enhancedElements",{});
 
+	// open windows
+	var enhancedWindows = essential.declare("enhancedWindows",[]);
+
 	function defaultEnhancedRefresh(desc) {
 
 	}
@@ -727,6 +730,14 @@
 	}
 	var enhancedElementsMaintainer = setInterval(maintainEnhancedElements,330); // minimum frequency 3 per sec
 
+	function discardEnhancedWindows() {
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			if (w.window) w.window.close();
+		}
+		enhancedWindows = null;
+		essential.set("enhancedWindows",[]);
+	}
+
 	function instantiatePageSingletons()
 	{
 		for(var i=0,g; g = Generator.restricted[i]; ++i) {
@@ -799,6 +810,7 @@
 		discardRestricted();
 		clearInterval(enhancedElementsMaintainer);
 		discardEnhancedElements();
+		discardEnhancedWindows();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();

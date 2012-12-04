@@ -3,7 +3,7 @@
   <meta charset="utf-8">
   <meta content="chrome=1,IE=edge" http-equiv="X-UA-Compatible">
   <meta content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" name="SKYPE_TOOLBAR">
-	<title>Frontend</title>
+	<title>Demo App</title>
   <meta content="Novo Bank" name="description">
   <meta content="Henrik Vendelbo" name="author">
 
@@ -43,7 +43,6 @@
       "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
       "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
     });
-    Resolver("essential")("openWindow")("index.html","util");
 	})();
   </script>
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
@@ -52,39 +51,25 @@
   <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
   <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
 
+  <link rel="preload" type="text/javascript" src="js/jquery-1.7.2.min.js" >
+
+  <link rel="pastload" type="text/javascript" src="js/knockout.js"/>
+  <link rel="pastload" type="text/javascript" src="js/raphael.min.js"/>
+  <link rel="pastload" type="text/javascript" src="js/frontend.js"/>
+
+  <script type="application/config">
+    declare("logo",{"charset": "utf-8"});
+    declare("login",{"charset": "utf-8"});
+    declare("launched",{"charset": "utf-8"});
+
+    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+  </script>
+
 </head>
-<body class="loading">
+<body class="loading" src="pages/index.html">
   <div id="menu-driven">
     
     <article role="presentation" id="main-stage">
-      <div class="leftSide"><div>
-        <div role="scrolled" data-role='"obscured":true'>
-        <table>
-          <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-          <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
-        </table>
-        </div></div>
-
-      </div>
-      <div class="rightSide">
-      </div>
-
-      <div id="pos-info"></div>
     </article>
 
    <header>
@@ -96,6 +81,8 @@
       <button name="explorer" role="button"><span class="icon"></span><label>Explorer</label></button>
       <button name="ongoing" role="button"><span class="icon"></span><label>Ongoing</label></button>
       <button name="history" role="button"><span class="icon"></span><label>History</label></button>
+
+      <a href="pages/scrolling.html" rel="subpage" role="link">Scrolling</a>
     </nav>
 
     <nav action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="navigation">
@@ -202,94 +189,5 @@
 		<button name="logout" type="submit">X</button>
    </form>
   </div>
-  	<script src="js/jquery-1.7.2.min.js" type="text/javascript"></script>
-
-  	<link rel="pastload" type="text/javascript" src="js/knockout.js"/>
-  	<link rel="pastload" type="text/javascript" src="js/raphael.min.js"/>
-  	<link rel="pastload" type="text/javascript" src="js/frontend.js"/>
-
-	<script type="application/config">
-		declare("logo",{"charset": "utf-8"});
-		declare("login",{"charset": "utf-8"});
-		declare("launched",{"charset": "utf-8"});
-
-    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
-	</script>
-
-	loading state determined when DOM ready reflecting outstanding scripts/config.
-
-	when loading is done, when page is launching, when page is launched
-	the unenhanced roles are enhanced and outstanding page 
-	lifecycle generators are instantiated.
-
-	between loading done and page launching
-	outstanding page lifecycle generators are instantiated.
-
-	live state
-
-	live state is set after 60ms or when page onload.
-
-	when live state is hit
-	initial active area based on authenticated
-	unless an active area was already set.
-
-
-	body.class
-
-	reflect state on body at livepage, and onwards
-	after live state and loading finished.
-
-	note:
-
-	post processing of scripts can add configuration to fetch going back to 
-	the loading phase in this case configured should be set to false so the
-	post load configuration can be revisited after the config is fetched.
-
-
-  Avoiding memory leaks
-
-  The library will clean up automatically when the page is unloaded. In 
-  general you should not see any significant memory leaks in modern browsers.
-
-  To avoid them in older browsers, especially Internet Explorer you should 
-  take special care to call destroy on unnamed resolvers that you create
-  yourself.
-
-
-  Loading stored resolver data declared after load
-
-  The references defined while initial scripts are loaded can be read from
-  previously stored data through the `stored` method.
-
-  Once the page is completed the data for these are read and applied. If you 
-  define a reference as stored after this point it will be immediately loaded.
-
-  This way it doesn't matter where you define that a reference is initialised
-  with a previously stored data set. It will be loaded by the time the page
-  is launched.
-
-
-  Page singletons used in roles early
-
-  Whenever you use a page singleton you should fetch it by calling its generator.
-  If you do this while loading scripts you will get the usual problems with
-  singletons. So you want to wait until constructors or role enhancers are run.
-
-  This way the order is irrelevant. If the document DOM is ready and the roles
-  and singletons are being constructed. Anything needing a singleton calls the 
-  generator and the instance is returned. The only thing you have to avoid is
-  circular dependencies, and your loading and construction can be nicely 
-  decoupled.
-
-  Named Raphäel Images
-
-  If you put `role="img"` on an element that isn't and IMG tag, for instance a
-  figure tag, and give it a name, it can be enhanced with a named raphael image.
-
-      Resolver("essential").set("images.my_logo",'M16,1.466C7.973,1.466,1.466,7.973,1.466,16c0,8.027,6.507,14.534,14.534,14.534c8.027,0,14.534-6.507,14.534-14.534C30.534,7.973,24.027,1.466,16,1.466z M17.328,24.371h-2.707v-2.596h2.707V24.371zM17.328,19.003v0.858h-2.707v-1.057c0-3.19,3.63-3.696,3.63-5.963c0-1.034-0.924-1.826-2.134-1.826c-1.254,0-2.354,0.924-2.354,0.924l-1.541-1.915c0,0,1.519-1.584,4.137-1.584c2.487,0,4.796,1.54,4.796,4.136C21.156,16.208,17.328,16.627,17.328,19.003z');
-
-  This registers a questionmark icon which will be rendered whereever you place
-  `<figure name="my_logo" role="img"></figure>`
-
 </body>
 </html>
