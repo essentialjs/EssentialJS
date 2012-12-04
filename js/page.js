@@ -765,6 +765,7 @@
 		var features = "menubar=no,width="+(this.width)+",height="+(this.height)+",status=no,location=no";
 		var w = this.window = window.open(this.url,this.name,features);
 		var that = this;
+		// do this to fix Chrome 20
 		setTimeout(function() {
 			that.window.resizeTo(that.width,that.height);
 			//TODO moveTo
