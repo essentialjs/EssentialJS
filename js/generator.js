@@ -226,6 +226,7 @@ function Generator(mainConstr,options)
 
 	//TODO callback when preset entry defined first time
 	generator.presets = Resolver(info.presets);
+	//TODO way to flag preset/arg for leaf key when generator used by resolver
 
 	
 	function variant(name,variantConstr,v1,v2,v3,v4) {
