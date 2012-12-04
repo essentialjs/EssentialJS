@@ -254,6 +254,13 @@
 				case "onload":
 					regScriptOnload(e,_from.onload);
 					break;
+				case "onclick":
+				case "onmousemove":
+				case "onmouseup":
+				case "onmousedown":
+					if (e.addEventListener) e.addEventListener(n.substring(2),_from[n],false);
+					else if (e.attachEvent) e.attachEvent(n,_from[n]);
+					break;
 				default:
 					e.setAttribute(n,_from[n]);
 					break;
