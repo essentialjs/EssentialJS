@@ -4,6 +4,22 @@
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	var essential = Resolver("essential",{});
+
+	var isFileProtocol = (location.protocol === 'file:'    ||
+	                      location.protocol === 'chrome:'  ||
+	                      location.protocol === 'chrome-extension:'  ||
+	                      location.protocol === 'resource:');
+
+	essential.declare("isFileProtocol",isFileProtocol);
+
+	var serverMode = (location.hostname == '127.0.0.1' ||
+	                        location.hostname == '0.0.0.0'   ||
+	                        location.hostname == 'localhost' ||
+	                        location.port.length > 0         ||
+	                        isFileProtocol                   ? 'development'
+	                                                         : 'production');
+	essential.declare("serverMode",serverMode);
+
 	function Type(options) {
 		this.options = options || {};
 		this.name = this.options.name;
@@ -710,6 +726,7 @@
 			}
 			delete enhancedElements[n];
 		}
+		enhancedElements = essential.set("enhancedElements",{});
 	}
 
 	function maintainEnhancedElements() {
