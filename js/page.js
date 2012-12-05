@@ -741,7 +741,7 @@
 		this.url = url;
 		this.options = options || {};
 		this.index = index;
-		this.width = this.options.width || 200;
+		this.width = this.options.width || 100;
 		this.height = this.options.height || 500;
 	}
 
@@ -762,13 +762,29 @@
 
 	EnhancedWindow.prototype.open = function() {
 		this.close();
-		var features = "menubar=no,width="+(this.width)+",height="+(this.height)+",status=no,location=no";
+		var features = "menubar=no,width="+(this.width)+",height="+(this.height)+",status=no,location=no,toolbar=no";
 		var w = this.window = window.open(this.url,this.name,features);
 		var that = this;
 		// do this to fix Chrome 20
 		setTimeout(function() {
 			that.window.resizeTo(that.width,that.height);
-			//TODO moveTo
+			var x,y;
+			if (that.options.glueLeft) {
+				x = screenX - that.width;
+			} else if (that.options.glueRight) {
+				x = screenX + outerWidth;
+			}
+			if (that.options.glueTop) {
+				y = screenY - that.height;
+			} else if (that.options.glueBottom) {
+				y = screenY + outerHeight;
+			}
+			if (x != undefined || y != undefined) {
+				var maxX = screen.width - that.width,maxY = screen.height - that.height;
+				x = x === undefined? 0 : Math.min(Math.max(0,x),maxX);
+				y = y === undefined? 0 : Math.min(Math.max(0,y),maxY);
+				that.window.moveTo(x,y);
+			}
 
 			if (that.options.focus && that.window.focus) that.window.focus();
 		},50);

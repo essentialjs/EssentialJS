@@ -2115,6 +2115,7 @@ function Generator(mainConstr,options)
 
 	//TODO callback when preset entry defined first time
 	generator.presets = Resolver(info.presets);
+	//TODO way to flag preset/arg for leaf key when generator used by resolver
 
 	
 	function variant(name,variantConstr,v1,v2,v3,v4) {
@@ -2233,6 +2234,22 @@ Generator.ObjectGenerator = Generator(Object);
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	var essential = Resolver("essential",{});
+
+	var isFileProtocol = (location.protocol === 'file:'    ||
+	                      location.protocol === 'chrome:'  ||
+	                      location.protocol === 'chrome-extension:'  ||
+	                      location.protocol === 'resource:');
+
+	essential.declare("isFileProtocol",isFileProtocol);
+
+	var serverMode = (location.hostname == '127.0.0.1' ||
+	                        location.hostname == '0.0.0.0'   ||
+	                        location.hostname == 'localhost' ||
+	                        location.port.length > 0         ||
+	                        isFileProtocol                   ? 'development'
+	                                                         : 'production');
+	essential.declare("serverMode",serverMode);
+
 	function Type(options) {
 		this.options = options || {};
 		this.name = this.options.name;
@@ -2483,6 +2500,13 @@ Generator.ObjectGenerator = Generator(Object);
 				case "onload":
 					regScriptOnload(e,_from.onload);
 					break;
+				case "onclick":
+				case "onmousemove":
+				case "onmouseup":
+				case "onmousedown":
+					if (e.addEventListener) e.addEventListener(n.substring(2),_from[n],false);
+					else if (e.attachEvent) e.attachEvent(n,_from[n]);
+					break;
 				default:
 					e.setAttribute(n,_from[n]);
 					break;
@@ -2708,7 +2732,7 @@ Generator.ObjectGenerator = Generator(Object);
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
-		while(element) {
+		while(element && element.tagName) {
 			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
 
 			var role = element.getAttribute("role");
@@ -2750,7 +2774,7 @@ Generator.ObjectGenerator = Generator(Object);
 		if (this.commandElement == undefined) return this; // no command
 
 		element = this.commandElement;
-		while(element) {
+		while(element && element.tagName) {
 			var action = element.getAttribute("action");
 			if (action) {
 				this.action = action;
@@ -2873,6 +2897,9 @@ Generator.ObjectGenerator = Generator(Object);
 	// map of uniqueId referenced
 	var enhancedElements = essential.declare("enhancedElements",{});
 
+	// open windows
+	var enhancedWindows = essential.declare("enhancedWindows",[]);
+
 	function defaultEnhancedRefresh(desc) {
 
 	}
@@ -2923,10 +2950,13 @@ Generator.ObjectGenerator = Generator(Object);
 	{
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			callCleaners(desc.el); //TODO perhaps use cleanRecursively
-			delete desc.el;
+			if (desc.el) {
+				callCleaners(desc.el); //TODO perhaps use cleanRecursively
+				delete desc.el;
+			}
 			delete enhancedElements[n];
 		}
+		enhancedElements = essential.set("enhancedElements",{});
 	}
 
 	function maintainEnhancedElements() {
@@ -2946,6 +2976,14 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 	var enhancedElementsMaintainer = setInterval(maintainEnhancedElements,330); // minimum frequency 3 per sec
+
+	function discardEnhancedWindows() {
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			if (w.window) w.window.close();
+		}
+		enhancedWindows = null;
+		essential.set("enhancedWindows",[]);
+	}
 
 	function instantiatePageSingletons()
 	{
@@ -3019,6 +3057,7 @@ Generator.ObjectGenerator = Generator(Object);
 		discardRestricted();
 		clearInterval(enhancedElementsMaintainer);
 		discardEnhancedElements();
+		discardEnhancedWindows();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
@@ -3281,7 +3320,42 @@ Generator.ObjectGenerator = Generator(Object);
 		arrayContains = essential("arrayContains"),
 		HTMLElement = essential("HTMLElement"),
 		HTMLScriptElement = essential("HTMLScriptElement"),
-		enhancedElements = essential("enhancedElements");
+		enhancedElements = essential("enhancedElements"),
+		enhancedWindows = essential("enhancedWindows");
+
+	function createHTMLDocument(head,body) {
+		if (typeof head == "object" && typeof head.length == "number") {
+			head = head.join("");
+		}
+		if (typeof body == "object" && typeof body.length == "number") {
+			body = body.join("");
+		}
+
+		// var doc = document.implementation.createDocument('','',
+		// 	document.implementation.createDocumentType('body','',''));
+		var doc;
+		if (document.implementation && document.implementation.createHTMLDocument) {
+			doc = document.implementation.createHTMLDocument("");
+			doc.documentElement.innerHTML = '<html><head>' + head + '</head><body>' + body + '</body>';
+
+		} else  if (window.ActiveXObject) {
+			doc = new ActiveXObject("htmlfile");
+			doc.appendChild(doc.createElement("html"));
+			var _head = doc.createElement("head");
+			var _body = doc.createElement("body");
+			doc.documentElement.appendChild(_head);
+			doc.documentElement.appendChild(_body);
+	debugger;
+			_body.innerHTML = body;
+			if (head != "") _head.innerHTML = head;
+
+		} else {
+			return document.createElement("DIV");// dummy default
+		}
+
+		return doc;
+	}
+
 
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
@@ -3591,6 +3665,8 @@ Generator.ObjectGenerator = Generator(Object);
 	function bringLive() {
 		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
+		//TODO if waiting for initial page src postpone this
+
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
 		ap.state.set("livepage",true);
@@ -3605,6 +3681,122 @@ Generator.ObjectGenerator = Generator(Object);
 
 	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
 	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+
+	Resolver("page").declare("pages",{});
+
+	function SubPage(appConfig) {
+		if (appConfig) this.appConfig = appConfig;
+		this.body = document.createElement("DIV");
+	}
+
+	SubPage.prototype.fetch = function() {
+
+		var XMLHttpRequest = essential("XMLHttpRequest");
+	    var xhr = XMLHttpRequest();
+
+	    if (typeof(xhr.overrideMimeType) === 'function') {
+	        xhr.overrideMimeType('text/html');
+	    }
+	    xhr.open('GET', this.url, /* async */true);
+	    //TODO utf-8
+	    xhr.setRequestHeader('Accept', 'text/html; q=0.9, */*; q=0.5');
+	    try {
+		    xhr.send(null);
+
+		    if (essential("isFileProtocol")) {
+		        if (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)) {
+		            this.loadedPageDone(xhr.responseText);
+		        } else {
+		            this.loadedPageError(xhr.status);
+		        }
+		    } else {
+		        xhr.onreadystatechange = function () {
+		            if (xhr.readyState == 4) {
+		                handleResponse(xhr, this, this.loadedPageDone, this.loadedPageError);
+		            }
+		        };
+		    } 
+	    }
+	    catch(ex) {
+	    	this.loadedPageError(null,ex); //TODO no net for instance
+	    }
+	};
+
+    function handleResponse(xhr, instance, callback, errback) {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            callback.call(instance,xhr.responseText,
+                     xhr.getResponseHeader("Last-Modified"));
+        } else if (typeof(errback) === 'function') {
+            errback.call(instance,xhr.status);
+        }
+    }
+
+	SubPage.prototype.loadedPageDone = function(text,lastModified) {
+		var doc = createHTMLDocument(text);
+	};
+
+	SubPage.prototype.loadedPageError = function(status) {
+
+	};
+
+	SubPage.prototype.parseHTML = function(text) {
+		var doc;
+		if (document.implementation && document.implementation.createHTMLDocument) {
+			doc = document.implementation.createHTMLDocument("");
+			doc.documentElement.innerHTML = text;
+			this.head = document.importNode(doc.head);
+			this.body = document.importNode(doc.body);
+
+		} else  if (window.ActiveXObject) {
+			text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
+			text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
+			text = text.replace("<head",'<div id="esp-head"').replace("</head>","</div>");
+			text = text.replace("<HEAD",'<div id="esp-head"').replace("</HEAD>","</div>");
+			text = text.replace("<body",'<div id="esp-body"').replace("</body>","</div>");
+			text = text.replace("<BODY",'<div id="esp-body"').replace("</BODY>","</div>");
+
+			//TODO offline htmlfile object?
+		}
+	};
+
+	SubPage.prototype.applyBody = function() {
+		var e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild,
+			db = document.body,
+			fc = db.firstElementChild!==undefined? db.firstElementChild : db.firstChild;
+		while(e) {
+			// insert before the first permanent, or at the end
+			if (fc == null) {
+				db.appendChild(e);
+			} else {
+				db.insertBefore(e,fc);
+			}
+			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
+		}
+	};
+
+	SubPage.prototype.unapplyBody = function() {
+		var db = document.body, 
+			pc = null,
+			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
+
+		while(e) {
+			if (e.permanent) {
+				// not part of subpage
+				e = e.previousElementSibling || e.previousSibling;
+			} else {
+				if (pc == null) {
+					this.body.appendChild(e);
+				} else {
+					this.body.insertBefore(e,pc)
+				}
+				pc = e;
+			}
+			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
+		}
+	};
+		
+
+
 
 
 	function _ApplicationConfig() {
@@ -3623,11 +3815,17 @@ Generator.ObjectGenerator = Generator(Object);
 		this._gather();
 		this._apply();
 
-		setTimeout(bringLive,60);
+		this.pages = this.resolver.reference("pages",{ generator:Generator(SubPage)});
+		SubPage.prototype.appConfig = this;
+
+		var bodySrc = document.body.getAttribute("src");
+		if (bodySrc) {
+			this.loadPage(bodySrc)
+			//TODO queue loading this as the initial body content added before the first body child
+		}
+
+		setTimeout(bringLive,60); 
 	}
-//    _ApplicationConfig.args = [
-// 	    ObjectType({ name:"state" })
-// 	    ];
 
 	var ApplicationConfig = Generator(_ApplicationConfig);
 	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
@@ -3819,7 +4017,7 @@ Generator.ObjectGenerator = Generator(Object);
 		var name = element.getAttribute("name");
 		if (name) {
 			var p = element.parentNode;
-			while(p) {
+			while(p && p.tagName) {
 				if (p.id) {
 					return this._getElementRoleConfig(element,p.id + "." + name);
 				} 
@@ -3836,6 +4034,115 @@ Generator.ObjectGenerator = Generator(Object);
 		return el;
 	};
 
+	ApplicationConfig.prototype.loadPage = function(url) {
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = new SubPage();
+		}
+		if (!page.loaded) {
+			page.url = url;
+			page.fetch();
+		}
+	};
+
+	function EnhancedWindow(url,name,options,index) {
+		this.name = name;
+		this.url = url;
+		this.options = options || {};
+		this.index = index;
+		this.width = this.options.width || 100;
+		this.height = this.options.height || 500;
+	}
+
+	EnhancedWindow.prototype.override = function(url,options) {
+		this.url = url;
+		this.options = options;
+	};
+
+	EnhancedWindow.prototype.content = function() {
+		// get subpage
+		// html, head, body
+	};
+
+	EnhancedWindow.prototype.close = function() {
+		if (this.window) this.window.close();
+		this.window = null;
+	};
+
+	EnhancedWindow.prototype.open = function() {
+		this.close();
+		var features = "menubar=no,width="+(this.width)+",height="+(this.height)+",status=no,location=no,toolbar=no";
+		var w = this.window = window.open(this.url,this.name,features);
+		var that = this;
+		// do this to fix Chrome 20
+		setTimeout(function() {
+			that.window.resizeTo(that.width,that.height);
+			var x,y;
+			if (that.options.glueLeft) {
+				x = screenX - that.width;
+			} else if (that.options.glueRight) {
+				x = screenX + outerWidth;
+			}
+			if (that.options.glueTop) {
+				y = screenY - that.height;
+			} else if (that.options.glueBottom) {
+				y = screenY + outerHeight;
+			}
+			if (x != undefined || y != undefined) {
+				var maxX = screen.width - that.width,maxY = screen.height - that.height;
+				x = x === undefined? 0 : Math.min(Math.max(0,x),maxX);
+				y = y === undefined? 0 : Math.min(Math.max(0,y),maxY);
+				that.window.moveTo(x,y);
+			}
+
+			if (that.options.focus && that.window.focus) that.window.focus();
+		},50);
+	};
+
+	EnhancedWindow.prototype.anchor = function(html,opts) {
+		var attrs = { href: 'javascript:void(0);' }, that = this;
+		if (this.name) attrs.target = this.name;
+		attrs.onclick = function(ev) {
+			that.open();
+			if (ev && ev.preventDefault) ev.preventDefault();
+			return false;
+		};
+		if (opts["class"]) attrs["class"] = opts["class"];
+		return HTMLElement("a",attrs,html);
+	};
+
+	function defineWindow(url,name,options) {
+		if (name) for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			if (name == w.name) {
+				w.override(url,options);
+				w.open();
+				return;
+			}
+		}
+		var win = new EnhancedWindow(url,name,options,enhancedWindows.length);
+		enhancedWindows.push(win);
+		return win;
+	}
+	essential.declare("defineWindow",defineWindow);
+
+
+	function openSidebar(url, options) {
+		var nav = HTMLElement("nav");
+		var subPage = getSubPage(url);
+		subPage.fetch();
+		nav.innerHTML = subPage.body.content;
+		document.body.appendChild(nav);
+	}
+	essential.declare("openSidebar",openSidebar);
+
+	function openWindow(url, name, options) {
+		//TODO support proxied essential?
+		var w = defineWindow(url, name, options);
+		w.open();
+		return w;
+		//TODO position width 0 width tracking left/right
+	}
+	essential.declare("openWindow",openWindow);
 }();
 
 // need with context not supported in strict mode
@@ -4635,7 +4942,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement && ev.comandElement == ev.actionElement) {
+		if (ev.commandElement && ev.commandElement == ev.actionElement) {
 
 			//TODO action event filtering
 			//TODO disabled
@@ -5488,6 +5795,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		this.sizeStyle = opts.sizeName.toLowerCase();
 		this.posStyle = opts.posName.toLowerCase();
 		this.autoHide = opts.autoHide;
+		this.trackScroll = opts.trackScroll == false? false : true;;
 
 		this.trackScrolled(el);
 
@@ -5502,9 +5810,11 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
-		this.scrolledTo = el["scroll"+this.posName];
+		if (this.trackScroll) {
+			this.scrolledTo = el["scroll"+this.posName];
+			this.scrolledContentSize = el["scroll"+this.sizeName];
+		}
 		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
-		this.scrolledContentSize = el["scroll"+this.sizeName];
 	};
 
 	EnhancedScrollbar.prototype.update = function(scrolled) {
@@ -5569,6 +5879,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		this.vert = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
 			initialDisplay: config.initialDisplay,
+			trackScroll: config.trackScroll,
 			sizeName: "Height", posName: "Top" 
 			},mousedownVert);
 		this.vert.el.style.width = scrollbarSize() + "px";
@@ -5576,6 +5887,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		this.horz = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
 			initialDisplay: config.initialDisplay, 
+			trackScroll: config.trackScroll,
 			sizeName: "Width", posName: "Left" 
 			},mousedownHorz);
 		this.horz.el.style.height = scrollbarSize() + "px";
@@ -5620,6 +5932,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 		callCleaners(el.parentNode); //TODO do this with the autodiscarder after it's removed from DOM
 		callCleaners(el);
+	};
+
+	EnhancedScrolled.prototype.setContentHeight = function(h) {
+
 	};
 
 	DocumentRoles.enhance_scrolled = function(el,role,config) {
