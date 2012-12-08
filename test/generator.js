@@ -55,6 +55,48 @@ test('Generator inherit from generator defined on main constructor',function(){
 	ok(_Rectangle.calledWith(1,2,3,4))
 })
 
+test("Simple Generator and descendants",function() {
+
+	var Simple = Generator(function(){
+		return { v:"v" }
+	},{ alloc:false });
+
+	// simple gen
+	var s = Simple();
+	ok(s);
+	equal(s.v,"v");
+	equal(typeof s,"object")
+
+	// derived simple
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,Simple);
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+
+	// derived simple, explicit
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,Simple, { alloc:false });
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+
+})
+
+/*
+test("Generator inherit from Resolver generator",function() {
+
+	var _WithResolver = sinon.spy();
+	var WithResolver = Generator(_WithResolver,Resolver, { alloc:false });
+
+	var r = WithResolver({});
+	ok(r.namespace);
+	equal(typeof r,"function");
+})
+*/
+
 test('Generator with passed prototype',function(){
 	function constr() {
 

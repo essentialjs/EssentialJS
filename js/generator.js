@@ -44,6 +44,33 @@ function Generator(mainConstr,options)
 	}
 
 
+	function simpleBaseGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
+		var instance,cst=info.constructors[0],
+			__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
+		if (generator.info.existing) {
+			//TODO perhaps different this pointer
+			var id = generator.info.identifier.apply(generator.info,arguments);
+			if (id in generator.info.existing) {
+				return instance = generator.info.existing[id];
+			} else {
+				instance = generator.info.existing[id] = generator.type.apply(null,__context__.args);
+				//TODO consider different strategies for JS engine
+			}
+		} else {
+			instance = generator.type.apply(null,__context__.args);
+		}
+
+		// constructors
+		instance.__context__ = __context__;
+		for(var i=1; cst=info.constructors[i]; ++i) {
+			cst.apply(instance,instance.__context__.args);
+		}
+		delete instance.__context__;
+
+		return instance;
+	}
+
+
 	function simpleGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
 		var instance = mainConstr.apply(generator,arguments);
 		return instance;
@@ -151,6 +178,20 @@ function Generator(mainConstr,options)
 				bases.push(ctr);
 			}
 		}	
+
+		// is base simple?
+		var simpleBase = false;
+		if (bases.length && bases[0].__generator__) {
+			simpleBase = bases[0].__generator__.info.options.alloc == false;
+		}
+		// simple type with inheritance chain, fresh prototype
+		function type() {}
+		var generatorType = type;
+
+		if (simpleBase) {
+			generatorType = bases.shift();
+		}
+
 		var constructors = info.constructors;
 		for(var i=0,b; b = bases[i];++i) {
 			if (b.bases && b.info && b.info.constructors) {
@@ -164,7 +205,8 @@ function Generator(mainConstr,options)
 
 		// determine the generator to use
 		var generator = newGenerator;
-		if (options.alloc === false) generator = simpleGenerator;
+		if (simpleBase) generator = simpleBaseGenerator;
+		else if (options.alloc === false) generator = simpleGenerator;
 		else if (info.extendsBuiltin) generator = builtinGenerator;
 
 		generator.__generator__ = generator;
@@ -198,10 +240,8 @@ function Generator(mainConstr,options)
 			}
 		}
 
-		// simple type with inheritance chain, fresh prototype
-		function type() {}
 		//TODO if (generator.info.constructors[-1].name) type.name = generator.info.constructors[-1].name;
-		generator.type = type;
+		generator.type = generatorType;
 		generator.type.prototype = generator.prototype;
 
 		// migrate prototype
