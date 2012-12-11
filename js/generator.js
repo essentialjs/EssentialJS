@@ -72,6 +72,9 @@ function Generator(mainConstr,options)
 
 
 	function simpleGenerator(a,b,c,d,e,f,g,h,i,j,k,l) {
+		var instance,cst=info.constructors[0],
+			__context__ = { generator:generator, info:info, args:[a,b,c,d,e,f,g,h,i,j,k,l] }; //TODO inject morphers that change the args for next constructor
+
 		var instance = mainConstr.apply(generator,arguments);
 		return instance;
 	}
@@ -188,10 +191,6 @@ function Generator(mainConstr,options)
 		function type() {}
 		var generatorType = type;
 
-		if (simpleBase) {
-			generatorType = bases.shift();
-		}
-
 		var constructors = info.constructors;
 		for(var i=0,b; b = bases[i];++i) {
 			if (b.bases && b.info && b.info.constructors) {
@@ -203,10 +202,14 @@ function Generator(mainConstr,options)
 		constructors.push(mainConstr);
 		constructors[-1] = mainConstr;
 
+		if (simpleBase || options.alloc === false) {
+			generatorType = constructors.shift();
+		}
+
 		// determine the generator to use
 		var generator = newGenerator;
 		if (simpleBase) generator = simpleBaseGenerator;
-		else if (options.alloc === false) generator = simpleGenerator;
+		else if (options.alloc === false) generator = simpleBaseGenerator;
 		else if (info.extendsBuiltin) generator = builtinGenerator;
 
 		generator.__generator__ = generator;

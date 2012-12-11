@@ -57,9 +57,10 @@ test('Generator inherit from generator defined on main constructor',function(){
 
 test("Simple Generator and descendants",function() {
 
-	var Simple = Generator(function(){
-		return { v:"v" }
-	},{ alloc:false });
+	function _Simple(){
+		return { v:"v" };
+	}
+	var Simple = Generator(_Simple,{ alloc:false });
 
 	// simple gen
 	var s = Simple();
@@ -74,6 +75,7 @@ test("Simple Generator and descendants",function() {
 	ok(d);
 	equal(d.v,"v");
 	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
 
 	// derived simple, explicit
 	var _Derived = sinon.spy();
@@ -82,6 +84,20 @@ test("Simple Generator and descendants",function() {
 	ok(d);
 	equal(d.v,"v");
 	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+	function _Simple2(){
+		return { v:"v" };
+	}
+
+	// derived simple constructor, explicit
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,_Simple2, { alloc:false });
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
 
 })
 
