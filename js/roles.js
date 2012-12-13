@@ -581,6 +581,10 @@
 		callCleaners(el);
 	};
 
+	EnhancedScrolled.prototype.setContentHeight = function(h) {
+
+	};
+
 	DocumentRoles.enhance_scrolled = function(el,role,config) {
 		StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';

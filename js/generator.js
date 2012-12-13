@@ -182,11 +182,6 @@ function Generator(mainConstr,options)
 			}
 		}	
 
-		// is base simple?
-		var simpleBase = false;
-		if (bases.length && bases[0].__generator__) {
-			simpleBase = bases[0].__generator__.info.options.alloc == false;
-		}
 		// simple type with inheritance chain, fresh prototype
 		function type() {}
 		var generatorType = type;
@@ -202,6 +197,11 @@ function Generator(mainConstr,options)
 		constructors.push(mainConstr);
 		constructors[-1] = mainConstr;
 
+		// is base simple?
+		var simpleBase = false;
+		if (bases.length && constructors[0].__generator__) {
+			simpleBase = constructors[0].__generator__.info.options.alloc == false;
+		}
 		if (simpleBase || options.alloc === false) {
 			generatorType = constructors.shift();
 		}

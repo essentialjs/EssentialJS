@@ -77,6 +77,15 @@ test("Simple Generator and descendants",function() {
 	equal(typeof d,"object");
 	equal(_Derived.callCount,1);
 
+	// derived simple
+	var _Doubly = sinon.spy();
+	var Doubly = Generator(_Doubly,Derived);
+	var d = Doubly();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Doubly.callCount,1);
+
 	// derived simple, explicit
 	var _Derived = sinon.spy();
 	var Derived = Generator(_Derived,Simple, { alloc:false });

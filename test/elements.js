@@ -168,6 +168,31 @@ function makeFieldSpy() {
 	return fieldSpy;
 }
 
+function makeFieldGenerator(a,b) {
+	var g = Generator(a,b);
+	g.prototype.__destroy = g.prototype.destroy;
+	g.prototype.__discard = g.prototype.discard;
+	g.prototype.destroy = function() {
+		++g.prototype.destroy.callCount;
+		if (this.__destroy) this.__destroy();
+	};
+	g.prototype.destroy.callCount = 0;
+	g.prototype.discard = function() {
+		++g.prototype.discard.callCount;
+		if (this.__discard) this.__discard();
+	};
+	g.prototype.discard.callCount = 0;
+
+	function g2(a,b,c) {
+	    var instance = g.call(null,a,b,c);
+	    instance.destroy = g.prototype.destroy;
+	    instance.discard = g.prototype.discard;
+	    return instance;
+	}
+	g2.prototype = g.prototype;
+	return g2; 
+}
+
 test("Enhancing elements creating stateful fields",function() {
 
 	var enhanceStatefulFields = Resolver("essential")("enhanceStatefulFields");
@@ -177,15 +202,15 @@ test("Enhancing elements creating stateful fields",function() {
 
 	notEqual(buttonField,StatefulField);
 
-	var buttonFieldSpy = makeFieldSpy();
-	var submitFieldSpy = makeFieldSpy();
-	var resetFieldSpy = makeFieldSpy();
-	var linkFieldSpy = makeFieldSpy();
-	var buttonField = StatefulField.variant("*[role=button]",Generator(buttonFieldSpy,buttonField));
+	var buttonFieldSpy = sinon.spy();
+	var submitFieldSpy = sinon.spy();
+	var resetFieldSpy = sinon.spy();
+	var linkFieldSpy = sinon.spy();
+	var buttonField = StatefulField.variant("*[role=button]",makeFieldGenerator(buttonFieldSpy,buttonField));
 	StatefulField.variant("button[type=button]",buttonField);
-	var submitField = StatefulField.variant("button[type=submit]",Generator(submitFieldSpy,StatefulField));
-	var resetField = StatefulField.variant("button[type=reset]",Generator(resetFieldSpy,StatefulField));
-	var linkField = StatefulField.variant("*[role=link]",Generator(linkFieldSpy,linkField));
+	var submitField = StatefulField.variant("button[type=submit]",makeFieldGenerator(submitFieldSpy,StatefulField));
+	var resetField = StatefulField.variant("button[type=reset]",makeFieldGenerator(resetFieldSpy,StatefulField));
+	var linkField = StatefulField.variant("*[role=link]",makeFieldGenerator(linkFieldSpy,linkField));
 	var doc = createDocument([],[
 		'<span role="navigation">',
 		'<a name="x" role="link"></a>',
@@ -214,10 +239,10 @@ test("Enhancing elements creating stateful fields",function() {
 
 	// destroy called for fields
 	Resolver("essential")("cleanRecursively")(doc.body);
-	equal(linkFieldSpy.prototype.destroy.callCount,2);
-	equal(linkFieldSpy.prototype.discard.callCount,2);
-	equal(buttonFieldSpy.prototype.destroy.callCount,4);
-	equal(buttonFieldSpy.prototype.discard.callCount,4);
+	equal(linkField.prototype.destroy.callCount,2);
+	equal(linkField.prototype.discard.callCount,2);
+	equal(buttonField.prototype.destroy.callCount,4);
+	equal(buttonField.prototype.discard.callCount,4);
 });
 
 test('Enhancing DocumentRoles with builtin handlers',function(){

@@ -658,7 +658,6 @@
 	function cleanRecursively(el) {
 		callCleaners(el);
 		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
-			callCleaners(child);
 			cleanRecursively(child);
 		}
 	}

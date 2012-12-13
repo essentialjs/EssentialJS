@@ -271,24 +271,37 @@
 	}
 	essential.declare("fireAction",fireAction);
 
-	function _StatefulField(name,stateful) {
 
+	function _StatefulField(name,el) {
+		var stateful = StatefulResolver(el,true);
+		return stateful;
 	}
-	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField));
+	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField, { alloc:false }));
 
 	StatefulField.prototype.destroy = function() {};
 	StatefulField.prototype.discard = function() {};
+
+	function _TextField() {
+
+	}
+	StatefulField.variant("input[type=text]",Generator(_TextField,_StatefulField));
+
+	function _CheckboxField() {
+
+	}
+	StatefulField.variant("input[type=checkbox]",Generator(_CheckboxField,_StatefulField));
 
 	function _TimeField() {
 
 	}
 	StatefulField.variant("input[type=time]",Generator(_TimeField,_StatefulField));
 
-	function _CommandField(name,stateful,role) {
+	function _CommandField(name,el,role) {
 
 	}
 	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
 	StatefulField.variant("*[role=button]",Generator(_CommandField,_StatefulField));
+
 
 	/* Enhance all stateful fields of a parent */
 	function enhanceStatefulFields(parent) {
@@ -309,12 +322,7 @@
 					variants.push(el.tagName.toLowerCase());
 				}
 
-				var stateful = StatefulResolver(el,true);
-				var field = stateful.setField(StatefulField.variant(variants)(name,stateful,role));
-
-				//TODO add field for _cleaners element 
-				if (el._cleaners == undefined) el._cleaners = [];
-				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+				var stateful = StatefulField.variant(variants)(name,el,role);
 			}
 
 			enhanceStatefulFields(el); // enhance children

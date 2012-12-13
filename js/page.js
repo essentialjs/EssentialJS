@@ -210,11 +210,6 @@
 		};
 	}
 
-	function Stateful_setField(field) {
-		this.field = field;
-		return field;
-	}
-
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
 		if (el._cleaners == undefined) el._cleaners = [];
@@ -233,14 +228,9 @@
 	// all stateful elements whether field or not get a cleaner
 	function statefulCleaner() {
 		if (this.stateful) {
-			if (this.stateful.field) {
-				this.stateful.field.destroy();
-				this.stateful.field.discard();
-			}
-			this.stateful.field = undefined;
 			this.stateful.destroy();
+			if (this.stateful.discard) this.stateful.discard();
 			this.stateful.fireAction = undefined;
-			this.stateful.setField = undefined;
 			this.stateful = undefined;
 		}
 	}
@@ -265,7 +255,6 @@
 			stateful.set("map.class.notstate", new ClassForNotState());
 		}
 		stateful.fireAction = make_Stateful_fireAction(el);
-		stateful.setField = Stateful_setField;
 		stateful.reflectStateOn = Stateful_reflectStateOn;
 
 		if (el) stateful.reflectStateOn(el);

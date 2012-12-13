@@ -2071,11 +2071,6 @@ function Generator(mainConstr,options)
 			}
 		}	
 
-		// is base simple?
-		var simpleBase = false;
-		if (bases.length && bases[0].__generator__) {
-			simpleBase = bases[0].__generator__.info.options.alloc == false;
-		}
 		// simple type with inheritance chain, fresh prototype
 		function type() {}
 		var generatorType = type;
@@ -2091,6 +2086,11 @@ function Generator(mainConstr,options)
 		constructors.push(mainConstr);
 		constructors[-1] = mainConstr;
 
+		// is base simple?
+		var simpleBase = false;
+		if (bases.length && constructors[0].__generator__) {
+			simpleBase = constructors[0].__generator__.info.options.alloc == false;
+		}
 		if (simpleBase || options.alloc === false) {
 			generatorType = constructors.shift();
 		}
@@ -2931,7 +2931,6 @@ Generator.ObjectGenerator = Generator(Object);
 	function cleanRecursively(el) {
 		callCleaners(el);
 		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
-			callCleaners(child);
 			cleanRecursively(child);
 		}
 	}
@@ -3562,11 +3561,6 @@ Generator.ObjectGenerator = Generator(Object);
 		};
 	}
 
-	function Stateful_setField(field) {
-		this.field = field;
-		return field;
-	}
-
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
 		if (el._cleaners == undefined) el._cleaners = [];
@@ -3585,14 +3579,9 @@ Generator.ObjectGenerator = Generator(Object);
 	// all stateful elements whether field or not get a cleaner
 	function statefulCleaner() {
 		if (this.stateful) {
-			if (this.stateful.field) {
-				this.stateful.field.destroy();
-				this.stateful.field.discard();
-			}
-			this.stateful.field = undefined;
 			this.stateful.destroy();
+			if (this.stateful.discard) this.stateful.discard();
 			this.stateful.fireAction = undefined;
-			this.stateful.setField = undefined;
 			this.stateful = undefined;
 		}
 	}
@@ -3617,7 +3606,6 @@ Generator.ObjectGenerator = Generator(Object);
 			stateful.set("map.class.notstate", new ClassForNotState());
 		}
 		stateful.fireAction = make_Stateful_fireAction(el);
-		stateful.setField = Stateful_setField;
 		stateful.reflectStateOn = Stateful_reflectStateOn;
 
 		if (el) stateful.reflectStateOn(el);
@@ -5016,10 +5004,11 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	essential.declare("fireAction",fireAction);
 
 
-	function _StatefulField(name,stateful) {
-
+	function _StatefulField(name,el) {
+		var stateful = StatefulResolver(el,true);
+		return stateful;
 	}
-	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField));
+	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField, { alloc:false }));
 
 	StatefulField.prototype.destroy = function() {};
 	StatefulField.prototype.discard = function() {};
@@ -5039,7 +5028,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 	StatefulField.variant("input[type=time]",Generator(_TimeField,_StatefulField));
 
-	function _CommandField(name,stateful,role) {
+	function _CommandField(name,el,role) {
 
 	}
 	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
@@ -5065,12 +5054,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 					variants.push(el.tagName.toLowerCase());
 				}
 
-				var stateful = StatefulResolver(el,true);
-				var field = stateful.setField(StatefulField.variant(variants)(name,stateful,role));
-
-				//TODO add field for _cleaners element 
-				if (el._cleaners == undefined) el._cleaners = [];
-				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+				var stateful = StatefulField.variant(variants)(name,el,role);
 			}
 
 			enhanceStatefulFields(el); // enhance children
