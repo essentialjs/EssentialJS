@@ -756,7 +756,7 @@
 		var that = this;
 		// do this to fix Chrome 20
 		setTimeout(function() {
-			that.window.resizeTo(that.width,that.height);
+			if (that.window.resizeTo) that.window.resizeTo(that.width,that.height);
 			var x,y;
 			if (that.options.glueLeft) {
 				x = screenX - that.width;
@@ -772,7 +772,7 @@
 				var maxX = screen.width - that.width,maxY = screen.height - that.height;
 				x = x === undefined? 0 : Math.min(Math.max(0,x),maxX);
 				y = y === undefined? 0 : Math.min(Math.max(0,y),maxY);
-				that.window.moveTo(x,y);
+				if (that.window.moveTo) that.window.moveTo(x,y);
 			}
 
 			if (that.options.focus && that.window.focus) that.window.focus();
