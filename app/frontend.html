@@ -43,7 +43,7 @@
       "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
       "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
     });
-    Resolver("essential")("openWindow")("index.html","util",{ glueRight:true });
+    Resolver("essential")("openWindow")("index.html","util",{ glueRight:true, glueHeight:true });
 	})();
   </script>
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
@@ -51,6 +51,20 @@
   <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
   <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
   <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
+
+  <link rel="preload" src="js/jquery-1.7.2.min.js" type="text/javascript">
+
+  <link rel="pastload" type="text/javascript" src="js/knockout.js"/>
+  <link rel="pastload" type="text/javascript" src="js/raphael.min.js"/>
+  <link rel="pastload" type="text/javascript" src="js/frontend.js"/>
+
+  <script type="application/config">
+    declare("logo",{"charset": "utf-8"});
+    declare("login",{"charset": "utf-8"});
+    declare("launched",{"charset": "utf-8"});
+
+    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+  </script>
 
 </head>
 <body class="loading">
@@ -81,7 +95,31 @@
         </div></div>
 
       </div>
-      <div class="rightSide">
+      <div class="rightSide" role="navigation">
+        <details>
+          <summary>Overview</summary>
+          <div>
+            <button>One</button><button>Two</button><button>Three</button>
+          </div>
+        </details>
+
+        <details>
+          <summary>News Stream</summary>
+          <div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Monitoring</summary>
+          <div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Diagram</summary>
+          <div>
+          </div>
+        </details>
       </div>
 
       <div id="pos-info"></div>
@@ -96,6 +134,8 @@
       <button name="explorer" role="button"><span class="icon"></span><label>Explorer</label></button>
       <button name="ongoing" role="button"><span class="icon"></span><label>Ongoing</label></button>
       <button name="history" role="button"><span class="icon"></span><label>History</label></button>
+
+      <a href="pages/scrolling.html" rel="subpage" role="link">Scrolling</a>
     </nav>
 
     <nav action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="navigation">
@@ -202,19 +242,6 @@
 		<button name="logout" type="submit">X</button>
    </form>
   </div>
-  	<script src="js/jquery-1.7.2.min.js" type="text/javascript"></script>
-
-  	<link rel="pastload" type="text/javascript" src="js/knockout.js"/>
-  	<link rel="pastload" type="text/javascript" src="js/raphael.min.js"/>
-  	<link rel="pastload" type="text/javascript" src="js/frontend.js"/>
-
-	<script type="application/config">
-		declare("logo",{"charset": "utf-8"});
-		declare("login",{"charset": "utf-8"});
-		declare("launched",{"charset": "utf-8"});
-
-    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
-	</script>
 
 	loading state determined when DOM ready reflecting outstanding scripts/config.
 
