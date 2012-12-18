@@ -725,18 +725,144 @@
 		}
 	};
 
+	function onmessage(ev) {
+		var data = JSON.parse(ev.data);
+		if (data && data.enhanced) {
+			placement.setOptions(data.enhanced.options);
+			placement.setMain(data.enhanced.main);
+			placement.track();
+		}
+	} 
+
+	var placement = {
+		x: undefined, y: undefined,
+		width: undefined, height: undefined,
+
+		options: {},
+		main: {},
+		
+		notifyNeeded: false,
+
+		setOptions: function(options) {
+			this.options = options;
+		},
+
+		setMain: function(main) {
+			this.main = main;
+		},
+
+		// measure this window flagging if it notifyNeeded since last time
+		measure: function() {
+			var	x= screenX, y= screenY, width= outerWidth, height= outerHeight;
+			this.notifyNeeded = (this.notifyNeeded || x != this.x || y != this.y || width != this.width || height != this.height);
+			this.x = x;
+			this.y = y;
+			this.width = width;
+			this.height = height;
+
+			this.data = JSON.stringify({
+				x:x, y:y, width:width, height:height
+			});
+		},
+
+		// track main window
+		track: function() {
+			var x=this.x, y=this.y, width=this.width, height=this.height;
+
+			if (this.options.glueHeight) {
+				y = this.main.y;
+				height = this.main.height;
+			}
+			if (this.options.glueWidth) {
+				x = this.main.x;
+				width = this.main.width;
+			}
+			if (this.options.glueLeft) {
+				x = this.main.x - this.options.width;
+			} else if (this.options.glueRight) {
+				x = this.main.x + this.main.width;
+			}
+			if (this.options.glueTop) {
+				y = this.main.y - this.options.height;
+			} else if (this.options.glueBottom) {
+				y = this.main.y + this.main.height;
+			}
+			if (x != this.x || y != this.y) {
+				var maxX = screen.width - this.width,maxY = screen.height - this.height;
+				x = x === undefined? 0 : Math.min(Math.max(0,x),maxX);
+				y = y === undefined? 0 : Math.min(Math.max(0,y),maxY);
+			}
+
+			if (x != this.x || y != this.y) {
+				if (window.moveTo) window.moveTo(x - screen.availLeft,y - screen.availTop);
+			}
+
+			if (width != this.width || height != this.height) {
+				if (window.resizeTo) window.resizeTo(width,height);
+			}
+
+			this.notifyNeeded = (this.notifyNeeded || x != this.x || y != this.y || width != this.width || height != this.height);
+			this.x = x;
+			this.y = y;
+			this.width = width;
+			this.height = height;
+		}
+	};
+	placement.measure();
+	placement.notifyNeeded = false;
+	essential.declare("placement",placement);
+
+	placement.broadcaster = setInterval(function() {
+		placement.measure();
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify();
+		}
+		placement.notifyNeeded = false;
+	},250);
+
+
+	function trackMainWindow() {
+		placement.track();
+	}
+
+	// tracking main window
+	if (window.opener) {
+
+		// TODO might not be needed
+		setInterval(trackMainWindow,250);
+
+		if (window.postMessage) {
+			if (window.addEventListener) {
+				window.addEventListener("message",onmessage,false);
+
+			} else if (window.attachEvent) {
+				window.attachEvent("onmessage",onmessage);
+
+			}
+			//TODO removeEvent
+		}
+
+
+	}
+
 	function EnhancedWindow(url,name,options,index) {
 		this.name = name;
 		this.url = url;
 		this.options = options || {};
+		this.notifyNeeded = true;
 		this.index = index;
 		this.width = this.options.width || 100;
 		this.height = this.options.height || 500;
 	}
 
+	EnhancedWindow.prototype.thisWindow = {
+
+	};
+
 	EnhancedWindow.prototype.override = function(url,options) {
 		this.url = url;
 		this.options = options;
+		this.notifyNeeded = true;
 	};
 
 	EnhancedWindow.prototype.content = function() {
@@ -756,26 +882,7 @@
 		var that = this;
 		// do this to fix Chrome 20
 		setTimeout(function() {
-			if (that.window.resizeTo) that.window.resizeTo(that.width,that.height);
-			var x,y;
-			if (that.options.glueLeft) {
-				x = screenX - that.width;
-			} else if (that.options.glueRight) {
-				x = screenX + outerWidth;
-			}
-			if (that.options.glueTop) {
-				y = screenY - that.height;
-			} else if (that.options.glueBottom) {
-				y = screenY + outerHeight;
-			}
-			if (x != undefined || y != undefined) {
-				var maxX = screen.width - that.width,maxY = screen.height - that.height;
-				x = x === undefined? 0 : Math.min(Math.max(0,x),maxX);
-				y = y === undefined? 0 : Math.min(Math.max(0,y),maxY);
-				if (that.window.moveTo) that.window.moveTo(x,y);
-			}
-
-			if (that.options.focus && that.window.focus) that.window.focus();
+			that.notify({});
 		},50);
 	};
 
@@ -789,6 +896,20 @@
 		};
 		if (opts["class"]) attrs["class"] = opts["class"];
 		return HTMLElement("a",attrs,html);
+	};
+
+	EnhancedWindow.prototype.notify = function(ev) {
+		if (this.window && this.window.postMessage && (this.notifyNeeded || placement.notifyNeeded)) {
+			var options = JSON.stringify(this.options);
+			this.window.postMessage('{"enhanced":{'+'"options":' + options + ', "main":' + placement.data + '}}',"*");
+		} 
+		this.notifyNeeded = false;
+	};
+
+	EnhancedWindow.prototype.reposition = function(ev) {
+		//TODO
+
+		if (this.options.focus && this.window.focus) this.window.focus();
 	};
 
 	function defineWindow(url,name,options) {
@@ -823,6 +944,7 @@
 		//TODO position width 0 width tracking left/right
 	}
 	essential.declare("openWindow",openWindow);
+
 }();
 
 // need with context not supported in strict mode

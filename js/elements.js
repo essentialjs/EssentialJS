@@ -20,6 +20,7 @@
 		serverUrl = location.protocol + "//" + location.host,
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
+		enhancedWindows = essential("enhancedWindows"),
 		EnhancedDescriptor = essential("EnhancedDescriptor");
 
 	function getScrollOffsets(el) {
@@ -234,6 +235,9 @@
 	function resizeTriggersReflow(ev) {
 		// debugger;
 		DocumentRoles()._resize_descs();
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
 	}
 
 	/*
