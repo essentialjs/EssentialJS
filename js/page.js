@@ -953,7 +953,11 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	var scripts = document.getElementsByTagName("script");
 	for(var i=0,s; s = scripts[i]; ++i) {
 		if (s.getAttribute("type") == "application/config") {
-			with(this) eval(s.text);
+			try {
+				with(this) eval(s.text);
+			} catch(ex) {
+				Resolver("essential")("console").error("Failed to parse application/config",s.text);
+			}
 		}
 	}
 };
