@@ -43,8 +43,9 @@
       "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
       "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
     });
-    Resolver("essential")("openWindow")("index.html","util",{ glueRight:true, glueHeight:true });
-	})();
+    //Resolver("essential")("openWindow")("index.html","util",{ glueRight:true, glueHeight:true });
+    Resolver("essential")("openWindow")("/from-config/side","util",{ glueRight:true, glueHeight:true });	
+  })();
   </script>
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
 
@@ -64,6 +65,8 @@
     declare("launched",{"charset": "utf-8"});
 
     declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+
+    page("/from-config/side",{},"");
   </script>
 
 </head>

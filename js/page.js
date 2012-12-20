@@ -345,6 +345,12 @@
 	function bringLive() {
 		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
+		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
+			w.openNow();
+			delete w.openWhenReady;
+		}
+		EnhancedWindow.prototype.open = EnhancedWindow.prototype.openNow;
+
 		//TODO if waiting for initial page src postpone this
 
 		// Allow the browser to render the page, preventing initial transitions
@@ -475,8 +481,29 @@
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 		}
 	};
-		
+	
+	SubPage.prototype.getHeadHtml = function() {
+		return "";
 
+	};
+
+	SubPage.prototype.getBodyHtml = function() {
+		return "";
+		
+	};
+
+	SubPage.prototype.getInlineUrl = function() {
+		var p = [
+			'javascript:document.write("',
+			'<html><!-- From Main Window -->',
+			this.getHeadHtml(),
+			this.getBodyHtml(),
+			'</html>',
+			'");'
+		];
+
+		return p.join("");
+	};
 
 
 
@@ -493,11 +520,11 @@
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
 		this.config = this.resolver.reference("config","undefined");
-		this._gather();
-		this._apply();
-
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
+
+		this._gather();
+		this._apply();
 
 		var bodySrc = document.body.getAttribute("src");
 		if (bodySrc) {
@@ -647,6 +674,19 @@
 
 	ApplicationConfig.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
+	};
+
+	ApplicationConfig.prototype.page = function(url,options,content) {
+		//this.pages.declare(key,value);
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.loaded) {
+			page.url = url;
+			page.options = options;
+			page.parseHTML(content);
+		}
 	};
 
 	ApplicationConfig.prototype._apply = function() {
@@ -856,10 +896,6 @@
 		this.height = this.options.height || 500;
 	}
 
-	EnhancedWindow.prototype.thisWindow = {
-
-	};
-
 	EnhancedWindow.prototype.override = function(url,options) {
 		this.url = url;
 		this.options = options;
@@ -877,9 +913,17 @@
 	};
 
 	EnhancedWindow.prototype.open = function() {
+		this.openWhenReady = true;
+	};
+
+	EnhancedWindow.prototype.openNow = function() {
 		this.close();
 		var features = "menubar=no,width="+(this.width)+",height="+(this.height)+",status=no,location=no,toolbar=no";
-		var w = this.window = window.open(this.url,this.name,features);
+
+		var page = ApplicationConfig().pages()[this.url];
+		var url = page? page.getInlineUrl() : this.url;
+		this.window = window.open(url,this.name,features);
+
 		var that = this;
 		// do this to fix Chrome 20
 		setTimeout(function() {
