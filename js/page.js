@@ -364,10 +364,11 @@
 
 	Resolver("page").declare("pages",{});
 
-	function SubPage(appConfig) {
+	function _SubPage(appConfig) {
 		if (appConfig) this.appConfig = appConfig;
 		this.body = document.createElement("DIV");
 	}
+	var SubPage = Generator(_SubPage);
 
 	SubPage.prototype.fetch = function() {
 
@@ -495,7 +496,7 @@
 		this._gather();
 		this._apply();
 
-		this.pages = this.resolver.reference("pages",{ generator:Generator(SubPage)});
+		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
 
 		var bodySrc = document.body.getAttribute("src");
@@ -717,7 +718,7 @@
 	ApplicationConfig.prototype.loadPage = function(url) {
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
 		if (page == undefined) {
-			page = this.pages()[url] = new SubPage();
+			page = this.pages()[url] = SubPage();
 		}
 		if (!page.loaded) {
 			page.url = url;
