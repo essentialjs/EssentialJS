@@ -66,41 +66,54 @@
 	function _queueDelayedAssets()
 	{
 		//TODO move this to pageResolver("state.ready")
-		ApplicationConfig();//TODO move the state transitions here
+		var config = ApplicationConfig();//TODO move the state transitions here
 		var links = document.getElementsByTagName("link");
 
 		//TODO differentiate on type == "text/javascript"
-		for(var i=0,l; l=links[i]; ++i) if (l.rel == "pastload" || l.rel == "preload") {
-			//TODO differentiate on lang
-			var attrsStr = l.getAttribute("attrs");
-			var attrs = {};
-			if (attrsStr) {
-				eval("attrs = {" + attrsStr + "}");
-			}
-			attrs["type"] = l.getAttribute("type") || "text/javascript";
-			attrs["src"] = l.getAttribute("src");
-			//attrs["id"] = l.getAttribute("script-id");
-			attrs["onload"] = delayedScriptOnload(l.rel);
-			var relSrc = attrs["src"].replace(baseUrl,"");
-			if (l.rel == "preload") {
-				var langOk = true;
-				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
-				if (langOk) {
-					pageResolver.set(["state","preloading"],true);
-					pageResolver.set(["state","loadingScripts"],true);
-					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					document.body.appendChild(HTMLScriptElement(attrs));
-					l.added = true;
-				} 
-			} else {
-				var langOk = true;
-				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
-				if (langOk) {
-					pageResolver.set(["state","loadingScripts"],true);
-					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					l.attrs = attrs;
-				} 
-			}
+		for(var i=0,l; l=links[i]; ++i) switch(l.rel) {
+			case "stylesheet":
+				config.resources().push(l);
+				break;			
+			case "pastload":
+			case "preload":
+				//TODO differentiate on lang
+				var attrsStr = l.getAttribute("attrs");
+				var attrs = {};
+				if (attrsStr) {
+					try {
+						eval("attrs = {" + attrsStr + "}");
+					} catch(ex) {
+						//TODO
+					}
+				}
+				attrs["type"] = l.getAttribute("type") || "text/javascript";
+				attrs["src"] = l.getAttribute("src");
+				attrs["base"] = baseUrl;
+				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
+				//attrs["id"] = l.getAttribute("script-id");
+				attrs["onload"] = delayedScriptOnload(l.rel);
+
+				var relSrc = attrs["src"].replace(baseUrl,"");
+				l.attrs = attrs;
+				if (l.rel == "preload") {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+					if (langOk) {
+						pageResolver.set(["state","preloading"],true);
+						pageResolver.set(["state","loadingScripts"],true);
+						pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+						document.body.appendChild(HTMLScriptElement(attrs));
+						l.added = true;
+					} 
+				} else {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+					if (langOk) {
+						pageResolver.set(["state","loadingScripts"],true);
+						pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+					} 
+				}
+				break;
 		}
 		if (! pageResolver(["state","preloading"])) {
 			var scripts = pageResolver(["state","loadingScriptsUrl"]);
@@ -116,6 +129,12 @@
 				}
 			}
 		}
+
+		// var scripts = document.head.getElementsByTagName("script");
+		// for(var i=0,s; s = scripts[i]; ++i) {
+
+		// }
+
 		if (pageResolver(["state","loadingScripts"])) console.debug("loading phased scripts");
 
 		var metas = document.getElementsByTagName("meta");

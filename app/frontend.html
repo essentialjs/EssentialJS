@@ -31,7 +31,7 @@
 
   <script type="text/javascript" src="js/early.js"></script>
 
-  <script>(function(){
+  <script subpage="false">(function(){
 	  //Resolver("page").set(["state","connected"],false);
 	  Resolver("page").set(["state","authenticated"],false); //assume that login page passed
 	  Resolver("page").set(["state","authorised"],false);
@@ -47,7 +47,7 @@
     Resolver("essential")("openWindow")("/from-config/side","util",{ glueRight:true, glueHeight:true });	
   })();
   </script>
-	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
+	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload" subpage="false"></script>
 
   <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
   <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
@@ -57,7 +57,7 @@
 
   <link rel="pastload" type="text/javascript" src="js/knockout.js"/>
   <link rel="pastload" type="text/javascript" src="js/raphael.min.js"/>
-  <link rel="pastload" type="text/javascript" src="js/frontend.js"/>
+  <link rel="pastload" type="text/javascript" src="js/frontend.js" subpage="false">
 
   <script type="application/config">
     declare("logo",{"charset": "utf-8"});
@@ -66,7 +66,7 @@
 
     declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
 
-    page("/from-config/side",{},"");
+    page("/from-config/side",{},'<h1>Demo</h1><p>This is a sample side window.</p>');
   </script>
 
 </head>

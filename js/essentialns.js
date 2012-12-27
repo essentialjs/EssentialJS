@@ -166,6 +166,12 @@
 		return this.join(this.separator);
 	};
 
+	function escapeJs(s) {
+		return s.replace(/\\\\\\"/g,'\\\\\\\\"').replace(/\\\\"/g,'\\\\\\"').replace(/\\"/g,'\\\\"').replace(/"/g,'\\"');
+	}
+	essential.set("escapeJs",escapeJs);
+	
+
 	function _DOMTokenList() {
 
 	}

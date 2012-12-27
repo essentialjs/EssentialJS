@@ -1319,6 +1319,12 @@ Generator.ObjectGenerator = Generator(Object);
 		return this.join(this.separator);
 	};
 
+	function escapeJs(s) {
+		return s.replace(/\\\\\\"/g,'\\\\\\\\"').replace(/\\\\"/g,'\\\\\\"').replace(/\\"/g,'\\\\"').replace(/"/g,'\\"');
+	}
+	essential.set("escapeJs",escapeJs);
+	
+
 	function _DOMTokenList() {
 
 	}
@@ -2240,6 +2246,7 @@ Generator.ObjectGenerator = Generator(Object);
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
 		arrayContains = essential("arrayContains"),
+		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		enhancedElements = essential("enhancedElements"),
@@ -2276,6 +2283,23 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 
 		return doc;
+	}
+
+	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
+	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true }
+	
+	function outerHtml(e) {
+		var attrs = [e.tagName.toLowerCase()];
+		for(var i=0,n; n = COPY_ATTRS[i]; ++i) {
+			var a = e[n] || e.getAttribute(n) || null; // tries property first to get absolute urls
+			if (a != null) attrs.push(n+'="'+a+'"');
+		}
+		var tail = "";
+		if (! EMPTY_TAGS[attrs[0]]) {
+			tail = (e.text || e.innerHTML) + "</" + attrs[0] + ">";
+		}
+
+		return "<" + attrs.join(" ") + ">" + tail;
 	}
 
 
@@ -2607,6 +2631,13 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var SubPage = Generator(_SubPage);
 
+	SubPage.prototype.headPrefix = ['<head>'];
+	var metas = document.head.getElementsByTagName("meta");
+	for(var i=0,e; e = metas[i]; ++i) {
+		SubPage.prototype.headPrefix.push(outerHtml(e));
+	}
+
+
 	SubPage.prototype.fetch = function() {
 
 		var XMLHttpRequest = essential("XMLHttpRequest");
@@ -2668,11 +2699,14 @@ Generator.ObjectGenerator = Generator(Object);
 		} else  if (window.ActiveXObject) {
 			text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
 			text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
-			text = text.replace("<head",'<div id="esp-head"').replace("</head>","</div>");
-			text = text.replace("<HEAD",'<div id="esp-head"').replace("</HEAD>","</div>");
-			text = text.replace("<body",'<div id="esp-body"').replace("</body>","</div>");
-			text = text.replace("<BODY",'<div id="esp-body"').replace("</BODY>","</div>");
-
+			text = text.replace("<head",'<washead').replace("</head>","</washead>");
+			text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+			text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+			text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
+			var div = document.createElement("DIV");
+			div.innerHTML = text;
+			this.head = div.getElementsByTagName("washead");
+			this.body = div.getElementsByTagName("wasbody") || div;
 			//TODO offline htmlfile object?
 		}
 	};
@@ -2712,14 +2746,43 @@ Generator.ObjectGenerator = Generator(Object);
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 		}
 	};
-	
+
+	SubPage.prototype.doesElementApply = function(el) {
+		if (el.attrs) {
+			return el.attrs["subpage"] == false? false : true;
+		}
+		if (el.getAttribute("subpage") == "false") return false;
+		if (el.getAttribute("data-subpage") == "false") return false;
+		return true;
+	};
+
 	SubPage.prototype.getHeadHtml = function() {
-		return "";
+		var resources = ApplicationConfig().resources(),
+			loadingScriptsUrl = ApplicationConfig().resolver("state.loadingScriptsUrl"),
+			p = [],
+			base = "";
+
+		for(var i=0,r; r = resources[i]; ++i) {
+			if (this.doesElementApply(r)) p.push( outerHtml(r) );
+		}
+		for(var u in loadingScriptsUrl) {
+			var link = loadingScriptsUrl[u];
+			base = link.attrs.base;
+			if (this.doesElementApply(link)) p.push( outerHtml(link) );
+		}
+		if (base) base = '<base href="'+base+'">';
+		p.push('</head>');
+		return escapeJs(this.headPrefix.join("") + base + p.join(""));
 
 	};
 
 	SubPage.prototype.getBodyHtml = function() {
-		return "";
+		var p = [
+			'<body>',
+			this.body.innerHTML,
+			'</body>'
+		];
+		return p.join("");
 		
 	};
 
@@ -2753,6 +2816,8 @@ Generator.ObjectGenerator = Generator(Object);
 		this.config = this.resolver.reference("config","undefined");
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
+		this.resolver.declare("resources",[]);
+		this.resources = this.resolver.reference("resources");
 
 		this._gather();
 		this._apply();
@@ -3225,6 +3290,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 // need with context not supported in strict mode
 Resolver("essential")("ApplicationConfig").prototype._gather = function() {
+	var resources = this.resources();
 	var scripts = document.getElementsByTagName("script");
 	for(var i=0,s; s = scripts[i]; ++i) {
 		if (s.getAttribute("type") == "application/config") {
@@ -3233,6 +3299,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			} catch(ex) {
 				Resolver("essential")("console").error("Failed to parse application/config",s.text);
 			}
+		} else if (s.parentNode == document.head) {
+			resources.push(s);
 		}
 	}
 };
@@ -3849,41 +3917,54 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	function _queueDelayedAssets()
 	{
 		//TODO move this to pageResolver("state.ready")
-		ApplicationConfig();//TODO move the state transitions here
+		var config = ApplicationConfig();//TODO move the state transitions here
 		var links = document.getElementsByTagName("link");
 
 		//TODO differentiate on type == "text/javascript"
-		for(var i=0,l; l=links[i]; ++i) if (l.rel == "pastload" || l.rel == "preload") {
-			//TODO differentiate on lang
-			var attrsStr = l.getAttribute("attrs");
-			var attrs = {};
-			if (attrsStr) {
-				eval("attrs = {" + attrsStr + "}");
-			}
-			attrs["type"] = l.getAttribute("type") || "text/javascript";
-			attrs["src"] = l.getAttribute("src");
-			//attrs["id"] = l.getAttribute("script-id");
-			attrs["onload"] = delayedScriptOnload(l.rel);
-			var relSrc = attrs["src"].replace(baseUrl,"");
-			if (l.rel == "preload") {
-				var langOk = true;
-				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
-				if (langOk) {
-					pageResolver.set(["state","preloading"],true);
-					pageResolver.set(["state","loadingScripts"],true);
-					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					document.body.appendChild(HTMLScriptElement(attrs));
-					l.added = true;
-				} 
-			} else {
-				var langOk = true;
-				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
-				if (langOk) {
-					pageResolver.set(["state","loadingScripts"],true);
-					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					l.attrs = attrs;
-				} 
-			}
+		for(var i=0,l; l=links[i]; ++i) switch(l.rel) {
+			case "stylesheet":
+				config.resources().push(l);
+				break;			
+			case "pastload":
+			case "preload":
+				//TODO differentiate on lang
+				var attrsStr = l.getAttribute("attrs");
+				var attrs = {};
+				if (attrsStr) {
+					try {
+						eval("attrs = {" + attrsStr + "}");
+					} catch(ex) {
+						//TODO
+					}
+				}
+				attrs["type"] = l.getAttribute("type") || "text/javascript";
+				attrs["src"] = l.getAttribute("src");
+				attrs["base"] = baseUrl;
+				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
+				//attrs["id"] = l.getAttribute("script-id");
+				attrs["onload"] = delayedScriptOnload(l.rel);
+
+				var relSrc = attrs["src"].replace(baseUrl,"");
+				l.attrs = attrs;
+				if (l.rel == "preload") {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+					if (langOk) {
+						pageResolver.set(["state","preloading"],true);
+						pageResolver.set(["state","loadingScripts"],true);
+						pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+						document.body.appendChild(HTMLScriptElement(attrs));
+						l.added = true;
+					} 
+				} else {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+					if (langOk) {
+						pageResolver.set(["state","loadingScripts"],true);
+						pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+					} 
+				}
+				break;
 		}
 		if (! pageResolver(["state","preloading"])) {
 			var scripts = pageResolver(["state","loadingScriptsUrl"]);
@@ -3899,6 +3980,12 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				}
 			}
 		}
+
+		// var scripts = document.head.getElementsByTagName("script");
+		// for(var i=0,s; s = scripts[i]; ++i) {
+
+		// }
+
 		if (pageResolver(["state","loadingScripts"])) console.debug("loading phased scripts");
 
 		var metas = document.getElementsByTagName("meta");
