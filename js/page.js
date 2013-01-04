@@ -827,7 +827,7 @@
 
 	function onmessage(ev) {
 		var data = JSON.parse(ev.data);
-		if (data && data.enhanced) {
+		if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
 			placement.setOptions(data.enhanced.options);
 			placement.setMain(data.enhanced.main);
 			placement.track();
