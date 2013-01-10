@@ -2557,7 +2557,7 @@ Generator.ObjectGenerator = Generator(Object);
 					else if (e.attachEvent) e.attachEvent(n,_from[n]);
 					break;
 				default:
-					e.setAttribute(n,_from[n]);
+					if (_from[n] != null) e.setAttribute(n,_from[n]);
 					break;
 			}
 		}
@@ -4459,6 +4459,9 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				inits.push(s);
 				break;
 			default:
+				var name = s.getAttribute("name");
+				if (name && s.getAttribute("src") == null) this.modules[name] = true; 
+				//TODO onload if src to flag that module is loaded
 				if (s.parentNode == document.head) {
 					resources.push(s);
 				}
@@ -5105,7 +5108,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				}
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
-				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name");
+				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
 				attrs["base"] = baseUrl;
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");

@@ -284,7 +284,7 @@
 					else if (e.attachEvent) e.attachEvent(n,_from[n]);
 					break;
 				default:
-					e.setAttribute(n,_from[n]);
+					if (_from[n] != null) e.setAttribute(n,_from[n]);
 					break;
 			}
 		}

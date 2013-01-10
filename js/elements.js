@@ -92,7 +92,7 @@
 				}
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
-				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name");
+				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
 				attrs["base"] = baseUrl;
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");
