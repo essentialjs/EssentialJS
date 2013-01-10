@@ -581,6 +581,8 @@
 		SubPage.prototype.appConfig = this;
 		this.resolver.declare("resources",[]);
 		this.resources = this.resolver.reference("resources");
+		this.resolver.declare("inits",[]);
+		this.inits = this.resolver.reference("inits");
 
 		this._gather();
 		this._apply();
@@ -590,6 +592,8 @@
 			this.loadPage(bodySrc)
 			//TODO queue loading this as the initial body content added before the first body child
 		}
+
+		this.modules = {};
 
 		setTimeout(bringLive,60); 
 	}
@@ -648,7 +652,8 @@
 
 			case "loading":
 				if (ev.value == false) {
-					if (document.body) essential("instantiatePageSingletons")();	
+					if (document.body) essential("instantiatePageSingletons")();
+					ev.data.doInitScripts();	
 					enhanceUnhandledElements();
 					if (ev.base.configured == true && ev.base.authenticated == true 
 						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
@@ -669,6 +674,7 @@
 					this.set("state.launching",true);
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
+					ev.data.doInitScripts();	
 					enhanceUnhandledElements();
 				}
 				break;			
@@ -676,6 +682,7 @@
 			case "launched":
 				if (ev.value == true) {
 					if (document.body) essential("instantiatePageSingletons")();
+					ev.data.doInitScripts();	
 					enhanceUnhandledElements();
 					if (ev.symbol == "launched") this.set("state.launching",false);
 				}
@@ -825,6 +832,30 @@
 		}
 	};
 
+	ApplicationConfig.prototype.doInitScripts = function() {
+		var inits = this.inits();
+		for(var i=0,s; s = inits[i]; ++i) if (!s.done) {
+			// this.currently = s
+			try {
+				this.context["this"] = s;
+				with(this.context) eval(s.text);
+				s.done = true;
+			} catch(ex) {} //TODO only ignore ex.ignore
+		}
+		this.context["this"] = undefined;
+	};
+
+	ApplicationConfig.prototype.context = {
+		"require": function(path) {
+			var ac = ApplicationConfig();
+			if (ac.modules[path] == undefined) {
+				var ex = new Error("Missing module '" + path + "'");
+				ex.ignore = true;
+				throw ex;	
+			} 
+		}
+	};
+
 	function onmessage(ev) {
 		var data = JSON.parse(ev.data);
 		if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
@@ -917,6 +948,7 @@
 		for(var i=0,w; w = enhancedWindows[i]; ++i) {
 			w.notify();
 		}
+		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
 		placement.notifyNeeded = false;
 	},250);
 
@@ -1054,16 +1086,29 @@
 // need with context not supported in strict mode
 Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	var resources = this.resources();
+	var inits = this.inits();
+
 	var scripts = document.getElementsByTagName("script");
 	for(var i=0,s; s = scripts[i]; ++i) {
-		if (s.getAttribute("type") == "application/config") {
-			try {
-				with(this) eval(s.text);
-			} catch(ex) {
-				Resolver("essential")("console").error("Failed to parse application/config",s.text);
-			}
-		} else if (s.parentNode == document.head) {
-			resources.push(s);
+		switch(s.getAttribute("type")) {
+			case "application/config":
+				try {
+					with(this) eval(s.text);
+				} catch(ex) {
+					Resolver("essential")("console").error("Failed to parse application/config",s.text);
+				}
+				break;
+			case "application/init": 
+				inits.push(s);
+				break;
+			default:
+				var name = s.getAttribute("name");
+				if (name && s.getAttribute("src") == null) this.modules[name] = true; 
+				//TODO onload if src to flag that module is loaded
+				if (s.parentNode == document.head) {
+					resources.push(s);
+				}
+				break;
 		}
 	}
 };

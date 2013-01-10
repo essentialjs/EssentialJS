@@ -48,6 +48,10 @@
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
 			var el = this;
+			var name = el.getAttribute("name");
+			if (name) {
+				ApplicationConfig().modules[name] = true;
+			}
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
@@ -88,6 +92,7 @@
 				}
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
+				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name");
 				attrs["base"] = baseUrl;
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");
