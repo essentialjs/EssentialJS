@@ -834,21 +834,24 @@
 
 	ApplicationConfig.prototype.doInitScripts = function() {
 		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (!s.done) {
+		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
 			// this.currently = s
 			try {
-				this.context["this"] = s;
+				this.context["element"] = s;
+				this.context["parentElement"] = s.parentElement || s.parentNode;
 				with(this.context) eval(s.text);
 				s.done = true;
-			} catch(ex) {} //TODO only ignore ex.ignore
+			} catch(ex) {
+				debugger;
+			} //TODO only ignore ex.ignore
 		}
 		this.context["this"] = undefined;
 	};
 
 	ApplicationConfig.prototype.context = {
 		"require": function(path) {
-			var ac = ApplicationConfig();
-			if (ac.modules[path] == undefined) {
+			var ac = ApplicationConfig.info.existing[0];
+			if (ac == undefined || ac.modules[path] == undefined) {
 				var ex = new Error("Missing module '" + path + "'");
 				ex.ignore = true;
 				throw ex;	
