@@ -3752,11 +3752,10 @@ Generator.ObjectGenerator = Generator(Object);
 	var SubPage = Generator(_SubPage);
 
 	SubPage.prototype.headPrefix = ['<head>'];
-	var metas = document.head.getElementsByTagName("meta");
+	var metas = (document.head || document.documentElement.firstChild).getElementsByTagName("meta");
 	for(var i=0,e; e = metas[i]; ++i) {
 		SubPage.prototype.headPrefix.push(outerHtml(e));
 	}
-
 
 	SubPage.prototype.fetch = function() {
 
@@ -4244,7 +4243,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		// measure this window flagging if it notifyNeeded since last time
 		measure: function() {
-			var	x= screenX, y= screenY, width= outerWidth, height= outerHeight;
+			var	x= window.screenX, y= window.screenY, width= window.outerWidth, height= window.outerHeight;
 			this.notifyNeeded = (this.notifyNeeded || x != this.x || y != this.y || width != this.width || height != this.height);
 			this.x = x;
 			this.y = y;
