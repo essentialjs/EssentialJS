@@ -592,7 +592,7 @@
 			//TODO queue loading this as the initial body content added before the first body child
 		}
 
-		this.modules = {};
+		this.modules = { "domReady":true };
 
 		setTimeout(bringLive,60); 
 	}
@@ -618,6 +618,7 @@
 				pageResolver.reflectStateOn(document.body,false);
 				var ap = ev.data;
 				//if (ev.value == true) ap.reflectState();
+				ev.data.doInitScripts();
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
