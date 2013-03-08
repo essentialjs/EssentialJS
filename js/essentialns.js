@@ -689,8 +689,10 @@
 		var desc = enhancedElements[uniqueId];
 		if (desc && !force) return desc;
 
+		var roles = el.getAttribute("role").split(" ");
 		var desc = {
-			"role": el.getAttribute("role"),
+			"roles": roles,
+			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
 			"instance": null,
 			"layout": {

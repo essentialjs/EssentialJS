@@ -343,6 +343,7 @@
 				var role = el.getAttribute("role");
 				var variants = [];
 				if (role) {
+					//TODO support multiple roles
 					if (el.type) variants.push("*[role="+role+",type="+el.type+"]");
 					variants.push("*[role="+role+"]");
 				} else {
@@ -490,7 +491,7 @@
 		for(var i=0,el; el=elements[i]; ++i) {
 			var role = el.getAttribute("role");
 			//TODO only in positive list
-			if (el.getAttribute("role")) {
+			if (role) {
 				var desc = EnhancedDescriptor(el,true);
 				descs.push(desc);
 				if (el._cleaners == undefined) el._cleaners = [];

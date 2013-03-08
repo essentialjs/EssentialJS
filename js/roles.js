@@ -239,6 +239,7 @@
 	function getOfRole(el,role,parentProp) {
 		parentProp = parentProp || "parentNode";
 		while(el) {
+			//TODO test /$role | role$|$role$| role /
 			if (el.getAttribute && el.getAttribute("role") == role) return el;
 			el = el[parentProp];
 		}
