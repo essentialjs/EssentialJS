@@ -1,6 +1,6 @@
 var fs = require('fs');
 var uglify = require('uglify-js');
-var less = require('less');
+var refreshing = require('refreshing');
 
 var MODERNIZR_FILES = [
   'modernizr-prefix.js',
@@ -78,6 +78,7 @@ task('combine',function(params){
 
 desc('Make CSS files for demos');
 task('css',function(params){
+  var less = require('less');
   var basic = fs.readFileSync('app/css/basic.less').toString();
   less.Parser({}).parse(basic,function(css){
     var out = fs.openSync('app/css/basic.css', 'w+');
@@ -90,3 +91,10 @@ task('default',function(params){
   jake.Task['combine'].invoke();
   jake.Task['minify'].invoke();
 });
+
+desc('Refreshing');
+task('refreshing',function(params) {
+  //console.log(refreshing);
+  refreshing.watchTrees(__dirname);
+});
+
