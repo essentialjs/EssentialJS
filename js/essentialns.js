@@ -696,6 +696,7 @@
 			"el": el,
 			"instance": null,
 			"layout": {
+				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 				"lastDirectCall": 0
 			},
 

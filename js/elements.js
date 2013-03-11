@@ -406,11 +406,13 @@
 				ow = this.el.offsetWidth, 
 				oh  = this.el.offsetHeight,
 				sw = this.el.scrollWidth,
-				sh = this.el.scrollHeight;
-			if (ow == 0 && oh == 0) {
-				if (this.layout.displayed) updateLayout = true;
-				this.layout.displayed = false;
+				sh = this.el.scrollHeight,
+				displayed = !(ow == 0 && oh == 0);
+			if (this.layout.displayed != displayed) {
+				this.layout.displayed = displayed;
+				updateLayout = true;
 			}
+
 			if (this.layout.width != ow || this.layout.height != oh) {
 				this.layout.width = ow;
 				this.layout.height = oh;
@@ -425,7 +427,10 @@
 				this.layout.area = getActiveArea();
 				updateLayout = true;
 			}
-			if (updateLayout) layoutHandler.call(dr,this.el,this.layout,this.instance);		
+			if (updateLayout) {
+				//debugger;
+				layoutHandler.call(dr,this.el,this.layout,this.instance);	
+			}	
 		};
 	}
 
@@ -545,10 +550,11 @@
 					ow = desc.el.offsetWidth, 
 					oh  = desc.el.offsetHeight,
 					sw = desc.el.scrollWidth,
-					sh = desc.el.scrollHeight;
-				if (ow == 0 && oh == 0) {
-					if (desc.layout.displayed) updateLayout = true;
-					desc.layout.displayed = false;
+					sh = desc.el.scrollHeight,
+					displayed = !(ow == 0 && oh == 0);
+				if (desc.layout.displayed != displayed) {
+					desc.layout.displayed = displayed;
+					updateLayout = true;
 				}
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
