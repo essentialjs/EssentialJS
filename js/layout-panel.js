@@ -125,12 +125,12 @@ PanelGroup.prototype.layout = function(el,layout) {
 
 		sizing.offset = offset;
 		if (horizontal) {
-			sizing.size = sizing.logical / this.groupLayout.sizesSum * layout.width;
+			sizing.size = Math.floor(sizing.logical / this.groupLayout.sizesSum * layout.width);
 			c.style.left = offset + "px";
 			c.style.width = sizing.size + "px";
 			offset += sizing.size;
 		} else {
-			sizing.size = sizing.logical / this.groupLayout.sizesSum * layout.height;
+			sizing.size = Math.floor(sizing.logical / this.groupLayout.sizesSum * layout.height);
 			c.style.top = offset + "px";
 			c.style.height = sizing.size + "px";
 			offset += sizing.size;
