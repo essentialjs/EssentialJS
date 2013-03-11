@@ -2962,11 +2962,14 @@ Generator.ObjectGenerator = Generator(Object);
 		var desc = enhancedElements[uniqueId];
 		if (desc && !force) return desc;
 
+		var roles = el.getAttribute("role").split(" ");
 		var desc = {
-			"role": el.getAttribute("role"),
+			"roles": roles,
+			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
 			"instance": null,
 			"layout": {
+				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 				"lastDirectCall": 0
 			},
 
@@ -4117,10 +4120,10 @@ Generator.ObjectGenerator = Generator(Object);
 			var el = this.getElement(k);
 			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
 
-			if (conf.layouter) {
+			if (conf.layouter && el) {
 				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
 			}
-			if (conf.laidout) {
+			if (conf.laidout && el) {
 				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
 			}
 		}
@@ -5362,6 +5365,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				var role = el.getAttribute("role");
 				var variants = [];
 				if (role) {
+					//TODO support multiple roles
 					if (el.type) variants.push("*[role="+role+",type="+el.type+"]");
 					variants.push("*[role="+role+"]");
 				} else {
@@ -5424,11 +5428,13 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				ow = this.el.offsetWidth, 
 				oh  = this.el.offsetHeight,
 				sw = this.el.scrollWidth,
-				sh = this.el.scrollHeight;
-			if (ow == 0 && oh == 0) {
-				if (this.layout.displayed) updateLayout = true;
-				this.layout.displayed = false;
+				sh = this.el.scrollHeight,
+				displayed = !(ow == 0 && oh == 0);
+			if (this.layout.displayed != displayed) {
+				this.layout.displayed = displayed;
+				updateLayout = true;
 			}
+
 			if (this.layout.width != ow || this.layout.height != oh) {
 				this.layout.width = ow;
 				this.layout.height = oh;
@@ -5443,7 +5449,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				this.layout.area = getActiveArea();
 				updateLayout = true;
 			}
-			if (updateLayout) layoutHandler.call(dr,this.el,this.layout,this.instance);		
+			if (updateLayout) {
+				//debugger;
+				layoutHandler.call(dr,this.el,this.layout,this.instance);	
+			}	
 		};
 	}
 
@@ -5509,7 +5518,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		for(var i=0,el; el=elements[i]; ++i) {
 			var role = el.getAttribute("role");
 			//TODO only in positive list
-			if (el.getAttribute("role")) {
+			if (role) {
 				var desc = EnhancedDescriptor(el,true);
 				descs.push(desc);
 				if (el._cleaners == undefined) el._cleaners = [];
@@ -5563,10 +5572,11 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 					ow = desc.el.offsetWidth, 
 					oh  = desc.el.offsetHeight,
 					sw = desc.el.scrollWidth,
-					sh = desc.el.scrollHeight;
-				if (ow == 0 && oh == 0) {
-					if (desc.layout.displayed) updateLayout = true;
-					desc.layout.displayed = false;
+					sh = desc.el.scrollHeight,
+					displayed = !(ow == 0 && oh == 0);
+				if (desc.layout.displayed != displayed) {
+					desc.layout.displayed = displayed;
+					updateLayout = true;
 				}
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
@@ -5697,7 +5707,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		if (this.baseClass) this.baseClass += " ";
 		else this.baseClass = "";
 
-		el.className = this.baseClass + el.className;
+		if (el) el.className = this.baseClass + el.className;
 	}
 	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
 	Laidout.variant("area-member",MemberLaidout);
@@ -5946,6 +5956,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	function getOfRole(el,role,parentProp) {
 		parentProp = parentProp || "parentNode";
 		while(el) {
+			//TODO test /$role | role$|$role$| role /
 			if (el.getAttribute && el.getAttribute("role") == role) return el;
 			el = el[parentProp];
 		}

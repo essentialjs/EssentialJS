@@ -760,10 +760,10 @@
 			var el = this.getElement(k);
 			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
 
-			if (conf.layouter) {
+			if (conf.layouter && el) {
 				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
 			}
-			if (conf.laidout) {
+			if (conf.laidout && el) {
 				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
 			}
 		}

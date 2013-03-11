@@ -685,7 +685,7 @@
 		if (this.baseClass) this.baseClass += " ";
 		else this.baseClass = "";
 
-		el.className = this.baseClass + el.className;
+		if (el) el.className = this.baseClass + el.className;
 	}
 	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
 	Laidout.variant("area-member",MemberLaidout);
