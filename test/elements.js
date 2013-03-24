@@ -26,6 +26,28 @@ test("HTMLElement construction",function(){
 	
 })
 
+test("jQuery trigger click",function() {
+    expect(1);
+    
+    function Clicker(target) {
+        this.target = target;
+        
+        this.target.off("click").on("click",function(ev) {
+            ok(1,"did the click");
+        });
+    }
+    
+  var event,
+      $doc = $( document ),
+      keys = new Clicker( $doc );
+ 
+  // trigger event
+  event = $.Event( "click" );
+  event.button = 0;
+  $doc.trigger( event );
+
+});
+
 test("MutableEvent construction click",function(){
 	var HTMLElement = Resolver("essential")("HTMLElement");
 	var MutableEvent = Resolver("essential")("MutableEvent");
@@ -42,9 +64,29 @@ test("MutableEvent construction click",function(){
 	if (div.attachEvent) div.attachEvent("onclick",onclick);
 	else if (div.addEventListener) div.addEventListener("click",onclick);
 
-	//div.click();
-	simulateClick(div);
+    MutableEvent("click").trigger(div);
 });
+
+test("MutableEvent preventDefault & stopPropagation",function() {
+    expect(1); //2
+	var HTMLElement = Resolver("essential")("HTMLElement");
+	var MutableEvent = Resolver("essential")("MutableEvent");
+
+	var div = HTMLElement("div");
+
+	function onclick(ev) {
+		var event = MutableEvent(ev);
+        event.stopPropagation();
+        event.preventDefault()
+        //TODO ok(event.isDefaultPrevented(),"Didn't prevent default behavior");
+        ok(1,"No issues yet");
+	}
+
+	if (div.attachEvent) div.attachEvent("onclick",onclick);
+	else if (div.addEventListener) div.addEventListener("click",onclick);
+
+    MutableEvent("click").trigger(div);
+});    
 
 test('Basic element construction',function(){
 	var HTMLElement = Resolver("essential")("HTMLElement");

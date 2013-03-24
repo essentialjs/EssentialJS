@@ -332,6 +332,7 @@
 	/*
 		DOM Events
 	*/
+    
 	function copyKeyEvent(src) {
 		this.altKey = src.altKey;
 		this.shiftKey = src.shiftKey;
@@ -365,108 +366,151 @@
 	}
 	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
 	var EVENTS = {
+		// compositionstart/element/true compositionupdate/element/false
 		"click" : {
+			type: "MouseEvents",
+			cancelable:false, //true
 			copyEvent: copyMouseEvent
 		},
 		"dblclick" : {
+			type: "MouseEvents",
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"contextmenu": {
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"mousemove": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mouseup": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mousedown": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mousewheel": {
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"wheel": {
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mouseenter": {
+			type: "MouseEvents",
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"mouseleave": {
+			type: "MouseEvents",
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"mouseout": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEventOverOut
 		},
 		"mouseover": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEventOverOut
 		},
 
 		"keyup": {
+			cancelable:true,
 			copyEvent: copyKeyEvent
 		},
 		"keydown": {
+			cancelable:true,
 			copyEvent: copyKeyEvent
 		},
 		"keypress": {
+			cancelable:true,
 			copyEvent: copyKeyEvent
 		},
 
 		"blur": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"focus": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"focusin": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"focusout": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 
 		"copy": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"cut": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"change": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"input": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"textinput": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 
 		"scroll": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"reset": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"submit": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"select": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 
 		"error": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"haschange": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"load": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"unload": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"resize": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 
@@ -580,35 +624,71 @@
 		this.defaultPrevented = true;
 	};
 
-	_MutableEvent.prototype.CAPTURING_PHASE = 1;
+	_MutableEvent.prototype.isDefaultPrevented = function() {
+		return this.defaultPrevented;
+	};
+
+    _MutableEvent.prototype.CAPTURING_PHASE = 1;
 	_MutableEvent.prototype.AT_TARGET = 2;
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
+    
+    // trigger like jQuery
+    _MutableEvent.prototype.trigger = function() {
+        this.target.fireEvent("on" + this.type, this._original);
+    };
+    
+    function _NativeEventIE(type,props) {
+        var event = new _MutableEvent( document.createEventObject() );
+        if (props) for (var name in props) event._original[name] = props[name];
+        return event;
+    }
+    
+    function _NativeEvent(type, props) {
+        var event = document.createEvent(EVENTS[type].type || "Events"), bubbles = true;
+        if (props) for (var name in props) (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name]);
+        event.initEvent(type, bubbles, EVENTS[type].cancelable, null, null, null, null, null, null, null, null, null, null, null, null);
+        event.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
+        event.trigger = function(target) { (target || this.target).dispatchEvent(this); };
+        return event;
+    }
 
 	//TODO consider moving ClonedEvent out of call
-	function MutableEventModern(sourceEvent) {
+	function MutableEventModern(sourceEvent,props) {
+        if (typeof sourceEvent == "string") return _NativeEvent(sourceEvent,props);
+        
 		if (sourceEvent.withActionInfo) return sourceEvent;
-		function ClonedEvent() { 
+		function ClonedEvent() {
+            this._original = sourceEvent;
 			this.withActionInfo = MutableEvent_withActionInfo;
 			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-		}
+            this.stopPropagation = function() { sourceEvent.stopPropagation(); };
+            this.preventDefault = function() { sourceEvent.preventDefault(); };
+	        this.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
+        }
 		ClonedEvent.prototype = sourceEvent; 
 
 		return  new ClonedEvent();
 	}
 
-	function MutableEventFF(sourceEvent) {
-		sourceEvent.withActionInfo = MutableEvent_withActionInfo;
+	function MutableEventFF(sourceEvent,props) {
+        if (typeof sourceEvent == "string") return _NativeEvent(sourceEvent,props);
+
+        sourceEvent.withActionInfo = MutableEvent_withActionInfo;
 		sourceEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+	    sourceEvent.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
 
 		return sourceEvent;
 	}
 
-	function MutableEventIE(sourceEvent) {
-		if (sourceEvent && sourceEvent.withActionInfo) return sourceEvent;
+	function MutableEventIE(sourceEvent,props) {
+        if (typeof sourceEvent == "string") return _NativeEventIE(sourceEvent,props);
+
+        if (sourceEvent && sourceEvent.withActionInfo) return sourceEvent;
 		return new _MutableEvent(sourceEvent == null? window.event : sourceEvent);
 	}
 
 	var MutableEvent;
+	//TODO IE9 ?
 	if (navigator.userAgent.match(/Firefox\//)) MutableEvent = essential.declare("MutableEvent",MutableEventFF);
 	else if (navigator.userAgent.match(/MSIE /) && !navigator.userAgent.match(/Opera/)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
 	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
