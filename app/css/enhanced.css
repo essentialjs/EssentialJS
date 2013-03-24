@@ -697,7 +697,6 @@ nav[action="navigation/application"] button .icon {
   display: inline-block;
   width: 40px;
   height: 40px;
-  background-image: url(../images/ZKB_Menu.png);
   background-position: 0 0;
 }
 nav[action="navigation/application"] button label {
@@ -1101,6 +1100,7 @@ section.sheet {
   right: 1px;
   top: 0;
   height: 100%;
+  min-height: 18px;
   overflow: visible;
   width: 7px;
 }
@@ -1156,6 +1156,7 @@ section.sheet {
   bottom: 1px;
   left: 0;
   width: 100%;
+  min-width: 18px;
   overflow: visible;
   height: 7px;
 }

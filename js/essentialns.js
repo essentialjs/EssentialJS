@@ -4,6 +4,22 @@
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
 	var essential = Resolver("essential",{});
+
+	var isFileProtocol = (location.protocol === 'file:'    ||
+	                      location.protocol === 'chrome:'  ||
+	                      location.protocol === 'chrome-extension:'  ||
+	                      location.protocol === 'resource:');
+
+	essential.declare("isFileProtocol",isFileProtocol);
+
+	var serverMode = (location.hostname == '127.0.0.1' ||
+	                        location.hostname == '0.0.0.0'   ||
+	                        location.hostname == 'localhost' ||
+	                        location.port.length > 0         ||
+	                        isFileProtocol                   ? 'development'
+	                                                         : 'production');
+	essential.declare("serverMode",serverMode);
+
 	function Type(options) {
 		this.options = options || {};
 		this.name = this.options.name;
@@ -150,6 +166,12 @@
 		return this.join(this.separator);
 	};
 
+	function escapeJs(s) {
+		return s.replace(/\\\\\\"/g,'\\\\\\\\"').replace(/\\\\"/g,'\\\\\\"').replace(/\\"/g,'\\\\"').replace(/"/g,'\\"');
+	}
+	essential.set("escapeJs",escapeJs);
+	
+
 	function _DOMTokenList() {
 
 	}
@@ -254,8 +276,15 @@
 				case "onload":
 					regScriptOnload(e,_from.onload);
 					break;
+				case "onclick":
+				case "onmousemove":
+				case "onmouseup":
+				case "onmousedown":
+					if (e.addEventListener) e.addEventListener(n.substring(2),_from[n],false);
+					else if (e.attachEvent) e.attachEvent(n,_from[n]);
+					break;
 				default:
-					e.setAttribute(n,_from[n]);
+					if (_from[n] != null) e.setAttribute(n,_from[n]);
 					break;
 			}
 		}
@@ -523,7 +552,7 @@
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
-		while(element) {
+		while(element && element.tagName) {
 			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
 
 			var role = element.getAttribute("role");
@@ -565,7 +594,7 @@
 		if (this.commandElement == undefined) return this; // no command
 
 		element = this.commandElement;
-		while(element) {
+		while(element && element.tagName) {
 			var action = element.getAttribute("action");
 			if (action) {
 				this.action = action;
@@ -700,11 +729,12 @@
 	 */
 	function callCleaners(el)
 	{
-		var _cleaners = el._cleaners;
+		var _cleaners = el._cleaners, c;
 		if (_cleaners != undefined) {
-			for(var i=0,c; c = _cleaners[i]; ++i) {
-				c.call(el);
-			}
+			do {
+				c = _cleaners.pop();
+				if (c) c.call(el);
+			} while(c);
 			_cleaners = undefined;
 		}
 	};
@@ -714,7 +744,6 @@
 	function cleanRecursively(el) {
 		callCleaners(el);
 		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
-			callCleaners(child);
 			cleanRecursively(child);
 		}
 	}
@@ -722,6 +751,9 @@
 
 	// map of uniqueId referenced
 	var enhancedElements = essential.declare("enhancedElements",{});
+
+	// open windows
+	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
 	function defaultEnhancedRefresh(desc) {
 
@@ -737,15 +769,31 @@
 		var desc = enhancedElements[uniqueId];
 		if (desc && !force) return desc;
 
+		var roles = el.getAttribute("role").split(" ");
 		var desc = {
-			"role": el.getAttribute("role"),
+			"roles": roles,
+			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
 			"instance": null,
 			"layout": {
+				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 				"lastDirectCall": 0
 			},
 
 			"refresh": defaultEnhancedRefresh,
+
+			"liveCheck": function() {
+				if (!this.enhanced || this.discarded) return;
+				var inDom = contains(document.body,this.el);
+				if (!inDom) {
+					// discard it
+					//TODO anything else ?
+					callCleaners(this.el);
+					delete this.el;
+					this.discarded = true;					
+				}
+			},
+
 			"enhanced": false,
 			"discarded": false
 		};
@@ -760,10 +808,13 @@
 	{
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			callCleaners(desc.el); //TODO perhaps use cleanRecursively
-			delete desc.el;
+			if (desc.el) {
+				callCleaners(desc.el); //TODO perhaps use cleanRecursively
+				delete desc.el;
+			}
 			delete enhancedElements[n];
 		}
+		enhancedElements = essential.set("enhancedElements",{});
 	}
 
 	function maintainEnhancedElements() {
@@ -771,22 +822,26 @@
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			var inDom = contains(document.body,desc.el);
+			desc.liveCheck();
 			if (desc.enhanced) {
-				if (inDom && !desc.discarded) {
+				if (!desc.discarded) {
 					// maintain it
 					desc.refresh();
 				} else {
-					// discard it
-					//TODO anything else ?
-					callCleaners(desc.el);
-					delete desc.el;
 					delete enhancedElements[n];
 				}
 			}
 		}
 	}
 	var enhancedElementsMaintainer = setInterval(maintainEnhancedElements,330); // minimum frequency 3 per sec
+
+	function discardEnhancedWindows() {
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			if (w.window) w.window.close();
+		}
+		enhancedWindows = null;
+		essential.set("enhancedWindows",[]);
+	}
 
 	function instantiatePageSingletons()
 	{
@@ -860,6 +915,7 @@
 		discardRestricted();
 		clearInterval(enhancedElementsMaintainer);
 		discardEnhancedElements();
+		discardEnhancedWindows();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();

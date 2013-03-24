@@ -55,6 +55,73 @@ test('Generator inherit from generator defined on main constructor',function(){
 	ok(_Rectangle.calledWith(1,2,3,4))
 })
 
+test("Simple Generator and descendants",function() {
+
+	function _Simple(){
+		return { v:"v" };
+	}
+	var Simple = Generator(_Simple,{ alloc:false });
+
+	// simple gen
+	var s = Simple();
+	ok(s);
+	equal(s.v,"v");
+	equal(typeof s,"object")
+
+	// derived simple
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,Simple);
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+	// derived simple
+	var _Doubly = sinon.spy();
+	var Doubly = Generator(_Doubly,Derived);
+	var d = Doubly();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Doubly.callCount,1);
+
+	// derived simple, explicit
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,Simple, { alloc:false });
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+	function _Simple2(){
+		return { v:"v" };
+	}
+
+	// derived simple constructor, explicit
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,_Simple2, { alloc:false });
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+})
+
+/*
+test("Generator inherit from Resolver generator",function() {
+
+	var _WithResolver = sinon.spy();
+	var WithResolver = Generator(_WithResolver,Resolver, { alloc:false });
+
+	var r = WithResolver({});
+	ok(r.namespace);
+	equal(typeof r,"function");
+})
+*/
+
 test('Generator with passed prototype',function(){
 	function constr() {
 

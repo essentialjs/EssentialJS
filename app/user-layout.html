@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]--><!--[if lt IE 7 ]><html class="no-js ie6" lang="en"><![endif]--><!--[if IE 7 ]><html class="no-js ie7" lang="en"><![endif]--><!--[if IE 8 ]><html class="no-js ie8" lang="en"><![endif]--><!--[if (gte IE 9)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]--><head>
+  <meta charset="utf-8">
+  <meta content="chrome=1,IE=edge" http-equiv="X-UA-Compatible">
+  <meta content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" name="SKYPE_TOOLBAR">
+	<title>Frontend</title>
+  <meta content="Novo Bank" name="description">
+  <meta content="Henrik Vendelbo" name="author">
+
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled panelgroup tabpanel">
+  <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
+  <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
+	
+
+	<link rel="stylesheet" href="css/basic.css" media="screen">
+  <link rel="stylesheet" href="css/enhanced.css" media="screen">
+
+	<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
+	<script type="text/javascript" src="../js/modernizr.js"></script>
+	<script type="text/javascript" src="../js/json2.js"></script>
+	<script type="text/javascript" src="../js/resolver.js"></script>
+  <script type="text/javascript" src="../js/generator.js"></script>
+	<script type="text/javascript" src="../js/essentialns.js"></script>
+  <script type="text/javascript" src="../js/page.js"></script>
+	<script type="text/javascript" src="../js/xhr.js"></script>
+	<script type="text/javascript" src="../js/elements.js"></script>
+  <script type="text/javascript" src="../js/roles.js"></script>
+  <script type="text/javascript" src="../js/layout-panel.js"></script>
+  <script type="text/javascript" src="js/spin.min.js"></script>
+
+  <script type="text/javascript" src="js/demo-logging.js"></script>
+
+  <script type="text/javascript" src="js/early.js"></script>
+
+  <script subpage="false">(function(){
+	  //Resolver("page").set(["state","connected"],false);
+	  Resolver("page").set(["state","authenticated"],false); //assume that login page passed
+	  Resolver("page").set(["state","authorised"],false);
+	  Resolver("page").set(["state","configured"],false);
+    Resolver(window).reference("app.APPLICATION_PROPERTIES").mixin({
+      "BOOTSTRAP.IS_DEVELOPEMENT": true,
+      "DEFAULTS.CELL.RENDERER": "text",
+      "APPLICATION.CONFIG": "resource.xmlbundle",
+      "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
+      "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
+    });
+    //Resolver("essential")("openWindow")("index.html","util",{ glueRight:true, glueHeight:true });
+    Resolver("essential")("openWindow")("/from-config/side","util",{ glueRight:true, glueHeight:true });	
+  })();
+  </script>
+	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload" subpage="false"></script>
+
+  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
+  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
+  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
+
+
+  <link rel="pastload" type="text/javascript" src="js/raphael.min.js" name="raphael" />
+  <link rel="pastload" type="text/javascript" src="js/frontend.js" subpage="false">
+
+  <script type="application/config">
+    declare("logo",{"charset": "utf-8"});
+    declare("login",{"charset": "utf-8"});
+    declare("launched",{"charset": "utf-8"});
+
+    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+
+    page("/from-config/side",{},'<h1>Demo</h1><p>This is a sample side window.</p>');
+  </script>
+
+  <style>
+  *[role=tabpanel] {
+    overflow: visible;
+  }
+  .panel-divider {
+    position: absolute;
+    top:0;
+    bottom:0;
+    width:5px;
+    left: -5px;
+  }
+  </style>
+
+</head>
+<body class="loading">
+  <div id="menu-driven">
+
+    <article role="panelgroup group" id="main-stage" data-role='"type":"vertical","sizes":[100,50]'>
+
+      <div role="panelgroup group" data-role='"type":"horizontal","sizes":[50,50,20]'>
+
+        <div role="tabpanel">
+          <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div class="panel-divider"></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+            <table>
+              <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+            </table>
+          </div>
+        </div>
+
+        <div role="tabpanel">
+          <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+            <table>
+              <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+            </table>
+          </div>
+        </div>
+
+        <div role="tabpanel">
+          <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+            <table>
+              <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div role="tabpanel">
+        <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+            <table>
+              <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+              <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
+            </table>
+          </div>
+      </div>
+
+    </article>
+
+
+    
+
+   <header>
+   	<nav action="navigation/logo" role="navigation">
+      <button name="menu" role="button"></button>
+
+    </nav>
+    <nav action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="navigation">
+      <button name="logout">Logout</button>
+
+      <menu actions="navigation/menu" role="menu">
+        <command name="preferences" label="Preferences">
+        <command name="confidential" label="Show/Hide Confidential">
+        <command name="password" label="Change Password">
+        <command name="logout" label="Logout">
+      </menu>
+    </nav>
+
+   </header>
+   <aside id="warnings-and-alerts" role="toolbar" action="info/alerts">
+   </aside>
+   <aside class="leftmenu">
+   </aside>
+
+  </div>
+
+  <nav id="cpny-logo"></nav>
+
+  <nav id="app-logo"></nav>
+  <footer>© Right Here Inc
+  </footer>
+  
+  <div id="loginShield">
+  </div>
+
+  <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
+  </div>
+  <output data-proxy="html: body.connection.loadingProgress" id="loadingProgress"></output>
+
+  <nav role="navigation" action="navigation/lang"> 
+    <a name="en">English</a> ◦ 
+    <a name="de">Deutch</a> ◦  
+    <a name="fr">Francais</a> 
+  </nav>
+  <script type="text/javascript">
+  Resolver("essential")("DialogAction").variant("navigation/lang",Generator(
+    function(){},Resolver("essential")("DialogAction"),
+    {
+      "prototype": {
+        "en": function(){ 
+          Resolver("translations").set("locale","en"); 
+        },
+        "de": function(){ 
+          Resolver("translations").set("locale","de"); 
+        },
+        "fr": function(){ 
+          Resolver("translations").set("locale","fr"); 
+        }
+      }
+    }));
+  </script>
+
+  <div id="sessionBadge">
+   <form action="dialogs/login" autocomplete="off" id="login" method="client" name="login" role="dialog">
+   	<div class="connection-status">
+   		<div class="inner"></div>
+    </div>
+
+	<h1></h1>
+	<output name="loginErrors">The username or password you entered is incorrect, please try again</output>
+
+	<label class="details"><span lang="en">User Name</span><span lang="de">Benutzer</span><span lang="fr">Utilisateur</span></label>
+	<input autofocus="" maxlength="20" name="j_username" type="text">
+
+	<label class="details password"><span lang="en">Password</span><span lang="de">Passwort</span><span lang="fr">Mot de passe</span></label>
+	<input maxlength="20" name="j_password" type="password">
+
+  <div role="note" class="supportDetails">
+  	<h5 name="forgottenPassword" onclick="this.parentNode.stateful.toggle('state.expanded');">
+      <span lang="en">Can't access your account?</span>
+      <span lang="de">Problemen mit den login?</span>
+      <span lang="fr">Voudrai aide?</span>
+    </h5>
+
+    <p lang="en">
+      contact@essentialjs.com<br>
+      +44 80 80 80 80
+    </p>
+    <p lang="de">
+      contact@essentialjs.com<br>
+      +44 80 80 80 80
+    </p>
+    <p lang="fr">
+      contact@essentialjs.com<br>
+      +44 80 80 80 80
+    </p>
+  </div>
+
+	<button name="login" type="submit">Login</button>
+
+   </form>
+   <form action="dialogs/launched" autocomplete="off" id="launched" method="client" name="launched" 
+   	role="dialog">
+   		<h3>Sample User One</h3>
+		<button name="logout" type="submit">X</button>
+   </form>
+  </div>
+
+
+</body>
+</html>

@@ -20,6 +20,7 @@
 		serverUrl = location.protocol + "//" + location.host,
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
+		enhancedWindows = essential("enhancedWindows"),
 		EnhancedDescriptor = essential("EnhancedDescriptor");
 
 	function getScrollOffsets(el) {
@@ -47,6 +48,10 @@
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
 			var el = this;
+			var name = el.getAttribute("name");
+			if (name) {
+				ApplicationConfig().modules[name] = true;
+			}
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
@@ -65,41 +70,55 @@
 	function _queueDelayedAssets()
 	{
 		//TODO move this to pageResolver("state.ready")
-		ApplicationConfig();//TODO move the state transitions here
+		var config = ApplicationConfig();//TODO move the state transitions here
 		var links = document.getElementsByTagName("link");
 
 		//TODO differentiate on type == "text/javascript"
-		for(var i=0,l; l=links[i]; ++i) if (l.rel == "pastload" || l.rel == "preload") {
-			//TODO differentiate on lang
-			var attrsStr = l.getAttribute("attrs");
-			var attrs = {};
-			if (attrsStr) {
-				eval("attrs = {" + attrsStr + "}");
-			}
-			attrs["type"] = l.getAttribute("type") || "text/javascript";
-			attrs["src"] = l.getAttribute("src");
-			//attrs["id"] = l.getAttribute("script-id");
-			attrs["onload"] = delayedScriptOnload(l.rel);
-			var relSrc = attrs["src"].replace(baseUrl,"");
-			if (l.rel == "preload") {
-				var langOk = true;
-				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
-				if (langOk) {
-					pageResolver.set(["state","preloading"],true);
-					pageResolver.set(["state","loadingScripts"],true);
-					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					document.body.appendChild(HTMLScriptElement(attrs));
-					l.added = true;
-				} 
-			} else {
-				var langOk = true;
-				if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
-				if (langOk) {
-					pageResolver.set(["state","loadingScripts"],true);
-					pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					l.attrs = attrs;
-				} 
-			}
+		for(var i=0,l; l=links[i]; ++i) switch(l.rel) {
+			case "stylesheet":
+				config.resources().push(l);
+				break;			
+			case "pastload":
+			case "preload":
+				//TODO differentiate on lang
+				var attrsStr = l.getAttribute("attrs");
+				var attrs = {};
+				if (attrsStr) {
+					try {
+						eval("attrs = {" + attrsStr + "}");
+					} catch(ex) {
+						//TODO
+					}
+				}
+				attrs["type"] = l.getAttribute("type") || "text/javascript";
+				attrs["src"] = l.getAttribute("src");
+				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
+				attrs["base"] = baseUrl;
+				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
+				//attrs["id"] = l.getAttribute("script-id");
+				attrs["onload"] = delayedScriptOnload(l.rel);
+
+				var relSrc = attrs["src"].replace(baseUrl,"");
+				l.attrs = attrs;
+				if (l.rel == "preload") {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+					if (langOk) {
+						pageResolver.set(["state","preloading"],true);
+						pageResolver.set(["state","loadingScripts"],true);
+						pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+						document.body.appendChild(HTMLScriptElement(attrs));
+						l.added = true;
+					} 
+				} else {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == pageResolver("state.lang"));
+					if (langOk) {
+						pageResolver.set(["state","loadingScripts"],true);
+						pageResolver.set(["state","loadingScriptsUrl",relSrc],l); 
+					} 
+				}
+				break;
 		}
 		if (! pageResolver(["state","preloading"])) {
 			var scripts = pageResolver(["state","loadingScriptsUrl"]);
@@ -115,6 +134,12 @@
 				}
 			}
 		}
+
+		// var scripts = document.head.getElementsByTagName("script");
+		// for(var i=0,s; s = scripts[i]; ++i) {
+
+		// }
+
 		if (pageResolver(["state","loadingScripts"])) console.debug("loading phased scripts");
 
 		var metas = document.getElementsByTagName("meta");
@@ -234,6 +259,9 @@
 	function resizeTriggersReflow(ev) {
 		// debugger;
 		DocumentRoles()._resize_descs();
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
 	}
 
 	/*
@@ -241,7 +269,7 @@
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement && ev.comandElement == ev.actionElement) {
+		if (ev.commandElement && ev.commandElement == ev.actionElement) {
 
 			//TODO action event filtering
 			//TODO disabled
@@ -271,24 +299,37 @@
 	}
 	essential.declare("fireAction",fireAction);
 
-	function _StatefulField(name,stateful) {
 
+	function _StatefulField(name,el) {
+		var stateful = StatefulResolver(el,true);
+		return stateful;
 	}
-	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField));
+	var StatefulField = essential.declare("StatefulField",Generator(_StatefulField, { alloc:false }));
 
 	StatefulField.prototype.destroy = function() {};
 	StatefulField.prototype.discard = function() {};
+
+	function _TextField() {
+
+	}
+	StatefulField.variant("input[type=text]",Generator(_TextField,_StatefulField));
+
+	function _CheckboxField() {
+
+	}
+	StatefulField.variant("input[type=checkbox]",Generator(_CheckboxField,_StatefulField));
 
 	function _TimeField() {
 
 	}
 	StatefulField.variant("input[type=time]",Generator(_TimeField,_StatefulField));
 
-	function _CommandField(name,stateful,role) {
+	function _CommandField(name,el,role) {
 
 	}
 	var CommandField = StatefulField.variant("*[role=link]",Generator(_CommandField,_StatefulField));
 	StatefulField.variant("*[role=button]",Generator(_CommandField,_StatefulField));
+
 
 	/* Enhance all stateful fields of a parent */
 	function enhanceStatefulFields(parent) {
@@ -302,6 +343,7 @@
 				var role = el.getAttribute("role");
 				var variants = [];
 				if (role) {
+					//TODO support multiple roles
 					if (el.type) variants.push("*[role="+role+",type="+el.type+"]");
 					variants.push("*[role="+role+"]");
 				} else {
@@ -309,12 +351,7 @@
 					variants.push(el.tagName.toLowerCase());
 				}
 
-				var stateful = StatefulResolver(el,true);
-				var field = stateful.setField(StatefulField.variant(variants)(name,stateful,role));
-
-				//TODO add field for _cleaners element 
-				if (el._cleaners == undefined) el._cleaners = [];
-				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+				var stateful = StatefulField.variant(variants)(name,el,role);
 			}
 
 			enhanceStatefulFields(el); // enhance children
@@ -369,11 +406,13 @@
 				ow = this.el.offsetWidth, 
 				oh  = this.el.offsetHeight,
 				sw = this.el.scrollWidth,
-				sh = this.el.scrollHeight;
-			if (ow == 0 && oh == 0) {
-				if (this.layout.displayed) updateLayout = true;
-				this.layout.displayed = false;
+				sh = this.el.scrollHeight,
+				displayed = !(ow == 0 && oh == 0);
+			if (this.layout.displayed != displayed) {
+				this.layout.displayed = displayed;
+				updateLayout = true;
 			}
+
 			if (this.layout.width != ow || this.layout.height != oh) {
 				this.layout.width = ow;
 				this.layout.height = oh;
@@ -388,7 +427,10 @@
 				this.layout.area = getActiveArea();
 				updateLayout = true;
 			}
-			if (updateLayout) layoutHandler.call(dr,this.el,this.layout,this.instance);		
+			if (updateLayout) {
+				//debugger;
+				layoutHandler.call(dr,this.el,this.layout,this.instance);	
+			}	
 		};
 	}
 
@@ -454,7 +496,7 @@
 		for(var i=0,el; el=elements[i]; ++i) {
 			var role = el.getAttribute("role");
 			//TODO only in positive list
-			if (el.getAttribute("role")) {
+			if (role) {
 				var desc = EnhancedDescriptor(el,true);
 				descs.push(desc);
 				if (el._cleaners == undefined) el._cleaners = [];
@@ -468,7 +510,7 @@
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !this.discarded && this.handlers.layout[desc.role]) {
 				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
@@ -503,15 +545,16 @@
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !desc.discarded && this.handlers.layout[desc.role]) {
 				var updateLayout = false,
 					ow = desc.el.offsetWidth, 
 					oh  = desc.el.offsetHeight,
 					sw = desc.el.scrollWidth,
-					sh = desc.el.scrollHeight;
-				if (ow == 0 && oh == 0) {
-					if (desc.layout.displayed) updateLayout = true;
-					desc.layout.displayed = false;
+					sh = desc.el.scrollHeight,
+					displayed = !(ow == 0 && oh == 0);
+				if (desc.layout.displayed != displayed) {
+					desc.layout.displayed = displayed;
+					updateLayout = true;
 				}
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
@@ -642,7 +685,7 @@
 		if (this.baseClass) this.baseClass += " ";
 		else this.baseClass = "";
 
-		el.className = this.baseClass + el.className;
+		if (el) el.className = this.baseClass + el.className;
 	}
 	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
 	Laidout.variant("area-member",MemberLaidout);

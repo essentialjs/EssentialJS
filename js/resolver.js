@@ -195,6 +195,7 @@ function Resolver(name,ns,options)
     		}
         }
         function toggle() {
+            var value; //TODO
             if (arguments.length > 1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
                 var symbol = subnames.pop();
