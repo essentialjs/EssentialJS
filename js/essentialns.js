@@ -202,12 +202,30 @@
 		for(var n in mix) dtl.set(n,mix[n]);
 	}
 
+	DOMTokenList.tmplClass = function(el,prefix,postfix,value) {
+		var classList = el.classList;
+		for(var i = classList.length-1; i>=0; --i) {
+			var name = classList.item(i);
+			var hasPrefix = prefix? name.substring(0,prefix.length)==prefix : true;
+			var hasPostfix = postfix? name.substring(name.length-postfix.length,name.length)==postfix : true;
+			if (hasPrefix && hasPostfix) classList.remove(name);
+		}
+		if (value) classList.add( (prefix||"") + value + (postfix||"") );
+
+		if (classList.emulateClassList)
+		 {
+			//TODO make toString override work on IE, el.className = el.classList.toString();
+			el.className = el.classList.join(el.classList.separator);
+		}
+	};
+
 	DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
 		var classList = el.classList;
 		var removeName = value? falseName:trueName;
 		var addName = value? trueName:falseName;
 		if (removeName) classList.remove(removeName);
 		if (addName) classList.add(addName);
+
 		if (classList.emulateClassList)
 		 {
 			//TODO make toString override work on IE, el.className = el.classList.toString();

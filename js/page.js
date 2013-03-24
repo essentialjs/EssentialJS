@@ -175,6 +175,7 @@
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
 	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
+	var DOMTokenList_tmplClass = essential("DOMTokenList.tmplClass");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -188,7 +189,15 @@
 
 		var mapClass = el.stateful("map.class","undefined");
 		if (mapClass) {
-			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
+			if (symbolState) {
+				var bits = symbolState.split("%");
+
+				if (bits.length > 1) {
+					DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
+				} 
+				else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
+			}
 		} 
 	}
 

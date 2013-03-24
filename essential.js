@@ -1355,12 +1355,30 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in mix) dtl.set(n,mix[n]);
 	}
 
+	DOMTokenList.tmplClass = function(el,prefix,postfix,value) {
+		var classList = el.classList;
+		for(var i = classList.length-1; i>=0; --i) {
+			var name = classList.item(i);
+			var hasPrefix = prefix? name.substring(0,prefix.length)==prefix : true;
+			var hasPostfix = postfix? name.substring(name.length-postfix.length,name.length)==postfix : true;
+			if (hasPrefix && hasPostfix) classList.remove(name);
+		}
+		if (value) classList.add( (prefix||"") + value + (postfix||"") );
+
+		if (classList.emulateClassList)
+		 {
+			//TODO make toString override work on IE, el.className = el.classList.toString();
+			el.className = el.classList.join(el.classList.separator);
+		}
+	};
+
 	DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
 		var classList = el.classList;
 		var removeName = value? falseName:trueName;
 		var addName = value? trueName:falseName;
 		if (removeName) classList.remove(removeName);
 		if (addName) classList.add(addName);
+
 		if (classList.emulateClassList)
 		 {
 			//TODO make toString override work on IE, el.className = el.classList.toString();
@@ -2495,6 +2513,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
 	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
+	var DOMTokenList_tmplClass = essential("DOMTokenList.tmplClass");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -2508,7 +2527,15 @@ Generator.ObjectGenerator = Generator(Object);
 
 		var mapClass = el.stateful("map.class","undefined");
 		if (mapClass) {
-			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
+			if (symbolState) {
+				var bits = symbolState.split("%");
+
+				if (bits.length > 1) {
+					DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
+				} 
+				else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
+			}
 		} 
 	}
 
