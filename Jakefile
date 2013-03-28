@@ -1,6 +1,5 @@
 var fs = require('fs');
 var uglify = require('uglify-js');
-var refreshing = require('refreshing');
 
 var MODERNIZR_FILES = [
   'modernizr-prefix.js',
@@ -94,6 +93,7 @@ task('default',function(params){
 
 desc('Refreshing');
 task('refreshing',function(params) {
+  var refreshing = require('refreshing');
   //console.log(refreshing);
   refreshing.watchTrees(__dirname);
 });
