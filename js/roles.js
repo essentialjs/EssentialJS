@@ -504,9 +504,11 @@
 	};
 
 	EnhancedScrollbar.prototype.destroy = function() {
-		this.el.parentNode.removeChild(this.el);
-		callCleaners(this.el);
-		delete this.el;
+		if (this.el) {
+			if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
+			callCleaners(this.el);
+			this.el = undefined;
+		}
 	};
 
 
