@@ -343,6 +343,9 @@
 		}
 	};
 
+	/*
+		Area Activation
+	*/
 	var _activeAreaName,_liveAreas=false, stages = [];
 	essential.set("stages",stages);
 
@@ -570,10 +573,33 @@
 		return p.join("");
 	};
 
+	function cacheError(ev) {
+		pageResolver.set(["state","online"],false);	
+	}
 
+	function updateOnlineStatus(ev) {
+		//console.log("online status",navigator.onLine,ev);
+		var online = navigator.onLine;
+		if (online != undefined) {
+			pageResolver.set(["state","online"],online);	
+		}
+	}
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+
+		updateOnlineStatus();
+		if (document.body.addEventListener) {
+			document.body.addEventListener("online",updateOnlineStatus);
+			document.body.addEventListener("offline",updateOnlineStatus);
+		
+			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
+		} else if (document.body.attachEvent) {
+			// IE8
+			document.body.attachEvent("online",updateOnlineStatus);
+			document.body.attachEvent("offline",updateOnlineStatus);
+		}
+		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
