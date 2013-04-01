@@ -31,6 +31,7 @@
 
 	// Enables "XMLHttpRequest()" call next to "new XMLHttpReques()"
 	function fXMLHttpRequest() {
+		//TODO XDomainRequest support
 		this._object  = oXMLHttpRequest && !bIE7 ? new oXMLHttpRequest : new window.ActiveXObject("Microsoft.XMLHTTP");
 		this._listeners = [];
 	}
