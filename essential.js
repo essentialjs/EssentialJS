@@ -4330,10 +4330,10 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 			el.actionVariant = DialogAction.variant(action)(action);
 		}
 
-		if (el.actionVariant[name]) el.actionVariant[name](el);
+		if (el.actionVariant[name]) el.actionVariant[name](el,ev);
 		else {
 			var sn = name.replace("-","_").replace(" ","_");
-			if (el.actionVariant[sn]) el.actionVariant[sn](el);
+			if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
 		}
 		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 	}

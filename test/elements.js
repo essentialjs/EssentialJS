@@ -391,6 +391,8 @@ test('Role navigation action',function(){
 
 	//TODO events that might trigger actions are extended with action info and filtered through
 	// permissions and routers
+
+	//TODO assert action(el,ev)
 });
 
 
