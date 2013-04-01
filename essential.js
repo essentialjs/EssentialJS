@@ -2511,6 +2511,11 @@ Generator.ObjectGenerator = Generator(Object);
 		//TODO focus for elements with focus
 	};
 
+    //Temp Old IE check, TODO move to IE shim, shift disabled attr to aria-disabled if IE
+    if (document.addEventListener) {
+        state_treatment.disabled.reflect = reflectAttributeAria;
+    }
+ 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
 	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
 	var DOMTokenList_tmplClass = essential("DOMTokenList.tmplClass");
