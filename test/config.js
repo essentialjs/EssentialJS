@@ -50,3 +50,8 @@ test("Application config using script and data-role",function(){
 	equal(config["enhanced"],true);
 });
 
+test("Layout/laidout",function(){
+	ok(1,"TODO config for unmatched elements skipped");
+
+});
+
