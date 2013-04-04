@@ -2475,12 +2475,30 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in mix) dtl.set(n,mix[n]);
 	}
 
+	DOMTokenList.tmplClass = function(el,prefix,postfix,value) {
+		var classList = el.classList;
+		for(var i = classList.length-1; i>=0; --i) {
+			var name = classList.item(i);
+			var hasPrefix = prefix? name.substring(0,prefix.length)==prefix : true;
+			var hasPostfix = postfix? name.substring(name.length-postfix.length,name.length)==postfix : true;
+			if (hasPrefix && hasPostfix) classList.remove(name);
+		}
+		if (value) classList.add( (prefix||"") + value + (postfix||"") );
+
+		if (classList.emulateClassList)
+		 {
+			//TODO make toString override work on IE, el.className = el.classList.toString();
+			el.className = el.classList.join(el.classList.separator);
+		}
+	};
+
 	DOMTokenList.eitherClass = function(el,trueName,falseName,value) {
 		var classList = el.classList;
 		var removeName = value? falseName:trueName;
 		var addName = value? trueName:falseName;
 		if (removeName) classList.remove(removeName);
 		if (addName) classList.add(addName);
+
 		if (classList.emulateClassList)
 		 {
 			//TODO make toString override work on IE, el.className = el.classList.toString();
@@ -2634,6 +2652,7 @@ Generator.ObjectGenerator = Generator(Object);
 	/*
 		DOM Events
 	*/
+    
 	function copyKeyEvent(src) {
 		this.altKey = src.altKey;
 		this.shiftKey = src.shiftKey;
@@ -2667,108 +2686,151 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
 	var EVENTS = {
+		// compositionstart/element/true compositionupdate/element/false
 		"click" : {
+			type: "MouseEvents",
+			cancelable:false, //true
 			copyEvent: copyMouseEvent
 		},
 		"dblclick" : {
+			type: "MouseEvents",
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"contextmenu": {
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"mousemove": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mouseup": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mousedown": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mousewheel": {
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"wheel": {
+			cancelable:true,
 			copyEvent: copyMouseEvent
 		},
 		"mouseenter": {
+			type: "MouseEvents",
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"mouseleave": {
+			type: "MouseEvents",
+			cancelable:false,
 			copyEvent: copyMouseEvent
 		},
 		"mouseout": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEventOverOut
 		},
 		"mouseover": {
+			type: "MouseEvents",
+			cancelable:true,
 			copyEvent: copyMouseEventOverOut
 		},
 
 		"keyup": {
+			cancelable:true,
 			copyEvent: copyKeyEvent
 		},
 		"keydown": {
+			cancelable:true,
 			copyEvent: copyKeyEvent
 		},
 		"keypress": {
+			cancelable:true,
 			copyEvent: copyKeyEvent
 		},
 
 		"blur": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"focus": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"focusin": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"focusout": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 
 		"copy": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"cut": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"change": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"input": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 		"textinput": {
+			cancelable:false,
 			copyEvent: copyInputEvent
 		},
 
 		"scroll": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"reset": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"submit": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"select": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 
 		"error": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"haschange": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"load": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"unload": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 		"resize": {
+			cancelable:false,
 			copyEvent: copyNavigateEvent
 		},
 
@@ -2882,35 +2944,71 @@ Generator.ObjectGenerator = Generator(Object);
 		this.defaultPrevented = true;
 	};
 
-	_MutableEvent.prototype.CAPTURING_PHASE = 1;
+	_MutableEvent.prototype.isDefaultPrevented = function() {
+		return this.defaultPrevented;
+	};
+
+    _MutableEvent.prototype.CAPTURING_PHASE = 1;
 	_MutableEvent.prototype.AT_TARGET = 2;
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
+    
+    // trigger like jQuery
+    _MutableEvent.prototype.trigger = function() {
+        this.target.fireEvent("on" + this.type, this._original);
+    };
+    
+    function _NativeEventIE(type,props) {
+        var event = new _MutableEvent( document.createEventObject() );
+        if (props) for (var name in props) event._original[name] = props[name];
+        return event;
+    }
+    
+    function _NativeEvent(type, props) {
+        var event = document.createEvent(EVENTS[type].type || "Events"), bubbles = true;
+        if (props) for (var name in props) (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name]);
+        event.initEvent(type, bubbles, EVENTS[type].cancelable, null, null, null, null, null, null, null, null, null, null, null, null);
+        event.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
+        event.trigger = function(target) { (target || this.target).dispatchEvent(this); };
+        return event;
+    }
 
 	//TODO consider moving ClonedEvent out of call
-	function MutableEventModern(sourceEvent) {
+	function MutableEventModern(sourceEvent,props) {
+        if (typeof sourceEvent == "string") return _NativeEvent(sourceEvent,props);
+        
 		if (sourceEvent.withActionInfo) return sourceEvent;
-		function ClonedEvent() { 
+		function ClonedEvent() {
+            this._original = sourceEvent;
 			this.withActionInfo = MutableEvent_withActionInfo;
 			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-		}
+            this.stopPropagation = function() { sourceEvent.stopPropagation(); };
+            this.preventDefault = function() { sourceEvent.preventDefault(); };
+	        this.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
+        }
 		ClonedEvent.prototype = sourceEvent; 
 
 		return  new ClonedEvent();
 	}
 
-	function MutableEventFF(sourceEvent) {
-		sourceEvent.withActionInfo = MutableEvent_withActionInfo;
+	function MutableEventFF(sourceEvent,props) {
+        if (typeof sourceEvent == "string") return _NativeEvent(sourceEvent,props);
+
+        sourceEvent.withActionInfo = MutableEvent_withActionInfo;
 		sourceEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
+	    sourceEvent.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
 
 		return sourceEvent;
 	}
 
-	function MutableEventIE(sourceEvent) {
-		if (sourceEvent && sourceEvent.withActionInfo) return sourceEvent;
+	function MutableEventIE(sourceEvent,props) {
+        if (typeof sourceEvent == "string") return _NativeEventIE(sourceEvent,props);
+
+        if (sourceEvent && sourceEvent.withActionInfo) return sourceEvent;
 		return new _MutableEvent(sourceEvent == null? window.event : sourceEvent);
 	}
 
 	var MutableEvent;
+	//TODO IE9 ?
 	if (navigator.userAgent.match(/Firefox\//)) MutableEvent = essential.declare("MutableEvent",MutableEventFF);
 	else if (navigator.userAgent.match(/MSIE /) && !navigator.userAgent.match(/Opera/)) MutableEvent = essential.declare("MutableEvent",MutableEventIE);
 	else MutableEvent = essential.declare("MutableEvent",MutableEventModern);
@@ -3533,8 +3631,14 @@ Generator.ObjectGenerator = Generator(Object);
 		//TODO focus for elements with focus
 	};
 
+    //Temp Old IE check, TODO move to IE shim, shift disabled attr to aria-disabled if IE
+    if (document.addEventListener) {
+        state_treatment.disabled.reflect = reflectAttributeAria;
+    }
+ 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
 	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
+	var DOMTokenList_tmplClass = essential("DOMTokenList.tmplClass");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -3548,7 +3652,15 @@ Generator.ObjectGenerator = Generator(Object);
 
 		var mapClass = el.stateful("map.class","undefined");
 		if (mapClass) {
-			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
+			if (symbolState) {
+				var bits = symbolState.split("%");
+
+				if (bits.length > 1) {
+					DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
+				} 
+				else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
+			}
 		} 
 	}
 
@@ -3694,6 +3806,9 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
+	/*
+		Area Activation
+	*/
 	var _activeAreaName,_liveAreas=false, stages = [];
 	essential.set("stages",stages);
 
@@ -3921,10 +4036,33 @@ Generator.ObjectGenerator = Generator(Object);
 		return p.join("");
 	};
 
+	function cacheError(ev) {
+		pageResolver.set(["state","online"],false);	
+	}
 
+	function updateOnlineStatus(ev) {
+		//console.log("online status",navigator.onLine,ev);
+		var online = navigator.onLine;
+		if (online != undefined) {
+			pageResolver.set(["state","online"],online);	
+		}
+	}
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+
+		updateOnlineStatus();
+		if (document.body.addEventListener) {
+			document.body.addEventListener("online",updateOnlineStatus);
+			document.body.addEventListener("offline",updateOnlineStatus);
+		
+			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
+		} else if (document.body.attachEvent) {
+			// IE8
+			document.body.attachEvent("online",updateOnlineStatus);
+			document.body.attachEvent("offline",updateOnlineStatus);
+		}
+		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");

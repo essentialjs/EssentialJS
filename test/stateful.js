@@ -173,7 +173,36 @@ test("Stateful element custom state ",function(){
 	equal(el.className,"authenticated livepage");
 	stateful.set("state.livepage",false);
 
-})
+});
+
+test("Stateful element template class", function() {
+
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
+
+	var el = document.createElement("div");
+
+	var stateful = StatefulResolver(el,true);
+	var mapClass = stateful("map.class");
+	mapClass.state.stage = "%-stage";
+	StatefulResolver.updateClass(stateful,el);
+
+	ok(! stateful("state.stage","undefined"));
+	stateful.set("state.stage","initial");
+	equal(el.className,"initial-stage");
+
+	stateful.set("state.stage","second");
+	equal(el.className,"second-stage");
+
+	stateful.set("state.stage",null);
+	equal(el.className,"");
+
+	// mapClass.notstate.other2 = "other";
+	// stateful.set("state.other2",false);
+	// StatefulResolver.updateClass(stateful,el);
+	// equal(el.className,"other");
+});
+
+
 
 // action + button allows action to be disabled causing disable on button
 

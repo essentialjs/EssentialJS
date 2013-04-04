@@ -1,4 +1,4 @@
-var fs = require('fs');
+var fs = require('fs'), zlib = require('zlib');
 var uglify = require('uglify-js');
 
 var MODERNIZR_FILES = [
@@ -59,6 +59,14 @@ task('minify', [], function(params) {
   fs.writeSync(out, combine_and_minify(EXTRAS_FILES));
 });
 
+desc('GZip JS');
+task('gzip', [], function(params) {
+  var gzip = zlib.createGzip();
+  var inp = fs.createReadStream('essential.min.js'),
+      out = fs.createWriteStream('essential.min.js.gz');
+  inp.pipe(gzip).pipe(out);
+});
+
 desc('Combine files');
 task('combine',function(params){
   var license = fs.readFileSync('js/license.txt').toString();
@@ -89,6 +97,7 @@ desc('Build all files');
 task('default',function(params){
   jake.Task['combine'].invoke();
   jake.Task['minify'].invoke();
+  jake.Task['gzip'].invoke();
 });
 
 desc('Refreshing');

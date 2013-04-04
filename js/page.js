@@ -173,8 +173,14 @@
 		//TODO focus for elements with focus
 	};
 
+    //Temp Old IE check, TODO move to IE shim, shift disabled attr to aria-disabled if IE
+    if (document.addEventListener) {
+        state_treatment.disabled.reflect = reflectAttributeAria;
+    }
+ 
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
 	var DOMTokenList_mixin = essential("DOMTokenList.mixin");
+	var DOMTokenList_tmplClass = essential("DOMTokenList.tmplClass");
 
 	function reflectElementState(event) {
 		var el = event.data;
@@ -188,7 +194,15 @@
 
 		var mapClass = el.stateful("map.class","undefined");
 		if (mapClass) {
-			DOMTokenList_eitherClass(el,mapClass.state[event.symbol],mapClass.notstate[event.symbol],event.value);
+			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
+			if (symbolState) {
+				var bits = symbolState.split("%");
+
+				if (bits.length > 1) {
+					DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
+				} 
+				else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
+			}
 		} 
 	}
 
@@ -334,6 +348,9 @@
 		}
 	};
 
+	/*
+		Area Activation
+	*/
 	var _activeAreaName,_liveAreas=false, stages = [];
 	essential.set("stages",stages);
 
@@ -561,10 +578,33 @@
 		return p.join("");
 	};
 
+	function cacheError(ev) {
+		pageResolver.set(["state","online"],false);	
+	}
 
+	function updateOnlineStatus(ev) {
+		//console.log("online status",navigator.onLine,ev);
+		var online = navigator.onLine;
+		if (online != undefined) {
+			pageResolver.set(["state","online"],online);	
+		}
+	}
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+
+		updateOnlineStatus();
+		if (document.body.addEventListener) {
+			document.body.addEventListener("online",updateOnlineStatus);
+			document.body.addEventListener("offline",updateOnlineStatus);
+		
+			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
+		} else if (document.body.attachEvent) {
+			// IE8
+			document.body.attachEvent("online",updateOnlineStatus);
+			document.body.attachEvent("offline",updateOnlineStatus);
+		}
+		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
