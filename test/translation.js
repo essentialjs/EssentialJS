@@ -8,7 +8,8 @@ test("Default locale",function() {
 	translations.setLocales(["en-US","en-GB"]);
 	ok(translations(["locales","en-us"]));
 	ok(translations(["locales","en-gb"]));
-	ok(! translations(["locales","de-fr"],"undefined"));
+	ok(! translations(["locales","de-de"],"undefined"));
+	ok(! translations(["locales","fr-fr"],"undefined"));
 
 	equal(translations(["locales","en-us"]).chain,"en");
 	equal(translations(["locales","en-gb"]).chain,"en");
@@ -81,6 +82,10 @@ test("Static Translations english",function(){
 	equal(_("login.error",{ url: "http://abc.com" }),"Not logged in with [user] URL http://abc.com")
 	equal(_("login.error",{ user:"user1" }),"Not logged in with user1 URL [url]")
 
+	translations.set("locale","en"); //TODO support chain
+
+	equal(translations.reverseTranslate("My ABC").key,"abc");
+
 	ok(1,"{cache:true, key:'abc' } saves resulting template on object")
 	ok(1,"reverse translate, phrase -> key -> phrase")
 })
@@ -98,11 +103,26 @@ test("Translation Subset",function(){
 		"2": "Second Phrase"
 	},BucketGenerator);
 
+	translations.setKeysForLocale("en","context",{
+		"prefix.a":"Context a",
+		"prefix.b":"Context b"
+	},BucketGenerator);
 
 	// using prefix
 	var subset = translations.makeKeyTranslationSubset("prefix.");
-	equal("Prefix a",subset.translate("prefix.a"));
+	equal(subset.translate("prefix.a"),"Prefix a","Found 1 of 2 translations");
+	equal(subset.translate("prefix.b"),"Prefix b","Found 2 of 2 translations");
+	equal(subset.translate("prefix.c"),null,"Undefined translations handled");
+	equal(subset.translate("1"),null,"Undefined translations handled");
+	equal(subset.translate("2"),null,"Undefined translations handled");
+
+	equal(subset.reverseTranslate("Prefix a").key,"prefix.a");
+	equal(subset.reverseTranslate("Prefix b").key,"prefix.b");
 
 	// using context
+	var subset = translations.makeKeyTranslationSubset("context");
+	equal(subset.translate("prefix.a"),"Context a","Found 1 of 2 translations (context)");
+	equal(subset.translate("prefix.b"),"Context b","Found 2 of 2 translations (context)");
 
+	//TODO en-US
 })

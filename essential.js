@@ -2271,69 +2271,153 @@ Generator.ObjectGenerator = Generator(Object);
 	function setLocales(locales) {
 		for(var i=0,l; l = locales[i]; ++i) {
 			l = l.toLowerCase().replace("_","-");
-			this.declare(["locales",l],defaultLocaleConfig(l));
+			translations.declare(["locales",l],defaultLocaleConfig(l));
 		} 
 	}
-
-	function setKeysForLocale(locale,context,keys,BucketGenerator) {
-		for(var key in keys) {
-			if (BucketGenerator) this.declare(["keys",context,key],BucketGenerator())
-			this.set(["keys",context, key, locale.toLowerCase().replace("_","-")],keys[key]); //TODO { generator: BucketGenerator }
-			//TODO reverse lookup
-		}
-	}
 	translations.setLocales = setLocales;
-	translations.setKeysForLocale = setKeysForLocale;
 
-	// (key,params)
-	// ({ key:key },params)
-	// ({ key:key, context:context },params)
-	// ({ phrase:phrase },params)
-	function translate(key,params) {
-		var phrase = null;
-		var context = null;
-		if (typeof key == "object") {
-			phrase = key.phrase;
-			context = key.context || null;
-			key = key.key;
+    function setKeysForLocale(locale,context,keys,BucketGenerator) {
+        var _locale = locale.toLowerCase().replace("_","-");
+        for(var key in keys) {
+            var sentence = keys[key];
+            if (BucketGenerator) translations.declare(["keys",context,key],BucketGenerator());
+            translations.set(["keys",context, key, _locale],sentence); //TODO { generator: BucketGenerator }
+ 
+            if (BucketGenerator) translations.declare(["sentences",sentence,context],BucketGenerator());
+            translations.set(["sentences",sentence,context,_locale,"key"],key);
+        }
+    }
+    //TODO all these should be bound
+    translations.setKeysForLocale = setKeysForLocale;
+
+    function applyTranslationsAPI(resolver) {
+
+		// (key,params)
+		// ({ key:key },params)
+		// ({ key:key, context:context },params)
+		// ({ phrase:phrase },params)
+		function translate(key,params) {
+			var phrase = null;
+			var context = resolver.defaultContext || null;
+			if (typeof key == "object") {
+				phrase = key.phrase;
+				context = key.context || null;
+				key = key.key;
+			}
+			var locales = translations("locales");
+			var locale = translations("locale");
+			if (locale) locale = locale.toLowerCase().replace("_","-");
+			var t,l;
+			var base;
+			if (key) {
+				base = resolver.get(["keys",context,key],"undefined")
+				while(t == undefined && base && locale) {
+					t = base[locale];
+					if (locales[locale]) locale = locales[locale].chain;
+					else locale = null;
+				}
+			} else if (phrase) {
+				base = resolver.get(["phrases",context,phrase],"undefined");
+				while(t == undefined && base && locale) {
+					t = base[locale];
+					if (locales[locale]) locale = locales[locale].chain;
+					else locale = null;
+				}
+			}
+			if (t) {
+				if (params) {
+					if (base.begin && base.end)
+						for(var n in params) {
+							t = t.replace(base.begin + n + base.end,params[n]);
+						}
+				}
+				return t;
+			}
+
+			return phrase;
 		}
-		var locales = translations("locales");
-		var locale = translations("locale");
-		if (locale) locale = locale.toLowerCase().replace("_","-");
-		var t,l;
-		var base;
-		if (key) {
-			base = translations.get(["keys",context,key],"undefined")
-			while(t == undefined && base && locale) {
-				t = base[locale];
-				if (locales[locale]) locale = locales[locale].chain;
-				else locale = null;
-			}
-		} else if (phrase) {
-			base = translations.get(["phrases",context,phrase],"undefined");
-			while(t == undefined && base && locale) {
-				t = base[locale];
-				if (locales[locale]) locale = locales[locale].chain;
-				else locale = null;
-			}
-		}
-		if (t) {
-			if (params) {
-				if (base.begin && base.end)
-					for(var n in params) {
-						t = t.replace(base.begin + n + base.end,params[n]);
-					}
-			}
-			return t;
+		resolver.translate = translate;
+		resolver._ = translate;
+		resolver.set("translate",translate);
+
+		function prepareReverse() {
+
+	        var locale = translations("locale");
+	        if (locale) locale = locale.toLowerCase().replace("_","-");
+	 
+	        // default context
+	        for(var context in resolver.namespace.keys) {
+	        	var contextKeys = resolver.namespace.keys[context];
+
+		        for(var key in contextKeys) {
+	                var bucket = contextKeys[key];
+	                if (bucket[locale]) resolver.set(["sentences",bucket[locale].toLowerCase(),context,locale,"key"],key);
+		        }
+	        }
 		}
 
-		return phrase;
-	}
-	translations.translate = translate;
-	translations._ = translate;
-	essential.set("translate",translate); 
+        function reverseTranslate(sentence,params) {
+        	if (resolver.namespace.sentences == undefined) prepareReverse();
+
+            var context = null,
+                locale = translations("locale");
+            if (locale) locale = locale.toLowerCase().replace("_","-");
+            sentence = sentence.toLowerCase();
+ 
+            var r = resolver(["sentences",sentence,context,locale],"undefined");
+            if (r == undefined) {
+                r = { matches:[] };
+                var sentences = resolver("sentences");
+                if (sentence.length > 1) for(var n in sentences) {
+                    var candidate = resolver(["sentences",sentences[n],context,locale],"undefined");
+                    if (candidate && candidate.key && n.indexOf(sentence) >= 0) r.matches.push(candidate.key);
+                }
+               
+            }
+            return r;
+        }
+		resolver.reverseTranslate = reverseTranslate;
+		resolver.set("translate",reverseTranslate);
+    }
+    applyTranslationsAPI(translations);
+    essential.set("translate",translations._);
+ 
+ 
+    function makeKeyTranslationSubset(prefix) {
+        var subset = Resolver({});
+        applyTranslationsAPI(subset);
+
+        var context = null,
+            locale = translations("locale");
+        if (locale) locale = locale.toLowerCase().replace("_","-");
+ 
+        // default context
+        var defaultKeys = translations(["keys",null]);
+        for(var key in defaultKeys) {
+            if (key.substring(0,prefix.length) == prefix) {
+                var bucket = defaultKeys[key];
+                subset.set(["keys",context,key], bucket);
+ 
+                //subset.set(["sentences",bucket[locale].toLowerCase(),context,locale,"key"],key);
+            }
+        }
+ 
+        //copy context = prefix
+        var contextKeys = translations(["keys",prefix],"undefined");
+        if (contextKeys) {
+	        subset.defaultContext = prefix;
+        	subset.set(["keys",prefix],contextKeys);
+        }
+ 
+        //TODO sentence translation
+
+        return subset;
+    }
+    translations.makeKeyTranslationSubset = makeKeyTranslationSubset;
+
  
  }(window);
+ 
 
 
 /*jslint white: true */
@@ -3527,6 +3611,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 	// Enables "XMLHttpRequest()" call next to "new XMLHttpReques()"
 	function fXMLHttpRequest() {
+		//TODO XDomainRequest support
 		this._object  = oXMLHttpRequest && !bIE7 ? new oXMLHttpRequest : new window.ActiveXObject("Microsoft.XMLHTTP");
 		this._listeners = [];
 	}
