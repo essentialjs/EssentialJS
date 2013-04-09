@@ -403,14 +403,97 @@
 	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
 	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
 
+	// page state & sub pages
 	Resolver("page").declare("pages",{});
 
+	function _Scripted() {
+		// the derived has to define resolver before this
+		this.config = this.resolver.reference("config","undefined");
+		this.resolver.declare("resources",[]);
+		this.resources = this.resolver.reference("resources");
+		this.resolver.declare("inits",[]);
+		this.inits = this.resolver.reference("inits");
+	}
+	essential.set("_Scripted",_Scripted);
+
+	_Scripted.prototype.declare = function(key,value) {
+		this.config.declare(key,value);
+	}; 
+
+	_Scripted.prototype.modules = { "domReady":true };	// keep track of what modules are loaded
+
+	_Scripted.prototype.context = {
+		"require": function(path) {
+			if (this.modules[path] == undefined) {
+				var ex = new Error("Missing module '" + path + "'");
+				ex.ignore = true;
+				throw ex;	
+			} 
+		}
+	};
+
+	_Scripted.prototype._apply = function() {
+		for(var k in this.config()) {
+			var el = this.getElement(k);
+			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
+
+			if (conf.layouter && el) {
+				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
+			}
+			if (conf.laidout && el) {
+				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
+			}
+		}
+	};
+
+	var _singleQuotesRe = new RegExp("'","g");
+
+	_Scripted.prototype._getElementRoleConfig = function(element,key) {
+		//TODO cache the config on element.stateful
+
+		var config = {};
+
+		// mixin the declared config
+		if (key) {
+			var declared = this.config(key);
+			if (declared) {
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		// mixin the data-role
+		var dataRole = element.getAttribute("data-role");
+		if (dataRole) try {
+			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+			for(var n in map) config[n] = map[n];
+		} catch(ex) {
+			console.debug("Invalid config: ",dataRole,ex);
+			config["invalid-config"] = dataRole;
+		}
+
+		return config;
+	};
+
+	_Scripted.prototype.getElement = function(key) {
+		var keys = key.split(".");
+		var el = this.document.getElementById(keys[0]);
+		if (keys.length > 1) el = el.getElementByName(keys[1]);
+		return el;
+	};
+
+
 	function _SubPage(appConfig) {
-		if (appConfig) this.appConfig = appConfig;
+		this.resolver = Resolver({});
+		this.document = document;
+		_Scripted.call(this);
+
+		if (appConfig) this.appConfig = appConfig; // otherwise the prototype will have the default
 		this.body = document.createElement("DIV");
 	}
-	var SubPage = Generator(_SubPage);
+	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
 
+
+	// keep a head prefix with meta tags for iframe/window subpages
 	SubPage.prototype.headPrefix = ['<head>'];
 	var metas = (document.head || document.documentElement.firstChild).getElementsByTagName("meta");
 	for(var i=0,e; e = metas[i]; ++i) {
@@ -421,6 +504,7 @@
 
 		var XMLHttpRequest = essential("XMLHttpRequest");
 	    var xhr = XMLHttpRequest();
+	    xhr.page = this;
 
 	    if (typeof(xhr.overrideMimeType) === 'function') {
 	        xhr.overrideMimeType('text/html');
@@ -440,7 +524,7 @@
 		    } else {
 		        xhr.onreadystatechange = function () {
 		            if (xhr.readyState == 4) {
-		                handleResponse(xhr, this, this.loadedPageDone, this.loadedPageError);
+		                handleResponse(xhr, this.page, this.page.loadedPageDone, this.page.loadedPageError);
 		            }
 		        };
 		    } 
@@ -460,7 +544,17 @@
     }
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
-		var doc = createHTMLDocument(text);
+		var doc = this.document = createHTMLDocument(text);
+		this.head = doc.head;
+		this.body = doc.body;
+
+		this._gather(this.head.getElementsByTagName("script"));
+		this._gather(this.body.getElementsByTagName("script"));		
+
+		if (this.appConfig.bodySrc && this.appConfig.bodySrc != this.appConfig.appliedSrc) {
+			//TODO unapply if another is applied
+			this.applyBody();
+		}
 	};
 
 	SubPage.prototype.loadedPageError = function(status) {
@@ -578,6 +672,7 @@
 		return p.join("");
 	};
 
+
 	function cacheError(ev) {
 		pageResolver.set(["state","online"],false);	
 	}
@@ -592,6 +687,8 @@
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+		this.document = document;
+		_Scripted.call(this);
 
 		updateOnlineStatus();
 		if (document.body.addEventListener) {
@@ -615,29 +712,26 @@
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
-		this.config = this.resolver.reference("config","undefined");
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
-		this.resolver.declare("resources",[]);
-		this.resources = this.resolver.reference("resources");
-		this.resolver.declare("inits",[]);
-		this.inits = this.resolver.reference("inits");
 
-		this._gather();
+		this._gather(document.getElementsByTagName("script"));
 		this._apply();
 
-		var bodySrc = document.body.getAttribute("src");
+		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) {
-			this.loadPage(bodySrc)
+			this._markPermanents();
+			//TODO if already there page.applyBody();
+			this.loadPage(bodySrc);
+			this.bodySrc = bodySrc;
+			this.appliedSrc = null;
 			//TODO queue loading this as the initial body content added before the first body child
 		}
-
-		this.modules = { "domReady":true };
 
 		setTimeout(bringLive,60); 
 	}
 
-	var ApplicationConfig = Generator(_ApplicationConfig);
+	var ApplicationConfig = Generator(_ApplicationConfig,{"prototype":_Scripted.prototype});
 	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
 	
 	// preset on instance (old api)
@@ -795,48 +889,6 @@
 		}
 	};
 
-	ApplicationConfig.prototype._apply = function() {
-		for(var k in this.config()) {
-			var el = this.getElement(k);
-			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
-
-			if (conf.layouter && el) {
-				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout && el) {
-				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
-			}
-		}
-	};
-
-	var _singleQuotesRe = new RegExp("'","g");
-
-	ApplicationConfig.prototype._getElementRoleConfig = function(element,key) {
-		//TODO cache the config on element.stateful
-
-		var config = {};
-
-		// mixin the declared config
-		if (key) {
-			var declared = this.config(key);
-			if (declared) {
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-
-		// mixin the data-role
-		var dataRole = element.getAttribute("data-role");
-		if (dataRole) try {
-			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			for(var n in map) config[n] = map[n];
-		} catch(ex) {
-			console.debug("Invalid config: ",dataRole,ex);
-			config["invalid-config"] = dataRole;
-		}
-
-		return config;
-	};
-
 	ApplicationConfig.prototype.getConfig = function(element) {
 		if (element.id) {
 			return this._getElementRoleConfig(element,element.id);
@@ -854,11 +906,13 @@
 		return this._getElementRoleConfig(element);
 	};
 
-	ApplicationConfig.prototype.getElement = function(key) {
-		var keys = key.split(".");
-		var el = document.getElementById(keys[0]);
-		if (keys.length > 1) el = el.getElementByName(keys[1]);
-		return el;
+	ApplicationConfig.prototype._markPermanents = function() 
+	{
+		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
+		while(e) {
+			e.permanent = true;
+			e = e.nextElementSibling || e.nextSibling;
+		}
 	};
 
 	ApplicationConfig.prototype.loadPage = function(url) {
@@ -886,17 +940,6 @@
 			} //TODO only ignore ex.ignore
 		}
 		this.context["this"] = undefined;
-	};
-
-	ApplicationConfig.prototype.context = {
-		"require": function(path) {
-			var ac = ApplicationConfig.info.existing[0];
-			if (ac == undefined || ac.modules[path] == undefined) {
-				var ex = new Error("Missing module '" + path + "'");
-				ex.ignore = true;
-				throw ex;	
-			} 
-		}
 	};
 
 	function onmessage(ev) {
@@ -1127,11 +1170,10 @@
 }();
 
 // need with context not supported in strict mode
-Resolver("essential")("ApplicationConfig").prototype._gather = function() {
+Resolver("essential")("_Scripted").prototype._gather = function(scripts) {
 	var resources = this.resources();
 	var inits = this.inits();
 
-	var scripts = document.getElementsByTagName("script");
 	for(var i=0,s; s = scripts[i]; ++i) {
 		switch(s.getAttribute("type")) {
 			case "application/config":
