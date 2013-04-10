@@ -4,7 +4,7 @@ test("HTMLElement construction",function(){
 	var HTMLElement = Resolver("essential")("HTMLElement");
 
 	var div = HTMLElement("div");
-	ok(div);
+	ok(div, "Created DIV element");
 	equal(div.tagName,"DIV");
 	equal(div.childNodes.length,0)
 
@@ -23,7 +23,12 @@ test("HTMLElement construction",function(){
 	equal(div.className,"test");
 	equal(div.id,"myId")
 	equal(div.getAttribute("name"),"myName")
-	
+
+	var br = HTMLElement("a",{ "class":"break"},"...");
+	ok(br,"Created BR element");
+	//ok(! br.innerHTML);
+	equal(br.className,"break");
+	//TODO equal(outerHtml(br),'<br class="break">')
 })
 
 test("jQuery trigger click",function() {
