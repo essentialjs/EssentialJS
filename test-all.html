@@ -17,6 +17,15 @@
 <script type="text/javascript" src="js/elements.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/roles.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 
+<script type="application/config">
+declare("logo",{"charset": "utf-8","glue":"to-other"});
+declare("login",{"charset": "utf-8","position":"undefined"});
+declare("launched",{"charset": "utf-8"});
+declare("test-scripted",{"abc":"def", "from-script":true, "charset": "utf-8"});
+declare("test-both-ways",{"test":"test", "charset": "utf-8"});
+declare("test-scripted.username",{ "default-value":"123" });
+</script>
+
 <script type="text/javascript" src="app/js/jquery-1.7.2.min.js"></script>
 <!-- test runner files -->
 	<script src="test/qunit/qunit.js"></script>
@@ -28,6 +37,7 @@
 	<script src="test/console.js"></script>
 	<script src="test/translation.js"></script>
 	<script src="test/elements.js"></script>
+	<script src="test/config.js"></script>
 	<script src="test/stateful.js"></script>
 	<script src="test/tests.js"></script>
 

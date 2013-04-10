@@ -19,8 +19,8 @@
 <script type="text/javascript" src="../js/roles.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 
 <script type="application/config">
-declare("logo",{"charset": "utf-8"});
-declare("login",{"charset": "utf-8"});
+declare("logo",{"charset": "utf-8","glue":"to-other"});
+declare("login",{"charset": "utf-8","position":"undefined"});
 declare("launched",{"charset": "utf-8"});
 declare("test-scripted",{"abc":"def", "from-script":true, "charset": "utf-8"});
 declare("test-both-ways",{"test":"test", "charset": "utf-8"});
@@ -53,5 +53,9 @@ declare("test-scripted.username",{ "default-value":"123" });
 	<h2 id="qunit-userAgent"></h2>
 	<ol id="qunit-tests"></ol>
 	<div id="qunit-fixture">test markup</div>
+
+	<div id="logo"></div>
+	<div id="login"></div>
+	<div id="launched"></div>
 	</body>
 </html>
