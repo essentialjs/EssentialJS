@@ -137,6 +137,26 @@ test('Generator with passed prototype',function(){
 	equal(constr.prototype.method,method);
 })
 
+test('Generator with passed prototype of other',function(){
+	function base() {
+
+	}
+	function method() {
+
+	}
+	base.prototype.method = method;
+
+	function constr() {
+
+	}
+
+	var gen = Generator(constr, { prototype: base.prototype });
+
+	equal(gen.info.constructors[-1],constr);
+	equal(gen.prototype.method,method);
+	equal(constr.prototype.method,method);
+})
+
 test('Shape generator with parameters',function() {
 
 	var NumberType = Resolver("essential")("Type").variant("Number");

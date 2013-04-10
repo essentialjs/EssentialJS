@@ -1,5 +1,25 @@
 module("Config Tests");
 
+test("Loading config in html",function(){
+
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var HTMLElement = Resolver("essential")("HTMLElement");
+
+	var ac = ApplicationConfig();
+
+	var anchor = HTMLElement("a",{ "id":"logo" },"...");
+	var config = ac.getConfig(anchor);
+	equal(config.charset,"utf-8");
+	equal(config.glue,"to-other");
+
+	var section = HTMLElement("section",{ "id":"login","data-role":'"position":"center","abc":"def"'},'');
+	var config = ac.getConfig(section);
+	equal(config.position,"center");
+	equal(config.abc,"def");
+});
+
+	//TODO css like syntax for data-role
+
 test("Application config using data-role",function() {
 
 	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
