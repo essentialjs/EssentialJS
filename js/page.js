@@ -2,7 +2,7 @@
 /*
 	StatefulResolver and ApplicationConfig
 */
-!function() {
+!function(Scripted_gather) {
 
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
@@ -432,6 +432,8 @@
 		}
 	};
 
+	_Scripted.prototype._gather = Scripted_gather;
+
 	_Scripted.prototype._apply = function() {
 		for(var k in this.config()) {
 			var el = this.getElement(k);
@@ -479,6 +481,51 @@
 		var el = this.document.getElementById(keys[0]);
 		if (keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
+	};
+
+	_Scripted.prototype.declare = function(key,value) {
+		this.config.declare(key,value);
+	};
+
+	_Scripted.prototype.page = function(url,options,content) {
+		//this.pages.declare(key,value);
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.loaded) {
+			page.url = url;
+			page.options = options;
+			page.parseHTML(content);
+		}
+	};
+
+	_Scripted.prototype.loadPage = function(url) {
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.loaded) {
+			page.url = url;
+			page.fetch();
+		}
+	};
+
+	_Scripted.prototype.getConfig = function(element) {
+		if (element.id) {
+			return this._getElementRoleConfig(element,element.id);
+		}
+		var name = element.getAttribute("name");
+		if (name) {
+			var p = element.parentNode;
+			while(p && p.tagName) {
+				if (p.id) {
+					return this._getElementRoleConfig(element,p.id + "." + name);
+				} 
+				p = p.parentNode;
+			} 
+		}
+		return this._getElementRoleConfig(element);
 	};
 
 
@@ -872,57 +919,12 @@
 		this.resolver.set(["state",whichState],v);
 	};
 
-	ApplicationConfig.prototype.declare = function(key,value) {
-		this.config.declare(key,value);
-	};
-
-	ApplicationConfig.prototype.page = function(url,options,content) {
-		//this.pages.declare(key,value);
-		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
-		if (page == undefined) {
-			page = this.pages()[url] = SubPage();
-		}
-		if (!page.loaded) {
-			page.url = url;
-			page.options = options;
-			page.parseHTML(content);
-		}
-	};
-
-	ApplicationConfig.prototype.getConfig = function(element) {
-		if (element.id) {
-			return this._getElementRoleConfig(element,element.id);
-		}
-		var name = element.getAttribute("name");
-		if (name) {
-			var p = element.parentNode;
-			while(p && p.tagName) {
-				if (p.id) {
-					return this._getElementRoleConfig(element,p.id + "." + name);
-				} 
-				p = p.parentNode;
-			} 
-		}
-		return this._getElementRoleConfig(element);
-	};
-
 	ApplicationConfig.prototype._markPermanents = function() 
 	{
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
 		while(e) {
 			e.permanent = true;
 			e = e.nextElementSibling || e.nextSibling;
-		}
-	};
-
-	ApplicationConfig.prototype.loadPage = function(url) {
-		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
-		if (page == undefined) {
-			page = this.pages()[url] = SubPage();
-		}
-		if (!page.loaded) {
-			page.url = url;
-			page.fetch();
 		}
 	};
 
@@ -1167,10 +1169,9 @@
 	}
 	essential.declare("openWindow",openWindow);
 
-}();
-
+}(
 // need with context not supported in strict mode
-Resolver("essential")("_Scripted").prototype._gather = function(scripts) {
+function(scripts) {
 	var resources = this.resources();
 	var inits = this.inits();
 
@@ -1196,4 +1197,5 @@ Resolver("essential")("_Scripted").prototype._gather = function(scripts) {
 				break;
 		}
 	}
-};
+}
+);
