@@ -487,30 +487,6 @@
 		this.config.declare(key,value);
 	};
 
-	_Scripted.prototype.page = function(url,options,content) {
-		//this.pages.declare(key,value);
-		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
-		if (page == undefined) {
-			page = this.pages()[url] = SubPage();
-		}
-		if (!page.loaded) {
-			page.url = url;
-			page.options = options;
-			page.parseHTML(content);
-		}
-	};
-
-	_Scripted.prototype.loadPage = function(url) {
-		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
-		if (page == undefined) {
-			page = this.pages()[url] = SubPage();
-		}
-		if (!page.loaded) {
-			page.url = url;
-			page.fetch();
-		}
-	};
-
 	_Scripted.prototype.getConfig = function(element) {
 		if (element.id) {
 			return this._getElementRoleConfig(element,element.id);
@@ -594,6 +570,7 @@
 		var doc = this.document = createHTMLDocument(text);
 		this.head = doc.head;
 		this.body = doc.body;
+		this.documentLoaded = true;
 
 		this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
@@ -605,7 +582,8 @@
 	};
 
 	SubPage.prototype.loadedPageError = function(status) {
-
+		this.documentError = status;
+		this.documentLoaded = true;
 	};
 
 	SubPage.prototype.parseHTML = function(text) {
@@ -629,6 +607,7 @@
 			this.body = div.getElementsByTagName("wasbody") || div;
 			//TODO offline htmlfile object?
 		}
+		this.documentLoaded = true;
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -783,6 +762,34 @@
 	
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
+
+	ApplicationConfig.prototype.page = function(url,options,content) {
+		//this.pages.declare(key,value);
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.loaded) {
+			page.url = url;
+			page.options = options;
+			page.parseHTML(content);
+		}
+
+		return page;
+	};
+
+	ApplicationConfig.prototype.loadPage = function(url) {
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.loaded) {
+			page.url = url;
+			page.fetch();
+		}
+
+		return page;
+	};
 
 	function enhanceUnhandledElements() {
 		var statefuls = ApplicationConfig(); // Ensure that config is present

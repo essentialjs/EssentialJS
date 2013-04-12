@@ -74,3 +74,40 @@ test("ApplicationConfig",function(){
 
 //TODO when page is brought live the correct area is activated
 
+if (location.protocol == "http:") asyncTest("Application Config loadPage of SubPage",function(){
+	var ac = ApplicationConfig();
+	var page = ac.loadPage("/test/pages/with-config.html");
+	var interval = setInterval(function(){ if (page.documentLoaded) {
+		ok(! page.documentError);
+		ok(page.head);
+		ok(page.body);
+
+		var mainStage = page.getElement("main-stage");
+		ok(mainStage);
+		equal(mainStage.id,"main-stage");
+
+		var config = page.getConfig(mainStage);
+		ok(config);
+		equal(config["introduction-area"],"intro");
+		equal(config["authenticated-area"],"explorer");
+		equal(config["layouter"],"area-stage");
+
+		clearInterval(interval);
+		start();
+	}},100);
+});
+
+if (location.protocol == "http:") asyncTest("Application Config SubPage not found",function(){
+	var ac = ApplicationConfig();
+	var page = ac.loadPage("/test/pages/not-there.html");
+	var interval = setInterval(function(){ if (page.documentLoaded) {
+		ok(page.documentError,404);
+
+		clearInterval(interval);
+		start();
+	}},100);
+});
+
+
+//TODO require in config scripts
+
