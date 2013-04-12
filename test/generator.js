@@ -265,6 +265,23 @@ test("Inherit from Builtin",function(){
 });
 
 
+test("Singleton generator is created and destroyed correctly",function(){
+
+	function _Test() {
+		this.a = "a";
+
+	}
+	var Test = Generator(_Test);
+	_Test.prototype.b = function(){
+		return "b";
+	}
+	Test.restrict({ "singleton":true });
+
+	var test = Test();
+	ok(test);
+	equal(typeof Test.info.existing[0],"object");
+});
+
 //TODO singleton construction and discard/teardown
 //TODO singleton page lifecycle
 
