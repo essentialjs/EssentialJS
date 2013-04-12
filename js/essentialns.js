@@ -789,6 +789,7 @@
 
 		var roles = el.getAttribute("role").split(" ");
 		var desc = {
+			"uniqueId": uniqueId,
 			"roles": roles,
 			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
@@ -815,8 +816,16 @@
 			"enhanced": false,
 			"discarded": false
 		};
-		desc.uniqueId = uniqueId;
 		enhancedElements[uniqueId] = desc;
+
+		//TODO: do this on enhance
+			if (conf.layouter && el) {
+				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
+			}
+			if (conf.laidout && el) {
+				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
+			}
+
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
