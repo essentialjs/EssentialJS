@@ -12,6 +12,7 @@
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
 		HTMLScriptElement = essential("HTMLScriptElement"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
@@ -296,7 +297,13 @@
 	essential.declare("StatefulResolver",StatefulResolver);
 
 	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
+
+	// application/config declarations on the main page
 	pageResolver.declare("config",{});
+
+	// descriptors for elements on main page to enhance
+	pageResolver.declare("descriptors",{});
+
 	pageResolver.reference("state").mixin({
 		"livepage": false,
 		"authenticated": true,
@@ -414,7 +421,6 @@
 		this.resolver.declare("inits",[]);
 		this.inits = this.resolver.reference("inits");
 	}
-	essential.set("_Scripted",_Scripted);
 
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
@@ -434,31 +440,18 @@
 
 	_Scripted.prototype._gather = Scripted_gather;
 
-	_Scripted.prototype._apply = function() {
-		for(var k in this.config()) {
-			var el = this.getElement(k);
-			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
-
-			if (conf.layouter && el) {
-				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout && el) {
-				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
-			}
-		}
-	};
-
 	var _singleQuotesRe = new RegExp("'","g");
 
 	_Scripted.prototype._getElementRoleConfig = function(element,key) {
 		//TODO cache the config on element.stateful
 
-		var config = {};
+		var config = null;
 
 		// mixin the declared config
 		if (key) {
 			var declared = this.config(key);
 			if (declared) {
+				config = {};
 				for(var n in declared) config[n] = declared[n];
 			}
 		}
@@ -466,6 +459,7 @@
 		// mixin the data-role
 		var dataRole = element.getAttribute("data-role");
 		if (dataRole) try {
+			config = config || {};
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
 			for(var n in map) config[n] = map[n];
 		} catch(ex) {
@@ -479,7 +473,7 @@
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
 		var el = this.document.getElementById(keys[0]);
-		if (keys.length > 1) el = el.getElementByName(keys[1]);
+		if (el && keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
 
@@ -504,9 +498,30 @@
 		return this._getElementRoleConfig(element);
 	};
 
+	/*
+		Prepare enhancing elements with roles/layout/laidout
+	*/
+	_Scripted.prototype.prepareEnhance = function() {
+
+		this._gather(this.head.getElementsByTagName("script"));
+		this._gather(this.body.getElementsByTagName("script"));		
+
+		var descriptors = this.resolver("descriptors");
+		var all = this.body.getElementsByTagName("*");
+		for(var i=0; el = all[i]; ++i) {
+			var conf = this.getConfig(el), role = el.getAttribute("role");
+			if (conf || role) {
+				var desc = EnhancedDescriptor(el,role,conf);
+				descriptors[desc.uniqueId] = desc;
+			}
+		}
+	};
+
+
 
 	function _SubPage(appConfig) {
-		this.resolver = Resolver({});
+		// subpage application/config and enhanced element descriptors
+		this.resolver = Resolver({ "config":{}, "descriptors":{} });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -514,7 +529,6 @@
 		this.body = document.createElement("DIV");
 	}
 	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
-
 
 	// keep a head prefix with meta tags for iframe/window subpages
 	SubPage.prototype.headPrefix = ['<head>'];
@@ -572,8 +586,7 @@
 		this.body = doc.body;
 		this.documentLoaded = true;
 
-		this._gather(this.head.getElementsByTagName("script"));
-		this._gather(this.body.getElementsByTagName("script"));		
+		this.prepareEnhance();
 
 		if (this.appConfig.bodySrc && this.appConfig.bodySrc != this.appConfig.appliedSrc) {
 			//TODO unapply if another is applied
@@ -608,6 +621,8 @@
 			//TODO offline htmlfile object?
 		}
 		this.documentLoaded = true;
+
+		this.prepareEnhance();
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -623,6 +638,7 @@
 			}
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
+		enhanceUnhandledElements();
 	};
 
 	SubPage.prototype.unapplyBody = function() {
@@ -711,9 +727,12 @@
 		}
 	}
 
+
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
 		this.document = document;
+		this.head = this.document.head;
+		this.body = this.document.body;
 		_Scripted.call(this);
 
 		updateOnlineStatus();
@@ -741,8 +760,7 @@
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
 
-		this._gather(document.getElementsByTagName("script"));
-		this._apply();
+		this.prepareEnhance();
 
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) {
@@ -763,16 +781,16 @@
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
 
-	ApplicationConfig.prototype.page = function(url,options,content) {
+	ApplicationConfig.prototype.page = function(url,options,content,content2) {
 		//this.pages.declare(key,value);
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
 		if (page == undefined) {
 			page = this.pages()[url] = SubPage();
 		}
-		if (!page.loaded) {
+		if (!page.documentLoaded) {
 			page.url = url;
 			page.options = options;
-			page.parseHTML(content);
+			page.parseHTML(content,content2);
 		}
 
 		return page;
@@ -783,7 +801,7 @@
 		if (page == undefined) {
 			page = this.pages()[url] = SubPage();
 		}
-		if (!page.loaded) {
+		if (!page.documentLoaded) {
 			page.url = url;
 			page.fetch();
 		}

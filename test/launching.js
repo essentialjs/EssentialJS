@@ -17,22 +17,23 @@ ApplicationConfig.restrict({ singleton:true });
 test("ApplicationConfig",function(){
 	var configRequired = Resolver("essential")("configRequired");
 	var configLoaded = Resolver("essential")("configLoaded");
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 	var ac = ApplicationConfig();
 
 	// application/config
-	equal(ac.config("launched.charset"),"utf-8");
-	equal(ac.config("login.charset"),"utf-8");
-	equal(ac.config("logo.charset"),"utf-8");
-	equal(ac.config("unknown.charset"),undefined);
+	equal(ac.config("launched.charset"),"utf-8","launched.charset");
+	equal(ac.config("login.charset"),"utf-8","login.charset");
+	equal(ac.config("logo.charset"),"utf-8","logo.charset");
+	equal(ac.config("unknown.charset"),undefined,"unknown.charset");
 
 	// default state
-	equal(ac.state("authenticated"),true);
-	equal(ac.state("authorised"),true);
-	equal(ac.state("connected"),true);
-	equal(ac.state("configured"),true);
-	equal(ac.state("fullscreen"),false);
-	equal(ac.state("launching"),false);
-	equal(ac.state("launched"),false);
+	equal(ac.state("authenticated"),true,"authenticated");
+	equal(ac.state("authorised"),true,"authorised");
+	equal(ac.state("connected"),true,"connected");
+	equal(ac.state("configured"),true,"configured");
+	equal(ac.state("fullscreen"),false,"fullscreen");
+	equal(ac.state("launching"),false,"launching");
+	equal(ac.state("launched"),false,"launched");
 
 	// waiting for later determination if logged in
 	Resolver("page").set("state.authenticated",false);
@@ -42,26 +43,26 @@ test("ApplicationConfig",function(){
 	// wait for config files
 	configRequired("medic.conf");
 
-	ok(ac.isPageState("loadingConfig"));
+	ok(ac.isPageState("loadingConfig"),"state loadingConfig");
 
-	equal(ac.state("launching"),false);
-	equal(ac.state("launched"),false);
+	equal(ac.state("launching"),false,"not launching");
+	equal(ac.state("launched"),false,"not launched");
 
 	Resolver("page").set("state.authenticated",true);
 
-	equal(ac.state("launching"),false);
-	equal(ac.state("launched"),false);
+	equal(ac.state("launching"),false,"not launching after setting authenticated");
+	equal(ac.state("launched"),false,"not launched after setting authenticated");
 
 	// config file loaded
 	configLoaded("medic.conf");
 
-	ok(! ac.isPageState("loadingConfig"));
-	ok(! ac.isPageState("loadingScripts"));
-	equal(ac.state("launching"),false);
+	ok(! ac.isPageState("loadingConfig"), "not launchingConfig");
+	ok(! ac.isPageState("loadingScripts"), "not loadingScripts");
+	equal(ac.state("launching"),false,"not launching");
 
 	Resolver("page").set("state.authorised",true);
 
-	equal(ac.state("launching"),true);
+	equal(ac.state("launching"),true,"launching state");
 
 	// loading complete
 	ok(1,"body classes are reflected")

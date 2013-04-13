@@ -20,8 +20,7 @@
 		serverUrl = location.protocol + "//" + location.host,
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
-		enhancedWindows = essential("enhancedWindows"),
-		EnhancedDescriptor = essential("EnhancedDescriptor");
+		enhancedWindows = essential("enhancedWindows");
 
 	function getScrollOffsets(el) {
 		var left=0,top=0;
@@ -359,24 +358,25 @@
 	}
 	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
 
-	function _DocumentRoles(handlers,doc) {
+	function _DocumentRoles(handlers,page) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
 		this._on_event = [];
-		doc = doc || document;
+		this.page = page || ApplicationConfig(); // Ensure that config is present
 		
 		//TODO configure reference as DI arg
-		var statefuls = ApplicationConfig(); // Ensure that config is present
 
 		if (window.addEventListener) {
 			window.addEventListener("resize",resizeTriggersReflow,false);
-			doc.body.addEventListener("orientationchange",resizeTriggersReflow,false);
-			doc.body.addEventListener("click",defaultButtonClick,false);
+			this.page.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			this.page.body.addEventListener("click",defaultButtonClick,false);
 		} else {
 			window.attachEvent("onresize",resizeTriggersReflow);
-			doc.body.attachEvent("onclick",defaultButtonClick);
+			this.page.body.attachEvent("onclick",defaultButtonClick);
 		}
 
-		this.enhanceBranch(doc);
+		var descs = this.page.resolver("descriptors");
+		this._enhance_descs(descs);
+		//this.enhanceBranch(doc);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -384,6 +384,7 @@
 		ObjectType({ name:"handlers" })
 	];
 
+/*
 	_DocumentRoles.prototype.enhanceBranch = function(el) {
 		var descs;
 		if (el.querySelectorAll) {
@@ -398,7 +399,7 @@
 	_DocumentRoles.prototype.discardBranch = function(el) {
 		//TODO
 	};
-
+*/
 	function refreshRoleLayoutCallback(dr,layoutHandler) {
 		// called on EnhancedDescription
 		return function() {
@@ -436,19 +437,30 @@
 
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
-		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
 
 		for(var n in descs) {
 			var desc = descs[n];
 
 			StatefulResolver(desc.el,true);
-			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
-				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
+			if (!desc.enhanced && desc.role && this.handlers.enhance[desc.role]) {
+				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,desc.conf);
 				desc.enhanced = desc.instance === false? false:true;
 				++enhancedCount;
 				var layoutHandler = this.handlers.layout[desc.role];
 				if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
+
+				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
+
+		//TODO: do this on enhance
+		/*
+			if (conf.layouter && el) {
+				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
+			}
+			if (conf.laidout && el) {
+				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
+			}
+		*/
 			}
 			if (! desc.enhanced) incomplete = true;
 		}
@@ -462,7 +474,7 @@
 					// list of relevant descs
 					for(var n in descs) {
 						var desc = descs[n];
-						if (oe.role== null || oe.role==desc.role) descs2.push(desc);
+						if (desc.role) if (oe.role== null || oe.role==desc.role) descs2.push(desc);
 					}
 
 					oe.func.call(this, this, descs2);
@@ -489,21 +501,6 @@
 		return function() {
 			return handler.call(dr,desc.el,desc.role,desc.instance);
 		};
-	};
-
-	_DocumentRoles.prototype._role_descs = function(elements) {
-		var descs = [];
-		for(var i=0,el; el=elements[i]; ++i) {
-			var role = el.getAttribute("role");
-			//TODO only in positive list
-			if (role) {
-				var desc = EnhancedDescriptor(el,true);
-				descs.push(desc);
-				if (el._cleaners == undefined) el._cleaners = [];
-				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(this._roleEnhancedCleaner(desc)); 
-			}
-		}
-		return descs;
 	};
 
 	_DocumentRoles.prototype._resize_descs = function() {

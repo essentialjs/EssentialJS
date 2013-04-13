@@ -781,18 +781,19 @@
 	var lastUniqueId = 555;
 
 	// Get the enhanced descriptor for and element
-	function EnhancedDescriptor(el,force) {
+	function EnhancedDescriptor(el,role,conf,force) {
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
 		var desc = enhancedElements[uniqueId];
 		if (desc && !force) return desc;
 
-		var roles = el.getAttribute("role").split(" ");
+		var roles = role? role.split(" ") : [];
 		var desc = {
 			"uniqueId": uniqueId,
 			"roles": roles,
 			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
+			"conf":conf,
 			"instance": null,
 			"layout": {
 				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
@@ -817,14 +818,7 @@
 			"discarded": false
 		};
 		enhancedElements[uniqueId] = desc;
-
-		//TODO: do this on enhance
-			if (conf.layouter && el) {
-				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout && el) {
-				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
-			}
+		if (el._cleaners == undefined) el._cleaners = [];
 
 		return desc;
 	}
