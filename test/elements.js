@@ -125,6 +125,10 @@ test('Enhanced element config',function(){
 	ok(true,"TODO configure combining a base from application/config and a mixin using data-role");
 });
 
+test('EnhancedDescriptor cross browser support',function(){
+	ok(true,"TODO uniqueId works across multiple documents");
+});
+
 test('addEventListeners catch',function() {
 	var HTMLElement = Resolver("essential")("HTMLElement");
 	var addEventListeners = Resolver("essential")("addEventListeners");
@@ -151,6 +155,9 @@ test('addEventListeners catch',function() {
 test('Enhance element early or delayed',function() {
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
 	var enhancedElements = Resolver("essential")("enhancedElements");
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var appConfig = ApplicationConfig();
+
 
 	var handlers = {
 		"enhance": {
@@ -167,12 +174,19 @@ test('Enhance element early or delayed',function() {
 		}
 	};
 
-	var doc = createDocument([],[
+
+	var page = appConfig.page("/test/pages/a2.html",{},[
+		'<html><head>', '', '</head><body>',
+
 		'<span role="delayed" id="a"></span>',
-		'<span role="early" id="b"></span>'
-		]);
+		'<span role="early" id="b"></span>',
+
+		'</body>'
+		].join(""));
+
+
 	handlers.enhance.delayed.returns(false);
-	var dr = DocumentRoles(handlers,doc);
+	var dr = DocumentRoles(handlers,page);
 
 	var sinonConfig = {}; //TODO config for the sinon elem
 
@@ -181,7 +195,7 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 
-	ok(handlers.enhance.early.alwaysCalledWith(doc.getElementById("b"),"early"))
+	ok(handlers.enhance.early.alwaysCalledWith(page.body.getElementsByTagName("span")[1],"early"))
 	//TODO equal(handlers.enhance.early.args[0][2],sinonConfig);
 
 	ok(true,"TODO additional handlers, enhance call after initial round")
@@ -202,8 +216,8 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.enhance.early.callCount,1);
 	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
-	equal(handlers.discard.early.callCount,1);
-	equal(handlers.discard.delayed.callCount,1);
+	equal(handlers.discard.early.callCount,1,"early has been discarded");
+	equal(handlers.discard.delayed.callCount,1,"delayed has been discarded");
 });
 
 //TODO layout and discard are optional handlers
@@ -295,44 +309,50 @@ test("Enhancing elements creating stateful fields",function() {
 test('Enhancing DocumentRoles with builtin handlers',function(){
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
 	var enhancedElements = Resolver("essential")("enhancedElements");
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var appConfig = ApplicationConfig();
 
 	var handlers = {
 		"enhance": {
-			"dialog": DocumentRoles.enhance_dialog,
-			"navigation": DocumentRoles.enhance_toolbar,
-			"spinner": DocumentRoles.enhance_spinner,
-			"application": DocumentRoles.enhance_application
+			"dialog": sinon.spy(DocumentRoles.enhance_dialog),// ,
+			"navigation": sinon.spy(DocumentRoles.enhance_toolbar),// ,
+			"spinner": sinon.spy(DocumentRoles.enhance_spinner),// ,
+			"application": sinon.spy(DocumentRoles.enhance_application)// 
 		},
 		"layout": {
-			"dialog": DocumentRoles.layout_dialog,
-			"navigation": DocumentRoles.layout_toolbar,
-			"spinner": DocumentRoles.layout_spinner,
-			"application": DocumentRoles.layout_application
+			"dialog": sinon.spy(),// DocumentRoles.layout_dialog,
+			"navigation": sinon.spy(),// DocumentRoles.layout_toolbar,
+			"spinner": sinon.spy(),// DocumentRoles.layout_spinner,
+			"application": sinon.spy()// DocumentRoles.layout_application
 		},
 		"discard": {
-			"dialog": DocumentRoles.discard_dialog,
-			"navigation": DocumentRoles.discard_toolbar,
-			"spinner": DocumentRoles.discard_spinner,
-			"application": DocumentRoles.discard_application
+			"dialog": sinon.spy(),// DocumentRoles.discard_dialog,
+			"navigation": sinon.spy(),// DocumentRoles.discard_toolbar,
+			"spinner": sinon.spy(),// DocumentRoles.discard_spinner,
+			"application": sinon.spy()// DocumentRoles.discard_application
 		}
 	};
 
-	var doc = createDocument([],[
+	var page = appConfig.page("/test/pages/a3.html",{},[
+		'<html><head>', '', '</head><body>',
+
 		'<span role="navigation">',
 		'<button name="a"></button>',
-		'</span>'
-		]);
-	var dr = DocumentRoles(handlers,doc);
+		'</span>',
 
+		'</body>'
+		].join(""));
+
+	var dr = DocumentRoles(handlers,page);
 
 	dr._enhance_descs(enhancedElements);
-	// equal(handlers.enhance.sinon.callCount,0,"enhance should be completed already");
-	// equal(handlers.layout.sinon.callCount,0);
-	// equal(handlers.discard.sinon.callCount,0);
+	equal(handlers.enhance.callCount,0,"enhance should be completed already");
+	equal(handlers.layout.callCount,0);
+	equal(handlers.discard.callCount,0);
 
 
 	// Submit buttons turned into ordinary
-	var buttons = doc.getElementsByTagName("BUTTON");
+	var buttons = page.body.getElementsByTagName("BUTTON");
 	for(var i=0,button; button=buttons[i]; ++i) {
 		equal(button.type,"button");
 	}
@@ -352,6 +372,8 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential")("DialogAction");
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var appConfig = ApplicationConfig();
 	var fireAction = Resolver("essential")("fireAction");
 
 	function ABC_DialogAction() {
@@ -378,17 +400,22 @@ test('Role navigation action',function(){
 		}
 	};
 
-	var doc = createDocument([],[
+	var page = appConfig.page("/test/pages/a4.html",{},[
+		'<html><head>', '', '</head><body>',
+
 		'<span role="navigation" action="a/b/c">',
 		'<button name="button1" role="button"></button>',
 		'</span>',
-		'<button name="button2" role="button" action="d/e/f"></button>'
-		]);
-	var dr = DocumentRoles(handlers,doc);
-	var dialog = doc.body.firstChild;
+		'<button name="button2" role="button" action="d/e/f"></button>',
 
-	//doc.body.firstChild.firstChild.click();
-	//simulateClick(doc.body.firstChild);//.firstChild);
+		'</body>'
+		].join(""));
+
+	var dr = DocumentRoles(handlers,page);
+	var dialog = page.body.firstChild;
+
+	//page.body.firstChild.firstChild.click();
+	//simulateClick(page.body.firstChild);//.firstChild);
 	dialog.submit({ commandElement: dialog.firstChild, actionElement:dialog, action:"a/b/c", commandName:"button1" });
 	ok(ABC_DialogAction.prototype.button1.called);
 	fireAction({ commandElement: dialog.nextSibling, actionElement:dialog.nextSibling, action: "d/e/f", commandName: "button2" });
