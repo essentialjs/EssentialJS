@@ -11,8 +11,8 @@ test("Page Resolver",function(){
 	equal(Resolver("page")("config.logo.charset"),"utf-8");
 })
 
-var ApplicationConfig = Resolver("essential")("ApplicationConfig");
-ApplicationConfig.restrict({ singleton:true });
+// var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+// ApplicationConfig.restrict({ singleton:true });
 
 test("ApplicationConfig",function(){
 	var configRequired = Resolver("essential")("configRequired");
@@ -76,6 +76,8 @@ test("ApplicationConfig",function(){
 //TODO when page is brought live the correct area is activated
 
 if (location.protocol == "http:") asyncTest("Application Config loadPage of SubPage",function(){
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+
 	var ac = ApplicationConfig();
 	var page = ac.loadPage("/test/pages/with-config.html");
 	var interval = setInterval(function(){ if (page.documentLoaded) {
@@ -99,6 +101,8 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 });
 
 if (location.protocol == "http:") asyncTest("Application Config SubPage not found",function(){
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+
 	var ac = ApplicationConfig();
 	var page = ac.loadPage("/test/pages/not-there.html");
 	var interval = setInterval(function(){ if (page.documentLoaded) {
