@@ -775,8 +775,7 @@
 		setTimeout(bringLive,60); 
 	}
 
-	var ApplicationConfig = Generator(_ApplicationConfig,{"prototype":_Scripted.prototype});
-	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
+	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );
 	
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
