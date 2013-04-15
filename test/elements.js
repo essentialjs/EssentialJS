@@ -154,7 +154,6 @@ test('addEventListeners catch',function() {
 
 test('Enhance element early or delayed',function() {
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var enhancedElements = Resolver("essential")("enhancedElements");
 	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 	var appConfig = ApplicationConfig();
 
@@ -173,7 +172,7 @@ test('Enhance element early or delayed',function() {
 			"delayed": sinon.stub()
 		}
 	};
-
+	handlers.enhance.delayed.returns(false);
 
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -185,7 +184,6 @@ test('Enhance element early or delayed',function() {
 		].join(""));
 
 
-	handlers.enhance.delayed.returns(false);
 	var dr = DocumentRoles(handlers,page);
 
 	var sinonConfig = {}; //TODO config for the sinon elem
@@ -202,7 +200,7 @@ test('Enhance element early or delayed',function() {
 
 	handlers.enhance.additional = sinon.stub();
 	handlers.enhance.delayed.returns({});
-	dr._enhance_descs(enhancedElements);
+	dr._enhance_descs(page.resolver("descriptors"));
 	equal(handlers.enhance.early.callCount,1,"enhance should be completed already");
 	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
@@ -308,7 +306,6 @@ test("Enhancing elements creating stateful fields",function() {
 
 test('Enhancing DocumentRoles with builtin handlers',function(){
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var enhancedElements = Resolver("essential")("enhancedElements");
 	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 	var appConfig = ApplicationConfig();
 
@@ -344,11 +341,14 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 		].join(""));
 
 	var dr = DocumentRoles(handlers,page);
+	equal(handlers.enhance.navigation.callCount,1);
+	equal(handlers.layout.navigation.callCount,0);
+	equal(handlers.discard.navigation.callCount,0);
 
-	dr._enhance_descs(enhancedElements);
-	equal(handlers.enhance.callCount,0,"enhance should be completed already");
-	equal(handlers.layout.callCount,0);
-	equal(handlers.discard.callCount,0);
+	dr._enhance_descs(page.resolver("descriptors"));
+	equal(handlers.enhance.navigation.callCount,1,"enhance should be completed already");
+	equal(handlers.layout.navigation.callCount,0);
+	equal(handlers.discard.navigation.callCount,0);
 
 
 	// Submit buttons turned into ordinary

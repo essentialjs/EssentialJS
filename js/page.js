@@ -511,8 +511,8 @@
 		for(var i=0; el = all[i]; ++i) {
 			var conf = this.getConfig(el), role = el.getAttribute("role");
 			if (conf || role) {
-				var desc = EnhancedDescriptor(el,role,conf);
-				descriptors[desc.uniqueId] = desc;
+				var desc = EnhancedDescriptor(el,role,conf,false,this);
+				//descriptors[desc.uniqueId] = desc;
 			}
 		}
 	};

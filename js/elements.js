@@ -443,14 +443,19 @@
 			var desc = descs[n];
 
 			StatefulResolver(desc.el,true);
-			if (!desc.enhanced && desc.role && this.handlers.enhance[desc.role]) {
-				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,desc.conf);
-				desc.enhanced = desc.instance === false? false:true;
-				++enhancedCount;
-				var layoutHandler = this.handlers.layout[desc.role];
-				if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
+			if (!desc.enhanced) {
 
-				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
+				// if (desc.callCount) debugger;
+				// desc.callCount = 1;
+				if (desc.role && this.handlers.enhance[desc.role]) {
+					desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,desc.conf);
+					desc.enhanced = desc.instance === false? false:true;
+
+					var layoutHandler = this.handlers.layout[desc.role];
+					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
+
+				}
+				++enhancedCount;
 
 		//TODO: do this on enhance
 		/*
@@ -461,7 +466,10 @@
 				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
 			}
 		*/
-			}
+
+				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
+			} 
+
 			if (! desc.enhanced) incomplete = true;
 		}
 		

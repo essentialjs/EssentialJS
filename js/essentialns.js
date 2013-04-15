@@ -781,7 +781,7 @@
 	var lastUniqueId = 555;
 
 	// Get the enhanced descriptor for and element
-	function EnhancedDescriptor(el,role,conf,force) {
+	function EnhancedDescriptor(el,role,conf,force,page) {
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
 		var desc = enhancedElements[uniqueId];
@@ -818,6 +818,8 @@
 			"discarded": false
 		};
 		enhancedElements[uniqueId] = desc;
+		var descriptors = page.resolver("descriptors");
+		descriptors[uniqueId] = desc;
 		if (el._cleaners == undefined) el._cleaners = [];
 
 		return desc;
@@ -935,7 +937,8 @@
 		}
 
 		discardRestricted();
-		clearInterval(enhancedElementsMaintainer);
+		if (enhancedElementsMaintainer) clearInterval(enhancedElementsMaintainer);
+		enhancedElementsMaintainer = null;
 		discardEnhancedElements();
 		discardEnhancedWindows();
 
