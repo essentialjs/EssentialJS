@@ -3,22 +3,36 @@ module('launching page');
 test("Page Resolver",function(){
 	ok(Resolver.page,"Page resolver present")
 	equal(typeof Resolver.page("state"),"object")
-	equal(Resolver.page,document.body.stateful)
 	equal(typeof Resolver.page("config"),"object")
 
-	equal(Resolver("page")("config.launched.charset"),"utf-8");
-	equal(Resolver("page")("config.login.charset"),"utf-8");
-	equal(Resolver("page")("config.logo.charset"),"utf-8");
+	var pageResolver = Resolver("page");
+	equal(pageResolver("config.launched.charset"),"utf-8");
+	equal(pageResolver("config.login.charset"),"utf-8");
+	equal(pageResolver("config.logo.charset"),"utf-8");
+
+	// default state
+	equal(pageResolver("state.authenticated"),true,"authenticated");
+	equal(pageResolver("state.authorised"),true,"authorised");
+	equal(pageResolver("state.connected"),true,"connected");
+	equal(pageResolver("state.configured"),true,"configured");
+	equal(pageResolver("state.fullscreen"),false,"fullscreen");
+	equal(pageResolver("state.launching"),true,"launching");
+	equal(pageResolver("state.launched"),false,"launched");
+	equal(pageResolver("state.livepage"),false,"livepage");
+
 })
 
 // var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 // ApplicationConfig.restrict({ singleton:true });
 
 test("ApplicationConfig",function(){
+	// equal(document.body.stateful,undefined);
+
 	var configRequired = Resolver("essential")("configRequired");
 	var configLoaded = Resolver("essential")("configLoaded");
 	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 	var ac = ApplicationConfig();
+	// equal(document.body.stateful,Resolver.page);
 
 	// application/config
 	equal(ac.config("launched.charset"),"utf-8","launched.charset");
@@ -34,6 +48,7 @@ test("ApplicationConfig",function(){
 	equal(ac.state("fullscreen"),false,"fullscreen");
 	equal(ac.state("launching"),false,"launching");
 	equal(ac.state("launched"),false,"launched");
+	equal(ac.state("livepage"),false,"livepage");
 
 	// waiting for later determination if logged in
 	Resolver("page").set("state.authenticated",false);

@@ -384,6 +384,8 @@
 	}
 	essential.set("getActiveArea",getActiveArea);
 
+	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
+
 	function bringLive() {
 		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
@@ -407,8 +409,10 @@
 		ap.state.set("livepage",true);
 	}
 
-	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+	if (!_essentialTesting) {
+		if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
+		else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+	}
 
 	// page state & sub pages
 	Resolver("page").declare("pages",{});
@@ -772,7 +776,7 @@
 			//TODO queue loading this as the initial body content added before the first body child
 		}
 
-		setTimeout(bringLive,60); 
+		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
 
 	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );

@@ -3054,17 +3054,19 @@ Generator.ObjectGenerator = Generator(Object);
 	var lastUniqueId = 555;
 
 	// Get the enhanced descriptor for and element
-	function EnhancedDescriptor(el,force) {
+	function EnhancedDescriptor(el,role,conf,force,page) {
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
 		var desc = enhancedElements[uniqueId];
 		if (desc && !force) return desc;
 
-		var roles = el.getAttribute("role").split(" ");
+		var roles = role? role.split(" ") : [];
 		var desc = {
+			"uniqueId": uniqueId,
 			"roles": roles,
 			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
+			"conf":conf,
 			"instance": null,
 			"layout": {
 				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
@@ -3088,8 +3090,11 @@ Generator.ObjectGenerator = Generator(Object);
 			"enhanced": false,
 			"discarded": false
 		};
-		desc.uniqueId = uniqueId;
 		enhancedElements[uniqueId] = desc;
+		var descriptors = page.resolver("descriptors");
+		descriptors[uniqueId] = desc;
+		if (el._cleaners == undefined) el._cleaners = [];
+
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
@@ -3161,7 +3166,8 @@ Generator.ObjectGenerator = Generator(Object);
 
 	essential.set("_queueDelayedAssets",function(){});
 
-	var _readyFired = false;
+	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
+	var _readyFired = _essentialTesting==null? false:true;
 
 	function fireDomReady()
 	{
@@ -3204,7 +3210,8 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 
 		discardRestricted();
-		clearInterval(enhancedElementsMaintainer);
+		if (enhancedElementsMaintainer) clearInterval(enhancedElementsMaintainer);
+		enhancedElementsMaintainer = null;
 		discardEnhancedElements();
 		discardEnhancedWindows();
 
@@ -3544,7 +3551,7 @@ Generator.ObjectGenerator = Generator(Object);
 /*
 	StatefulResolver and ApplicationConfig
 */
-!function() {
+!function(Scripted_gather) {
 
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
@@ -3554,6 +3561,7 @@ Generator.ObjectGenerator = Generator(Object);
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
 		HTMLScriptElement = essential("HTMLScriptElement"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
@@ -3838,7 +3846,13 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.declare("StatefulResolver",StatefulResolver);
 
 	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
+
+	// application/config declarations on the main page
 	pageResolver.declare("config",{});
+
+	// descriptors for elements on main page to enhance
+	pageResolver.declare("descriptors",{});
+
 	pageResolver.reference("state").mixin({
 		"livepage": false,
 		"authenticated": true,
@@ -3919,6 +3933,8 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("getActiveArea",getActiveArea);
 
+	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
+
 	function bringLive() {
 		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
@@ -3942,17 +3958,132 @@ Generator.ObjectGenerator = Generator(Object);
 		ap.state.set("livepage",true);
 	}
 
-	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+	if (!_essentialTesting) {
+		if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
+		else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+	}
 
+	// page state & sub pages
 	Resolver("page").declare("pages",{});
 
+	function _Scripted() {
+		// the derived has to define resolver before this
+		this.config = this.resolver.reference("config","undefined");
+		this.resolver.declare("resources",[]);
+		this.resources = this.resolver.reference("resources");
+		this.resolver.declare("inits",[]);
+		this.inits = this.resolver.reference("inits");
+	}
+
+	_Scripted.prototype.declare = function(key,value) {
+		this.config.declare(key,value);
+	}; 
+
+	_Scripted.prototype.modules = { "domReady":true };	// keep track of what modules are loaded
+
+	_Scripted.prototype.context = {
+		"require": function(path) {
+			if (this.modules[path] == undefined) {
+				var ex = new Error("Missing module '" + path + "'");
+				ex.ignore = true;
+				throw ex;	
+			} 
+		}
+	};
+
+	_Scripted.prototype._gather = Scripted_gather;
+
+	var _singleQuotesRe = new RegExp("'","g");
+
+	_Scripted.prototype._getElementRoleConfig = function(element,key) {
+		//TODO cache the config on element.stateful
+
+		var config = null;
+
+		// mixin the declared config
+		if (key) {
+			var declared = this.config(key);
+			if (declared) {
+				config = {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		// mixin the data-role
+		var dataRole = element.getAttribute("data-role");
+		if (dataRole) try {
+			config = config || {};
+			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+			for(var n in map) config[n] = map[n];
+		} catch(ex) {
+			console.debug("Invalid config: ",dataRole,ex);
+			config["invalid-config"] = dataRole;
+		}
+
+		return config;
+	};
+
+	_Scripted.prototype.getElement = function(key) {
+		var keys = key.split(".");
+		var el = this.document.getElementById(keys[0]);
+		if (el && keys.length > 1) el = el.getElementByName(keys[1]);
+		return el;
+	};
+
+	_Scripted.prototype.declare = function(key,value) {
+		this.config.declare(key,value);
+	};
+
+	_Scripted.prototype.getConfig = function(element) {
+		if (element.id) {
+			return this._getElementRoleConfig(element,element.id);
+		}
+		var name = element.getAttribute("name");
+		if (name) {
+			var p = element.parentNode;
+			while(p && p.tagName) {
+				if (p.id) {
+					return this._getElementRoleConfig(element,p.id + "." + name);
+				} 
+				p = p.parentNode;
+			} 
+		}
+		return this._getElementRoleConfig(element);
+	};
+
+	/*
+		Prepare enhancing elements with roles/layout/laidout
+	*/
+	_Scripted.prototype.prepareEnhance = function() {
+
+		this._gather(this.head.getElementsByTagName("script"));
+		this._gather(this.body.getElementsByTagName("script"));		
+
+		var descriptors = this.resolver("descriptors");
+		var all = this.body.getElementsByTagName("*");
+		for(var i=0; el = all[i]; ++i) {
+			var conf = this.getConfig(el), role = el.getAttribute("role");
+			if (conf || role) {
+				var desc = EnhancedDescriptor(el,role,conf,false,this);
+				//descriptors[desc.uniqueId] = desc;
+			}
+		}
+	};
+
+
+
 	function _SubPage(appConfig) {
-		if (appConfig) this.appConfig = appConfig;
+		// subpage application/config and enhanced element descriptors
+		this.resolver = Resolver({ "config":{}, "descriptors":{} });
+		this.document = document;
+		_Scripted.call(this);
+
+		if (appConfig) this.appConfig = appConfig; // otherwise the prototype will have the default
 		this.body = document.createElement("DIV");
 	}
-	var SubPage = Generator(_SubPage);
+	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
 
+	// keep a head prefix with meta tags for iframe/window subpages
 	SubPage.prototype.headPrefix = ['<head>'];
 	var metas = (document.head || document.documentElement.firstChild).getElementsByTagName("meta");
 	for(var i=0,e; e = metas[i]; ++i) {
@@ -3963,6 +4094,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		var XMLHttpRequest = essential("XMLHttpRequest");
 	    var xhr = XMLHttpRequest();
+	    xhr.page = this;
 
 	    if (typeof(xhr.overrideMimeType) === 'function') {
 	        xhr.overrideMimeType('text/html');
@@ -3982,7 +4114,7 @@ Generator.ObjectGenerator = Generator(Object);
 		    } else {
 		        xhr.onreadystatechange = function () {
 		            if (xhr.readyState == 4) {
-		                handleResponse(xhr, this, this.loadedPageDone, this.loadedPageError);
+		                handleResponse(xhr, this.page, this.page.loadedPageDone, this.page.loadedPageError);
 		            }
 		        };
 		    } 
@@ -4002,11 +4134,22 @@ Generator.ObjectGenerator = Generator(Object);
     }
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
-		var doc = createHTMLDocument(text);
+		var doc = this.document = createHTMLDocument(text);
+		this.head = doc.head;
+		this.body = doc.body;
+		this.documentLoaded = true;
+
+		this.prepareEnhance();
+
+		if (this.appConfig.bodySrc && this.appConfig.bodySrc != this.appConfig.appliedSrc) {
+			//TODO unapply if another is applied
+			this.applyBody();
+		}
 	};
 
 	SubPage.prototype.loadedPageError = function(status) {
-
+		this.documentError = status;
+		this.documentLoaded = true;
 	};
 
 	SubPage.prototype.parseHTML = function(text) {
@@ -4030,6 +4173,9 @@ Generator.ObjectGenerator = Generator(Object);
 			this.body = div.getElementsByTagName("wasbody") || div;
 			//TODO offline htmlfile object?
 		}
+		this.documentLoaded = true;
+
+		this.prepareEnhance();
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -4045,6 +4191,7 @@ Generator.ObjectGenerator = Generator(Object);
 			}
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
+		enhanceUnhandledElements();
 	};
 
 	SubPage.prototype.unapplyBody = function() {
@@ -4120,6 +4267,7 @@ Generator.ObjectGenerator = Generator(Object);
 		return p.join("");
 	};
 
+
 	function cacheError(ev) {
 		pageResolver.set(["state","online"],false);	
 	}
@@ -4132,8 +4280,13 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
+
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+		this.document = document;
+		this.head = this.document.head;
+		this.body = this.document.body;
+		_Scripted.call(this);
 
 		updateOnlineStatus();
 		if (document.body.addEventListener) {
@@ -4157,33 +4310,56 @@ Generator.ObjectGenerator = Generator(Object);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
-		this.config = this.resolver.reference("config","undefined");
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
-		this.resolver.declare("resources",[]);
-		this.resources = this.resolver.reference("resources");
-		this.resolver.declare("inits",[]);
-		this.inits = this.resolver.reference("inits");
 
-		this._gather();
-		this._apply();
+		this.prepareEnhance();
 
-		var bodySrc = document.body.getAttribute("src");
+		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) {
-			this.loadPage(bodySrc)
+			this._markPermanents();
+			//TODO if already there page.applyBody();
+			this.loadPage(bodySrc);
+			this.bodySrc = bodySrc;
+			this.appliedSrc = null;
 			//TODO queue loading this as the initial body content added before the first body child
 		}
 
-		this.modules = { "domReady":true };
-
-		setTimeout(bringLive,60); 
+		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
 
-	var ApplicationConfig = Generator(_ApplicationConfig);
-	essential.set("ApplicationConfig",ApplicationConfig).restrict({ "singleton":true, "lifecycle":"page" });
+	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );
 	
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
+
+	ApplicationConfig.prototype.page = function(url,options,content,content2) {
+		//this.pages.declare(key,value);
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.documentLoaded) {
+			page.url = url;
+			page.options = options;
+			page.parseHTML(content,content2);
+		}
+
+		return page;
+	};
+
+	ApplicationConfig.prototype.loadPage = function(url) {
+		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
+		if (page == undefined) {
+			page = this.pages()[url] = SubPage();
+		}
+		if (!page.documentLoaded) {
+			page.url = url;
+			page.fetch();
+		}
+
+		return page;
+	};
 
 	function enhanceUnhandledElements() {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
@@ -4320,97 +4496,12 @@ Generator.ObjectGenerator = Generator(Object);
 		this.resolver.set(["state",whichState],v);
 	};
 
-	ApplicationConfig.prototype.declare = function(key,value) {
-		this.config.declare(key,value);
-	};
-
-	ApplicationConfig.prototype.page = function(url,options,content) {
-		//this.pages.declare(key,value);
-		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
-		if (page == undefined) {
-			page = this.pages()[url] = SubPage();
-		}
-		if (!page.loaded) {
-			page.url = url;
-			page.options = options;
-			page.parseHTML(content);
-		}
-	};
-
-	ApplicationConfig.prototype._apply = function() {
-		for(var k in this.config()) {
-			var el = this.getElement(k);
-			var conf = el? this._getElementRoleConfig(el,k) : this.config()[k];
-
-			if (conf.layouter && el) {
-				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout && el) {
-				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
-			}
-		}
-	};
-
-	var _singleQuotesRe = new RegExp("'","g");
-
-	ApplicationConfig.prototype._getElementRoleConfig = function(element,key) {
-		//TODO cache the config on element.stateful
-
-		var config = {};
-
-		// mixin the declared config
-		if (key) {
-			var declared = this.config(key);
-			if (declared) {
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-
-		// mixin the data-role
-		var dataRole = element.getAttribute("data-role");
-		if (dataRole) try {
-			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			for(var n in map) config[n] = map[n];
-		} catch(ex) {
-			console.debug("Invalid config: ",dataRole,ex);
-			config["invalid-config"] = dataRole;
-		}
-
-		return config;
-	};
-
-	ApplicationConfig.prototype.getConfig = function(element) {
-		if (element.id) {
-			return this._getElementRoleConfig(element,element.id);
-		}
-		var name = element.getAttribute("name");
-		if (name) {
-			var p = element.parentNode;
-			while(p && p.tagName) {
-				if (p.id) {
-					return this._getElementRoleConfig(element,p.id + "." + name);
-				} 
-				p = p.parentNode;
-			} 
-		}
-		return this._getElementRoleConfig(element);
-	};
-
-	ApplicationConfig.prototype.getElement = function(key) {
-		var keys = key.split(".");
-		var el = document.getElementById(keys[0]);
-		if (keys.length > 1) el = el.getElementByName(keys[1]);
-		return el;
-	};
-
-	ApplicationConfig.prototype.loadPage = function(url) {
-		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
-		if (page == undefined) {
-			page = this.pages()[url] = SubPage();
-		}
-		if (!page.loaded) {
-			page.url = url;
-			page.fetch();
+	ApplicationConfig.prototype._markPermanents = function() 
+	{
+		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
+		while(e) {
+			e.permanent = true;
+			e = e.nextElementSibling || e.nextSibling;
 		}
 	};
 
@@ -4428,17 +4519,6 @@ Generator.ObjectGenerator = Generator(Object);
 			} //TODO only ignore ex.ignore
 		}
 		this.context["this"] = undefined;
-	};
-
-	ApplicationConfig.prototype.context = {
-		"require": function(path) {
-			var ac = ApplicationConfig.info.existing[0];
-			if (ac == undefined || ac.modules[path] == undefined) {
-				var ex = new Error("Missing module '" + path + "'");
-				ex.ignore = true;
-				throw ex;	
-			} 
-		}
 	};
 
 	function onmessage(ev) {
@@ -4666,14 +4746,12 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("openWindow",openWindow);
 
-}();
-
+}(
 // need with context not supported in strict mode
-Resolver("essential")("ApplicationConfig").prototype._gather = function() {
+function(scripts) {
 	var resources = this.resources();
 	var inits = this.inits();
 
-	var scripts = document.getElementsByTagName("script");
 	for(var i=0,s; s = scripts[i]; ++i) {
 		switch(s.getAttribute("type")) {
 			case "application/config":
@@ -4696,7 +4774,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 				break;
 		}
 	}
-};
+}
+);
 
 /**
 * XMLHttpRequest.js Copyright (C) 2011 Sergey Ilinsky (http://www.ilinsky.com)
@@ -5265,8 +5344,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		serverUrl = location.protocol + "//" + location.host,
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
-		enhancedWindows = essential("enhancedWindows"),
-		EnhancedDescriptor = essential("EnhancedDescriptor");
+		enhancedWindows = essential("enhancedWindows");
 
 	function getScrollOffsets(el) {
 		var left=0,top=0;
@@ -5604,24 +5682,25 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	}
 	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
 
-	function _DocumentRoles(handlers,doc) {
+	function _DocumentRoles(handlers,page) {
 		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
 		this._on_event = [];
-		doc = doc || document;
+		this.page = page || ApplicationConfig(); // Ensure that config is present
 		
 		//TODO configure reference as DI arg
-		var statefuls = ApplicationConfig(); // Ensure that config is present
 
 		if (window.addEventListener) {
 			window.addEventListener("resize",resizeTriggersReflow,false);
-			doc.body.addEventListener("orientationchange",resizeTriggersReflow,false);
-			doc.body.addEventListener("click",defaultButtonClick,false);
+			this.page.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			this.page.body.addEventListener("click",defaultButtonClick,false);
 		} else {
 			window.attachEvent("onresize",resizeTriggersReflow);
-			doc.body.attachEvent("onclick",defaultButtonClick);
+			this.page.body.attachEvent("onclick",defaultButtonClick);
 		}
 
-		this.enhanceBranch(doc);
+		var descs = this.page.resolver("descriptors");
+		this._enhance_descs(descs);
+		//this.enhanceBranch(doc);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -5629,6 +5708,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		ObjectType({ name:"handlers" })
 	];
 
+/*
 	_DocumentRoles.prototype.enhanceBranch = function(el) {
 		var descs;
 		if (el.querySelectorAll) {
@@ -5643,7 +5723,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	_DocumentRoles.prototype.discardBranch = function(el) {
 		//TODO
 	};
-
+*/
 	function refreshRoleLayoutCallback(dr,layoutHandler) {
 		// called on EnhancedDescription
 		return function() {
@@ -5681,20 +5761,39 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
-		var statefuls = ApplicationConfig(); // Ensure that config is present
 		var incomplete = false, enhancedCount = 0;
 
 		for(var n in descs) {
 			var desc = descs[n];
 
 			StatefulResolver(desc.el,true);
-			if (!desc.enhanced && this.handlers.enhance[desc.role]) {
-				desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,statefuls.getConfig(desc.el));
-				desc.enhanced = desc.instance === false? false:true;
+			if (!desc.enhanced) {
+
+				// if (desc.callCount) debugger;
+				// desc.callCount = 1;
+				if (desc.role && this.handlers.enhance[desc.role]) {
+					desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,desc.conf);
+					desc.enhanced = desc.instance === false? false:true;
+
+					var layoutHandler = this.handlers.layout[desc.role];
+					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
+
+				}
 				++enhancedCount;
-				var layoutHandler = this.handlers.layout[desc.role];
-				if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
+
+		//TODO: do this on enhance
+		/*
+			if (conf.layouter && el) {
+				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
 			}
+			if (conf.laidout && el) {
+				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
+			}
+		*/
+
+				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
+			} 
+
 			if (! desc.enhanced) incomplete = true;
 		}
 		
@@ -5707,7 +5806,7 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 					// list of relevant descs
 					for(var n in descs) {
 						var desc = descs[n];
-						if (oe.role== null || oe.role==desc.role) descs2.push(desc);
+						if (desc.role) if (oe.role== null || oe.role==desc.role) descs2.push(desc);
 					}
 
 					oe.func.call(this, this, descs2);
@@ -5734,21 +5833,6 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 		return function() {
 			return handler.call(dr,desc.el,desc.role,desc.instance);
 		};
-	};
-
-	_DocumentRoles.prototype._role_descs = function(elements) {
-		var descs = [];
-		for(var i=0,el; el=elements[i]; ++i) {
-			var role = el.getAttribute("role");
-			//TODO only in positive list
-			if (role) {
-				var desc = EnhancedDescriptor(el,true);
-				descs.push(desc);
-				if (el._cleaners == undefined) el._cleaners = [];
-				if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(this._roleEnhancedCleaner(desc)); 
-			}
-		}
-		return descs;
 	};
 
 	_DocumentRoles.prototype._resize_descs = function() {
@@ -6547,6 +6631,8 @@ Resolver("essential")("ApplicationConfig").prototype._gather = function() {
 	
 
 }();
+Resolver("essential")("ApplicationConfig").restrict({ "singleton":true, "lifecycle":"page" });
+
 
 
 if(!this.JSON){
