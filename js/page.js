@@ -362,7 +362,7 @@
 	essential.set("stages",stages);
 
 	function activateArea(areaName) {
-		if (! _liveAreas) {
+		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
 			_activeAreaName = areaName;
 			return;
 		}
