@@ -196,14 +196,12 @@
 		var mapClass = el.stateful("map.class","undefined");
 		if (mapClass) {
 			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
-			if (symbolState) {
-				var bits = symbolState.split("%");
+			var bits = (symbolState||"").split("%");
 
-				if (bits.length > 1) {
-					DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
-				} 
-				else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
-			}
+			if (bits.length > 1) {
+				DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
+			} 
+			else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
 		} 
 	}
 

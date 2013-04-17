@@ -123,6 +123,55 @@ test("Stateful element state with custom class",function(){
 	equal(el.className,"is-not-disabled show");
 })
 
+test("Stateful element state with odd classes",function(){
+
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
+
+	var el = document.createElement("div");
+	var stateful = StatefulResolver(el,true);
+
+	var mapClass = stateful("map.class");
+	mapClass.state.disabled = "is-disabled";
+	mapClass.state.hidden = "hide";
+	mapClass.notstate.disabled = undefined;
+	mapClass.notstate.hidden = undefined;
+
+	stateful.set("state.disabled",false);
+	equal(el.className,"")
+	stateful.set("state.disabled",true);
+	equal(el.className,"is-disabled")
+	stateful.set("state.disabled",false);
+	equal(el.className,"")
+
+	stateful.set("state.hidden",false);
+	equal(el.className,"");
+	stateful.set("state.hidden",true);
+	equal(el.className,"hide");
+	stateful.set("state.hidden",false);
+	equal(el.className,"");
+
+
+	var mapClass = stateful("map.class");
+	mapClass.state.disabled = undefined;
+	mapClass.state.hidden = undefined;
+	mapClass.notstate.disabled = "is-not-disabled";
+	mapClass.notstate.hidden = "show";
+
+	stateful.set("state.disabled",true);
+	equal(el.className,"")
+	stateful.set("state.disabled",false);
+	equal(el.className,"is-not-disabled")
+	stateful.set("state.disabled",true);
+	equal(el.className,"")
+
+	stateful.set("state.hidden",true);
+	equal(el.className,"");
+	stateful.set("state.hidden",false);
+	equal(el.className,"show");
+	stateful.set("state.hidden",true);
+	equal(el.className,"");
+})
+
 test("Stateful element custom state ",function(){
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
 
