@@ -31,17 +31,25 @@ function combine(files) {
 
 function combine_and_minify(files) {
 
-  var all = '';
-  files.forEach(function(file, i) {
+  var toplevel = null;
+  files.forEach(function(file){
     if (file.match(/^.*js$/)) {
-      all += fs.readFileSync('js/'+file).toString();
+      var code = fs.readFileSync('js/'+file);
+      toplevel = uglify.parse(code, {
+          filename: file,
+          toplevel: toplevel
+      });
     }
-  });
+  });  
 
-  var ast = uglify.parser.parse(all);
-  ast = uglify.uglify.ast_mangle(ast);
-  ast = uglify.uglify.ast_squeeze(ast);
-  return uglify.uglify.gen_code(ast);
+  var compressor = uglify.Compressor();
+  var compressed_ast = toplevel.transform(compressor);
+
+//  compressed_ast.figure_out_scope();
+//  compressed_ast.compute_char_frequency();
+//  compressed_ast.mangle_names();
+
+  return compressed_ast.print_to_string();
 }
 
 desc('Uglify JS');
