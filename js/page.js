@@ -815,8 +815,12 @@
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
 		var dr = essential("DocumentRoles")()
-		dr._enhance_descs(enhancedElements);
+		// dr._enhance_descs(enhancedElements);
+		var descs = statefuls.resolver("descriptors");
+		dr._enhance_descs(descs);
 		//TODO time to default_enhance yet?
+
+		//TODO enhance active page
 	}
 
 	ApplicationConfig.prototype.onStateChange = function(ev) {
