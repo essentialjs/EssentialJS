@@ -455,17 +455,15 @@
 					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
 
 				}
-				++enhancedCount;
+				var k = "";//TODO declare(k,...)
+				if (desc.conf && desc.conf.layouter) {
+					desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf);
+				}
+				if (desc.conf && desc.conf.laidout) {
+					desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf);
+				}
 
-		//TODO: do this on enhance
-		/*
-			if (conf.layouter && el) {
-				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout && el) {
-				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
-			}
-		*/
+				++enhancedCount;
 
 				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
 			} 
