@@ -894,7 +894,7 @@
 	essential.set("_queueDelayedAssets",function(){});
 
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-	var _readyFired = _essentialTesting==null? false:true;
+	var _readyFired = _essentialTesting;
 
 	function fireDomReady()
 	{
