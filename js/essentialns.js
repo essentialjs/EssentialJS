@@ -793,7 +793,7 @@
 			"roles": roles,
 			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
-			"conf":conf,
+			"conf":conf || {},
 			"instance": null,
 			"layout": {
 				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
