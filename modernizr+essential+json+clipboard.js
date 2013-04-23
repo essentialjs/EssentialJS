@@ -2863,6 +2863,7 @@ Generator.ObjectGenerator = Generator(Object);
 					element = null;
 					break;
 				case null:
+					//TODO effective role for stateful
 					switch(element.tagName) {
 						case "BUTTON":
 						case "button":
@@ -3066,7 +3067,7 @@ Generator.ObjectGenerator = Generator(Object);
 			"roles": roles,
 			"role": roles[0], //TODO document that the first role is the switch for enhance
 			"el": el,
-			"conf":conf,
+			"conf":conf || {},
 			"instance": null,
 			"layout": {
 				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
@@ -3167,7 +3168,7 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.set("_queueDelayedAssets",function(){});
 
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-	var _readyFired = _essentialTesting==null? false:true;
+	var _readyFired = _essentialTesting;
 
 	function fireDomReady()
 	{
@@ -3745,14 +3746,12 @@ Generator.ObjectGenerator = Generator(Object);
 		var mapClass = el.stateful("map.class","undefined");
 		if (mapClass) {
 			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
-			if (symbolState) {
-				var bits = symbolState.split("%");
+			var bits = (symbolState||"").split("%");
 
-				if (bits.length > 1) {
-					DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
-				} 
-				else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
-			}
+			if (bits.length > 1) {
+				DOMTokenList_tmplClass(el,bits[0],bits[1],event.value);
+			} 
+			else DOMTokenList_eitherClass(el,symbolState,symbolNotState,event.value);
 		} 
 	}
 
@@ -3911,7 +3910,7 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.set("stages",stages);
 
 	function activateArea(areaName) {
-		if (! _liveAreas) {
+		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
 			_activeAreaName = areaName;
 			return;
 		}
@@ -4366,8 +4365,12 @@ Generator.ObjectGenerator = Generator(Object);
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
 		var dr = essential("DocumentRoles")()
-		dr._enhance_descs(enhancedElements);
+		// dr._enhance_descs(enhancedElements);
+		var descs = statefuls.resolver("descriptors");
+		dr._enhance_descs(descs);
 		//TODO time to default_enhance yet?
+
+		//TODO enhance active page
 	}
 
 	ApplicationConfig.prototype.onStateChange = function(ev) {
@@ -5779,17 +5782,15 @@ function(scripts) {
 					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
 
 				}
-				++enhancedCount;
+				var k = "";//TODO declare(k,...)
+				if (desc.conf && desc.conf.layouter) {
+					desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf);
+				}
+				if (desc.conf && desc.conf.laidout) {
+					desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf);
+				}
 
-		//TODO: do this on enhance
-		/*
-			if (conf.layouter && el) {
-				el.layouter = Layouter.variant(conf.layouter)(k,el,conf);
-			}
-			if (conf.laidout && el) {
-				el.laidout = Laidout.variant(conf.laidout)(k,el,conf);
-			}
-		*/
+				++enhancedCount;
 
 				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
 			} 
