@@ -233,6 +233,37 @@ test('Resolver reference set/declare value',function(){
 	//TODO try array like objects for get/set/declare
 })
 
+test('Resolver namespace::expression API',function() {
+
+
+	Resolver().set("abcdef","abcdef");
+	equal(Resolver("::abcdef"),"abcdef");
+	Resolver().set("abcde.f","abcdef");
+	equal(Resolver("::abcde.f"),"abcdef");
+
+	ok(! Resolver.exists("F"));
+
+	Resolver("F",{
+		"a":"a",
+		"b":"b",
+		"c":"c"
+	});
+
+	equal(Resolver("F"),Resolver("F::"))
+
+	equal(Resolver("F::a"),"a");
+	equal(Resolver("F::b"),"b");
+	equal(Resolver("F::c"),"c");
+
+	equal(Resolver("F::a","undefined"),"a");
+	equal(Resolver("F::b","undefined"),"b");
+	equal(Resolver("F::c","undefined"),"c");
+
+	equal(Resolver("F::a","null"),"a");
+	equal(Resolver("F::b","null"),"b");
+	equal(Resolver("F::c","null"),"c");
+});
+
 test('Resolver reference',function(){
 
 	var resolver = Resolver({});

@@ -6,33 +6,38 @@
 */
 
 
-function Resolver(name,ns,options)
+function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	switch(typeof(name)) {
+	switch(typeof(name_andor_expr)) {
 	case "undefined":
 		// Resolver()
 		return Resolver["default"];
 		
 	case "string":
+        var name_expr = name_andor_expr.split("::");
+        var name = name_expr[0] || "default", expr = name_expr[1];
 		// Resolver("abc")
 		// Resolver("abc",null)
 		// Resolver("abc",{})
 		// Resolver("abc",{},{options})
 		if (Resolver[name] == undefined) {
 			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
-			if (options == undefined) { options = ns; ns = {}; }
-			Resolver[name] = Resolver(ns,options);
+            ns = ns || {};
+			Resolver[name] = Resolver(ns,options || {});
 			Resolver[name].named = name;
 			}
+        if (name_expr.length>1 && expr) {
+            return Resolver[name](expr);
+        }
 		return Resolver[name];
 	}
 
 	// Resolver({})
 	// Resolver({},{options})
 	options = ns || {};
-	ns = name;
+	ns = name_andor_expr;
 
 	function _resolve(names,subnames,onundefined) {
         var top = ns;
