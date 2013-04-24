@@ -565,6 +565,73 @@
 		"":{}
 	};
 
+	/*
+		Default roles for determining effective role
+	*/
+	var ROLE = {
+		//TODO optional tweak role function
+
+		form: { role:"form" },
+		iframe: { role:"presentation"},
+		object: { role:"presentation"},
+		a: { role:"link" },
+		img: { role:"img" },
+
+		label: { role:"note" },
+		input: {
+			role: "textbox",
+			//TODO tweak: tweakInputRole(role,el,parent)
+			type: {
+				// text: number: date: time: url: email:
+				// image: file: tel: search: password: hidden:
+				range:"slider", checkbox:"checkbox", radio:"radio",
+				button:"button", submit:"button", reset:"button"
+			}
+		},
+		select: { role: "listbox" },
+		button: { role:"button" },
+		textarea: { role:"textbox" },
+		fieldset: { role:"group" },
+		progress: { role:"progressbar" },
+
+		"default": {
+			role:"default"
+		}
+	};
+
+	/*
+		ROLE
+		1) if stateful, by stateful("role")
+		1) by role
+		2) by implied role (tag,type)
+	*/
+	function effectiveRole(el) {
+		var role;
+		if (el.stateful) {
+			role = el.stateful("impl.role","undefined");
+			if (role) return role;
+		}
+
+		// explicit role attribute
+		role = el.getAttribute("role");
+		if (role) return role;
+
+		// implicit
+		var tag = el.tagName || el.nodeName || "default";
+		var desc = ROLE[tag.toLowerCase()] || ROLE["default"];
+		role = desc.role;
+
+		if (desc.type&&el.type) {
+			role = desc.type[el.type] || role;
+		}
+		if (desc.tweak) role = desc.tweak(role,el);
+
+		return role;
+	}
+	effectiveRole.ROLE = ROLE;
+	essential.set("effectiveRole",effectiveRole);
+
+
 	function MutableEvent_withActionInfo() {
 		var element = this.target;
 		// role of element or ancestor
@@ -573,7 +640,7 @@
 		while(element && element.tagName) {
 			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
 
-			var role = element.getAttribute("role");
+			var role = element.getAttribute("role") || effectiveRole(element);
 			switch(role) {
 				case "button":
 				case "link":
@@ -589,6 +656,7 @@
 					//TODO should links deduct actions and name from href
 					element = null;
 					break;
+				/*
 				case null:
 					switch(element.tagName) {
 						case "BUTTON":
@@ -606,6 +674,7 @@
 							break;
 					}
 					break;
+				*/
 			}
 			if (element) element = element.parentNode;
 		}

@@ -220,6 +220,27 @@ test('Enhance element early or delayed',function() {
 
 //TODO layout and discard are optional handlers
 
+test("Effective Element Role",function() {
+
+	var HTMLElement = Resolver("essential")("HTMLElement"),
+		StatefulResolver = Resolver("essential")("StatefulResolver"),
+		effectiveRole = Resolver("essential")("effectiveRole");
+
+	equal(effectiveRole(HTMLElement("div",{})),"default");
+	equal(effectiveRole(HTMLElement("div",{"role":"button"})),"button");
+	equal(effectiveRole(HTMLElement("input",{"type":"range"})),"slider");
+	equal(effectiveRole(HTMLElement("select",{})),"listbox");
+
+	var div = HTMLElement("div",{ "class":"abc"});
+	StatefulResolver(div).set("impl.role","presenter");
+	equal(effectiveRole(div),"presenter");
+
+	var div = HTMLElement("div",{ "class":"abc"});
+	StatefulResolver(div);
+	equal(effectiveRole(div),"default");
+	equal(StatefulResolver(div)("impl","undefined"),undefined);
+});
+
 function makeFieldSpy() {
 	var fieldSpy = sinon.spy();
 	fieldSpy.prototype.destroy = sinon.spy();
