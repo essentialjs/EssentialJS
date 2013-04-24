@@ -73,6 +73,8 @@
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
+	_Layouter.prototype.updateActiveArea = function(areaName,el) {}
+
 	/* Laid out element within a container */
 	function _Laidout(key,el,conf) {
 
@@ -356,8 +358,7 @@
 	/*
 		Area Activation
 	*/
-	var _activeAreaName,_liveAreas=false, stages = [];
-	essential.set("stages",stages);
+	var _activeAreaName,_liveAreas=false;
 
 	function activateArea(areaName) {
 		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
@@ -365,8 +366,9 @@
 			return;
 		}
 		
-		for(var i=0,s; s = stages[i]; ++i) {
-			s.updateActiveArea(areaName);
+		for(var n in EnhancedDescriptor.all) {
+			var desc = EnhancedDescriptor.all[n];
+			if (desc.layouter) desc.layouter.updateActiveArea(areaName,desc.el);
 		}
 		_activeAreaName = areaName;
 		// only use DocumentRoles layout if DOM is ready
@@ -426,6 +428,10 @@
 
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
+		if (typeof value == "object") {
+			if (value["introduction-area"]) this.resolver.declare("introduction-area",value["introduction-area"]);
+			if (value["authenticated-area"]) this.resolver.declare("authenticated-area",value["authenticated-area"]);
+		}
 	}; 
 
 	_Scripted.prototype.modules = { "domReady":true };	// keep track of what modules are loaded
@@ -594,6 +600,7 @@
 			//TODO unapply if another is applied
 			this.applyBody();
 		}
+		//TODO apply to other destinations?
 	};
 
 	SubPage.prototype.loadedPageError = function(status) {
@@ -640,6 +647,7 @@
 			}
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
+		this.applied = true;
 		enhanceUnhandledElements();
 	};
 
@@ -662,6 +670,7 @@
 			}
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 		}
+		this.applied = false;
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -782,6 +791,30 @@
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
 
+	ApplicationConfig.prototype.getIntroductionArea = function() {
+		var pages = this.resolver("pages");
+		for(var n in pages) {
+			var page = pages[n];
+			if (page.applied) {
+				var area = page.resolver("introduction-area","null");
+				if (area) return area;
+			}
+		}
+		return this.resolver("introduction-area","null") || "introduction";
+	};
+
+	ApplicationConfig.prototype.getAuthenticatedArea = function() {
+		var pages = this.resolver("pages");
+		for(var n in pages) {
+			var page = pages[n];
+			if (page.applied) {
+				var area = page.resolver("authenticated-area","null");
+				if (area) return area;
+			}
+		}
+		return this.resolver("authenticated-area","null") || "authenticated";
+	};
+
 	ApplicationConfig.prototype.page = function(url,options,content,content2) {
 		//this.pages.declare(key,value);
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
@@ -821,6 +854,14 @@
 		//TODO time to default_enhance yet?
 
 		//TODO enhance active page
+		var pages = pageResolver("pages");
+		for(var n in pages) {
+			var page = pages[n];
+			if (page.applied) {
+				var descs = page.resolver("descriptors");
+				dr._enhance_descs(descs);
+			}
+		}
 	}
 
 	ApplicationConfig.prototype.onStateChange = function(ev) {
@@ -833,10 +874,8 @@
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
-					for(var i=0,s; s = stages[i]; ++i) {
-						if (ev.base.authenticated) activateArea(s.getAuthenticatedArea());
-						else activateArea(s.getIntroductionArea());
-					}
+					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
 				}
 				break;
 			case "loadingScripts":
@@ -876,7 +915,9 @@
 				} 
 				break;
 			case "authenticated":
-				for(var i=0,s; s = stages[i]; ++i) activateArea(ev.base.authenticated? s.getAuthenticatedArea():s.getIntroductionArea());
+				var ap = ev.data;
+				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+				else activateArea(ap.getIntroductionArea());
 				// no break
 			case "authorised":
 			case "configured":

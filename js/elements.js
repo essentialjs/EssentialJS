@@ -644,25 +644,13 @@
 		this.type = conf.layouter;
 		this.areaNames = conf["area-names"];
 		this.activeArea = null;
-		this.introductionArea = conf["introduction-area"] || "introduction";
-		this.authenticatedArea = conf["authenticated-area"] || "authenticated";
 
 		this.baseClass = conf["base-class"];
 		if (this.baseClass) this.baseClass += " ";
 		else this.baseClass = "";
-
-		essential("stages").push(this); // for area updates
 	}
 	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
 	Layouter.variant("area-stage",StageLayouter);
-
-	_StageLayouter.prototype.getIntroductionArea = function() {
-		return this.introductionArea;
-	};
-
-	_StageLayouter.prototype.getAuthenticatedArea = function() {
-		return this.authenticatedArea;
-	};
 
 	_StageLayouter.prototype.refreshClass = function(el) {
 		var areaClasses = [];
@@ -674,9 +662,9 @@
 		if (el.className != newClass) el.className = newClass;
 	};
 
-	_StageLayouter.prototype.updateActiveArea = function(areaName) {
+	_StageLayouter.prototype.updateActiveArea = function(areaName,el) {
 		this.activeArea = areaName;
-		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
+		this.refreshClass(el); //TODO on delay	
 	};
 
 	function _MemberLaidout(key,el,conf) {

@@ -131,3 +131,15 @@ if (location.protocol == "http:") asyncTest("Application Config SubPage not foun
 
 //TODO require in config scripts
 
+test("Launching base page to area",function(){
+	ok(1,"Configuring introduction-area on StageLayouter");
+	ok(1,"Configuring authenticated-area on StageLayouter");
+
+})
+
+test("Launching sub page to area",function(){
+	ok(1,"Configuring introduction-area on StageLayouter in sub-page");
+	ok(1,"Configuring authenticated-area on StageLayouter in sub-page");
+	
+})
+

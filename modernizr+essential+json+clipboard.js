@@ -1150,33 +1150,55 @@ window.Modernizr = (function( window, document, undefined ) {
 */
 
 
-function Resolver(name,ns,options)
+function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	switch(typeof(name)) {
+	switch(typeof(name_andor_expr)) {
 	case "undefined":
 		// Resolver()
 		return Resolver["default"];
 		
 	case "string":
+        var name_expr = name_andor_expr.split("::");
+        var name = name_expr[0] || "default", expr = name_expr[1];
+        if (arguments.length==1) ns = {};
+
 		// Resolver("abc")
 		// Resolver("abc",null)
 		// Resolver("abc",{})
 		// Resolver("abc",{},{options})
 		if (Resolver[name] == undefined) {
 			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
-			if (options == undefined) { options = ns; ns = {}; }
-			Resolver[name] = Resolver(ns,options);
+			Resolver[name] = Resolver(ns,options || {});
 			Resolver[name].named = name;
 			}
+        if (name_expr.length>1 && expr) {
+            var call = "reference";
+            switch(ns) {
+                case "generate":
+                case "null":
+                case "undefined":
+                case "throw":
+                    return Resolver[name].get(expr,ns);
+
+                default:
+                case "reference":
+                    return Resolver[name].reference(expr)
+            }
+            return Resolver[name][call](expr);
+        }
 		return Resolver[name];
+
+    case "function":
+    case "object":
+        // Resolver({})
+        // Resolver({},{options})
+        options = ns || {};
+        ns = name_andor_expr;
+        break;
 	}
 
-	// Resolver({})
-	// Resolver({},{options})
-	options = ns || {};
-	ns = name;
 
 	function _resolve(names,subnames,onundefined) {
         var top = ns;
@@ -2838,6 +2860,73 @@ Generator.ObjectGenerator = Generator(Object);
 		"":{}
 	};
 
+	/*
+		Default roles for determining effective role
+	*/
+	var ROLE = {
+		//TODO optional tweak role function
+
+		form: { role:"form" },
+		iframe: { role:"presentation"},
+		object: { role:"presentation"},
+		a: { role:"link" },
+		img: { role:"img" },
+
+		label: { role:"note" },
+		input: {
+			role: "textbox",
+			//TODO tweak: tweakInputRole(role,el,parent)
+			type: {
+				// text: number: date: time: url: email:
+				// image: file: tel: search: password: hidden:
+				range:"slider", checkbox:"checkbox", radio:"radio",
+				button:"button", submit:"button", reset:"button"
+			}
+		},
+		select: { role: "listbox" },
+		button: { role:"button" },
+		textarea: { role:"textbox" },
+		fieldset: { role:"group" },
+		progress: { role:"progressbar" },
+
+		"default": {
+			role:"default"
+		}
+	};
+
+	/*
+		ROLE
+		1) if stateful, by stateful("role")
+		1) by role
+		2) by implied role (tag,type)
+	*/
+	function effectiveRole(el) {
+		var role;
+		if (el.stateful) {
+			role = el.stateful("impl.role","undefined");
+			if (role) return role;
+		}
+
+		// explicit role attribute
+		role = el.getAttribute("role");
+		if (role) return role;
+
+		// implicit
+		var tag = el.tagName || el.nodeName || "default";
+		var desc = ROLE[tag.toLowerCase()] || ROLE["default"];
+		role = desc.role;
+
+		if (desc.type&&el.type) {
+			role = desc.type[el.type] || role;
+		}
+		if (desc.tweak) role = desc.tweak(role,el);
+
+		return role;
+	}
+	effectiveRole.ROLE = ROLE;
+	essential.set("effectiveRole",effectiveRole);
+
+
 	function MutableEvent_withActionInfo() {
 		var element = this.target;
 		// role of element or ancestor
@@ -2846,7 +2935,7 @@ Generator.ObjectGenerator = Generator(Object);
 		while(element && element.tagName) {
 			if (element.getElementById || element.getAttribute == undefined) return this; // document element not applicable
 
-			var role = element.getAttribute("role");
+			var role = element.getAttribute("role") || effectiveRole(element);
 			switch(role) {
 				case "button":
 				case "link":
@@ -2862,8 +2951,8 @@ Generator.ObjectGenerator = Generator(Object);
 					//TODO should links deduct actions and name from href
 					element = null;
 					break;
+				/*
 				case null:
-					//TODO effective role for stateful
 					switch(element.tagName) {
 						case "BUTTON":
 						case "button":
@@ -2880,6 +2969,7 @@ Generator.ObjectGenerator = Generator(Object);
 							break;
 					}
 					break;
+				*/
 			}
 			if (element) element = element.parentNode;
 		}
@@ -3623,6 +3713,8 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
+	_Layouter.prototype.updateActiveArea = function(areaName,el) {}
+
 	/* Laid out element within a container */
 	function _Laidout(key,el,conf) {
 
@@ -3906,8 +3998,7 @@ Generator.ObjectGenerator = Generator(Object);
 	/*
 		Area Activation
 	*/
-	var _activeAreaName,_liveAreas=false, stages = [];
-	essential.set("stages",stages);
+	var _activeAreaName,_liveAreas=false;
 
 	function activateArea(areaName) {
 		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
@@ -3915,8 +4006,9 @@ Generator.ObjectGenerator = Generator(Object);
 			return;
 		}
 		
-		for(var i=0,s; s = stages[i]; ++i) {
-			s.updateActiveArea(areaName);
+		for(var n in EnhancedDescriptor.all) {
+			var desc = EnhancedDescriptor.all[n];
+			if (desc.layouter) desc.layouter.updateActiveArea(areaName,desc.el);
 		}
 		_activeAreaName = areaName;
 		// only use DocumentRoles layout if DOM is ready
@@ -3976,6 +4068,10 @@ Generator.ObjectGenerator = Generator(Object);
 
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
+		if (typeof value == "object") {
+			if (value["introduction-area"]) this.resolver.declare("introduction-area",value["introduction-area"]);
+			if (value["authenticated-area"]) this.resolver.declare("authenticated-area",value["authenticated-area"]);
+		}
 	}; 
 
 	_Scripted.prototype.modules = { "domReady":true };	// keep track of what modules are loaded
@@ -4144,6 +4240,7 @@ Generator.ObjectGenerator = Generator(Object);
 			//TODO unapply if another is applied
 			this.applyBody();
 		}
+		//TODO apply to other destinations?
 	};
 
 	SubPage.prototype.loadedPageError = function(status) {
@@ -4190,6 +4287,7 @@ Generator.ObjectGenerator = Generator(Object);
 			}
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
+		this.applied = true;
 		enhanceUnhandledElements();
 	};
 
@@ -4212,6 +4310,7 @@ Generator.ObjectGenerator = Generator(Object);
 			}
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 		}
+		this.applied = false;
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -4332,6 +4431,30 @@ Generator.ObjectGenerator = Generator(Object);
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
 
+	ApplicationConfig.prototype.getIntroductionArea = function() {
+		var pages = this.resolver("pages");
+		for(var n in pages) {
+			var page = pages[n];
+			if (page.applied) {
+				var area = page.resolver("introduction-area","null");
+				if (area) return area;
+			}
+		}
+		return this.resolver("introduction-area","null") || "introduction";
+	};
+
+	ApplicationConfig.prototype.getAuthenticatedArea = function() {
+		var pages = this.resolver("pages");
+		for(var n in pages) {
+			var page = pages[n];
+			if (page.applied) {
+				var area = page.resolver("authenticated-area","null");
+				if (area) return area;
+			}
+		}
+		return this.resolver("authenticated-area","null") || "authenticated";
+	};
+
 	ApplicationConfig.prototype.page = function(url,options,content,content2) {
 		//this.pages.declare(key,value);
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
@@ -4371,6 +4494,14 @@ Generator.ObjectGenerator = Generator(Object);
 		//TODO time to default_enhance yet?
 
 		//TODO enhance active page
+		var pages = pageResolver("pages");
+		for(var n in pages) {
+			var page = pages[n];
+			if (page.applied) {
+				var descs = page.resolver("descriptors");
+				dr._enhance_descs(descs);
+			}
+		}
 	}
 
 	ApplicationConfig.prototype.onStateChange = function(ev) {
@@ -4383,10 +4514,8 @@ Generator.ObjectGenerator = Generator(Object);
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
-					for(var i=0,s; s = stages[i]; ++i) {
-						if (ev.base.authenticated) activateArea(s.getAuthenticatedArea());
-						else activateArea(s.getIntroductionArea());
-					}
+					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
 				}
 				break;
 			case "loadingScripts":
@@ -4426,7 +4555,9 @@ Generator.ObjectGenerator = Generator(Object);
 				} 
 				break;
 			case "authenticated":
-				for(var i=0,s; s = stages[i]; ++i) activateArea(ev.base.authenticated? s.getAuthenticatedArea():s.getIntroductionArea());
+				var ap = ev.data;
+				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+				else activateArea(ap.getIntroductionArea());
 				// no break
 			case "authorised":
 			case "configured":
@@ -5971,25 +6102,13 @@ function(scripts) {
 		this.type = conf.layouter;
 		this.areaNames = conf["area-names"];
 		this.activeArea = null;
-		this.introductionArea = conf["introduction-area"] || "introduction";
-		this.authenticatedArea = conf["authenticated-area"] || "authenticated";
 
 		this.baseClass = conf["base-class"];
 		if (this.baseClass) this.baseClass += " ";
 		else this.baseClass = "";
-
-		essential("stages").push(this); // for area updates
 	}
 	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
 	Layouter.variant("area-stage",StageLayouter);
-
-	_StageLayouter.prototype.getIntroductionArea = function() {
-		return this.introductionArea;
-	};
-
-	_StageLayouter.prototype.getAuthenticatedArea = function() {
-		return this.authenticatedArea;
-	};
 
 	_StageLayouter.prototype.refreshClass = function(el) {
 		var areaClasses = [];
@@ -6001,9 +6120,9 @@ function(scripts) {
 		if (el.className != newClass) el.className = newClass;
 	};
 
-	_StageLayouter.prototype.updateActiveArea = function(areaName) {
+	_StageLayouter.prototype.updateActiveArea = function(areaName,el) {
 		this.activeArea = areaName;
-		this.refreshClass(document.getElementById(this.key)); //TODO on delay	
+		this.refreshClass(el); //TODO on delay	
 	};
 
 	function _MemberLaidout(key,el,conf) {
