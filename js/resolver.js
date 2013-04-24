@@ -18,26 +18,43 @@ function Resolver(name_andor_expr,ns,options)
 	case "string":
         var name_expr = name_andor_expr.split("::");
         var name = name_expr[0] || "default", expr = name_expr[1];
+        if (arguments.length==1) ns = {};
+
 		// Resolver("abc")
 		// Resolver("abc",null)
 		// Resolver("abc",{})
 		// Resolver("abc",{},{options})
 		if (Resolver[name] == undefined) {
 			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
-            ns = ns || {};
 			Resolver[name] = Resolver(ns,options || {});
 			Resolver[name].named = name;
 			}
         if (name_expr.length>1 && expr) {
-            return Resolver[name](expr);
+            var call = "reference";
+            switch(ns) {
+                case "generate":
+                case "null":
+                case "undefined":
+                case "throw":
+                    return Resolver[name].get(expr,ns);
+
+                default:
+                case "reference":
+                    return Resolver[name].reference(expr)
+            }
+            return Resolver[name][call](expr);
         }
 		return Resolver[name];
+
+    case "function":
+    case "object":
+        // Resolver({})
+        // Resolver({},{options})
+        options = ns || {};
+        ns = name_andor_expr;
+        break;
 	}
 
-	// Resolver({})
-	// Resolver({},{options})
-	options = ns || {};
-	ns = name_andor_expr;
 
 	function _resolve(names,subnames,onundefined) {
         var top = ns;
