@@ -403,34 +403,18 @@
 	function refreshRoleLayoutCallback(dr,layoutHandler) {
 		// called on EnhancedDescription
 		return function() {
-			var updateLayout = false,
-				ow = this.el.offsetWidth, 
-				oh  = this.el.offsetHeight,
-				sw = this.el.scrollWidth,
-				sh = this.el.scrollHeight,
-				displayed = !(ow == 0 && oh == 0);
-			if (this.layout.displayed != displayed) {
-				this.layout.displayed = displayed;
-				updateLayout = true;
-			}
+			var updateLayout = this.needUpdateLayout();
 
-			if (this.layout.width != ow || this.layout.height != oh) {
-				this.layout.width = ow;
-				this.layout.height = oh;
-				updateLayout = true
-			}
-			if (this.layout.contentWidth != sw || this.layout.contentHeight != sh) {
-				this.layout.contentWidth = sw;
-				this.layout.contentHeight = sh;
-				updateLayout = true
-			}
 			if (this.layout.area != getActiveArea()) { 
 				this.layout.area = getActiveArea();
 				updateLayout = true;
 			}
 			if (updateLayout) {
 				//debugger;
-				layoutHandler.call(dr,this.el,this.layout,this.instance);	
+				layoutHandler.call(dr,this.el,this.layout,this.instance);
+				var layouter = this.el.layouter, laidout = this.el.laidout;
+				if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
+				if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
 			}	
 		};
 	}
@@ -510,11 +494,12 @@
 	};
 
 	_DocumentRoles.prototype._resize_descs = function() {
+		//TODO migrate to desc.refresh
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
+			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
 			if (desc.enhanced && !this.discarded && this.handlers.layout[desc.role]) {
-				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
@@ -524,7 +509,7 @@
 						// set dimensions and let delayed do it
 					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
 						// call now
-						this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+						desc.refresh();
 						desc.layout.lastDirectCall = now;
 					} else {
 						// call in a bit
@@ -533,47 +518,13 @@
 						(function(desc){
 							desc.layout.delayed = true;
 							setTimeout(function(){
-								DocumentRoles().handlers.layout[desc.role].call(DocumentRoles(),desc.el,desc.layout,desc.instance);
+								desc.refresh();
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
 							},delay);
 						})(desc);
 					}
 				}
-			}
-		}
-	};
-
-	_DocumentRoles.prototype._layout_descs = function() {
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
-
-			if (desc.enhanced && !desc.discarded && this.handlers.layout[desc.role]) {
-				var updateLayout = false,
-					ow = desc.el.offsetWidth, 
-					oh  = desc.el.offsetHeight,
-					sw = desc.el.scrollWidth,
-					sh = desc.el.scrollHeight,
-					displayed = !(ow == 0 && oh == 0);
-				if (desc.layout.displayed != displayed) {
-					desc.layout.displayed = displayed;
-					updateLayout = true;
-				}
-				if (desc.layout.width != ow || desc.layout.height != oh) {
-					desc.layout.width = ow;
-					desc.layout.height = oh;
-					updateLayout = true
-				}
-				if (desc.layout.contentWidth != sw || desc.layout.contentHeight != sh) {
-					desc.layout.contentWidth = sw;
-					desc.layout.contentHeight = sh;
-					updateLayout = true
-				}
-				if (desc.layout.area != getActiveArea()) { 
-					desc.layout.area = getActiveArea();
-					updateLayout = true;
-				}
-				if (updateLayout) this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
 	};

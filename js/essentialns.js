@@ -842,9 +842,78 @@
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
-	function defaultEnhancedRefresh(desc) {
 
+	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
+
+		var roles = role? role.split(" ") : [];
+
+		this.uniqueId = uniqueId;
+		this.roles = roles;
+		this.role = roles[0]; //TODO document that the first role is the switch for enhance
+		this.el = el;
+		this.conf = conf || {};
+		this.instance = null;
+		this.layout = {
+			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
+			"lastDirectCall": 0
+		};
+		this.enhanced = false;
+		this.discarded = false;
 	}
+
+	_EnhancedDescriptor.prototype.refresh = function() {
+
+		var updateLayout = this.needUpdateLayout();
+		
+		// if (this.layout.area != getActiveArea()) { 
+		// 	this.layout.area = getActiveArea();
+		// 	updateLayout = true;
+		// }
+		if (updateLayout) {
+			var layouter = this.el.layouter, laidout = this.el.laidout;
+			if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
+			if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
+		}	
+	};
+
+	_EnhancedDescriptor.prototype.liveCheck = function() {
+		if (!this.enhanced || this.discarded) return;
+		var inDom = contains(document.body,this.el);
+		//TODO handle subpages
+		if (!inDom) {
+			// discard it
+			//TODO anything else ?
+			callCleaners(this.el);
+			delete this.el;
+			this.discarded = true;					
+		}
+	};
+
+	_EnhancedDescriptor.prototype.needUpdateLayout = function() {
+		var updateLayout = false,
+			ow = this.el.offsetWidth, 
+			oh  = this.el.offsetHeight,
+			sw = this.el.scrollWidth,
+			sh = this.el.scrollHeight,
+			displayed = !(ow == 0 && oh == 0);
+
+		if (this.layout.displayed != displayed) {
+			this.layout.displayed = displayed;
+			updateLayout = true;
+		}
+
+		if (this.layout.width != ow || this.layout.height != oh) {
+			this.layout.width = ow;
+			this.layout.height = oh;
+			updateLayout = true
+		}
+		if (this.layout.contentWidth != sw || this.layout.contentHeight != sh) {
+			this.layout.contentWidth = sw;
+			this.layout.contentHeight = sh;
+			updateLayout = true
+		}
+		return updateLayout;
+	};
 
 	// used to emulate IE uniqueId property
 	var lastUniqueId = 555;
@@ -855,37 +924,7 @@
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
 		var desc = enhancedElements[uniqueId];
 		if (desc && !force) return desc;
-
-		var roles = role? role.split(" ") : [];
-		var desc = {
-			"uniqueId": uniqueId,
-			"roles": roles,
-			"role": roles[0], //TODO document that the first role is the switch for enhance
-			"el": el,
-			"conf":conf || {},
-			"instance": null,
-			"layout": {
-				"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
-				"lastDirectCall": 0
-			},
-
-			"refresh": defaultEnhancedRefresh,
-
-			"liveCheck": function() {
-				if (!this.enhanced || this.discarded) return;
-				var inDom = contains(document.body,this.el);
-				if (!inDom) {
-					// discard it
-					//TODO anything else ?
-					callCleaners(this.el);
-					delete this.el;
-					this.discarded = true;					
-				}
-			},
-
-			"enhanced": false,
-			"discarded": false
-		};
+		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueId);
 		enhancedElements[uniqueId] = desc;
 		var descriptors = page.resolver("descriptors");
 		descriptors[uniqueId] = desc;
@@ -894,6 +933,7 @@
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
+	EnhancedDescriptor.maintainer = null; // interval handler
 	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
 
 	function discardEnhancedElements() 
@@ -909,8 +949,10 @@
 		enhancedElements = essential.set("enhancedElements",{});
 	}
 
-	function maintainEnhancedElements() {
-
+	EnhancedDescriptor.maintainAll = function() {
+		if (document.body == undefined) return;
+		
+		//TODO list of elements in effect
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
@@ -925,7 +967,6 @@
 			}
 		}
 	}
-	var enhancedElementsMaintainer = setInterval(maintainEnhancedElements,330); // minimum frequency 3 per sec
 
 	function discardEnhancedWindows() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) {
@@ -1006,8 +1047,8 @@
 		}
 
 		discardRestricted();
-		if (enhancedElementsMaintainer) clearInterval(enhancedElementsMaintainer);
-		enhancedElementsMaintainer = null;
+		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
+		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
 		discardEnhancedWindows();
 

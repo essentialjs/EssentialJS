@@ -371,11 +371,7 @@
 			if (desc.layouter) desc.layouter.updateActiveArea(areaName,desc.el);
 		}
 		_activeAreaName = areaName;
-		// only use DocumentRoles layout if DOM is ready
-		if (document.body) {
-			var dr = essential("DocumentRoles")();
-			dr._layout_descs(); //TODO could this be done somewhere else?	
-		} 
+		EnhancedDescriptor.maintainAll();
 	}
 	essential.set("activateArea",activateArea);
 	
@@ -1106,6 +1102,7 @@
 	placement.notifyNeeded = false;
 	essential.declare("placement",placement);
 
+	//TODO make this testable
 	placement.broadcaster = setInterval(function() {
 		placement.measure();
 		for(var i=0,w; w = enhancedWindows[i]; ++i) {
