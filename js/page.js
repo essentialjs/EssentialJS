@@ -538,6 +538,10 @@
 	}
 	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
 
+	SubPage.prototype.page = function(url) {
+		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
+	};
+
 	// keep a head prefix with meta tags for iframe/window subpages
 	SubPage.prototype.headPrefix = ['<head>'];
 	var metas = (document.head || document.documentElement.firstChild).getElementsByTagName("meta");
