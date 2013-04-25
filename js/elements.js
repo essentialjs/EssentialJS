@@ -409,12 +409,13 @@
 				this.layout.area = getActiveArea();
 				updateLayout = true;
 			}
-			if (updateLayout) {
+			if (updateLayout || this.flaggedLayout) {
 				//debugger;
 				layoutHandler.call(dr,this.el,this.layout,this.instance);
 				var layouter = this.el.layouter, laidout = this.el.laidout;
 				if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
 				if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
+                this.flaggedLayout = false;
 			}	
 		};
 	}
@@ -440,16 +441,18 @@
 
 				}
 				var k = "";//TODO declare(k,...)
-				if (desc.conf && desc.conf.layouter) {
-					desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf);
+				if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
+					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf);
+                    desc.flaggedLayout = true;
 				}
-				if (desc.conf && desc.conf.laidout) {
-					desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf);
+				if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
+					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf);
+                    desc.flaggedLayout = true;
 				}
 
 				++enhancedCount;
 
-				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); 
+				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); //TODO either enhanced, layouter, or laidout
 			} 
 
 			if (! desc.enhanced) incomplete = true;

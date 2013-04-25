@@ -220,6 +220,65 @@ test('Enhance element early or delayed',function() {
 
 //TODO layout and discard are optional handlers
 
+function _TestLayouter(key,el,config) {
+	this.key = key;
+	this.type = config.layouter;
+	this.el = el;
+	this.config = config;
+
+	this.sizing = {};
+}
+Resolver("essential")("Layouter").variant("test-group",Generator(_TestLayouter,Resolver("essential")("Layouter"),{
+	prototype:{
+		layout: sinon.stub()
+		// function(el,layout) {
+		// 	debugger;
+		// }
+	}
+}));
+
+
+test("Enhance layouter element",function() {
+	var EnhancedDescriptor = Resolver("essential")("EnhancedDescriptor");
+	var DocumentRoles = Resolver("essential")("DocumentRoles");
+	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var appConfig = ApplicationConfig();
+
+	var handlers = {
+		"enhance": {
+			"early": sinon.stub()
+		},
+		"layout": {
+			"early": sinon.stub()
+		},
+		"discard": {
+			"early": sinon.stub()
+		}
+	};
+
+	var page = appConfig.page("/test/pages/a3.html",{},[
+		'<html><head>', '', '</head><body>',
+
+		'<span role="delayed"></span>',
+		'<span data-role="',"'layouter':'test-group'",'"></span>',
+
+		'</body>'
+		].join(""));
+
+
+	var dr = DocumentRoles(handlers,page);
+	equal(typeof page.body.firstChild.nextSibling.layouter,"object");
+	var desc = page.resolver("descriptors")[page.body.firstChild.nextSibling.uniqueId];
+	// page.body.firstChild.nextSibling.layouter
+	ok(desc);
+	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
+	ok(desc.flaggedLayout);
+	
+	EnhancedDescriptor.maintainAll();
+	equal(_TestLayouter.prototype.layout.callCount,1);
+});
+
+
 test("Effective Element Role",function() {
 
 	var HTMLElement = Resolver("essential")("HTMLElement"),
@@ -351,7 +410,7 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 		}
 	};
 
-	var page = appConfig.page("/test/pages/a3.html",{},[
+	var page = appConfig.page("/test/pages/a4.html",{},[
 		'<html><head>', '', '</head><body>',
 
 		'<span role="navigation">',
@@ -421,7 +480,7 @@ test('Role navigation action',function(){
 		}
 	};
 
-	var page = appConfig.page("/test/pages/a4.html",{},[
+	var page = appConfig.page("/test/pages/a5.html",{},[
 		'<html><head>', '', '</head><body>',
 
 		'<span role="navigation" action="a/b/c">',

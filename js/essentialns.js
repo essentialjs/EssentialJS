@@ -869,10 +869,12 @@
 		// 	this.layout.area = getActiveArea();
 		// 	updateLayout = true;
 		// }
-		if (updateLayout) {
+
+		if (updateLayout || this.flaggedLayout) {
 			var layouter = this.el.layouter, laidout = this.el.laidout;
 			if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
 			if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
+            this.flaggedLayout = false;
 		}	
 	};
 
@@ -951,13 +953,13 @@
 
 	EnhancedDescriptor.maintainAll = function() {
 		if (document.body == undefined) return;
-		
+
 		//TODO list of elements in effect
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
 			desc.liveCheck();
-			if (desc.enhanced) {
+			if (desc.enhanced || desc.layouter || desc.laidout) {
 				if (!desc.discarded) {
 					// maintain it
 					desc.refresh();
