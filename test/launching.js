@@ -108,7 +108,7 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		ok(config);
 		equal(config["introduction-area"],"intro");
 		equal(config["authenticated-area"],"explorer");
-		equal(config["layouter"],"area-stage");
+		equal(config["layouter"],"panel-group"); // overridden by data-role
 
 		clearInterval(interval);
 		start();
