@@ -29,8 +29,8 @@
 		var doc;
 		if (document.implementation && document.implementation.createHTMLDocument) {
 			doc = document.implementation.createHTMLDocument("");
-			if (head && body) {
-				doc.documentElement.innerHTML = '<html><head>' + head + '</head><body>' + body + '</body>';
+			if (arguments.length == 2) {
+				doc.documentElement.innerHTML = '<html><head>' + (head||"") + '</head><body>' + (body||"") + '</body>';
 			}
 			else {
 				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");

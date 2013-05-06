@@ -13,6 +13,10 @@ test("Document Creations",function() {
 	equal(doc.body.id,"a2");
 	equal(doc.body.getAttribute("attr"),"a2");
 
+	var doc = createHTMLDocument("",'<body id="a2" attr="a2"></body>');
+	equal(doc.body.id,"a2");
+	equal(doc.body.getAttribute("attr"),"a2");
+
 	ok(1,"createHTMLDocument head,body");
 	//TODO test the construction in IE
 });
