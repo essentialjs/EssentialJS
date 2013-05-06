@@ -16,7 +16,7 @@ test("Page Resolver",function(){
 	equal(pageResolver("state.connected"),true,"connected");
 	equal(pageResolver("state.configured"),true,"configured");
 	equal(pageResolver("state.fullscreen"),false,"fullscreen");
-	equal(pageResolver("state.launching"),true,"launching");
+	equal(pageResolver("state.launching"),false,"launching");
 	equal(pageResolver("state.launched"),false,"launched");
 	equal(pageResolver("state.livepage"),false,"livepage");
 
@@ -108,7 +108,9 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		ok(config);
 		equal(config["introduction-area"],"intro");
 		equal(config["authenticated-area"],"explorer");
-		equal(config["layouter"],"area-stage");
+		equal(config["layouter"],"panel-group");
+		equal(config["type"],"vertical");
+		deepEqual(config["sizes"],[100,50]);
 
 		clearInterval(interval);
 		start();
