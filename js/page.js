@@ -801,6 +801,9 @@
 
 		this.prepareEnhance();
 
+		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
+		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
+
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) {
 			this._markPermanents();
