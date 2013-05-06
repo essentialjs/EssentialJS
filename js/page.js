@@ -29,8 +29,12 @@
 		var doc;
 		if (document.implementation && document.implementation.createHTMLDocument) {
 			doc = document.implementation.createHTMLDocument("");
-			doc.documentElement.innerHTML = '<html><head>' + head + '</head><body>' + body + '</body>';
-
+			if (head && body) {
+				doc.documentElement.innerHTML = '<html><head>' + head + '</head><body>' + body + '</body>';
+			}
+			else {
+				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
+			}
 		} else  if (window.ActiveXObject) {
 			doc = new ActiveXObject("htmlfile");
 			doc.appendChild(doc.createElement("html"));
@@ -38,9 +42,13 @@
 			var _body = doc.createElement("body");
 			doc.documentElement.appendChild(_head);
 			doc.documentElement.appendChild(_body);
-	debugger;
-			_body.innerHTML = body;
-			if (head != "") _head.innerHTML = head;
+			if (arguments.length == 2) {
+				_body.innerHTML = body;
+				if (head != "") _head.innerHTML = head;
+			} else {
+				//TODO replace html/head/body and move them
+				debugger;
+			}
 
 		} else {
 			return document.createElement("DIV");// dummy default
@@ -48,6 +56,7 @@
 
 		return doc;
 	}
+	essential.declare("createHTMLDocument",createHTMLDocument);
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true }
@@ -460,6 +469,21 @@
 			var declared = this.config(key);
 			if (declared) {
 				config = {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		if (element == this.body) {
+			var declared = this.config("body");
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+		else if (element == this.head) {
+			var declared = this.config("head");
+			if (declared) {
+				config = config || {};
 				for(var n in declared) config[n] = declared[n];
 			}
 		}
