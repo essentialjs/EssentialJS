@@ -605,5 +605,8 @@
 		if (el.stateful) el.stateful.destroy();
 	};
 	
+	DocumentRoles.init_templated = function(el,role,config) {
+		this.contentManaged = true; // templated content skipped
+	};
 
 }();

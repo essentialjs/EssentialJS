@@ -859,7 +859,17 @@
 		};
 		this.enhanced = false;
 		this.discarded = false;
+		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
+
+		this.handlers = page.resolver("handlers");
+		this._init();
 	}
+
+	_EnhancedDescriptor.prototype._init = function() {
+		if (this.role && this.handlers.init[this.role]) {
+			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
+		}
+	};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
 
@@ -922,6 +932,8 @@
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
+		if (!force && role==null && conf==null) return null;
+
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
 		var desc = enhancedElements[uniqueId];

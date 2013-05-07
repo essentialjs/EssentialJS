@@ -3154,7 +3154,17 @@ Generator.ObjectGenerator = Generator(Object);
 		};
 		this.enhanced = false;
 		this.discarded = false;
+		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
+
+		this.handlers = page.resolver("handlers");
+		this._init();
 	}
+
+	_EnhancedDescriptor.prototype._init = function() {
+		if (this.role && this.handlers.init[this.role]) {
+			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
+		}
+	};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
 
@@ -3217,6 +3227,8 @@ Generator.ObjectGenerator = Generator(Object);
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
+		if (!force && role==null && conf==null) return null;
+
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
 		var desc = enhancedElements[uniqueId];
@@ -4024,6 +4036,11 @@ Generator.ObjectGenerator = Generator(Object);
 		"logStatus": false
 	});
 
+	pageResolver.declare("handlers.init",{});
+	pageResolver.declare("handlers.enhance",{});
+	pageResolver.declare("handlers.layout",{});
+	pageResolver.declare("handlers.discard",{});
+
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
 		loading: "loading",
@@ -4209,6 +4226,19 @@ Generator.ObjectGenerator = Generator(Object);
 		return this._getElementRoleConfig(element);
 	};
 
+	_Scripted.prototype._prep = function(el) {
+
+		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
+		while(e) {
+			if (e.attributes) {
+				var conf = this.getConfig(e), role = e.getAttribute("role");
+				var desc = EnhancedDescriptor(e,role,conf,false,this);
+				if (desc==null || !desc.managedContent) this._prep(e);
+			}
+			e = e.nextElementSibling || e.nextSibling;
+		}
+	};
+
 	/*
 		Prepare enhancing elements with roles/layout/laidout
 	*/
@@ -4216,23 +4246,14 @@ Generator.ObjectGenerator = Generator(Object);
 
 		this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
-
-		var descriptors = this.resolver("descriptors");
-		var all = this.body.getElementsByTagName("*");
-		for(var i=0; el = all[i]; ++i) {
-			var conf = this.getConfig(el), role = el.getAttribute("role");
-			if (conf || role) {
-				var desc = EnhancedDescriptor(el,role,conf,false,this);
-				//descriptors[desc.uniqueId] = desc;
-			}
-		}
+		this._prep(this.body);
 	};
 
 
 
 	function _SubPage(appConfig) {
 		// subpage application/config and enhanced element descriptors
-		this.resolver = Resolver({ "config":{}, "descriptors":{} });
+		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers") });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -4338,6 +4359,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		this.documentLoaded = true;
 
+		this.resolver.declare("handlers",pageResolver("handlers"));
 		this.prepareEnhance();
 	};
 
@@ -5966,6 +5988,7 @@ function(scripts) {
 					desc.enhanced = desc.instance === false? false:true;
 
 					var layoutHandler = this.handlers.layout[desc.role];
+					//TODO do this when enhanced?
 					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
 
 				}
@@ -6080,9 +6103,10 @@ function(scripts) {
 	}
 	
 	// Element specific handlers
-	DocumentRoles.presets.declare("handlers.enhance", {});
-	DocumentRoles.presets.declare("handlers.layout", {});
-	DocumentRoles.presets.declare("handlers.discard", {});
+	DocumentRoles.presets.declare("handlers.init", pageResolver("handlers.init"));
+	DocumentRoles.presets.declare("handlers.enhance", pageResolver("handlers.enhance"));
+	DocumentRoles.presets.declare("handlers.layout", pageResolver("handlers.layout"));
+	DocumentRoles.presets.declare("handlers.discard", pageResolver("handlers.discard"));
 
 
 	_DocumentRoles.default_enhance = function(el,role,config) {
@@ -6101,11 +6125,12 @@ function(scripts) {
 	DocumentRoles.useBuiltins = function(list) {
 		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
 		for(var i=0,r; r = list[i]; ++i) {
+			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
 			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
 			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
 			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
 		}
-	}
+	};
 
 	var _scrollbarSize;
 	function scrollbarSize() {
@@ -6774,6 +6799,9 @@ function(scripts) {
 		if (el.stateful) el.stateful.destroy();
 	};
 	
+	DocumentRoles.init_templated = function(el,role,config) {
+		this.contentManaged = true; // templated content skipped
+	};
 
 }();
 Resolver("essential")("ApplicationConfig").restrict({ "singleton":true, "lifecycle":"page" });

@@ -341,6 +341,11 @@
 		"logStatus": false
 	});
 
+	pageResolver.declare("handlers.init",{});
+	pageResolver.declare("handlers.enhance",{});
+	pageResolver.declare("handlers.layout",{});
+	pageResolver.declare("handlers.discard",{});
+
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
 		loading: "loading",
@@ -526,6 +531,19 @@
 		return this._getElementRoleConfig(element);
 	};
 
+	_Scripted.prototype._prep = function(el) {
+
+		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
+		while(e) {
+			if (e.attributes) {
+				var conf = this.getConfig(e), role = e.getAttribute("role");
+				var desc = EnhancedDescriptor(e,role,conf,false,this);
+				if (desc==null || !desc.managedContent) this._prep(e);
+			}
+			e = e.nextElementSibling || e.nextSibling;
+		}
+	};
+
 	/*
 		Prepare enhancing elements with roles/layout/laidout
 	*/
@@ -533,23 +551,14 @@
 
 		this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
-
-		var descriptors = this.resolver("descriptors");
-		var all = this.body.getElementsByTagName("*");
-		for(var i=0; el = all[i]; ++i) {
-			var conf = this.getConfig(el), role = el.getAttribute("role");
-			if (conf || role) {
-				var desc = EnhancedDescriptor(el,role,conf,false,this);
-				//descriptors[desc.uniqueId] = desc;
-			}
-		}
+		this._prep(this.body);
 	};
 
 
 
 	function _SubPage(appConfig) {
 		// subpage application/config and enhanced element descriptors
-		this.resolver = Resolver({ "config":{}, "descriptors":{} });
+		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers") });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -655,6 +664,7 @@
 		}
 		this.documentLoaded = true;
 
+		this.resolver.declare("handlers",pageResolver("handlers"));
 		this.prepareEnhance();
 	};
 

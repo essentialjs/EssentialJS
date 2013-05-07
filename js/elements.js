@@ -437,6 +437,7 @@
 					desc.enhanced = desc.instance === false? false:true;
 
 					var layoutHandler = this.handlers.layout[desc.role];
+					//TODO do this when enhanced?
 					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
 
 				}
@@ -551,9 +552,10 @@
 	}
 	
 	// Element specific handlers
-	DocumentRoles.presets.declare("handlers.enhance", {});
-	DocumentRoles.presets.declare("handlers.layout", {});
-	DocumentRoles.presets.declare("handlers.discard", {});
+	DocumentRoles.presets.declare("handlers.init", pageResolver("handlers.init"));
+	DocumentRoles.presets.declare("handlers.enhance", pageResolver("handlers.enhance"));
+	DocumentRoles.presets.declare("handlers.layout", pageResolver("handlers.layout"));
+	DocumentRoles.presets.declare("handlers.discard", pageResolver("handlers.discard"));
 
 
 	_DocumentRoles.default_enhance = function(el,role,config) {
@@ -572,11 +574,12 @@
 	DocumentRoles.useBuiltins = function(list) {
 		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
 		for(var i=0,r; r = list[i]; ++i) {
+			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
 			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
 			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
 			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
 		}
-	}
+	};
 
 	var _scrollbarSize;
 	function scrollbarSize() {

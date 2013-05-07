@@ -159,6 +159,9 @@ test('Enhance element early or delayed',function() {
 
 
 	var handlers = {
+		"init": {
+
+		},		
 		"enhance": {
 			"early": sinon.stub(),
 			"delayed": sinon.stub()
@@ -173,6 +176,7 @@ test('Enhance element early or delayed',function() {
 		}
 	};
 	handlers.enhance.delayed.returns(false);
+	Resolver("page").set("handlers",handlers);
 
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -245,6 +249,9 @@ test("Enhance layouter element",function() {
 	var appConfig = ApplicationConfig();
 
 	var handlers = {
+		"init": {
+
+		},
 		"enhance": {
 			"early": sinon.stub()
 		},
@@ -255,6 +262,7 @@ test("Enhance layouter element",function() {
 			"early": sinon.stub()
 		}
 	};
+	Resolver("page").set("handlers",handlers);
 
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<html><head>', '', '</head><body>',
