@@ -68,7 +68,7 @@
   </script>
 
 </head>
-<body class="loading" src="pages/index.html">
+<body class="loading" src="pages/index.html" role="application" data-role='"generator":"DemoApplication"'>
   <div id="menu-driven">
     
     <article role="presentation" id="main-stage">
@@ -101,8 +101,8 @@
         <command name="logout" label="Logout">
       </menu>
     </nav>
-
    </header>
+
    <aside id="warnings-and-alerts" role="toolbar" action="info/alerts">
    </aside>
    <aside class="leftmenu">
@@ -120,9 +120,6 @@
   <footer>© Right Here Inc
   </footer>
   
-  <div id="loginShield">
-  </div>
-
   <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
   </div>
   <output data-proxy="html: body.connection.loadingProgress" id="loadingProgress"></output>
@@ -150,50 +147,11 @@
     }));
   </script>
 
-  <div id="sessionBadge">
-   <form action="dialogs/login" autocomplete="off" id="login" method="client" name="login" role="dialog">
-   	<div class="connection-status">
-   		<div class="inner"></div>
-    </div>
-
-	<h1></h1>
-	<output name="loginErrors">The username or password you entered is incorrect, please try again</output>
-
-	<label class="details"><span lang="en">User Name</span><span lang="de">Benutzer</span><span lang="fr">Utilisateur</span></label>
-	<input autofocus="" maxlength="20" name="j_username" type="text">
-
-	<label class="details password"><span lang="en">Password</span><span lang="de">Passwort</span><span lang="fr">Mot de passe</span></label>
-	<input maxlength="20" name="j_password" type="password">
-
-  <div role="note" class="supportDetails">
-  	<h5 name="forgottenPassword" onclick="this.parentNode.stateful.toggle('state.expanded');">
-      <span lang="en">Can't access your account?</span>
-      <span lang="de">Problemen mit den login?</span>
-      <span lang="fr">Voudrai aide?</span>
-    </h5>
-
-    <p lang="en">
-      contact@essentialjs.com<br>
-      +44 80 80 80 80
-    </p>
-    <p lang="de">
-      contact@essentialjs.com<br>
-      +44 80 80 80 80
-    </p>
-    <p lang="fr">
-      contact@essentialjs.com<br>
-      +44 80 80 80 80
-    </p>
-  </div>
-
-	<button name="login" type="submit">Login</button>
-
-   </form>
-   <form action="dialogs/launched" autocomplete="off" id="launched" method="client" name="launched" 
-   	role="dialog">
-   		<h3>Sample User One</h3>
-		<button name="logout" type="submit">X</button>
-   </form>
-  </div>
 </body>
+
+<script id="next-page" type="text/html">
+  <body>
+    How to bundle multiple pages in one for standalone multipage apps
+  </body>
+</script>
 </html>

@@ -16,7 +16,7 @@ test("Page Resolver",function(){
 	equal(pageResolver("state.connected"),true,"connected");
 	equal(pageResolver("state.configured"),true,"configured");
 	equal(pageResolver("state.fullscreen"),false,"fullscreen");
-	equal(pageResolver("state.launching"),true,"launching");
+	equal(pageResolver("state.launching"),false,"launching");
 	equal(pageResolver("state.launched"),false,"launched");
 	equal(pageResolver("state.livepage"),false,"livepage");
 
@@ -109,6 +109,20 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		equal(config["introduction-area"],"intro");
 		equal(config["authenticated-area"],"explorer");
 		equal(config["layouter"],"panel-group"); // overridden by data-role
+		equal(config["type"],"vertical");
+		deepEqual(config["sizes"],[100,50]);
+
+		var config = page.getConfig(page.body);
+		ok(config);
+		equal(config["a"],"a","body data-role attribute");
+		equal(config["b"],"b","body data-role attribute");
+		equal(config["c"],"c","body application/config");
+
+		var config = page.getConfig(page.head);
+		ok(config);
+		equal(config["1"],"1","head data-role attribute");
+		equal(config["2"],"2","head data-role attribute");
+		equal(config["3"],"3","head application/config");
 
 		clearInterval(interval);
 		start();

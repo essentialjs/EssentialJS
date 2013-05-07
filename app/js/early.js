@@ -34,6 +34,11 @@
 		},1000);
 	};
 
+	function _DemoApplication(el,role,config) {
+		console.log("Initialized DemoApplication on",el);
+	}
+	Resolver().declare("DemoApplication",_DemoApplication);
+
 	// manage the loading of the application
 	pageState.on("change",function(ev){
 		if (ev.base.loading) {
