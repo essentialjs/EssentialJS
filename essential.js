@@ -2592,8 +2592,12 @@ Generator.ObjectGenerator = Generator(Object);
 		var doc;
 		if (document.implementation && document.implementation.createHTMLDocument) {
 			doc = document.implementation.createHTMLDocument("");
-			doc.documentElement.innerHTML = '<html><head>' + head + '</head><body>' + body + '</body>';
-
+			if (arguments.length == 2) {
+				doc.documentElement.innerHTML = '<html><head>' + (head||"") + '</head><body>' + (body||"") + '</body>';
+			}
+			else {
+				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
+			}
 		} else  if (window.ActiveXObject) {
 			doc = new ActiveXObject("htmlfile");
 			doc.appendChild(doc.createElement("html"));
@@ -2601,9 +2605,13 @@ Generator.ObjectGenerator = Generator(Object);
 			var _body = doc.createElement("body");
 			doc.documentElement.appendChild(_head);
 			doc.documentElement.appendChild(_body);
-	debugger;
-			_body.innerHTML = body;
-			if (head != "") _head.innerHTML = head;
+			if (arguments.length == 2) {
+				_body.innerHTML = body;
+				if (head != "") _head.innerHTML = head;
+			} else {
+				//TODO replace html/head/body and move them
+				debugger;
+			}
 
 		} else {
 			return document.createElement("DIV");// dummy default
@@ -2611,6 +2619,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		return doc;
 	}
+	essential.declare("createHTMLDocument",createHTMLDocument);
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true }
@@ -3023,6 +3032,21 @@ Generator.ObjectGenerator = Generator(Object);
 			}
 		}
 
+		if (element == this.body) {
+			var declared = this.config("body");
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+		else if (element == this.head) {
+			var declared = this.config("head");
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
 		// mixin the data-role
 		var dataRole = element.getAttribute("data-role");
 		if (dataRole) try {
@@ -3335,6 +3359,9 @@ Generator.ObjectGenerator = Generator(Object);
 		SubPage.prototype.appConfig = this;
 
 		this.prepareEnhance();
+
+		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
+		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) {
