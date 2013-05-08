@@ -538,7 +538,7 @@
 			if (e.attributes) {
 				var conf = this.getConfig(e), role = e.getAttribute("role");
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
-				if (desc==null || !desc.managedContent) this._prep(e);
+				if (desc==null || !desc.contentManaged) this._prep(e);
 			}
 			e = e.nextElementSibling || e.nextSibling;
 		}

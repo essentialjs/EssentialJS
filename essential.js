@@ -2036,6 +2036,7 @@ Generator.ObjectGenerator = Generator(Object);
 		this.discarded = false;
 		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
+		//this.page = page
 		this.handlers = page.resolver("handlers");
 		this._init();
 	}
@@ -2045,6 +2046,8 @@ Generator.ObjectGenerator = Generator(Object);
 			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
 		}
 	};
+
+	//TODO _EnhancedDescriptor.prototype.prepareAncestors = function() {};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
 
@@ -2107,7 +2110,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
-		if (!force && role==null && conf==null) return null;
+		if (!force && role==null && conf==null && arguments.length>=3) return null;
 
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
@@ -3113,7 +3116,7 @@ Generator.ObjectGenerator = Generator(Object);
 			if (e.attributes) {
 				var conf = this.getConfig(e), role = e.getAttribute("role");
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
-				if (desc==null || !desc.managedContent) this._prep(e);
+				if (desc==null || !desc.contentManaged) this._prep(e);
 			}
 			e = e.nextElementSibling || e.nextSibling;
 		}

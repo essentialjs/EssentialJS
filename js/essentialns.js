@@ -861,6 +861,7 @@
 		this.discarded = false;
 		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
+		//this.page = page
 		this.handlers = page.resolver("handlers");
 		this._init();
 	}
@@ -870,6 +871,8 @@
 			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
 		}
 	};
+
+	//TODO _EnhancedDescriptor.prototype.prepareAncestors = function() {};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
 
@@ -932,7 +935,7 @@
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
-		if (!force && role==null && conf==null) return null;
+		if (!force && role==null && conf==null && arguments.length>=3) return null;
 
 		var uniqueId = el.uniqueId;
 		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
