@@ -93,10 +93,13 @@
 	var nativeClassList = !!document.documentElement.classList;
 
 	function readElementState(el,state) {
-		state.disabled = el.disabled || false; // undefined before attach
-		state.readOnly = el.readOnly || false;
-		state.hidden = el.getAttribute("hidden") != null;
-		state.required = el.getAttribute("required") != null;
+
+		for(var n in state_treatment) {
+			var treatment = state_treatment[n], value = undefined;
+			if (treatment.read) value = treatment.read(el,n);
+			if (value == undefined) value = treatment["default"];
+			if (value !== undefined) state[n] = value;
+		}
 	}
 
 	function reflectProperty(el,key,value) {
@@ -153,15 +156,66 @@
 		el[this.property] = value;
 	}
 
+
+	function containsElement(a,b) {
+		return a.contains ?
+			a != b && a.contains(b) :
+			!!(a.compareDocumentPosition(b) & 16);
+   	}
+   	essential.declare("containsElement",containsElement);
+
+	function readPropertyAria(el,key) {
+		var value = el.getAttribute("aria-"+key), result = undefined;
+		if (value != null) result = value != "false" && value != ""; 
+
+		if (el[key] != undefined) result = el[key]; // el.disabled is undefined before attach
+		if (result == undefined && ! containsElement(el.ownerDocument.body,el)) {
+			//TODO shift this to an init function used if not parentNode
+			var value = el.getAttribute(key);
+			if (value != null) result = value != "false";//TODO should this be special config for disabled?,.. && value != ""; 
+		}
+
+		return result;
+	}
+
+	function readAttribute(el,key) {
+		var value = el.getAttribute(key), result = undefined;
+		if (value != null) result = value != "false" && value != ""; 
+
+		return result;
+	}
+
+	function readAttributeAria(el,key) {
+		var value = el.getAttribute("aria-"+key), result = undefined;
+		if (value != null) result = value != "false" && value != ""; 
+
+		var value = el.getAttribute(key);
+		if (value != null) result = value != "false" && value != ""; 
+
+		return result;
+	}
+
+	function readAria(el,key) {
+		var value = el.getAttribute("aria-"+key), result = undefined;
+		if (value != null) result = value != "false" && value != ""; 
+
+		var value = el.getAttribute(key);
+		if (value != null) result = value != "false" && value != ""; 
+
+		return result;
+	}
+
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectAria, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
-		readOnly: { index: 1, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria, property:"ariaRequired" }, //TODO ariaRequired
-		expanded: { index: 4, reflect: reflectAttributeAria, property:"ariaExpanded" } //TODO ariaExpanded
+		disabled: { index: 0, reflect: reflectAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
+		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
+		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
+		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
+		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
+		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" } //TODO ariaChecked ?
+
+		//TODO inert
 		//TODO draggable
 		//TODO contenteditable
-		//TODO checked ariaChecked
 		//TODO tooltip
 		//TODO hover
 		//TODO down ariaPressed
@@ -176,8 +230,6 @@
 			string:
 			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
 			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
-
-
 		*/
 
 		//TODO restricted/forbidden tie in with session specific permissions

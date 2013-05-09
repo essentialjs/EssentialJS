@@ -37,6 +37,50 @@ test("Stateful element initial class",function(){
 	equal(el.classList[2],"c");
 })
 
+test("Initial stateful element state",function() {
+
+	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var HTMLElement = Resolver("essential")("HTMLElement");
+
+	var el = HTMLElement("div",{},
+		'<input type="checkbox" name="a">',
+		'<input type="checkbox" name="b" checked>',
+		'<input type="checkbox" name="c" aria-checked="checked">',
+
+		'<span aria-checked="checked"></span>',
+		'<span aria-expanded="false"></span>',
+		'<span aria-expanded="true"></span>',
+		'<span aria-expanded="expanded"></span>',
+		
+		'<span disabled></span>',
+		'<span aria-disabled="false"></span>',
+		'<span aria-disabled="true"></span>',
+		'');
+	var statefulDiv = StatefulResolver(el,true);
+
+	equal(statefulDiv("state.disabled","undefined"),false);
+	equal(statefulDiv("state.readOnly","undefined"),false);
+	equal(statefulDiv("state.hidden","undefined"),undefined);
+	equal(statefulDiv("state.required","undefined"),undefined);
+	equal(statefulDiv("state.expanded","undefined"),undefined);
+	equal(statefulDiv("state.checked","undefined"),undefined);
+
+	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false);
+	equal(StatefulResolver(el.childNodes[1],true)("state.checked","undefined"),true);
+	// equal(StatefulResolver(el.childNodes[2],true)("state.checked"),true); TODO should aria transfer to checked state
+	equal(StatefulResolver(el.childNodes[3],true)("state.checked","undefined"),true);
+
+	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false);
+	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true);
+	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true);
+
+	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true);
+	equal(StatefulResolver(el.childNodes[8],true)("state.disabled","undefined"),false);
+	equal(StatefulResolver(el.childNodes[9],true)("state.disabled","undefined"),true);
+
+	//TODO hidden required
+})
+
 test("Stateful element state",function(){
 	var StatefulResolver = Resolver("essential")("StatefulResolver");
 
