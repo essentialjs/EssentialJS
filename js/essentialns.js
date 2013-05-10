@@ -622,7 +622,8 @@
 		role = desc.role;
 
 		if (desc.type&&el.type) {
-			role = desc.type[el.type] || role;
+			var type = el.getAttribute("type"); //TODO handlers for unsupported types
+			role = desc.type[type] || role;
 		}
 		if (desc.tweak) role = desc.tweak(role,el);
 
