@@ -831,7 +831,8 @@
 	//TODO recursive clean of element and children?
 	function cleanRecursively(el) {
 		callCleaners(el);
-		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
+		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
+			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
 			cleanRecursively(child);
 		}
 	}
