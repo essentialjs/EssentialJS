@@ -400,25 +400,6 @@
 		//TODO
 	};
 */
-	function refreshRoleLayoutCallback(dr,layoutHandler) {
-		// called on EnhancedDescription
-		return function() {
-			var updateLayout = this.needUpdateLayout();
-
-			if (this.layout.area != getActiveArea()) { 
-				this.layout.area = getActiveArea();
-				updateLayout = true;
-			}
-			if (updateLayout || this.flaggedLayout) {
-				//debugger;
-				layoutHandler.call(dr,this.el,this.layout,this.instance);
-				var layouter = this.el.layouter, laidout = this.el.laidout;
-				if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
-				if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
-                this.flaggedLayout = false;
-			}	
-		};
-	}
 
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
@@ -427,38 +408,37 @@
 		for(var n in descs) {
 			var desc = descs[n];
 
+			//TODO speed up outstanding enhance check
+
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced) {
-
-				// if (desc.callCount) debugger;
-				// desc.callCount = 1;
-				if (desc.role && this.handlers.enhance[desc.role]) {
-					desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,desc.conf);
-					desc.enhanced = desc.instance === false? false:true;
-
-					var layoutHandler = this.handlers.layout[desc.role];
-					//TODO do this when enhanced?
-					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
-
-				}
-				var k = "";//TODO declare(k,...)
-				if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
-					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf);
-                    desc.flaggedLayout = true;
-				}
-				if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
-					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf);
-                    desc.flaggedLayout = true;
-				}
-
+				desc._tryEnhance(this.handlers);
 				++enhancedCount;
-
-				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); //TODO either enhanced, layouter, or laidout
 			} 
 
 			if (! desc.enhanced) incomplete = true;
+
+			var k = "";//TODO declare(k,...)
+			if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
+				if (Layouter.variants[desc.conf.layouter]) {
+					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf,desc.layouterParent);
+					desc.enableRefresh = true;
+	                desc.flaggedLayout = true;
+				}
+			}
+			if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
+				if (Laidout.variants[desc.conf.laidout]) {
+					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf,desc.layouterParent);
+					desc.enableRefresh = true;
+	                desc.flaggedLayout = true;
+				}
+			}
+
 		}
-		
+
+		//TODO enhance additional descriptors created during this instead of double call on loading = false
+
+
 		// notify enhanced listeners
 		if (! incomplete && enhancedCount > 0) {
 			for(var i=0,oe; oe = this._on_event[i]; ++i) {
@@ -489,32 +469,25 @@
 		}
 	};
 
-	_DocumentRoles.prototype._roleEnhancedCleaner = function(desc) {
-		var dr = this, handler = this.handlers.discard[desc.role] || _DocumentRoles.default_discard;
-
-		return function() {
-			return handler.call(dr,desc.el,desc.role,desc.instance);
-		};
-	};
-
 	_DocumentRoles.prototype._resize_descs = function() {
 		//TODO migrate to desc.refresh
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
-			if (desc.enhanced && !this.discarded && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !this.discarded && desc.layout.enableRefresh) {
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
 					var now = (new Date()).getTime();
-					var throttle = this.handlers.layout[desc.role].throttle;
+					var throttle = desc.layout.throttle;
 					if (desc.layout.delayed) {
 						// set dimensions and let delayed do it
 					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
 						// call now
 						desc.refresh();
 						desc.layout.lastDirectCall = now;
+						if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
 					} else {
 						// call in a bit
 						var delay = now + throttle - desc.layout.lastDirectCall;
@@ -525,6 +498,7 @@
 								desc.refresh();
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
+								if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
 							},delay);
 						})(desc);
 					}
@@ -534,12 +508,15 @@
 	};
 
 	_DocumentRoles.prototype._area_changed_descs = function() {
+		//TODO only active pages
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
-				desc.layout.area = getActiveArea();
-				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+			if (desc.enhanced && desc.layout.enableRefresh) {
+				// desc.layout.area = getActiveArea();
+				desc.refresh();
+				if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
 	};

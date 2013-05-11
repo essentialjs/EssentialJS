@@ -857,13 +857,15 @@
 		this.instance = null;
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
-			"lastDirectCall": 0
+			"lastDirectCall": 0,
+			"enableRefresh": false,
+			"throttle": null //TODO throttle by default?
 		};
 		this.enhanced = false;
 		this.discarded = false;
 		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
-		//this.page = page
+		this.page = page;
 		this.handlers = page.resolver("handlers");
 		this._init();
 	}
@@ -874,23 +876,61 @@
 		}
 	};
 
+	_EnhancedDescriptor.prototype.discardHandler = function() {
+
+	};
+
+	function _roleEnhancedCleaner(desc) {
+		return function() {
+			//TODO destroy
+			//TODO discard/destroy for layouter and laidout
+			return desc.discardHandler(desc.el,desc.role,desc.instance);
+		};
+	};
+
+
+	_EnhancedDescriptor.prototype._tryEnhance = function(handlers) {
+		// desc.callCount = 1;
+		if (this.role && handlers.enhance[this.role]) {
+			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
+			this.enhanced = this.instance === false? false:true;
+		}
+		if (this.enhanced) {
+			this.layoutHandler = handlers.layout[this.role];
+			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
+			this.discardHandler = handlers.discard[this.role];
+			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
+			if (this.layoutHandler) this.layout.enableRefresh = true;
+		} 
+	};
+
 	//TODO _EnhancedDescriptor.prototype.prepareAncestors = function() {};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
-
+		var getActiveArea = essential("getActiveArea"); //TODO switch to Resolver("page::activeArea")
 		var updateLayout = this.needUpdateLayout();
 		
-		// if (this.layout.area != getActiveArea()) { 
-		// 	this.layout.area = getActiveArea();
-		// 	updateLayout = true;
-		// }
+		if (this.layout.area != getActiveArea()) { 
+			this.layout.area = getActiveArea();
+			updateLayout = true;
+		}
 
 		if (updateLayout || this.flaggedLayout) {
+			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.el.layouter, laidout = this.el.laidout;
-			if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
+			if (layouter && layouter.layout) layouter.layout(this.el,this.layout,this.laidouts());
 			if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
             this.flaggedLayout = false;
 		}	
+	};
+
+	_EnhancedDescriptor.prototype.laidouts = function() {
+		var laidouts = []; // laidouts and layouter
+		for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
+						c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
+			if (c.stateful && c.stateful("sizing","undefined")) laidouts.push(c);
+		}
+		return laidouts;
 	};
 
 	_EnhancedDescriptor.prototype.liveCheck = function() {
@@ -976,7 +1016,7 @@
 			var desc = enhancedElements[n];
 
 			desc.liveCheck();
-			if (desc.enhanced || desc.layouter || desc.laidout) {
+			if (desc.enableRefresh) {
 				if (!desc.discarded) {
 					// maintain it
 					desc.refresh();
@@ -985,6 +1025,19 @@
 				}
 			}
 		}
+	}
+
+	function branchDescs(el) {
+		var descs = [];
+		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
+		while(e) {
+			if (e.attributes) {
+				var desc = EnhancedDescriptor.all[e.uniqueId];
+				if (desc) descs.push(desc);
+			}
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
+		}
+		return descs;
 	}
 
 	function discardEnhancedWindows() {

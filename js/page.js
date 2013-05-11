@@ -583,16 +583,24 @@
 		return this._getElementRoleConfig(element);
 	};
 
-	_Scripted.prototype._prep = function(el) {
+	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
 				var conf = this.getConfig(e), role = e.getAttribute("role");
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
-				if (desc==null || !desc.contentManaged) this._prep(e);
+				if (desc) {
+					desc.layouterParent = context.layouter;
+					if (desc.conf.layouter) {
+						context.layouter = desc;
+					}
+				} else {
+
+				}
+				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter});
 			}
-			e = e.nextElementSibling || e.nextSibling;
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
 	};
 
@@ -603,7 +611,7 @@
 
 		this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
-		this._prep(this.body);
+		this._prep(this.body,{});
 	};
 
 
@@ -940,6 +948,10 @@
 		// dr._enhance_descs(enhancedElements);
 		var descs = statefuls.resolver("descriptors");
 		dr._enhance_descs(descs);
+		dr._enhance_descs(descs);
+		
+		//TODO pendingDescriptors and descriptors
+
 		//TODO time to default_enhance yet?
 
 		//TODO enhance active page
@@ -1084,7 +1096,7 @@
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
 		while(e) {
 			e.permanent = true;
-			e = e.nextElementSibling || e.nextSibling;
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
 	};
 

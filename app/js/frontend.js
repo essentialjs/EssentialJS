@@ -1,7 +1,13 @@
 (function(){
-	var console = Resolver("essential")("console");
-	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var pageState = Resolver("page").reference("state");
+	var essential = Resolver("essential"),
+		pageResolver = Resolver("page"),
+		templates = pageResolver("templates"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		console = essential("console");
+
+	var DocumentRoles = essential("DocumentRoles"), ApplicationConfig = essential("ApplicationConfig");
+	var pageState = pageResolver.reference("state");
 
 	/*
 		Put your application code here
@@ -83,6 +89,142 @@
 			},100);
 		}
 	});
+
+
+function Template(el) {
+	this.tagName = el.tagName;
+	this.html = el.innerHTML;
+}
+
+function enhance_template(el,role,config) {
+	var id = config.id || el.id;
+	var template = templates[id] = new Template(el);
+	return template;
+}
+
+pageResolver.set("handlers.enhance.template",enhance_template);
+
+function enhance_templated(el,role,config) {
+	if (config.template && templates[config.template]) {
+		var template = templates[config.template];
+		//TODO replace element with template.tagName, mixed attributes and template.html
+		el.innerHTML = template.html; //TODO better
+		var context = { layouter: this.parentLayouter };
+		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
+		ApplicationConfig()._prep(el,context); //TODO prepAncestors
+		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
+		// DocumentRoles()._enhance_descs(descs);
+	}
+}
+
+pageResolver.set("handlers.enhance.templated",enhance_templated);
+
+
+Layouter.variant("multisection",Generator(function(key,el,conf) {
+	this.el = el;
+	this.sizing = {};
+	this.el.stateful.set("sizing",this.sizing);
+
+},Layouter,{ prototype: {
+	"layout": function(el,layout,laidouts) {
+
+	var centered = [], after = [];
+	this.sizing.centerWidth = el.offsetWidth;
+	this.sizing.centerHeight = el.offsetHeight;
+
+	var left=0,right=0,top=0,bottom=0;
+	for(var i = 0, c; c = laidouts[i]; ++i) {
+		var sizing = c.stateful("sizing");
+
+		// sizing.offset = offset;
+		switch(sizing.glue) {
+			case "left":
+				c.style.left = left+"px";
+				left += c.offsetWidth;
+				this.sizing.centerWidth -= c.offsetWidth;
+				break;
+			case "right":
+				after.unshift(c);
+				break;
+			case "top":
+				c.style.top = top+"px";
+				top += c.offsetHeight;
+				this.sizing.centerHeight -= c.offsetHeight;
+				break;
+			case "bottom":
+				after.unshift(c);
+				break;
+			default:
+				centered.push(c);
+				break;
+		}
+	}
+
+	for(var i=0,c; c = after[i]; ++i) {
+		var sizing = c.stateful("sizing");
+		switch(sizing.glue) {
+			case "right":
+				c.style.right = right+"px";
+				right += c.offsetWidth;
+				this.sizing.centerWidth -= c.offsetWidth;
+				break;
+			case "bottom":
+				c.style.bottom = bottom+"px";
+				bottom += c.offsetHeight;
+				this.sizing.centerHeight -= c.offsetHeight;
+				break;
+		}			
+	}
+
+	// console.log("multisection laid out",this.sizing,left,right);
+
+	for(var i = 0, c; c = centered[i]; ++i) {
+		c.style.left = left+"px";
+		c.style.right = right+"px";
+		c.style.top = top+"px";
+		c.style.bottom = bottom+"px";
+	}
+	}
+}}));
+
+function section_button_click(ev) {
+	ev = MutableEvent(ev).withActionInfo();
+
+	if (ev.commandElement) {
+		if (ev.stateful && ev.stateful("state.disabled")) return; // disable
+		if (ev.ariaDisabled) return; //TODO fold into stateful
+
+		ev.action = "sectioned"
+		ev.actionElement = this;//TODO
+		fireAction(ev);
+		ev.stopPropagation();
+	}
+	if (ev.defaultPrevented) return false;
+}
+
+Laidout.variant("section",Generator(function(key,el,conf,parent) {
+	this.el = el;
+
+	this.sizing = { glue:conf.glue };
+	this.el.stateful.set("sizing",this.sizing);
+
+	// addEventListeners(el, {
+	// 	"click": section_button_click
+	// },false);
+
+	// el.stateful.reference("state.expanded").on("change",layouter.updateAccordion.bind(layouter));
+
+	//TODO do this on mainContent
+	// this.el.style.visibility = el.stateful("state.expanded")? "visible":"hidden";
+	// el.stateful.reference("state.expanded").on("change",this.updateExpanded.bind(this));
+},Laidout,{
+	"prototype": {
+		"updateExpanded": function(ev) {
+			//TODO make configurable on laidout/layouter
+			// this.el.style.visibility = ev.value? "visible":"hidden";
+		}
+	}
+}));
 
 
 	console.log("frontend.js finished load execution");

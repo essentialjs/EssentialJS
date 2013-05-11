@@ -1,5 +1,11 @@
 (function(){
-	var console = Resolver("essential")("console");
+	var essential = Resolver("essential"),
+		pageResolver = Resolver("page"),
+		templates = pageResolver("templates"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		console = essential("console");
+
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
 	var DialogAction = Resolver("essential")("DialogAction");
 	var pageState = Resolver("page").reference("state");
