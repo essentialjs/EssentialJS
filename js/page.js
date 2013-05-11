@@ -1098,7 +1098,7 @@
 				with(this.context) eval(s.text);
 				s.done = true;
 			} catch(ex) {
-				debugger;
+				// debugger;
 			} //TODO only ignore ex.ignore
 		}
 		this.context["this"] = undefined;
