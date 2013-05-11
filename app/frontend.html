@@ -7,7 +7,7 @@
   <meta content="Novo Bank" name="description">
   <meta content="Henrik Vendelbo" name="author">
 
-	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled">
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled templated">
   <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
   <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
@@ -73,10 +73,22 @@
 
 </head>
 <body class="loading">
-  <div id="menu-driven">
-    
-    <article role="presentation" id="main-stage">
-      <div class="leftSide"><div>
+  <div role="template" data-role="'id':'panel'">
+
+    <section class="mock-navigate" data-role="'laidout':'section','glue':'left'">
+      <p style="width:100px">
+        sdfsdf
+        sdf
+        sdf
+        dsf
+        <div style="width:100px">
+          <button onclick="this.parentNode.style.width = this.parentNode.offsetWidth>=200?'100px':'200px'">Flip size</button>
+        </div>
+
+      </p>
+    </section>
+    <section class="mock-table" data-role="'laidout':'section'">
+      <div>
         <div role="scrolled" data-role='"obscured":true'>
         <table>
           <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
@@ -97,7 +109,42 @@
           <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
           <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
         </table>
-        </div></div>
+        </div>
+      </div>
+    </section>
+    <section class="mock-detail" data-role="'laidout':'section','glue':'right'">
+      <p style="width:80px">
+        sdfsdf
+        sdf
+        sdf
+        dsf
+        <div style="width:100px">
+          <button onclick="this.parentNode.style.width = this.parentNode.offsetWidth>=200?'80px':'200px'">Flip size</button>
+        </div>
+
+      </p>
+    </section>
+    <section class="extra-info" data-role="'laidout':'section','glue':'right'">
+      <ul style="width:120px">
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+        <li>ueueueu</li>
+      </ul>
+    </section>
+  </div>
+
+  <div id="menu-driven">
+    
+    <article role="presentation" id="main-stage">
+      <div class="leftSide">
+        <header><nav role="tab">Main<button role="close"></button></nav></header>
+
+        <div class="panel" role="templated" data-role="'template':'panel','layouter':'multisection'"></div>
 
       </div>
       <div class="rightSide" role="navigation">

@@ -988,7 +988,7 @@ section.sheet {
 .leftSide {
   position: absolute;
   left: 0;
-  width: 35%;
+  width: 65%;
   top: 0;
   bottom: 15px;
   overflow: visible;
