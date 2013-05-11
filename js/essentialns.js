@@ -320,8 +320,8 @@
 				drop = _document._inner_drop = _document.createElement("DIV");
 				_document.body.appendChild(drop);
 			}
-			drop.innerHTML = l.join("");	
-			for(var c = drop.firstElementChild||drop.firstChild; c; c = drop.firstElementChild||drop.firstChild) e.appendChild(c);
+			drop.innerHTML = l.join("");
+			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
 		} 
 		
 		//TODO .appendTo function

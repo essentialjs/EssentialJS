@@ -29,6 +29,15 @@ test("HTMLElement construction",function(){
 	//ok(! br.innerHTML);
 	equal(br.className,"break");
 	//TODO equal(outerHtml(br),'<br class="break">')
+
+	var div = HTMLElement("div",{},"abc","<span>","def","</span>","ghi");
+	ok(div);
+	equal(div.tagName,"DIV");
+	equal(div.innerHTML,"abc<span>def</span>ghi");
+	equal(div.childNodes.length,3)
+	equal(div.childNodes[0].nodeName,"#text")
+	equal(div.childNodes[1].innerHTML,"def")
+	equal(div.childNodes[2].nodeName,"#text")
 })
 
 test("jQuery trigger click",function() {

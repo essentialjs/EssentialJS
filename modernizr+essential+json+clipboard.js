@@ -2615,8 +2615,8 @@ Generator.ObjectGenerator = Generator(Object);
 				drop = _document._inner_drop = _document.createElement("DIV");
 				_document.body.appendChild(drop);
 			}
-			drop.innerHTML = l.join("");	
-			for(var c = drop.firstElementChild||drop.firstChild; c; c = drop.firstElementChild||drop.firstChild) e.appendChild(c);
+			drop.innerHTML = l.join("");
+			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
 		} 
 		
 		//TODO .appendTo function
@@ -2917,7 +2917,8 @@ Generator.ObjectGenerator = Generator(Object);
 		role = desc.role;
 
 		if (desc.type&&el.type) {
-			role = desc.type[el.type] || role;
+			var type = el.getAttribute("type"); //TODO handlers for unsupported types
+			role = desc.type[type] || role;
 		}
 		if (desc.tweak) role = desc.tweak(role,el);
 
@@ -3125,7 +3126,8 @@ Generator.ObjectGenerator = Generator(Object);
 	//TODO recursive clean of element and children?
 	function cleanRecursively(el) {
 		callCleaners(el);
-		for(var child=el.firstElementChild || el.firstChild; child; child = child.nextElementSibling || child.nextSibling) {
+		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
+			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
 			cleanRecursively(child);
 		}
 	}
@@ -3150,13 +3152,15 @@ Generator.ObjectGenerator = Generator(Object);
 		this.instance = null;
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
-			"lastDirectCall": 0
+			"lastDirectCall": 0,
+			"enableRefresh": false,
+			"throttle": null //TODO throttle by default?
 		};
 		this.enhanced = false;
 		this.discarded = false;
 		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
-		//this.page = page
+		this.page = page;
 		this.handlers = page.resolver("handlers");
 		this._init();
 	}
@@ -3167,23 +3171,61 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
+	_EnhancedDescriptor.prototype.discardHandler = function() {
+
+	};
+
+	function _roleEnhancedCleaner(desc) {
+		return function() {
+			//TODO destroy
+			//TODO discard/destroy for layouter and laidout
+			return desc.discardHandler(desc.el,desc.role,desc.instance);
+		};
+	};
+
+
+	_EnhancedDescriptor.prototype._tryEnhance = function(handlers) {
+		// desc.callCount = 1;
+		if (this.role && handlers.enhance[this.role]) {
+			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
+			this.enhanced = this.instance === false? false:true;
+		}
+		if (this.enhanced) {
+			this.layoutHandler = handlers.layout[this.role];
+			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
+			this.discardHandler = handlers.discard[this.role];
+			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
+			if (this.layoutHandler) this.layout.enableRefresh = true;
+		} 
+	};
+
 	//TODO _EnhancedDescriptor.prototype.prepareAncestors = function() {};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
-
+		var getActiveArea = essential("getActiveArea"); //TODO switch to Resolver("page::activeArea")
 		var updateLayout = this.needUpdateLayout();
 		
-		// if (this.layout.area != getActiveArea()) { 
-		// 	this.layout.area = getActiveArea();
-		// 	updateLayout = true;
-		// }
+		if (this.layout.area != getActiveArea()) { 
+			this.layout.area = getActiveArea();
+			updateLayout = true;
+		}
 
 		if (updateLayout || this.flaggedLayout) {
+			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.el.layouter, laidout = this.el.laidout;
-			if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
+			if (layouter && layouter.layout) layouter.layout(this.el,this.layout,this.laidouts());
 			if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
             this.flaggedLayout = false;
 		}	
+	};
+
+	_EnhancedDescriptor.prototype.laidouts = function() {
+		var laidouts = []; // laidouts and layouter
+		for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
+						c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
+			if (c.stateful && c.stateful("sizing","undefined")) laidouts.push(c);
+		}
+		return laidouts;
 	};
 
 	_EnhancedDescriptor.prototype.liveCheck = function() {
@@ -3269,7 +3311,7 @@ Generator.ObjectGenerator = Generator(Object);
 			var desc = enhancedElements[n];
 
 			desc.liveCheck();
-			if (desc.enhanced || desc.layouter || desc.laidout) {
+			if (desc.enableRefresh) {
 				if (!desc.discarded) {
 					// maintain it
 					desc.refresh();
@@ -3278,6 +3320,19 @@ Generator.ObjectGenerator = Generator(Object);
 				}
 			}
 		}
+	}
+
+	function branchDescs(el) {
+		var descs = [];
+		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
+		while(e) {
+			if (e.attributes) {
+				var desc = EnhancedDescriptor.all[e.uniqueId];
+				if (desc) descs.push(desc);
+			}
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
+		}
+		return descs;
 	}
 
 	function discardEnhancedWindows() {
@@ -4281,16 +4336,24 @@ Generator.ObjectGenerator = Generator(Object);
 		return this._getElementRoleConfig(element);
 	};
 
-	_Scripted.prototype._prep = function(el) {
+	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
 				var conf = this.getConfig(e), role = e.getAttribute("role");
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
-				if (desc==null || !desc.contentManaged) this._prep(e);
+				if (desc) {
+					desc.layouterParent = context.layouter;
+					if (desc.conf.layouter) {
+						context.layouter = desc;
+					}
+				} else {
+
+				}
+				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter});
 			}
-			e = e.nextElementSibling || e.nextSibling;
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
 	};
 
@@ -4301,7 +4364,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
-		this._prep(this.body);
+		this._prep(this.body,{});
 	};
 
 
@@ -4638,6 +4701,10 @@ Generator.ObjectGenerator = Generator(Object);
 		// dr._enhance_descs(enhancedElements);
 		var descs = statefuls.resolver("descriptors");
 		dr._enhance_descs(descs);
+		dr._enhance_descs(descs);
+		
+		//TODO pendingDescriptors and descriptors
+
 		//TODO time to default_enhance yet?
 
 		//TODO enhance active page
@@ -4782,7 +4849,7 @@ Generator.ObjectGenerator = Generator(Object);
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
 		while(e) {
 			e.permanent = true;
-			e = e.nextElementSibling || e.nextSibling;
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
 	};
 
@@ -4796,7 +4863,7 @@ Generator.ObjectGenerator = Generator(Object);
 				with(this.context) eval(s.text);
 				s.done = true;
 			} catch(ex) {
-				debugger;
+				// debugger;
 			} //TODO only ignore ex.ignore
 		}
 		this.context["this"] = undefined;
@@ -6006,25 +6073,6 @@ function(scripts) {
 		//TODO
 	};
 */
-	function refreshRoleLayoutCallback(dr,layoutHandler) {
-		// called on EnhancedDescription
-		return function() {
-			var updateLayout = this.needUpdateLayout();
-
-			if (this.layout.area != getActiveArea()) { 
-				this.layout.area = getActiveArea();
-				updateLayout = true;
-			}
-			if (updateLayout || this.flaggedLayout) {
-				//debugger;
-				layoutHandler.call(dr,this.el,this.layout,this.instance);
-				var layouter = this.el.layouter, laidout = this.el.laidout;
-				if (layouter && layouter.layout) layouter.layout(this.el,this.layout);
-				if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
-                this.flaggedLayout = false;
-			}	
-		};
-	}
 
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
@@ -6033,38 +6081,37 @@ function(scripts) {
 		for(var n in descs) {
 			var desc = descs[n];
 
+			//TODO speed up outstanding enhance check
+
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced) {
-
-				// if (desc.callCount) debugger;
-				// desc.callCount = 1;
-				if (desc.role && this.handlers.enhance[desc.role]) {
-					desc.instance = this.handlers.enhance[desc.role].call(this,desc.el,desc.role,desc.conf);
-					desc.enhanced = desc.instance === false? false:true;
-
-					var layoutHandler = this.handlers.layout[desc.role];
-					//TODO do this when enhanced?
-					if (layoutHandler) desc.refresh = refreshRoleLayoutCallback(this,layoutHandler);
-
-				}
-				var k = "";//TODO declare(k,...)
-				if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
-					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf);
-                    desc.flaggedLayout = true;
-				}
-				if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
-					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf);
-                    desc.flaggedLayout = true;
-				}
-
+				desc._tryEnhance(this.handlers);
 				++enhancedCount;
-
-				if (desc.enhanced) desc.el._cleaners.push(this._roleEnhancedCleaner(desc)); //TODO either enhanced, layouter, or laidout
 			} 
 
 			if (! desc.enhanced) incomplete = true;
+
+			var k = "";//TODO declare(k,...)
+			if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
+				if (Layouter.variants[desc.conf.layouter]) {
+					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf,desc.layouterParent);
+					desc.enableRefresh = true;
+	                desc.flaggedLayout = true;
+				}
+			}
+			if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
+				if (Laidout.variants[desc.conf.laidout]) {
+					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf,desc.layouterParent);
+					desc.enableRefresh = true;
+	                desc.flaggedLayout = true;
+				}
+			}
+
 		}
-		
+
+		//TODO enhance additional descriptors created during this instead of double call on loading = false
+
+
 		// notify enhanced listeners
 		if (! incomplete && enhancedCount > 0) {
 			for(var i=0,oe; oe = this._on_event[i]; ++i) {
@@ -6095,32 +6142,25 @@ function(scripts) {
 		}
 	};
 
-	_DocumentRoles.prototype._roleEnhancedCleaner = function(desc) {
-		var dr = this, handler = this.handlers.discard[desc.role] || _DocumentRoles.default_discard;
-
-		return function() {
-			return handler.call(dr,desc.el,desc.role,desc.instance);
-		};
-	};
-
 	_DocumentRoles.prototype._resize_descs = function() {
 		//TODO migrate to desc.refresh
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
-			if (desc.enhanced && !this.discarded && this.handlers.layout[desc.role]) {
+			if (desc.enhanced && !this.discarded && desc.layout.enableRefresh) {
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
 					var now = (new Date()).getTime();
-					var throttle = this.handlers.layout[desc.role].throttle;
+					var throttle = desc.layout.throttle;
 					if (desc.layout.delayed) {
 						// set dimensions and let delayed do it
 					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
 						// call now
 						desc.refresh();
 						desc.layout.lastDirectCall = now;
+						if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
 					} else {
 						// call in a bit
 						var delay = now + throttle - desc.layout.lastDirectCall;
@@ -6131,6 +6171,7 @@ function(scripts) {
 								desc.refresh();
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
+								if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
 							},delay);
 						})(desc);
 					}
@@ -6140,12 +6181,15 @@ function(scripts) {
 	};
 
 	_DocumentRoles.prototype._area_changed_descs = function() {
+		//TODO only active pages
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
 
-			if (desc.enhanced && this.handlers.layout[desc.role]) {
-				desc.layout.area = getActiveArea();
-				this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
+			if (desc.enhanced && desc.layout.enableRefresh) {
+				// desc.layout.area = getActiveArea();
+				desc.refresh();
+				if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
 	};
@@ -6854,10 +6898,14 @@ function(scripts) {
 		if (el.stateful) el.stateful.destroy();
 	};
 	
+	DocumentRoles.init_template = function(el,role,config) {
+		this.contentManaged = true; // template content skipped
+	};
+	Resolver("page").set("handlers.init.template",DocumentRoles.init_template);
+
 	DocumentRoles.init_templated = function(el,role,config) {
 		this.contentManaged = true; // templated content skipped
 	};
-
 }();
 Resolver("essential")("ApplicationConfig").restrict({ "singleton":true, "lifecycle":"page" });
 Resolver("essential")("EnhancedDescriptor").maintainer = setInterval(Resolver("essential")("EnhancedDescriptor").maintainAll,330); // minimum frequency 3 per sec
