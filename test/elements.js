@@ -301,6 +301,7 @@ test("Effective Element Role",function() {
 	var HTMLElement = Resolver("essential")("HTMLElement"),
 		StatefulResolver = Resolver("essential")("StatefulResolver"),
 		effectiveRole = Resolver("essential")("effectiveRole");
+	var MutableEvent = Resolver("essential")("MutableEvent");
 
 	equal(effectiveRole(HTMLElement("div",{})),"default");
 	equal(effectiveRole(HTMLElement("div",{"role":"button"})),"button");
@@ -315,6 +316,11 @@ test("Effective Element Role",function() {
 	StatefulResolver(div);
 	equal(effectiveRole(div),"default");
 	equal(StatefulResolver(div)("impl","undefined"),undefined);
+
+	var button = HTMLElement("button",{"type":"button"});
+	var ev = MutableEvent({ target: button }).withActionInfo();
+	equal(ev.commandRole,"button");
+	equal(ev.commandElement,button);
 });
 
 function makeFieldSpy() {

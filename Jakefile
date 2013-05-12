@@ -9,6 +9,7 @@ var ESSENTIAL_FILES = [
   'resolver.js',
   'generator.js',
   'essentialns.js',
+  'dom.js',
   'page.js',
   'xhr.js',
   'elements.js',
