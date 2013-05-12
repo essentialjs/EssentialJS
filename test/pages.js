@@ -13,11 +13,36 @@ test("Document Creations",function() {
 	equal(doc.body.id,"a2");
 	equal(doc.body.getAttribute("attr"),"a2");
 
-	var doc = createHTMLDocument("",'<body id="a2" attr="a2"></body>');
+	var doc = createHTMLDocument('<!DOCTYPE html "HTML 4.0"><html><head id="a1" attr="a1"></head><body id="a2" attr="a2"></body></html>');
+	equal(doc.head.id,"a1");
+	equal(doc.head.getAttribute("attr"),"a1");
 	equal(doc.body.id,"a2");
 	equal(doc.body.getAttribute("attr"),"a2");
 
-	ok(1,"createHTMLDocument head,body");
+	var doc = createHTMLDocument('<html><head id="a1" attr="a1"></head><body id="a2" attr="a2"></body></html>');
+	equal(doc.head.id,"a1");
+	equal(doc.head.getAttribute("attr"),"a1");
+	equal(doc.body.id,"a2");
+	equal(doc.body.getAttribute("attr"),"a2");
+
+	var doc = createHTMLDocument('<head id="a1" attr="a1"></head>','<body id="a2" attr="a2"></body>');
+	equal(doc.head.id,"a1");
+	equal(doc.head.getAttribute("attr"),"a1");
+	equal(doc.body.id,"a2");
+	equal(doc.body.getAttribute("attr"),"a2");
+
+	var doc = createHTMLDocument('<link id="a1" attr="a1">','<div id="a2" attr="a2"></div>');
+	ok(doc.head.firstChild,"Head content");
+	equal(doc.head.firstChild.id,"a1");
+	equal(doc.head.firstChild.getAttribute("attr"),"a1");
+	ok(doc.body.firstChild,"Head content");
+	equal(doc.body.firstChild.id,"a2");
+	equal(doc.body.firstChild.getAttribute("attr"),"a2");
+
+
+	var doc = createHTMLDocument("",'<body id="a2" attr="a2"></body>');
+	equal(doc.body.id,"a2");
+	equal(doc.body.getAttribute("attr"),"a2");
 	//TODO test the construction in IE
 });
 

@@ -21,6 +21,70 @@
 	}
 	essential.declare("contains",contains);
 
+
+   	/**
+   	 * (html) or (head,body)
+   	 */
+	function createHTMLDocument(head,body) {
+		if (typeof head == "object" && typeof head.length == "number") {
+			head = head.join("");
+		}
+		if (typeof body == "object" && typeof body.length == "number") {
+			body = body.join("");
+		}
+		if (arguments.length == 2) {
+			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
+		}
+
+		// var doc = document.implementation.createDocument('','',
+		// 	document.implementation.createDocumentType('body','',''));
+		var doc;
+		if (document.implementation && document.implementation.createHTMLDocument) {
+			doc = document.implementation.createHTMLDocument("");
+			if (arguments.length == 2) {
+				doc.documentElement.innerHTML = '<html>' + (head||"") + (body||"") + '</html>';
+			}
+			else {
+				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
+			}
+		} else  if (window.ActiveXObject) {
+		// 	text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
+		// 	text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
+		// 	text = text.replace("<head",'<washead').replace("</head>","</washead>");
+		// 	text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+		// 	text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+		// 	text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
+		// 	var div = document.createElement("DIV");
+		// 	div.innerHTML = text;
+		// 	this.head = div.getElementsByTagName("washead");
+		// 	this.body = div.getElementsByTagName("wasbody") || div;
+		// 	//TODO offline htmlfile object?
+		// }
+
+			doc = new ActiveXObject("htmlfile");
+			doc.appendChild(doc.createElement("html"));
+			var _head = doc.createElement("head");
+			var _body = doc.createElement("body");
+			doc.documentElement.appendChild(_head);
+			doc.documentElement.appendChild(_body);
+			if (arguments.length == 2) {
+				_body.innerHTML = body;
+				if (head != "") _head.innerHTML = head;
+			} else {
+				//TODO replace html/head/body and move them
+				debugger;
+			}
+
+		} else {
+			return document.createElement("DIV");// dummy default
+		}
+
+		return doc;
+	}
+	essential.declare("createHTMLDocument",createHTMLDocument);
+
+
 	/*
 		Default roles for determining effective role
 	*/

@@ -361,6 +361,7 @@ test("Enhancing elements creating stateful fields",function() {
 	var StatefulField = Resolver("essential")("StatefulField");
 	var buttonField = StatefulField.variant("*[role=button]");
 	var linkField = StatefulField.variant("*[role=link]");
+	var createDocument = Resolver("essential")("createHTMLDocument");
 
 	notEqual(buttonField,StatefulField);
 

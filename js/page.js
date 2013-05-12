@@ -15,48 +15,8 @@
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
-
-	function createHTMLDocument(head,body) {
-		if (typeof head == "object" && typeof head.length == "number") {
-			head = head.join("");
-		}
-		if (typeof body == "object" && typeof body.length == "number") {
-			body = body.join("");
-		}
-
-		// var doc = document.implementation.createDocument('','',
-		// 	document.implementation.createDocumentType('body','',''));
-		var doc;
-		if (document.implementation && document.implementation.createHTMLDocument) {
-			doc = document.implementation.createHTMLDocument("");
-			if (arguments.length == 2) {
-				doc.documentElement.innerHTML = '<html><head>' + (head||"") + '</head><body>' + (body||"") + '</body>';
-			}
-			else {
-				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
-			}
-		} else  if (window.ActiveXObject) {
-			doc = new ActiveXObject("htmlfile");
-			doc.appendChild(doc.createElement("html"));
-			var _head = doc.createElement("head");
-			var _body = doc.createElement("body");
-			doc.documentElement.appendChild(_head);
-			doc.documentElement.appendChild(_body);
-			if (arguments.length == 2) {
-				_body.innerHTML = body;
-				if (head != "") _head.innerHTML = head;
-			} else {
-				//TODO replace html/head/body and move them
-				debugger;
-			}
-
-		} else {
-			return document.createElement("DIV");// dummy default
-		}
-
-		return doc;
-	}
-	essential.declare("createHTMLDocument",createHTMLDocument);
+   	var contains = essential("contains"),
+   		createHTMLDocument = essential("createHTMLDocument");
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true }
@@ -162,20 +122,12 @@
 		el[this.property] = value;
 	}
 
-
-	function containsElement(a,b) {
-		return a.contains ?
-			a != b && a.contains(b) :
-			!!(a.compareDocumentPosition(b) & 16);
-   	}
-   	essential.declare("containsElement",containsElement);
-
 	function readPropertyAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result = undefined;
 		if (value != null) result = value != "false" && value != ""; 
 
 		if (el[key] != undefined) result = el[key]; // el.disabled is undefined before attach
-		if (result == undefined && ! containsElement(el.ownerDocument.body,el)) {
+		if (result == undefined && ! contains(el.ownerDocument.body,el)) {
 			//TODO shift this to an init function used if not parentNode
 			var value = el.getAttribute(key);
 			if (value != null) result = value != "false";//TODO should this be special config for disabled?,.. && value != ""; 
@@ -689,6 +641,8 @@
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = createHTMLDocument(text);
+			// this.head = document.importNode(doc.head);
+			// this.body = document.importNode(doc.body);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -708,26 +662,10 @@
 	};
 
 	SubPage.prototype.parseHTML = function(text) {
-		var doc;
-		if (document.implementation && document.implementation.createHTMLDocument) {
-			doc = document.implementation.createHTMLDocument("");
-			doc.documentElement.innerHTML = text;
-			this.head = document.importNode(doc.head);
-			this.body = document.importNode(doc.body);
+		var doc = this.document = createHTMLDocument(text);
 
-		} else  if (window.ActiveXObject) {
-			text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
-			text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
-			text = text.replace("<head",'<washead').replace("</head>","</washead>");
-			text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
-			text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
-			text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-			var div = document.createElement("DIV");
-			div.innerHTML = text;
-			this.head = div.getElementsByTagName("washead");
-			this.body = div.getElementsByTagName("wasbody") || div;
-			//TODO offline htmlfile object?
-		}
+		this.head = document.importNode(doc.head);
+		this.body = document.importNode(doc.body);
 		this.documentLoaded = true;
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
