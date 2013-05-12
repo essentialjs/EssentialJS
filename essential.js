@@ -1220,7 +1220,7 @@ Generator.ObjectGenerator = Generator(Object);
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential::",{});
+	var essential = Resolver("essential",{});
 
 	var isFileProtocol = (location.protocol === 'file:'    ||
 	                      location.protocol === 'chrome:'  ||
@@ -2052,7 +2052,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("htmlEscape",htmlEscape);
 
-	var translations = Resolver("translations::",{});
+	var translations = Resolver("translations",{});
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
@@ -2060,7 +2060,7 @@ Generator.ObjectGenerator = Generator(Object);
 	translations.on("change","locale",function(ev) {
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");
-		if (Resolver.exists("page")) Resolver("page::").set("state.lang",s[0]);
+		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
 	});
 
 	/*
@@ -2240,7 +2240,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 !function() {
 
-	var essential = Resolver("essential::",{}),
+	var essential = Resolver("essential",{}),
 		console = essential("console");
 
 	var contains;
@@ -2850,7 +2850,7 @@ Generator.ObjectGenerator = Generator(Object);
 */
 !function(Scripted_gather) {
 
-	var essential = Resolver("essential::",{}),
+	var essential = Resolver("essential",{}),
 		console = essential("console"),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
@@ -3281,7 +3281,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	// page state & sub pages
-	Resolver("page::").declare("pages",{});
+	Resolver("page").declare("pages",{});
 
 	function _Scripted() {
 		// the derived has to define resolver before this
@@ -4705,20 +4705,20 @@ function(scripts) {
 	}
 
 	// Register new object with window
-	Resolver("essential::").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
+	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
 }();
 /*jslint white: true */
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential::",{}),
+	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
 		console = essential("console"),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		pageResolver = Resolver("page::"),
+		pageResolver = Resolver("page"),
 		getActiveArea = essential("getActiveArea"),
 		arrayContains = essential("arrayContains"),
 		statefulCleaner = essential("statefulCleaner"),
@@ -5251,7 +5251,7 @@ function(scripts) {
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential::",{}),
+	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
 		console = essential("console"),
 		MutableEvent = essential("MutableEvent"),
@@ -5857,12 +5857,12 @@ function(scripts) {
 	DocumentRoles.init_template = function(el,role,config) {
 		this.contentManaged = true; // template content skipped
 	};
-	Resolver("page::").set("handlers.init.template",DocumentRoles.init_template);
+	Resolver("page").set("handlers.init.template",DocumentRoles.init_template);
 
 	DocumentRoles.init_templated = function(el,role,config) {
 		this.contentManaged = true; // templated content skipped
 	};
 }();
-Resolver("essential::ApplicationConfig").restrict({ "singleton":true, "lifecycle":"page" });
-Resolver("essential::EnhancedDescriptor").maintainer = setInterval(Resolver("essential::EnhancedDescriptor").maintainAll,330); // minimum frequency 3 per sec
+Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
+Resolver("essential::EnhancedDescriptor::").maintainer = setInterval(Resolver("essential::EnhancedDescriptor").maintainAll,330); // minimum frequency 3 per sec
 

@@ -2,7 +2,7 @@
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential::",{}),
+	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
 		console = essential("console"),
 		MutableEvent = essential("MutableEvent"),
@@ -608,7 +608,7 @@
 	DocumentRoles.init_template = function(el,role,config) {
 		this.contentManaged = true; // template content skipped
 	};
-	Resolver("page::").set("handlers.init.template",DocumentRoles.init_template);
+	Resolver("page").set("handlers.init.template",DocumentRoles.init_template);
 
 	DocumentRoles.init_templated = function(el,role,config) {
 		this.contentManaged = true; // templated content skipped
