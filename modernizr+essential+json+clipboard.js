@@ -1150,6 +1150,12 @@ window.Modernizr = (function( window, document, undefined ) {
 */
 
 
+/**
+ *
+ * options.name
+ * options.generator
+ * options.mixinto
+ */
 function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -1162,17 +1168,38 @@ function Resolver(name_andor_expr,ns,options)
 	case "string":
         var name_expr = name_andor_expr.split("::");
         var name = name_expr[0] || "default", expr = name_expr[1];
-        if (arguments.length==1) ns = {};
 
-		// Resolver("abc")
-		// Resolver("abc",null)
-		// Resolver("abc",{})
-		// Resolver("abc",{},{options})
-		if (Resolver[name] == undefined) {
-			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
-			Resolver[name] = Resolver(ns,options || {});
-			Resolver[name].named = name;
-			}
+        switch(name_expr.length) {
+            case 1: 
+                // Resolver("abc")
+                // Resolver("abc",null)
+                // Resolver("abc",{})
+                // Resolver("abc",{},{options})
+                return _resolver(name,ns,options,arguments.length==1 || ns); //TODO return namespace
+
+            case 2: 
+                // Resolver("abc::") returns the namespace of resolver 
+                if (expr == "") {
+                    return _resolver(name,ns,options,arguments.length==1 || ns);
+
+                // Resolver("abc::def") returns reference for expression
+                } else {
+                    return Resolver[name].reference(expr,ns);
+
+                }
+                break;
+            case 3: 
+                // Resolver("abc::def::")  returns value for expression
+                if (name_expr[2] == "") {
+                    return Resolver[name].get(expr,ns);
+
+                // Resolver("abc::def::ghi")
+                } else {
+
+                }
+                break;
+        }
+
         if (name_expr.length>1 && expr) {
             var call = "reference";
             switch(ns) {
@@ -1200,8 +1227,20 @@ function Resolver(name_andor_expr,ns,options)
 	}
 
 
+    function _resolver(name,ns,options,auto) {
+        if (Resolver[name] == undefined) {
+            if (!auto) return ns;
+            Resolver[name] = Resolver(ns,options || {});
+            Resolver[name].named = name;
+        }
+        return Resolver[name];
+    }
+
+
 	function _resolve(names,subnames,onundefined) {
-        var top = ns;
+        // var top = ns; TODO passed namespace negates override
+        var top = resolver.namespace;
+
         for (var j = 0, n; j<names.length; ++j) {
             n = names[j];
             var prev_top = top;
@@ -1620,7 +1659,7 @@ function Resolver(name_andor_expr,ns,options)
                 //TODO swap script with the id. If cachebuster param update timestamp
                 var script = document.getElementById(this.options.touchScript);
                 if (script) {
-                    var newScript = Resolver("essential")("HTMLScriptElement")(script);
+                    var newScript = Resolver("essential::HTMLScriptElement")(script);
                     script.parentNode.replaceChild(newScript,script);
                 }
             }
@@ -1868,11 +1907,14 @@ function Resolver(name_andor_expr,ns,options)
 
     resolver.override = function(ns,options)
     {
-        options = options || {};
-        var name = options.name || this.named; 
-		Resolver[name] = Resolver(ns,options);
-		Resolver[name].named = name;
-		return Resolver[name];
+        this.namespace = ns;
+        //TODO options
+        return this;
+//       options = options || {};
+//       var name = options.name || this.named; 
+		// Resolver[name] = Resolver(ns,options);
+		// Resolver[name].named = name;
+		// return Resolver[name];
     };
 
     resolver.destroy = function()
@@ -2298,7 +2340,7 @@ Generator.ObjectGenerator = Generator(Object);
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{});
+	var essential = Resolver("essential::",{});
 
 	var isFileProtocol = (location.protocol === 'file:'    ||
 	                      location.protocol === 'chrome:'  ||
@@ -3130,7 +3172,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("htmlEscape",htmlEscape);
 
-	var translations = Resolver("translations",{});
+	var translations = Resolver("translations::",{});
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
@@ -3138,7 +3180,7 @@ Generator.ObjectGenerator = Generator(Object);
 	translations.on("change","locale",function(ev) {
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");
-		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+		if (Resolver.exists("page")) Resolver("page::").set("state.lang",s[0]);
 	});
 
 	/*
@@ -3318,7 +3360,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 !function() {
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		console = essential("console");
 
 	var contains;
@@ -3338,6 +3380,70 @@ Generator.ObjectGenerator = Generator(Object);
 		contains = false_contains;
 	}
 	essential.declare("contains",contains);
+
+
+   	/**
+   	 * (html) or (head,body)
+   	 */
+	function createHTMLDocument(head,body) {
+		if (typeof head == "object" && typeof head.length == "number") {
+			head = head.join("");
+		}
+		if (typeof body == "object" && typeof body.length == "number") {
+			body = body.join("");
+		}
+		if (arguments.length == 2) {
+			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
+		}
+
+		// var doc = document.implementation.createDocument('','',
+		// 	document.implementation.createDocumentType('body','',''));
+		var doc;
+		if (document.implementation && document.implementation.createHTMLDocument) {
+			doc = document.implementation.createHTMLDocument("");
+			if (arguments.length == 2) {
+				doc.documentElement.innerHTML = '<html>' + (head||"") + (body||"") + '</html>';
+			}
+			else {
+				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
+			}
+		} else  if (window.ActiveXObject) {
+		// 	text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
+		// 	text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
+		// 	text = text.replace("<head",'<washead').replace("</head>","</washead>");
+		// 	text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+		// 	text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+		// 	text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
+		// 	var div = document.createElement("DIV");
+		// 	div.innerHTML = text;
+		// 	this.head = div.getElementsByTagName("washead");
+		// 	this.body = div.getElementsByTagName("wasbody") || div;
+		// 	//TODO offline htmlfile object?
+		// }
+
+			doc = new ActiveXObject("htmlfile");
+			doc.appendChild(doc.createElement("html"));
+			var _head = doc.createElement("head");
+			var _body = doc.createElement("body");
+			doc.documentElement.appendChild(_head);
+			doc.documentElement.appendChild(_body);
+			if (arguments.length == 2) {
+				_body.innerHTML = body;
+				if (head != "") _head.innerHTML = head;
+			} else {
+				//TODO replace html/head/body and move them
+				debugger;
+			}
+
+		} else {
+			return document.createElement("DIV");// dummy default
+		}
+
+		return doc;
+	}
+	essential.declare("createHTMLDocument",createHTMLDocument);
+
 
 	/*
 		Default roles for determining effective role
@@ -3864,7 +3970,7 @@ Generator.ObjectGenerator = Generator(Object);
 */
 !function(Scripted_gather) {
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		console = essential("console"),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
@@ -3875,48 +3981,8 @@ Generator.ObjectGenerator = Generator(Object);
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
-
-	function createHTMLDocument(head,body) {
-		if (typeof head == "object" && typeof head.length == "number") {
-			head = head.join("");
-		}
-		if (typeof body == "object" && typeof body.length == "number") {
-			body = body.join("");
-		}
-
-		// var doc = document.implementation.createDocument('','',
-		// 	document.implementation.createDocumentType('body','',''));
-		var doc;
-		if (document.implementation && document.implementation.createHTMLDocument) {
-			doc = document.implementation.createHTMLDocument("");
-			if (arguments.length == 2) {
-				doc.documentElement.innerHTML = '<html><head>' + (head||"") + '</head><body>' + (body||"") + '</body>';
-			}
-			else {
-				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
-			}
-		} else  if (window.ActiveXObject) {
-			doc = new ActiveXObject("htmlfile");
-			doc.appendChild(doc.createElement("html"));
-			var _head = doc.createElement("head");
-			var _body = doc.createElement("body");
-			doc.documentElement.appendChild(_head);
-			doc.documentElement.appendChild(_body);
-			if (arguments.length == 2) {
-				_body.innerHTML = body;
-				if (head != "") _head.innerHTML = head;
-			} else {
-				//TODO replace html/head/body and move them
-				debugger;
-			}
-
-		} else {
-			return document.createElement("DIV");// dummy default
-		}
-
-		return doc;
-	}
-	essential.declare("createHTMLDocument",createHTMLDocument);
+   	var contains = essential("contains"),
+   		createHTMLDocument = essential("createHTMLDocument");
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true }
@@ -4022,20 +4088,12 @@ Generator.ObjectGenerator = Generator(Object);
 		el[this.property] = value;
 	}
 
-
-	function containsElement(a,b) {
-		return a.contains ?
-			a != b && a.contains(b) :
-			!!(a.compareDocumentPosition(b) & 16);
-   	}
-   	essential.declare("containsElement",containsElement);
-
 	function readPropertyAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result = undefined;
 		if (value != null) result = value != "false" && value != ""; 
 
 		if (el[key] != undefined) result = el[key]; // el.disabled is undefined before attach
-		if (result == undefined && ! containsElement(el.ownerDocument.body,el)) {
+		if (result == undefined && ! contains(el.ownerDocument.body,el)) {
 			//TODO shift this to an init function used if not parentNode
 			var value = el.getAttribute(key);
 			if (value != null) result = value != "false";//TODO should this be special config for disabled?,.. && value != ""; 
@@ -4343,7 +4401,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	// page state & sub pages
-	Resolver("page").declare("pages",{});
+	Resolver("page::").declare("pages",{});
 
 	function _Scripted() {
 		// the derived has to define resolver before this
@@ -4549,6 +4607,8 @@ Generator.ObjectGenerator = Generator(Object);
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = createHTMLDocument(text);
+			// this.head = document.importNode(doc.head);
+			// this.body = document.importNode(doc.body);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -4568,26 +4628,10 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 	SubPage.prototype.parseHTML = function(text) {
-		var doc;
-		if (document.implementation && document.implementation.createHTMLDocument) {
-			doc = document.implementation.createHTMLDocument("");
-			doc.documentElement.innerHTML = text;
-			this.head = document.importNode(doc.head);
-			this.body = document.importNode(doc.body);
+		var doc = this.document = createHTMLDocument(text);
 
-		} else  if (window.ActiveXObject) {
-			text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
-			text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
-			text = text.replace("<head",'<washead').replace("</head>","</washead>");
-			text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
-			text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
-			text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-			var div = document.createElement("DIV");
-			div.innerHTML = text;
-			this.head = div.getElementsByTagName("washead");
-			this.body = div.getElementsByTagName("wasbody") || div;
-			//TODO offline htmlfile object?
-		}
+		this.head = document.importNode(doc.head);
+		this.body = document.importNode(doc.body);
 		this.documentLoaded = true;
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
@@ -5220,7 +5264,7 @@ function(scripts) {
 				try {
 					with(this) eval(s.text);
 				} catch(ex) {
-					Resolver("essential")("console").error("Failed to parse application/config",s.text);
+					Resolver("essential::console").error("Failed to parse application/config",s.text);
 				}
 				break;
 			case "application/init": 
@@ -5781,20 +5825,20 @@ function(scripts) {
 	}
 
 	// Register new object with window
-	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
+	Resolver("essential::").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
 }();
 /*jslint white: true */
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		ObjectType = essential("ObjectType"),
 		console = essential("console"),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		pageResolver = Resolver("page"),
+		pageResolver = Resolver("page::"),
 		getActiveArea = essential("getActiveArea"),
 		arrayContains = essential("arrayContains"),
 		statefulCleaner = essential("statefulCleaner"),
@@ -6327,7 +6371,7 @@ function(scripts) {
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		ObjectType = essential("ObjectType"),
 		console = essential("console"),
 		MutableEvent = essential("MutableEvent"),
@@ -6933,14 +6977,14 @@ function(scripts) {
 	DocumentRoles.init_template = function(el,role,config) {
 		this.contentManaged = true; // template content skipped
 	};
-	Resolver("page").set("handlers.init.template",DocumentRoles.init_template);
+	Resolver("page::").set("handlers.init.template",DocumentRoles.init_template);
 
 	DocumentRoles.init_templated = function(el,role,config) {
 		this.contentManaged = true; // templated content skipped
 	};
 }();
-Resolver("essential")("ApplicationConfig").restrict({ "singleton":true, "lifecycle":"page" });
-Resolver("essential")("EnhancedDescriptor").maintainer = setInterval(Resolver("essential")("EnhancedDescriptor").maintainAll,330); // minimum frequency 3 per sec
+Resolver("essential::ApplicationConfig").restrict({ "singleton":true, "lifecycle":"page" });
+Resolver("essential::EnhancedDescriptor").maintainer = setInterval(Resolver("essential::EnhancedDescriptor").maintainAll,330); // minimum frequency 3 per sec
 
 
 

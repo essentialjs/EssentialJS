@@ -42,7 +42,7 @@ test("Default locale",function() {
 
 test("Configuring translations",function() {
 	var translations = Resolver("translations");
-	var _ = Resolver("essential")("translate");
+	var _ = Resolver("essential::translate::");
 
 	function BucketGenerator() {
 		return {};
@@ -66,7 +66,7 @@ test("Configuring translations",function() {
 
 test("Static Translations english",function(){
 	var translations = Resolver("translations");
-	var _ = Resolver("essential")("translate");
+	var _ = Resolver("essential::translate::");
 
 	equal(_("unmatched"),undefined,"Undefined for unmatched keys")
 	equal(_({ key:"unmatched" }),undefined)

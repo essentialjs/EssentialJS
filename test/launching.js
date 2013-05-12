@@ -28,9 +28,9 @@ test("Page Resolver",function(){
 test("ApplicationConfig",function(){
 	// equal(document.body.stateful,undefined);
 
-	var configRequired = Resolver("essential")("configRequired");
-	var configLoaded = Resolver("essential")("configLoaded");
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var configRequired = Resolver("essential::configRequired::");
+	var configLoaded = Resolver("essential::configLoaded::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var ac = ApplicationConfig();
 	// equal(document.body.stateful,Resolver.page);
 
@@ -91,7 +91,7 @@ test("ApplicationConfig",function(){
 //TODO when page is brought live the correct area is activated
 
 if (location.protocol == "http:") asyncTest("Application Config loadPage of SubPage",function(){
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 
 	var ac = ApplicationConfig();
 	var page = ac.loadPage("/test/pages/with-config.html");
@@ -130,7 +130,7 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 });
 
 if (location.protocol == "http:") asyncTest("Application Config SubPage not found",function(){
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 
 	var ac = ApplicationConfig();
 	var page = ac.loadPage("/test/pages/not-there.html");

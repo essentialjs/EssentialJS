@@ -1,1 +1,1 @@
-Resolver("essential")("ApplicationConfig").restrict({ "singleton":true });
+Resolver("essential::ApplicationConfig::").restrict({ "singleton":true });

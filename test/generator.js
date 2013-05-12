@@ -159,7 +159,7 @@ test('Generator with passed prototype of other',function(){
 
 test('Shape generator with parameters',function() {
 
-	var NumberType = Resolver("essential")("Type").variant("Number");
+	var NumberType = Resolver("essential::Type::").variant("Number");
 
 	function _Shape() {}
 	_Shape.args = [ ];

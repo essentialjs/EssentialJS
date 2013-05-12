@@ -239,11 +239,11 @@ test('Resolver namespace::expression API',function() {
 
 	Resolver().set("abcdef","abcdef");
 	equal(Resolver("::abcdef"),Resolver().reference("abcdef"));
-	equal(Resolver("::abcdef","null"),"abcdef");
+	equal(Resolver("::abcdef::","null"),"abcdef");
 
 	Resolver().set("abcde.f","abcdef");
 	equal(Resolver("::abcde.f"),Resolver().reference("abcde.f"));
-	equal(Resolver("::abcde.f","null"),"abcdef");
+	equal(Resolver("::abcde.f::","null"),"abcdef");
 
 	ok(! Resolver.exists("F"));
 
@@ -259,13 +259,13 @@ test('Resolver namespace::expression API',function() {
 	equal(Resolver("F::b"),Resolver("F").reference("b"));
 	equal(Resolver("F::c"),Resolver("F").reference("c"));
 
-	equal(Resolver("F::a","undefined"),"a");
-	equal(Resolver("F::b","undefined"),"b");
-	equal(Resolver("F::c","undefined"),"c");
+	equal(Resolver("F::a::","undefined"),"a");
+	equal(Resolver("F::b::","undefined"),"b");
+	equal(Resolver("F::c::","undefined"),"c");
 
-	equal(Resolver("F::a","null"),"a");
-	equal(Resolver("F::b","null"),"b");
-	equal(Resolver("F::c","null"),"c");
+	equal(Resolver("F::a::","null"),"a");
+	equal(Resolver("F::b::","null"),"b");
+	equal(Resolver("F::c::","null"),"c");
 
 
 	var rg = Resolver("G::",{ "g":"g" });

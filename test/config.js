@@ -2,8 +2,8 @@ module("Config Tests");
 
 test("Loading config in html",function(){
 
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var ac = ApplicationConfig();
 
@@ -22,8 +22,8 @@ test("Loading config in html",function(){
 
 test("Application config using data-role",function() {
 
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var div = HTMLElement("div",{ 
 		"data-role": '"from-attr":true,"attr-num":546' 
@@ -40,8 +40,8 @@ test("Application config using data-role",function() {
 });
 
 test("Application config using script",function(){
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var div = HTMLElement("div",{ id:"test-scripted" },'<input name="username">');
 	var config = ApplicationConfig().getConfig(div);
@@ -54,8 +54,8 @@ test("Application config using script",function(){
 });
 
 test("Application config using script and data-role",function(){
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var div = HTMLElement("div",{ 
 		id:"test-both-ways",

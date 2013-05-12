@@ -1,7 +1,7 @@
 module('Element constructors');
 
 test("HTMLElement construction",function(){
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var div = HTMLElement("div");
 	ok(div, "Created DIV element");
@@ -63,8 +63,8 @@ test("jQuery trigger click",function() {
 });
 
 test("MutableEvent construction click",function(){
-	var HTMLElement = Resolver("essential")("HTMLElement");
-	var MutableEvent = Resolver("essential")("MutableEvent");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var MutableEvent = Resolver("essential::MutableEvent::");
 
 	var div = HTMLElement("div");
 
@@ -83,8 +83,8 @@ test("MutableEvent construction click",function(){
 
 test("MutableEvent preventDefault & stopPropagation",function() {
     expect(1); //2
-	var HTMLElement = Resolver("essential")("HTMLElement");
-	var MutableEvent = Resolver("essential")("MutableEvent");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var MutableEvent = Resolver("essential::MutableEvent::");
 
 	var div = HTMLElement("div");
 
@@ -103,7 +103,7 @@ test("MutableEvent preventDefault & stopPropagation",function() {
 });    
 
 test('Basic element construction',function(){
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var div = HTMLElement("div",{ "class":"abc"},"<span>","abc","</span>");
 	equal(div.tagName,"DIV");
@@ -115,7 +115,7 @@ test('Basic element construction',function(){
 })
 
 test('Script element construction',function(){
-	var HTMLScriptElement = Resolver("essential")("HTMLScriptElement");
+	var HTMLScriptElement = Resolver("essential::HTMLScriptElement::");
 
 	var script = HTMLScriptElement({ "class":"abc"});
 	equal(script.tagName,"SCRIPT");
@@ -139,9 +139,9 @@ test('EnhancedDescriptor cross browser support',function(){
 });
 
 test('addEventListeners catch',function() {
-	var HTMLElement = Resolver("essential")("HTMLElement");
-	var addEventListeners = Resolver("essential")("addEventListeners");
-	var removeEventListeners = Resolver("essential")("removeEventListeners");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var addEventListeners = Resolver("essential::addEventListeners::");
+	var removeEventListeners = Resolver("essential::removeEventListeners::");
 
 	var div = HTMLElement("div",{ "class":"abc"},"<span>","abc","</span>");
 	var events = {
@@ -162,8 +162,8 @@ test('addEventListeners catch',function() {
 });
 
 test('Enhance element early or delayed',function() {
-	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var DocumentRoles = Resolver("essential::DocumentRoles::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
 
@@ -241,7 +241,7 @@ function _TestLayouter(key,el,config) {
 
 	this.sizing = {};
 }
-Resolver("essential")("Layouter").variant("test-group",Generator(_TestLayouter,Resolver("essential")("Layouter"),{
+Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,Resolver("essential::Layouter::"),{
 	prototype:{
 		layout: sinon.stub()
 		// function(el,layout) {
@@ -252,9 +252,9 @@ Resolver("essential")("Layouter").variant("test-group",Generator(_TestLayouter,R
 
 
 test("Enhance layouter element",function() {
-	var EnhancedDescriptor = Resolver("essential")("EnhancedDescriptor");
-	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var DocumentRoles = Resolver("essential::DocumentRoles::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
 	var handlers = {
@@ -298,10 +298,10 @@ test("Enhance layouter element",function() {
 
 test("Effective Element Role",function() {
 
-	var HTMLElement = Resolver("essential")("HTMLElement"),
-		StatefulResolver = Resolver("essential")("StatefulResolver"),
-		effectiveRole = Resolver("essential")("effectiveRole");
-	var MutableEvent = Resolver("essential")("MutableEvent");
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		StatefulResolver = Resolver("essential::StatefulResolver::"),
+		effectiveRole = Resolver("essential::effectiveRole::");
+	var MutableEvent = Resolver("essential::MutableEvent::");
 
 	equal(effectiveRole(HTMLElement("div",{})),"default");
 	equal(effectiveRole(HTMLElement("div",{"role":"button"})),"button");
@@ -357,11 +357,11 @@ function makeFieldGenerator(a,b) {
 
 test("Enhancing elements creating stateful fields",function() {
 
-	var enhanceStatefulFields = Resolver("essential")("enhanceStatefulFields");
-	var StatefulField = Resolver("essential")("StatefulField");
+	var enhanceStatefulFields = Resolver("essential::enhanceStatefulFields::");
+	var StatefulField = Resolver("essential::StatefulField::");
 	var buttonField = StatefulField.variant("*[role=button]");
 	var linkField = StatefulField.variant("*[role=link]");
-	var createDocument = Resolver("essential")("createHTMLDocument");
+	var createDocument = Resolver("essential::createHTMLDocument::");
 
 	notEqual(buttonField,StatefulField);
 
@@ -409,8 +409,8 @@ test("Enhancing elements creating stateful fields",function() {
 });
 
 test('Enhancing DocumentRoles with builtin handlers',function(){
-	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var DocumentRoles = Resolver("essential::DocumentRoles::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
 	var handlers = {
@@ -474,11 +474,11 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 });
 
 test('Role navigation action',function(){
-	var DialogAction = Resolver("essential")("DialogAction");
-	var DocumentRoles = Resolver("essential")("DocumentRoles");
-	var ApplicationConfig = Resolver("essential")("ApplicationConfig");
+	var DialogAction = Resolver("essential::DialogAction::");
+	var DocumentRoles = Resolver("essential::DocumentRoles::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
-	var fireAction = Resolver("essential")("fireAction");
+	var fireAction = Resolver("essential::fireAction::");
 
 	function ABC_DialogAction() {
 

@@ -16,7 +16,7 @@ test("Parameter type variant resolution",function(){
 
 
 test("ArraySet as an Array",function(){
-	var ArraySet = Resolver("essential")("ArraySet");
+	var ArraySet = Resolver("essential::ArraySet::");
 
 	var a1 = ArraySet();
 	equal(a1.length,0);
@@ -25,7 +25,7 @@ test("ArraySet as an Array",function(){
 });
 
 test("ArraySet entry uniqueness",function(){
-	var ArraySet = Resolver("essential")("ArraySet");
+	var ArraySet = Resolver("essential::ArraySet::");
 
 	function e1() {}
 	function e2() {}
@@ -97,8 +97,8 @@ test("ArraySet entry uniqueness",function(){
 
 
 test("DOMTokenList",function(){
-	var DOMTokenList = Resolver("essential")("DOMTokenList");
-	var ArraySet = Resolver("essential")("ArraySet");
+	var DOMTokenList = Resolver("essential::DOMTokenList::");
+	var ArraySet = Resolver("essential::ArraySet::");
 
 	var dtl = DOMTokenList();
 	//not possible: ok(dtl instanceof DOMTokenList);
@@ -126,7 +126,7 @@ test("DOMTokenList",function(){
 })
 
 test("mock el.classList",function(){
-	var DOMTokenList = Resolver("essential")("DOMTokenList");
+	var DOMTokenList = Resolver("essential::DOMTokenList::");
 
 	var el = { "classList":DOMTokenList() };
 

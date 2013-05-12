@@ -1,7 +1,7 @@
 module('stateful elements');
 
 test ("Creating StatefulResolver",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	// Create a new one
 	var stateful = StatefulResolver();
@@ -13,7 +13,7 @@ test ("Creating StatefulResolver",function(){
 })
 
 test("Destroying StatefulResolver",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	// Create a new one
 	var stateful = StatefulResolver();
@@ -25,8 +25,7 @@ test("Destroying StatefulResolver",function(){
 });
 
 test("Stateful element initial class",function(){
-
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	el.className = "a b c";
@@ -38,9 +37,8 @@ test("Stateful element initial class",function(){
 })
 
 test("Initial stateful element state",function() {
-
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
-	var HTMLElement = Resolver("essential")("HTMLElement");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var el = HTMLElement("div",{},
 		'<input type="checkbox" name="a">',
@@ -82,7 +80,7 @@ test("Initial stateful element state",function() {
 })
 
 test("Stateful element state",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
@@ -134,7 +132,7 @@ test("Stateful element state",function(){
 })
 
 test("Stateful element state with custom class",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
@@ -168,8 +166,7 @@ test("Stateful element state with custom class",function(){
 })
 
 test("Stateful element state with odd classes",function(){
-
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
@@ -217,7 +214,7 @@ test("Stateful element state with odd classes",function(){
 })
 
 test("Stateful element custom state ",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 
@@ -269,8 +266,7 @@ test("Stateful element custom state ",function(){
 });
 
 test("Stateful element template class", function() {
-
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 

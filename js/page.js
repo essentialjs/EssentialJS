@@ -4,7 +4,7 @@
 */
 !function(Scripted_gather) {
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		console = essential("console"),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
@@ -435,7 +435,7 @@
 	}
 
 	// page state & sub pages
-	Resolver("page").declare("pages",{});
+	Resolver("page::").declare("pages",{});
 
 	function _Scripted() {
 		// the derived has to define resolver before this
@@ -1298,7 +1298,7 @@ function(scripts) {
 				try {
 					with(this) eval(s.text);
 				} catch(ex) {
-					Resolver("essential")("console").error("Failed to parse application/config",s.text);
+					Resolver("essential::console").error("Failed to parse application/config",s.text);
 				}
 				break;
 			case "application/init": 

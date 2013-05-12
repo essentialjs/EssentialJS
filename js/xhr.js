@@ -540,6 +540,6 @@
 	}
 
 	// Register new object with window
-	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
+	Resolver("essential::").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
 }();

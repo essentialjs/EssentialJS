@@ -1,6 +1,6 @@
 !function() {
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		console = essential("console");
 
 	var contains;

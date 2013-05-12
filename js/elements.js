@@ -2,13 +2,13 @@
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-	var essential = Resolver("essential",{}),
+	var essential = Resolver("essential::",{}),
 		ObjectType = essential("ObjectType"),
 		console = essential("console"),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		pageResolver = Resolver("page"),
+		pageResolver = Resolver("page::"),
 		getActiveArea = essential("getActiveArea"),
 		arrayContains = essential("arrayContains"),
 		statefulCleaner = essential("statefulCleaner"),

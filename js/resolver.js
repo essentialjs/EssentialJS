@@ -6,6 +6,12 @@
 */
 
 
+/**
+ *
+ * options.name
+ * options.generator
+ * options.mixinto
+ */
 function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -18,17 +24,38 @@ function Resolver(name_andor_expr,ns,options)
 	case "string":
         var name_expr = name_andor_expr.split("::");
         var name = name_expr[0] || "default", expr = name_expr[1];
-        if (arguments.length==1) ns = {};
 
-		// Resolver("abc")
-		// Resolver("abc",null)
-		// Resolver("abc",{})
-		// Resolver("abc",{},{options})
-		if (Resolver[name] == undefined) {
-			if (ns == null && arguments.length > 1) return ns; // allow checking without creating a new namespace
-			Resolver[name] = Resolver(ns,options || {});
-			Resolver[name].named = name;
-			}
+        switch(name_expr.length) {
+            case 1: 
+                // Resolver("abc")
+                // Resolver("abc",null)
+                // Resolver("abc",{})
+                // Resolver("abc",{},{options})
+                return _resolver(name,ns,options,arguments.length==1 || ns); //TODO return namespace
+
+            case 2: 
+                // Resolver("abc::") returns the namespace of resolver 
+                if (expr == "") {
+                    return _resolver(name,ns,options,arguments.length==1 || ns);
+
+                // Resolver("abc::def") returns reference for expression
+                } else {
+                    return Resolver[name].reference(expr,ns);
+
+                }
+                break;
+            case 3: 
+                // Resolver("abc::def::")  returns value for expression
+                if (name_expr[2] == "") {
+                    return Resolver[name].get(expr,ns);
+
+                // Resolver("abc::def::ghi")
+                } else {
+
+                }
+                break;
+        }
+
         if (name_expr.length>1 && expr) {
             var call = "reference";
             switch(ns) {
@@ -56,8 +83,20 @@ function Resolver(name_andor_expr,ns,options)
 	}
 
 
+    function _resolver(name,ns,options,auto) {
+        if (Resolver[name] == undefined) {
+            if (!auto) return ns;
+            Resolver[name] = Resolver(ns,options || {});
+            Resolver[name].named = name;
+        }
+        return Resolver[name];
+    }
+
+
 	function _resolve(names,subnames,onundefined) {
-        var top = ns;
+        // var top = ns; TODO passed namespace negates override
+        var top = resolver.namespace;
+
         for (var j = 0, n; j<names.length; ++j) {
             n = names[j];
             var prev_top = top;
@@ -476,7 +515,7 @@ function Resolver(name_andor_expr,ns,options)
                 //TODO swap script with the id. If cachebuster param update timestamp
                 var script = document.getElementById(this.options.touchScript);
                 if (script) {
-                    var newScript = Resolver("essential")("HTMLScriptElement")(script);
+                    var newScript = Resolver("essential::HTMLScriptElement")(script);
                     script.parentNode.replaceChild(newScript,script);
                 }
             }
@@ -724,11 +763,14 @@ function Resolver(name_andor_expr,ns,options)
 
     resolver.override = function(ns,options)
     {
-        options = options || {};
-        var name = options.name || this.named; 
-		Resolver[name] = Resolver(ns,options);
-		Resolver[name].named = name;
-		return Resolver[name];
+        this.namespace = ns;
+        //TODO options
+        return this;
+//       options = options || {};
+//       var name = options.name || this.named; 
+		// Resolver[name] = Resolver(ns,options);
+		// Resolver[name].named = name;
+		// return Resolver[name];
     };
 
     resolver.destroy = function()
