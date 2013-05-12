@@ -184,7 +184,13 @@ Layouter.variant("multisection",Generator(function(key,el,conf) {
 		c.style.top = top+"px";
 		c.style.bottom = bottom+"px";
 	}
+	},
+
+	childLayouterUpdated : function(layouter,el,layout) {},
+	childLaidoutUpdated : function(laidout,el,layout) {
+		return true;
 	}
+
 }}));
 
 function section_button_click(ev) {

@@ -3213,8 +3213,25 @@ Generator.ObjectGenerator = Generator(Object);
 		if (updateLayout || this.flaggedLayout) {
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.el.layouter, laidout = this.el.laidout;
-			if (layouter && layouter.layout) layouter.layout(this.el,this.layout,this.laidouts());
-			if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
+			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
+			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
+
+			// notify the parent layouter
+			if (layouter && this.layouterParent) {
+				var r = this.layouterParent.layouter.childLayouterUpdated(layouter,this.el,this.layout);
+				if (r == true) {
+					this.layouterParent.flaggedLayout = true;
+					this.layouterParent.refresh();
+				}
+			}
+			if (laidout && this.layouterParent) {
+				var r = this.layouterParent.layouter.childLaidoutUpdated(laidout,this.el,this.layout);
+				if (r == true) {
+					this.layouterParent.flaggedLayout = true;
+					this.layouterParent.refresh();
+				}
+			}
+
             this.flaggedLayout = false;
 		}	
 	};
@@ -3835,13 +3852,19 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
-	_Layouter.prototype.updateActiveArea = function(areaName,el) {}
+	_Layouter.prototype.layout = function(el,layout) {};
+
+	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
+	_Layouter.prototype.childLayouterUpdated = function(layouter,el,layout) {};
+	_Layouter.prototype.childLaidoutUpdated = function(laidout,el,layout) {};
 
 	/* Laid out element within a container */
 	function _Laidout(key,el,conf) {
 
 	}
 	var Laidout = essential.declare("Laidout",Generator(_Laidout));
+
+	_Laidout.prototype.layout = function(el,layout) {};
 
 	var nativeClassList = !!document.documentElement.classList;
 

@@ -918,8 +918,25 @@
 		if (updateLayout || this.flaggedLayout) {
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.el.layouter, laidout = this.el.laidout;
-			if (layouter && layouter.layout) layouter.layout(this.el,this.layout,this.laidouts());
-			if (laidout && laidout.layout) laidout.layout(this.el,this.layout);
+			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
+			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
+
+			// notify the parent layouter
+			if (layouter && this.layouterParent) {
+				var r = this.layouterParent.layouter.childLayouterUpdated(layouter,this.el,this.layout);
+				if (r == true) {
+					this.layouterParent.flaggedLayout = true;
+					this.layouterParent.refresh();
+				}
+			}
+			if (laidout && this.layouterParent) {
+				var r = this.layouterParent.layouter.childLaidoutUpdated(laidout,this.el,this.layout);
+				if (r == true) {
+					this.layouterParent.flaggedLayout = true;
+					this.layouterParent.refresh();
+				}
+			}
+
             this.flaggedLayout = false;
 		}	
 	};

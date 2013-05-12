@@ -82,13 +82,19 @@
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
-	_Layouter.prototype.updateActiveArea = function(areaName,el) {}
+	_Layouter.prototype.layout = function(el,layout) {};
+
+	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
+	_Layouter.prototype.childLayouterUpdated = function(layouter,el,layout) {};
+	_Layouter.prototype.childLaidoutUpdated = function(laidout,el,layout) {};
 
 	/* Laid out element within a container */
 	function _Laidout(key,el,conf) {
 
 	}
 	var Laidout = essential.declare("Laidout",Generator(_Laidout));
+
+	_Laidout.prototype.layout = function(el,layout) {};
 
 	var nativeClassList = !!document.documentElement.classList;
 
