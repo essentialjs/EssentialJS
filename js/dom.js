@@ -602,5 +602,150 @@
 	}
 	essential.declare("removeEventListeners",removeEventListeners);
 
+	function getScrollOffsets(el) {
+		var left=0,top=0;
+		while(el && !isNaN(el.scrollTop)){
+			top += el.scrollTop;
+			left += el.scrollLeft;
+			el = el.parentNode;
+		}
+		return { left:left, top:top };
+	}
+	essential.declare("getScrollOffsets",getScrollOffsets);
+
+	function getPageOffsets(el) {
+		var scrolls = getScrollOffsets(el);
+
+		var left=0,top=0;
+		while(el){
+			top += el.offsetTop;
+			left += el.offsetLeft;
+			el = el.offsetParent
+		}
+		return { left:left - scrolls.left, top:top - scrolls.top };
+	}
+	essential.declare("getPageOffsets",getPageOffsets);
+
+	// (tagName,{attributes},content)
+	// ({attributes},content)
+	function HTMLElement(tagName,from,content_list,_document) {
+		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
+		
+		// optional document arg
+		var d = arguments[c_to];
+		var _doc = document;
+		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		
+		// optional tagName arg
+		if (typeof _tagName == "object") { 
+			_from = _tagName; 
+			_tagName = _from.tagName || "span"; 
+			--c_from; 
+		}
+
+		// real element with attributes
+		if (_from && _from.nodeName && _from.attributes && _from.nodeName[0] != "#") {
+			var __from = {};
+			for(var i=0,a; a = _from.attributes[i]; ++i) {
+				__from[a.name] = a.value;
+			}
+			_from = __from;
+		}
+		
+		var e = _doc.createElement(_tagName);
+		for(var n in _from) {
+			switch(n) {
+				case "tagName": break; // already used
+				case "class":
+					if (_from[n] !== undefined) e.className = _from[n]; 
+					break;
+				case "style":
+					//TODO support object
+					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
+					break;
+					
+				case "src":
+					if (_from[n] !== undefined) {
+						e[n] = _from[n];
+						if (/cachebuster=/.test(_from[n])) {
+							e[n] = e[n].replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
+						}
+					}
+					break;
+
+				case "id":
+				case "className":
+				case "rel":
+				case "lang":
+				case "language":
+				case "type":
+					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+				//TODO case "onprogress": // partial script progress
+				case "onload":
+					regScriptOnload(e,_from.onload);
+					break;
+				case "onclick":
+				case "onmousemove":
+				case "onmouseup":
+				case "onmousedown":
+					if (e.addEventListener) e.addEventListener(n.substring(2),_from[n],false);
+					else if (e.attachEvent) e.attachEvent(n,_from[n]);
+					break;
+				default:
+					if (_from[n] != null) e.setAttribute(n,_from[n]);
+					break;
+			}
+		}
+		var l = [];
+		for(var i=c_from; i<=c_to; ++i) {
+			var p = arguments[i];
+			if (typeof p == "object" && "length" in p) l.concat(p);
+			else if (typeof p == "string") l.push(arguments[i]);
+		}
+		if (l.length) {
+			//TODO _document
+			_document = document;
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = l.join("");
+			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+		} 
+		
+		//TODO .appendTo function
+		
+		return e;
+	}
+	essential.set("HTMLElement",HTMLElement);
+	
+	
+	//TODO element cleaner must remove .el references from listeners
+
+	// this = element
+	function regScriptOnload(domscript,trigger) {
+
+		domscript.onload = function(ev) { 
+			if ( ! this.onloadDone ) {
+				this.onloadDone = true;
+				trigger.call(this,ev || event); 
+			}
+		};
+		domscript.onreadystatechange = function(ev) { 
+			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
+				this.onloadDone = true; 
+				trigger.call(this,ev || event);
+			}
+		}
+	}
+
+	//TODO regScriptOnnotfound (onerror, status=404)
+
+	function HTMLScriptElement(from,doc) {
+		return HTMLElement("SCRIPT",from,doc);
+	}
+	essential.set("HTMLScriptElement",HTMLScriptElement);
 
 }();

@@ -22,28 +22,6 @@
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
-	function getScrollOffsets(el) {
-		var left=0,top=0;
-		while(el && !isNaN(el.scrollTop)){
-			top += el.scrollTop;
-			left += el.scrollLeft;
-			el = el.parentNode;
-		}
-		return { left:left, top:top };
-	}
-
-	function getPageOffsets(el) {
-		var scrolls = getScrollOffsets(el);
-
-		var left=0,top=0;
-		while(el){
-			top += el.offsetTop;
-			left += el.offsetLeft;
-			el = el.offsetParent
-		}
-		return { left:left - scrolls.left, top:top - scrolls.top };
-	}
-
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
 			var el = this;
