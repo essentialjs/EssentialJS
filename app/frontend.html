@@ -76,9 +76,9 @@
 <body class="loading">
   <div role="template" data-role="'id':'panel'">
 
-    <section class="mock-navigate" data-role="'laidout':'section','glue':'left'">
+    <section class="mock-navigate" role="adorned" data-role="'laidout':'section','glue':'left'">
 
-      <button onclick="this.parentNode.stateful.toggle('state.expanded');">*</button>
+      <button onclick="this.parentNode.stateful.toggle('state.expanded');" rel="adornment">*</button>
 
       <p style="width:100px">
         sdfsdf
@@ -91,7 +91,7 @@
 
       </p>
     </section>
-    <section class="mock-table" data-role="'laidout':'section'" aria-expanded="true">
+    <section class="mock-table" role="adorned" data-role="'laidout':'section'" aria-expanded="true">
       <div>
         <div role="scrolled" data-role='"obscured":false'>
         <table>
@@ -116,9 +116,9 @@
         </div>
       </div>
     </section>
-    <section class="mock-detail" data-role="'laidout':'section','glue':'right'">
+    <section class="mock-detail" role="adorned" data-role="'laidout':'section','glue':'right'">
 
-      <button onclick="this.parentNode.stateful.toggle('state.expanded');">*</button>
+      <button onclick="this.parentNode.stateful.toggle('state.expanded');" rel="adornment">*</button>
 
       <p style="width:80px">
         sdfsdf
@@ -130,10 +130,11 @@
         </div>
 
       </p>
-    </section>
-    <section class="extra-info" data-role="'laidout':'section','glue':'right'">
 
-      <button onclick="this.parentNode.stateful.toggle('state.expanded');">*</button>
+    </section>
+    <section class="extra-info" role="adorned" data-role="'laidout':'section','glue':'right'">
+
+      <button onclick="this.parentNode.stateful.toggle('state.expanded');" rel="adornment">*</button>
 
       <ul style="width:120px">
         <li>ueueueu</li>
