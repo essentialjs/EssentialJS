@@ -2570,131 +2570,6 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 	
-	//TODO regScriptOnnotfound (onerror, status=404)
-	
-	// (tagName,{attributes},content)
-	// ({attributes},content)
-	function HTMLElement(tagName,from,content_list,_document) {
-		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
-		
-		// optional document arg
-		var d = arguments[c_to];
-		var _doc = document;
-		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
-		
-		// optional tagName arg
-		if (typeof _tagName == "object") { 
-			_from = _tagName; 
-			_tagName = _from.tagName || "span"; 
-			--c_from; 
-		}
-
-		// real element with attributes
-		if (_from && _from.nodeName && _from.attributes && _from.nodeName[0] != "#") {
-			var __from = {};
-			for(var i=0,a; a = _from.attributes[i]; ++i) {
-				__from[a.name] = a.value;
-			}
-			_from = __from;
-		}
-		
-		var e = _doc.createElement(_tagName);
-		for(var n in _from) {
-			switch(n) {
-				case "tagName": break; // already used
-				case "class":
-					if (_from[n] !== undefined) e.className = _from[n]; 
-					break;
-				case "style":
-					//TODO support object
-					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
-					break;
-					
-				case "src":
-					if (_from[n] !== undefined) {
-						e[n] = _from[n];
-						if (/cachebuster=/.test(_from[n])) {
-							e[n] = e[n].replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
-						}
-					}
-					break;
-
-				case "id":
-				case "className":
-				case "rel":
-				case "lang":
-				case "language":
-				case "type":
-					if (_from[n] !== undefined) e[n] = _from[n]; 
-					break;
-				//TODO case "onprogress": // partial script progress
-				case "onload":
-					regScriptOnload(e,_from.onload);
-					break;
-				case "onclick":
-				case "onmousemove":
-				case "onmouseup":
-				case "onmousedown":
-					if (e.addEventListener) e.addEventListener(n.substring(2),_from[n],false);
-					else if (e.attachEvent) e.attachEvent(n,_from[n]);
-					break;
-				default:
-					if (_from[n] != null) e.setAttribute(n,_from[n]);
-					break;
-			}
-		}
-		var l = [];
-		for(var i=c_from; i<=c_to; ++i) {
-			var p = arguments[i];
-			if (typeof p == "object" && "length" in p) l.concat(p);
-			else if (typeof p == "string") l.push(arguments[i]);
-		}
-		if (l.length) {
-			//TODO _document
-			_document = document;
-			var drop = _document._inner_drop;
-			if (drop == undefined) {
-				drop = _document._inner_drop = _document.createElement("DIV");
-				_document.body.appendChild(drop);
-			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
-		} 
-		
-		//TODO .appendTo function
-		
-		return e;
-	}
-	essential.set("HTMLElement",HTMLElement);
-	
-	
-	//TODO element cleaner must remove .el references from listeners
-
-	// this = element
-	function regScriptOnload(domscript,trigger) {
-
-		domscript.onload = function(ev) { 
-			if ( ! this.onloadDone ) {
-				this.onloadDone = true;
-				trigger.call(this,ev || event); 
-			}
-		};
-		domscript.onreadystatechange = function(ev) { 
-			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
-				this.onloadDone = true; 
-				trigger.call(this,ev || event);
-			}
-		}
-
-	}
-
-	//TODO regScriptOnnotfound (onerror, status=404)
-
-	function HTMLScriptElement(from,doc) {
-		return HTMLElement("SCRIPT",from,doc);
-	}
-	essential.set("HTMLScriptElement",HTMLScriptElement);
-
 	/**
 	 * Cleans up registered event listeners and other references
 	 * 
@@ -2723,8 +2598,37 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("cleanRecursively",cleanRecursively);
 
+
+	/* Container for laid out elements */
+	function _Layouter(key,el,conf) {
+
+	}
+	var Layouter = essential.declare("Layouter",Generator(_Layouter));
+
+	_Layouter.prototype.layout = function(el,layout) {};
+
+	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
+	_Layouter.prototype.childLayouterUpdated = function(layouter,el,layout) {};
+	_Layouter.prototype.childLaidoutUpdated = function(laidout,el,layout) {};
+
+	/* Laid out element within a container */
+	function _Laidout(key,el,conf) {
+
+	}
+	var Laidout = essential.declare("Laidout",Generator(_Laidout));
+
+	_Laidout.prototype.layout = function(el,layout) {};
+	_Laidout.prototype.calcSizing = function(sizing) {};
+
+
 	// map of uniqueId referenced
 	var enhancedElements = essential.declare("enhancedElements",{});
+
+	// map of uniqueId referenced
+	var sizingElements = essential.declare("sizingElements",{});
+
+	// map of uniqueId referenced
+	var maintainedElements = essential.declare("maintainedElements",{});
 
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
@@ -2740,6 +2644,9 @@ Generator.ObjectGenerator = Generator(Object);
 		this.el = el;
 		this.conf = conf || {};
 		this.instance = null;
+		this.sizing = {
+			"contentWidth":0,"contentHeight":0
+		};
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 			"lastDirectCall": 0,
@@ -2785,10 +2692,47 @@ Generator.ObjectGenerator = Generator(Object);
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
 			this.discardHandler = handlers.discard[this.role];
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
-			if (this.layoutHandler) this.layout.enableRefresh = true;
+			if (this.layoutHandler) {
+				this.layout.enableRefresh = true;
+				maintainedElements[this.uniqueId] = this;
+			}
 		} 
 	};
 
+	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
+
+		if (this.conf.layouter && this.layouter==undefined) {
+			var varLayouter = Layouter.variants[this.conf.layouter];
+			if (varLayouter) {
+				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
+				if (this.layouterParent) sizingElements[this.uniqueId] = this;
+				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
+					this.enableRefresh = true;
+	                this.flaggedLayout = true;
+	                maintainedElements[this.uniqueId] = this;
+				}
+			}
+		}
+	};
+
+	_EnhancedDescriptor.prototype._tryMakeLaidout = function(key) {
+
+		if (this.conf.laidout && this.laidout==undefined) {
+			var varLaidout = Laidout.variants[this.conf.laidout];
+			if (varLaidout) {
+				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
+				sizingElements[this.uniqueId] = this;
+				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
+					this.enableRefresh = true;
+	                this.flaggedLayout = true;
+	                maintainedElements[this.uniqueId] = this;
+				}
+			}
+		}
+
+	};
+
+	
 	//TODO _EnhancedDescriptor.prototype.prepareAncestors = function() {};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
@@ -2802,26 +2746,27 @@ Generator.ObjectGenerator = Generator(Object);
 
 		if (updateLayout || this.flaggedLayout) {
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
-			var layouter = this.el.layouter, laidout = this.el.laidout;
+			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
 			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
 
+/*
 			// notify the parent layouter
 			if (layouter && this.layouterParent) {
 				var r = this.layouterParent.layouter.childLayouterUpdated(layouter,this.el,this.layout);
-				if (r == true) {
+				if (r === true) {
 					this.layouterParent.flaggedLayout = true;
 					this.layouterParent.refresh();
 				}
 			}
 			if (laidout && this.layouterParent) {
 				var r = this.layouterParent.layouter.childLaidoutUpdated(laidout,this.el,this.layout);
-				if (r == true) {
+				if (r === true) {
 					this.layouterParent.flaggedLayout = true;
 					this.layouterParent.refresh();
 				}
 			}
-
+*/
             this.flaggedLayout = false;
 		}	
 	};
@@ -2874,6 +2819,17 @@ Generator.ObjectGenerator = Generator(Object);
 		return updateLayout;
 	};
 
+	_EnhancedDescriptor.prototype.checkSizing = function() {
+		var updateLayout = this.needUpdateLayout();
+		if (updateLayout) {
+			if (this.laidout) this.laidout.calcSizing(this.sizing);
+			if (this.layouterParent) this.layouterParent.flaggedLayout = true;
+		}
+
+		this.sizing.contentWidth;
+		this.sizing.contentHeight;
+	};
+
 	// used to emulate IE uniqueId property
 	var lastUniqueId = 555;
 
@@ -2910,24 +2866,37 @@ Generator.ObjectGenerator = Generator(Object);
 		enhancedElements = essential.set("enhancedElements",{});
 	}
 
+	EnhancedDescriptor.refreshAll = function() {
+		if (document.body == undefined) return;
+
+		for(var n in sizingElements) {
+			var desc = sizingElements[n];
+			desc.checkSizing();
+		}
+
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (desc.enableRefresh) {
+				desc.refresh();
+			}
+		}
+	};
+
 	EnhancedDescriptor.maintainAll = function() {
 		if (document.body == undefined) return;
 
-		//TODO list of elements in effect
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
 
 			desc.liveCheck();
-			if (desc.enableRefresh) {
-				if (!desc.discarded) {
-					// maintain it
-					desc.refresh();
-				} else {
-					delete enhancedElements[n];
-				}
+			if (desc.discarded) {
+				if (desc.enableRefresh) delete maintainedElements[n];
+				if (sizingElements[n]) delete sizingElements[n];
+				delete enhancedElements[n];
 			}
 		}
-	}
+	};
 
 	function branchDescs(el) {
 		var descs = [];
@@ -3962,6 +3931,151 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("removeEventListeners",removeEventListeners);
 
+	function getScrollOffsets(el) {
+		var left=0,top=0;
+		while(el && !isNaN(el.scrollTop)){
+			top += el.scrollTop;
+			left += el.scrollLeft;
+			el = el.parentNode;
+		}
+		return { left:left, top:top };
+	}
+	essential.declare("getScrollOffsets",getScrollOffsets);
+
+	function getPageOffsets(el) {
+		var scrolls = getScrollOffsets(el);
+
+		var left=0,top=0;
+		while(el){
+			top += el.offsetTop;
+			left += el.offsetLeft;
+			el = el.offsetParent
+		}
+		return { left:left - scrolls.left, top:top - scrolls.top };
+	}
+	essential.declare("getPageOffsets",getPageOffsets);
+
+	// (tagName,{attributes},content)
+	// ({attributes},content)
+	function HTMLElement(tagName,from,content_list,_document) {
+		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
+		
+		// optional document arg
+		var d = arguments[c_to];
+		var _doc = document;
+		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
+		
+		// optional tagName arg
+		if (typeof _tagName == "object") { 
+			_from = _tagName; 
+			_tagName = _from.tagName || "span"; 
+			--c_from; 
+		}
+
+		// real element with attributes
+		if (_from && _from.nodeName && _from.attributes && _from.nodeName[0] != "#") {
+			var __from = {};
+			for(var i=0,a; a = _from.attributes[i]; ++i) {
+				__from[a.name] = a.value;
+			}
+			_from = __from;
+		}
+		
+		var e = _doc.createElement(_tagName);
+		for(var n in _from) {
+			switch(n) {
+				case "tagName": break; // already used
+				case "class":
+					if (_from[n] !== undefined) e.className = _from[n]; 
+					break;
+				case "style":
+					//TODO support object
+					if (_from[n] !== undefined) e.style.cssText = _from[n]; 
+					break;
+					
+				case "src":
+					if (_from[n] !== undefined) {
+						e[n] = _from[n];
+						if (/cachebuster=/.test(_from[n])) {
+							e[n] = e[n].replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
+						}
+					}
+					break;
+
+				case "id":
+				case "className":
+				case "rel":
+				case "lang":
+				case "language":
+				case "type":
+					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+				//TODO case "onprogress": // partial script progress
+				case "onload":
+					regScriptOnload(e,_from.onload);
+					break;
+				case "onclick":
+				case "onmousemove":
+				case "onmouseup":
+				case "onmousedown":
+					if (e.addEventListener) e.addEventListener(n.substring(2),_from[n],false);
+					else if (e.attachEvent) e.attachEvent(n,_from[n]);
+					break;
+				default:
+					if (_from[n] != null) e.setAttribute(n,_from[n]);
+					break;
+			}
+		}
+		var l = [];
+		for(var i=c_from; i<=c_to; ++i) {
+			var p = arguments[i];
+			if (typeof p == "object" && "length" in p) l.concat(p);
+			else if (typeof p == "string") l.push(arguments[i]);
+		}
+		if (l.length) {
+			//TODO _document
+			_document = document;
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = l.join("");
+			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+		} 
+		
+		//TODO .appendTo function
+		
+		return e;
+	}
+	essential.set("HTMLElement",HTMLElement);
+	
+	
+	//TODO element cleaner must remove .el references from listeners
+
+	// this = element
+	function regScriptOnload(domscript,trigger) {
+
+		domscript.onload = function(ev) { 
+			if ( ! this.onloadDone ) {
+				this.onloadDone = true;
+				trigger.call(this,ev || event); 
+			}
+		};
+		domscript.onreadystatechange = function(ev) { 
+			if ( ( "loaded" === this.readyState || "complete" === this.readyState ) && ! this.onloadDone ) {
+				this.onloadDone = true; 
+				trigger.call(this,ev || event);
+			}
+		}
+	}
+
+	//TODO regScriptOnnotfound (onerror, status=404)
+
+	function HTMLScriptElement(from,doc) {
+		return HTMLElement("SCRIPT",from,doc);
+	}
+	essential.set("HTMLScriptElement",HTMLScriptElement);
 
 }();
 /*jslint white: true */
@@ -4000,27 +4114,6 @@ Generator.ObjectGenerator = Generator(Object);
 
 		return "<" + attrs.join(" ") + ">" + tail;
 	}
-
-
-	/* Container for laid out elements */
-	function _Layouter(key,el,conf) {
-
-	}
-	var Layouter = essential.declare("Layouter",Generator(_Layouter));
-
-	_Layouter.prototype.layout = function(el,layout) {};
-
-	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
-	_Layouter.prototype.childLayouterUpdated = function(layouter,el,layout) {};
-	_Layouter.prototype.childLaidoutUpdated = function(laidout,el,layout) {};
-
-	/* Laid out element within a container */
-	function _Laidout(key,el,conf) {
-
-	}
-	var Laidout = essential.declare("Laidout",Generator(_Laidout));
-
-	_Laidout.prototype.layout = function(el,layout) {};
 
 	var nativeClassList = !!document.documentElement.classList;
 
@@ -5844,35 +5937,12 @@ function(scripts) {
 		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
 		HTMLScriptElement = essential("HTMLScriptElement"),
-		Layouter = essential("Layouter"),
-		Laidout = essential("Laidout"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host,
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
+		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
-
-	function getScrollOffsets(el) {
-		var left=0,top=0;
-		while(el && !isNaN(el.scrollTop)){
-			top += el.scrollTop;
-			left += el.scrollLeft;
-			el = el.parentNode;
-		}
-		return { left:left, top:top };
-	}
-
-	function getPageOffsets(el) {
-		var scrolls = getScrollOffsets(el);
-
-		var left=0,top=0;
-		while(el){
-			top += el.offsetTop;
-			left += el.offsetLeft;
-			el = el.offsetParent
-		}
-		return { left:left - scrolls.left, top:top - scrolls.top };
-	}
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
@@ -6162,27 +6232,12 @@ function(scripts) {
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced) {
 				desc._tryEnhance(this.handlers);
-				++enhancedCount;
+				++enhancedCount;	//TODO only increase if enhance handler?
 			} 
-
 			if (! desc.enhanced) incomplete = true;
 
-			var k = "";//TODO declare(k,...)
-			if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
-				if (Layouter.variants[desc.conf.layouter]) {
-					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf,desc.layouterParent);
-					desc.enableRefresh = true;
-	                desc.flaggedLayout = true;
-				}
-			}
-			if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
-				if (Laidout.variants[desc.conf.laidout]) {
-					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf,desc.layouterParent);
-					desc.enableRefresh = true;
-	                desc.flaggedLayout = true;
-				}
-			}
-
+			desc._tryMakeLayouter(""); //TODO key?
+			desc._tryMakeLaidout(""); //TODO key?
 		}
 
 		//TODO enhance additional descriptors created during this instead of double call on loading = false
@@ -6220,8 +6275,8 @@ function(scripts) {
 
 	_DocumentRoles.prototype._resize_descs = function() {
 		//TODO migrate to desc.refresh
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
+		for(var n in maintainedElements) { //TODO maintainedElements
+			var desc = maintainedElements[n];
 			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
 			if (desc.enhanced && !this.discarded && desc.layout.enableRefresh) {
@@ -6258,8 +6313,8 @@ function(scripts) {
 
 	_DocumentRoles.prototype._area_changed_descs = function() {
 		//TODO only active pages
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
 
 			if (desc.enhanced && desc.layout.enableRefresh) {
 				// desc.layout.area = getActiveArea();
@@ -6321,6 +6376,34 @@ function(scripts) {
 	}
 	essential.declare("scrollbarSize",scrollbarSize);
 
+}();
+
+
+/*jshint forin:true, eqnull:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, indent:4, maxerr:50, newcap:false, white:false, devel:true */
+!function () {
+	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
+	var essential = Resolver("essential",{}),
+		ObjectType = essential("ObjectType"),
+		console = essential("console"),
+		MutableEvent = essential("MutableEvent"),
+		StatefulResolver = essential("StatefulResolver"),
+		statefulCleaner = essential("statefulCleaner"),
+		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
+		callCleaners = essential("callCleaners"),
+		addEventListeners = essential("addEventListeners"),
+		removeEventListeners = essential("removeEventListeners"),
+		DocumentRoles = essential("DocumentRoles"),
+		fireAction = essential("fireAction"),
+		scrollbarSize = essential("scrollbarSize"),
+		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
+		serverUrl = location.protocol + "//" + location.host;
+
+
 	
 	function _StageLayouter(key,el,conf) {
 		this.key = key;
@@ -6363,33 +6446,6 @@ function(scripts) {
 	}
 	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
 	Laidout.variant("area-member",MemberLaidout);
-
-}();
-
-
-/*jshint forin:true, eqnull:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, indent:4, maxerr:50, newcap:false, white:false, devel:true */
-!function () {
-	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
-
-	var essential = Resolver("essential",{}),
-		ObjectType = essential("ObjectType"),
-		console = essential("console"),
-		MutableEvent = essential("MutableEvent"),
-		StatefulResolver = essential("StatefulResolver"),
-		statefulCleaner = essential("statefulCleaner"),
-		HTMLElement = essential("HTMLElement"),
-		HTMLScriptElement = essential("HTMLScriptElement"),
-		Layouter = essential("Layouter"),
-		Laidout = essential("Laidout"),
-		EnhancedDescriptor = essential("EnhancedDescriptor"),
-		callCleaners = essential("callCleaners"),
-		addEventListeners = essential("addEventListeners"),
-		removeEventListeners = essential("removeEventListeners"),
-		DocumentRoles = essential("DocumentRoles"),
-		fireAction = essential("fireAction"),
-		scrollbarSize = essential("scrollbarSize"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
-		serverUrl = location.protocol + "//" + location.host;
 
 
 	function form_onsubmit(ev) {
@@ -6984,9 +7040,10 @@ function(scripts) {
 	};
 }();
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
-Resolver("essential::EnhancedDescriptor::").maintainer = setInterval(Resolver("essential::EnhancedDescriptor").maintainAll,330); // minimum frequency 3 per sec
+Resolver("essential::EnhancedDescriptor::").maintainer = setInterval(Resolver("essential::EnhancedDescriptor::").maintainAll,330); // minimum frequency 3 per sec
+Resolver("essential::EnhancedDescriptor::").refresher = setInterval(Resolver("essential::EnhancedDescriptor::").refreshAll,160); // minimum frequency 3 per sec
 
-
+//TODO clearInterval on unload
 
 
 if(!this.JSON){

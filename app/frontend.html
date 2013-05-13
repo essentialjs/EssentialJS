@@ -77,6 +77,9 @@
   <div role="template" data-role="'id':'panel'">
 
     <section class="mock-navigate" data-role="'laidout':'section','glue':'left'">
+
+      <button onclick="this.parentNode.stateful.toggle('state.expanded');">*</button>
+
       <p style="width:100px">
         sdfsdf
         sdf
@@ -88,9 +91,9 @@
 
       </p>
     </section>
-    <section class="mock-table" data-role="'laidout':'section'">
+    <section class="mock-table" data-role="'laidout':'section'" aria-expanded="true">
       <div>
-        <div role="scrolled" data-role='"obscured":true'>
+        <div role="scrolled" data-role='"obscured":false'>
         <table>
           <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> </tr>
           <tr><td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> <td>0</td><td>1</td><td>2</td><td>3</td> </tr>
@@ -114,6 +117,9 @@
       </div>
     </section>
     <section class="mock-detail" data-role="'laidout':'section','glue':'right'">
+
+      <button onclick="this.parentNode.stateful.toggle('state.expanded');">*</button>
+
       <p style="width:80px">
         sdfsdf
         sdf
@@ -126,6 +132,9 @@
       </p>
     </section>
     <section class="extra-info" data-role="'laidout':'section','glue':'right'">
+
+      <button onclick="this.parentNode.stateful.toggle('state.expanded');">*</button>
+
       <ul style="width:120px">
         <li>ueueueu</li>
         <li>ueueueu</li>

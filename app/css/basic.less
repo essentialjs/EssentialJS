@@ -44,7 +44,15 @@
 	position: absolute;
 	top:0; bottom:0;
 	overflow: hidden;
+	transition: left .3s, right .3s, width .3s;
 }
+
+.leftSide section p { display:none; }
+.leftSide section.state-expanded p { display:block; }
+.leftSide section div { display:none; }
+.leftSide section.state-expanded div { display:block; }
+.leftSide section ul { display:none; }
+.leftSide section.state-expanded ul { display:block; }
 
 .leftSide .mock-navigate {
   border: 1px solid black;

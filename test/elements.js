@@ -291,7 +291,7 @@ test("Enhance layouter element",function() {
 	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
 	ok(desc.flaggedLayout);
 	
-	EnhancedDescriptor.maintainAll();
+	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
 });
 

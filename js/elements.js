@@ -14,12 +14,11 @@
 		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
 		HTMLScriptElement = essential("HTMLScriptElement"),
-		Layouter = essential("Layouter"),
-		Laidout = essential("Laidout"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host,
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
+		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
 	function delayedScriptOnload(scriptRel) {
@@ -310,27 +309,12 @@
 			StatefulResolver(desc.el,true);
 			if (!desc.enhanced) {
 				desc._tryEnhance(this.handlers);
-				++enhancedCount;
+				++enhancedCount;	//TODO only increase if enhance handler?
 			} 
-
 			if (! desc.enhanced) incomplete = true;
 
-			var k = "";//TODO declare(k,...)
-			if (desc.conf && desc.conf.layouter && desc.layouter==undefined) {
-				if (Layouter.variants[desc.conf.layouter]) {
-					desc.layouter = desc.el.layouter = Layouter.variant(desc.conf.layouter)(k,desc.el,desc.conf,desc.layouterParent);
-					desc.enableRefresh = true;
-	                desc.flaggedLayout = true;
-				}
-			}
-			if (desc.conf && desc.conf.laidout && desc.laidout==undefined) {
-				if (Laidout.variants[desc.conf.laidout]) {
-					desc.laidout = desc.el.laidout = Laidout.variant(desc.conf.laidout)(k,desc.el,desc.conf,desc.layouterParent);
-					desc.enableRefresh = true;
-	                desc.flaggedLayout = true;
-				}
-			}
-
+			desc._tryMakeLayouter(""); //TODO key?
+			desc._tryMakeLaidout(""); //TODO key?
 		}
 
 		//TODO enhance additional descriptors created during this instead of double call on loading = false
@@ -368,8 +352,8 @@
 
 	_DocumentRoles.prototype._resize_descs = function() {
 		//TODO migrate to desc.refresh
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
+		for(var n in maintainedElements) { //TODO maintainedElements
+			var desc = maintainedElements[n];
 			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
 			if (desc.enhanced && !this.discarded && desc.layout.enableRefresh) {
@@ -406,8 +390,8 @@
 
 	_DocumentRoles.prototype._area_changed_descs = function() {
 		//TODO only active pages
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
 
 			if (desc.enhanced && desc.layout.enableRefresh) {
 				// desc.layout.area = getActiveArea();
@@ -468,49 +452,6 @@
 		return _scrollbarSize;
 	}
 	essential.declare("scrollbarSize",scrollbarSize);
-
-	
-	function _StageLayouter(key,el,conf) {
-		this.key = key;
-		this.type = conf.layouter;
-		this.areaNames = conf["area-names"];
-		this.activeArea = null;
-
-		this.baseClass = conf["base-class"];
-		if (this.baseClass) this.baseClass += " ";
-		else this.baseClass = "";
-	}
-	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
-	Layouter.variant("area-stage",StageLayouter);
-
-	_StageLayouter.prototype.refreshClass = function(el) {
-		var areaClasses = [];
-		for(var i=0,a; a = this.areaNames[i]; ++i) {
-			if (a == this.activeArea) areaClasses.push(a + "-area-active");
-			else areaClasses.push(a + "-area-inactive");
-		}
-		var newClass = this.baseClass + areaClasses.join(" ")
-		if (el.className != newClass) el.className = newClass;
-	};
-
-	_StageLayouter.prototype.updateActiveArea = function(areaName,el) {
-		this.activeArea = areaName;
-		this.refreshClass(el); //TODO on delay	
-	};
-
-	function _MemberLaidout(key,el,conf) {
-		this.key = key;
-		this.type = conf.laidout;
-		this.areaNames = conf["area-names"];
-
-		this.baseClass = conf["base-class"];
-		if (this.baseClass) this.baseClass += " ";
-		else this.baseClass = "";
-
-		if (el) el.className = this.baseClass + el.className;
-	}
-	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
-	Laidout.variant("area-member",MemberLaidout);
 
 }();
 

@@ -261,8 +261,37 @@
 	}
 	essential.declare("cleanRecursively",cleanRecursively);
 
+
+	/* Container for laid out elements */
+	function _Layouter(key,el,conf) {
+
+	}
+	var Layouter = essential.declare("Layouter",Generator(_Layouter));
+
+	_Layouter.prototype.layout = function(el,layout) {};
+
+	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
+	_Layouter.prototype.childLayouterUpdated = function(layouter,el,layout) {};
+	_Layouter.prototype.childLaidoutUpdated = function(laidout,el,layout) {};
+
+	/* Laid out element within a container */
+	function _Laidout(key,el,conf) {
+
+	}
+	var Laidout = essential.declare("Laidout",Generator(_Laidout));
+
+	_Laidout.prototype.layout = function(el,layout) {};
+	_Laidout.prototype.calcSizing = function(sizing) {};
+
+
 	// map of uniqueId referenced
 	var enhancedElements = essential.declare("enhancedElements",{});
+
+	// map of uniqueId referenced
+	var sizingElements = essential.declare("sizingElements",{});
+
+	// map of uniqueId referenced
+	var maintainedElements = essential.declare("maintainedElements",{});
 
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
@@ -278,6 +307,9 @@
 		this.el = el;
 		this.conf = conf || {};
 		this.instance = null;
+		this.sizing = {
+			"contentWidth":0,"contentHeight":0
+		};
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 			"lastDirectCall": 0,
@@ -323,10 +355,47 @@
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
 			this.discardHandler = handlers.discard[this.role];
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
-			if (this.layoutHandler) this.layout.enableRefresh = true;
+			if (this.layoutHandler) {
+				this.layout.enableRefresh = true;
+				maintainedElements[this.uniqueId] = this;
+			}
 		} 
 	};
 
+	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
+
+		if (this.conf.layouter && this.layouter==undefined) {
+			var varLayouter = Layouter.variants[this.conf.layouter];
+			if (varLayouter) {
+				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
+				if (this.layouterParent) sizingElements[this.uniqueId] = this;
+				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
+					this.enableRefresh = true;
+	                this.flaggedLayout = true;
+	                maintainedElements[this.uniqueId] = this;
+				}
+			}
+		}
+	};
+
+	_EnhancedDescriptor.prototype._tryMakeLaidout = function(key) {
+
+		if (this.conf.laidout && this.laidout==undefined) {
+			var varLaidout = Laidout.variants[this.conf.laidout];
+			if (varLaidout) {
+				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
+				sizingElements[this.uniqueId] = this;
+				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
+					this.enableRefresh = true;
+	                this.flaggedLayout = true;
+	                maintainedElements[this.uniqueId] = this;
+				}
+			}
+		}
+
+	};
+
+	
 	//TODO _EnhancedDescriptor.prototype.prepareAncestors = function() {};
 
 	_EnhancedDescriptor.prototype.refresh = function() {
@@ -340,26 +409,27 @@
 
 		if (updateLayout || this.flaggedLayout) {
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
-			var layouter = this.el.layouter, laidout = this.el.laidout;
+			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
 			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
 
+/*
 			// notify the parent layouter
 			if (layouter && this.layouterParent) {
 				var r = this.layouterParent.layouter.childLayouterUpdated(layouter,this.el,this.layout);
-				if (r == true) {
+				if (r === true) {
 					this.layouterParent.flaggedLayout = true;
 					this.layouterParent.refresh();
 				}
 			}
 			if (laidout && this.layouterParent) {
 				var r = this.layouterParent.layouter.childLaidoutUpdated(laidout,this.el,this.layout);
-				if (r == true) {
+				if (r === true) {
 					this.layouterParent.flaggedLayout = true;
 					this.layouterParent.refresh();
 				}
 			}
-
+*/
             this.flaggedLayout = false;
 		}	
 	};
@@ -412,6 +482,17 @@
 		return updateLayout;
 	};
 
+	_EnhancedDescriptor.prototype.checkSizing = function() {
+		var updateLayout = this.needUpdateLayout();
+		if (updateLayout) {
+			if (this.laidout) this.laidout.calcSizing(this.sizing);
+			if (this.layouterParent) this.layouterParent.flaggedLayout = true;
+		}
+
+		this.sizing.contentWidth;
+		this.sizing.contentHeight;
+	};
+
 	// used to emulate IE uniqueId property
 	var lastUniqueId = 555;
 
@@ -448,24 +529,37 @@
 		enhancedElements = essential.set("enhancedElements",{});
 	}
 
+	EnhancedDescriptor.refreshAll = function() {
+		if (document.body == undefined) return;
+
+		for(var n in sizingElements) {
+			var desc = sizingElements[n];
+			desc.checkSizing();
+		}
+
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (desc.enableRefresh) {
+				desc.refresh();
+			}
+		}
+	};
+
 	EnhancedDescriptor.maintainAll = function() {
 		if (document.body == undefined) return;
 
-		//TODO list of elements in effect
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
 
 			desc.liveCheck();
-			if (desc.enableRefresh) {
-				if (!desc.discarded) {
-					// maintain it
-					desc.refresh();
-				} else {
-					delete enhancedElements[n];
-				}
+			if (desc.discarded) {
+				if (desc.enableRefresh) delete maintainedElements[n];
+				if (sizingElements[n]) delete sizingElements[n];
+				delete enhancedElements[n];
 			}
 		}
-	}
+	};
 
 	function branchDescs(el) {
 		var descs = [];

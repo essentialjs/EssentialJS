@@ -23,6 +23,50 @@
 		serverUrl = location.protocol + "//" + location.host;
 
 
+	
+	function _StageLayouter(key,el,conf) {
+		this.key = key;
+		this.type = conf.layouter;
+		this.areaNames = conf["area-names"];
+		this.activeArea = null;
+
+		this.baseClass = conf["base-class"];
+		if (this.baseClass) this.baseClass += " ";
+		else this.baseClass = "";
+	}
+	var StageLayouter = essential.declare("StageLayouter",Generator(_StageLayouter,Layouter));
+	Layouter.variant("area-stage",StageLayouter);
+
+	_StageLayouter.prototype.refreshClass = function(el) {
+		var areaClasses = [];
+		for(var i=0,a; a = this.areaNames[i]; ++i) {
+			if (a == this.activeArea) areaClasses.push(a + "-area-active");
+			else areaClasses.push(a + "-area-inactive");
+		}
+		var newClass = this.baseClass + areaClasses.join(" ")
+		if (el.className != newClass) el.className = newClass;
+	};
+
+	_StageLayouter.prototype.updateActiveArea = function(areaName,el) {
+		this.activeArea = areaName;
+		this.refreshClass(el); //TODO on delay	
+	};
+
+	function _MemberLaidout(key,el,conf) {
+		this.key = key;
+		this.type = conf.laidout;
+		this.areaNames = conf["area-names"];
+
+		this.baseClass = conf["base-class"];
+		if (this.baseClass) this.baseClass += " ";
+		else this.baseClass = "";
+
+		if (el) el.className = this.baseClass + el.className;
+	}
+	var MemberLaidout = essential.declare("MemberLaidout",Generator(_MemberLaidout,Laidout));
+	Laidout.variant("area-member",MemberLaidout);
+
+
 	function form_onsubmit(ev) {
 		var frm = this;
 		setTimeout(function(){
