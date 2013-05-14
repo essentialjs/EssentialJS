@@ -1994,10 +1994,6 @@ button.close {
 }
 .leftSide section.state-expanded .content { visibility: visible; }
 
-.leftSide section.mock-table .content {
-  min-width: 400px;
-}
-
 .leftSide section.left {
   padding-left: 20px;
 }
