@@ -1984,12 +1984,30 @@ button.close {
   overflow: hidden;
   transition: left .3s, right .3s, width .3s;
 }
-.leftSide section p { display:none; }
-.leftSide section.state-expanded p { display:block; }
-.leftSide section div { display:none; }
-.leftSide section.state-expanded div { display:block; }
-.leftSide section ul { display:none; }
-.leftSide section.state-expanded ul { display:block; }
+
+.leftSide section .content {
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 20px;
+  visibility: hidden;
+  height: 100%;
+}
+.leftSide section.state-expanded .content { visibility: visible; }
+
+.leftSide section.mock-table .content {
+  min-width: 400px;
+}
+
+.leftSide section.left {
+  padding-left: 20px;
+}
+.leftSide section.right {
+  padding-right: 20px;
+}
+.leftSide section button[rel=adornment] {
+  position: absolute;
+  top: 0;
+}
 
 .leftSide .mock-navigate {
   border: 1px solid black;

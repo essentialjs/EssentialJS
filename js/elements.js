@@ -356,7 +356,7 @@
 			var desc = maintainedElements[n];
 			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
-			if (desc.enhanced && !this.discarded && desc.layout.enableRefresh) {
+			if (desc.layout.enable) {
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
@@ -368,7 +368,7 @@
 						// call now
 						desc.refresh();
 						desc.layout.lastDirectCall = now;
-						if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
 					} else {
 						// call in a bit
 						var delay = now + throttle - desc.layout.lastDirectCall;
@@ -379,7 +379,7 @@
 								desc.refresh();
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
-								if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
 							},delay);
 						})(desc);
 					}
@@ -393,10 +393,10 @@
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.enhanced && desc.layout.enableRefresh) {
+			if (desc.layout.enable) {
 				// desc.layout.area = getActiveArea();
 				desc.refresh();
-				if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+				// if (desc.layouterParent) desc.layouterParent.layout.queued = true;
 				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
@@ -410,10 +410,7 @@
 	}
 	
 	// Element specific handlers
-	DocumentRoles.presets.declare("handlers.init", pageResolver("handlers.init"));
-	DocumentRoles.presets.declare("handlers.enhance", pageResolver("handlers.enhance"));
-	DocumentRoles.presets.declare("handlers.layout", pageResolver("handlers.layout"));
-	DocumentRoles.presets.declare("handlers.discard", pageResolver("handlers.discard"));
+	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
 
 
 	_DocumentRoles.default_enhance = function(el,role,config) {
@@ -434,6 +431,7 @@
 		for(var i=0,r; r = list[i]; ++i) {
 			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
 			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
+			if (this["sizing_"+r]) this.presets.declare(["handlers","sizing",r], this["sizing_"+r]);
 			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
 			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
 		}

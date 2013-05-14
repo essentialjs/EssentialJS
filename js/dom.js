@@ -748,4 +748,224 @@
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
+
+	function _ElementPlacement(el,track) {
+		this.el = el;
+		this.style = {};
+		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
+		this.compute();
+	}
+	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
+
+	_ElementPlacement.prototype.compute = function() {
+		for(var i=0,s; s = this.track[i]; ++i) {
+			this.style[s] = this._compute(s);
+		}
+	};
+
+	_ElementPlacement.prototype.PIXEL = /^\d+(px)?$/i;
+
+	_ElementPlacement.prototype.CSS_PRECALCULATED_SIZES = {
+		'medium':"2px"	
+	};
+
+	_ElementPlacement.prototype.CSS_PROPERTY_TYPES = {
+		'border-width':'size',
+		'border-left-width':'size',
+		'border-right-width':'size',
+		'border-bottom-width':'top',
+		'border-top-width':'top',
+		'borderWidth':'size',
+		'borderLeftWidth':'size',
+		'borderRightWidth':'size',
+		'borderBottomWidth':'top',
+		'borderTopWidth':'top',
+
+
+		'padding': 'size',
+		'padding-left': 'size',
+		'padding-right': 'size',
+		'padding-top': 'top',
+		'padding-bottom': 'top',
+		'paddingLeft': 'size',
+		'paddingRight': 'size',
+		'paddingTop': 'top',
+		'paddingBottom': 'top',
+
+		'margin': 'size',
+		'margin-left': 'size',
+		'margin-right': 'size',
+		'margin-top': 'top',
+		'margin-bottom': 'top',
+		'marginLeft': 'size',
+		'marginRight': 'size',
+		'marginTop': 'top',
+		'marginBottom': 'top',
+		
+		'font-size': 'size',
+		'fontSize': 'size',
+		'line-height': 'top', 
+		'lineHeight': 'top', 
+		'text-indent': 'size',
+		'textIndent': 'size',
+		
+		'width': 'size',
+		'height': 'top',
+		'max-width': 'size',
+		'max-height': 'top',
+		'min-width': 'size',
+		'min-height': 'top',
+		'maxWidth': 'size',
+		'maxHeight': 'top',
+		'minWidth': 'size',
+		'minHeight': 'top',
+		'left':'size',
+		'right':'size',
+		'top': 'top',
+		'bottom': 'top'
+	};
+
+	_ElementPlacement.prototype.CSS_PROPERTY_FROM_JS = {
+		'backgroundColor':'background-color',
+		'backgroundImage':'background-image',
+		'backgroundPosition':'background-position',
+		'backgroundRepeat':'background-repeat',
+
+		'borderWidth':'border-width',
+		'borderLeft':'border-left',
+		'borderRight':'border-right',
+		'borderTop':'border-top',
+		'borderBottom':'border-bottom',
+		'borderLeftWidth':'border-left-width',
+		'borderRightWidth':'border-right-width',
+		'borderBottomWidth':'border-bottom-width',
+		'borderTopWidth':'border-top-width',
+
+		'paddingLeft': 'padding-left',
+		'paddingRight': 'padding-right',
+		'paddingTop': 'padding-top',
+		'paddingBottom': 'padding-bottom',
+
+		'marginLeft': 'margin-left',
+		'marginRight': 'margin-right',
+		'marginTop': 'margin-top',
+		'marginBottom': 'margin-bottom',
+		
+		'fontSize': 'font-size',
+		'lineHeight': 'line-height',
+		'textIndent': 'text-indent'
+		
+	};
+
+	_ElementPlacement.prototype.JS_PROPERTY_FROM_CSS = {
+		'background-color':'backgroundColor',
+		'background-image':'backgroundImage',
+		'background-position':'backgroundPosition',
+		'background-repeat':'backgroundRepeat',
+
+		'border-width':'borderWidth',
+		'border-left':'borderLeft',
+		'border-right':'borderRight',
+		'border-top':'borderTop',
+		'border-bottom':'borderBottom',
+		'border-left-width':'borderLeftWidth',
+		'border-right-width':'borderRightWidth',
+		'border-bottom-width':'borderBottomWidth',
+		'border-top-width':'borderTopWidth',
+
+		'padding-left':'paddingLeft',
+		'padding-right':'paddingRight',
+		'padding-top':'paddingTop',
+		'padding-bottom':'paddingBottom',
+
+		'margin-left':'marginLeft',
+		'margin-right':'marginRight',
+		'margin-top':'marginTop',
+		'margin-bottom':'marginBottom',
+		
+		'font-size':'fontSize',
+		'line-height':'lineHeight',
+		'text-indent':'textIndent'
+		
+	};
+
+/**
+ * Computes a value into pixels on InternetExplorer, if it is possible.
+ * @private
+ * 
+ * @param {String} sProp 'size', 'left' or 'top'
+ * @returns function that returns Pixels in CSS format. IE. 123px
+ */
+function _makeToPixelsIE(sProp)
+{
+	
+	var sPixelProp = "pixel" + sProp.substring(0,1).toUpperCase() + sProp.substring(1);
+
+	return function(eElement,sValue) {
+		var sInlineStyle = eElement.style[sProp];
+		var sRuntimeStyle = eElement.runtimeStyle[sProp];
+		try
+		{
+		  	eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
+		  	eElement.style[sProp] = sValue || 0;
+		  	sValue = eElement.style[sPixelProp] + "px";
+		}
+		catch(ex)
+		{
+			
+		}
+		eElement.style[sProp] = sInlineStyle;
+		eElement.runtimeStyle[sProp] = sRuntimeStyle;
+
+		return sValue
+	};
+};
+
+
+	_ElementPlacement.prototype.TO_PIXELS_IE = {
+		"left": _makeToPixelsIE("left"),
+		"top": _makeToPixelsIE("top"),
+		"size": _makeToPixelsIE("left")
+	};
+
+function _correctChromeWebkitDimensionsBug(s,v) {
+
+	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom")
+			&& v === "auto")
+	{
+		return true;
+	}
+}
+
+_ElementPlacement.prototype._compute = function(style)
+{
+	var value;
+	
+	style = this.JS_PROPERTY_FROM_CSS[style] || style;
+	if (this.el.currentStyle)
+	{
+		var v = this.el.currentStyle[style];
+		var sPrecalc = this.CSS_PRECALCULATED_SIZES[v];
+		if (sPrecalc !== undefined) return sPrecalc; 
+		if (this.PIXEL.test(v)) return v;
+
+		var fToPixels = this.TO_PIXELS_IE[this.CSS_PROPERTY_TYPES[style]];
+  		value = fToPixels? fToPixels(this.el, v) : v;
+
+	}
+	else if (document.defaultView)
+	{
+		value = document.defaultView.getComputedStyle(this.el, null)[style];
+	}
+	
+	//TODO fix bad performance overhead
+	if (!value || value === "" || _correctChromeWebkitDimensionsBug(style, value))
+	{
+		value = this.el.style[style];
+	}
+	
+	return value;
+};
+
+
 }();

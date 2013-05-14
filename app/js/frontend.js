@@ -233,6 +233,76 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 }));
 
 
+	function enhance_adorned(el,role,config) 
+	{
+		var wrapper = document.createElement("DIV");
+		wrapper.className = config.contentClass || config["content-class"] || "content";
+		for(var c = el.firstChild; c;) {
+			var next = c.nextSibling, adornment,rel;
+			if (c.attributes) {adornment = c.getAttribute("data-adornment"); rel = c.getAttribute("rel");}
+			if (adornment || rel == "adornment") {
+				// adornment
+			}
+			else wrapper.appendChild(c);
+			c = next;
+		}
+		el.appendChild(wrapper);
+
+		return {
+			applyWidth: config.width,
+			applyHeight: config.height,
+			wrapper:wrapper,
+			wrapperPlacement: essential("ElementPlacement")(wrapper)
+		};
+	}
+
+	function sizing_adorned(el,sizing,instance)
+	{
+		var width = instance.wrapper.offsetWidth,
+			height = instance.wrapper.offsetHeight;
+		
+		var placement = instance.wrapperPlacement;
+		placement.compute();
+
+		if (placement.style.visibility == "hidden") {
+			width = 0;
+			height = 0;
+		}
+
+		width += parseInt(placement.style.marginLeft); //TODO compute
+		width += parseInt(placement.style.marginRight); //TODO compute
+
+		sizing.contentWidth = width;
+	};
+
+	function layout_adorned(el,layout,instance) 
+	{
+		el.style.width = layout.contentWidth + "px";
+
+		// el.style.height = height + "px";
+	}
+	layout_adorned.throttle = 200;
+
+	function discard_adorned(el,role,instance) 
+	{
+		if (instance) {
+			// if (instance.onClose) {
+			// 	instance.onClose();
+			// }
+		}
+		try {
+			// IE8 doesn't seem to like this
+			el.innerHTML = "";
+		} catch(ex) {}
+	}
+
+	DocumentRoles.presets.declare("handlers.enhance.adorned", enhance_adorned);
+	DocumentRoles.presets.declare("handlers.sizing.adorned", sizing_adorned);
+	DocumentRoles.presets.declare("handlers.layout.adorned", layout_adorned);
+	DocumentRoles.presets.declare("handlers.discard.adorned", discard_adorned);
+
+
+
 	console.log("frontend.js finished load execution");
 
 })();

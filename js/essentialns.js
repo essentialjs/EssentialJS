@@ -310,12 +310,14 @@
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
 		};
+		// sizingHandler
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 			"lastDirectCall": 0,
-			"enableRefresh": false,
+			"enable": false,
 			"throttle": null //TODO throttle by default?
 		};
+		// layoutHandler
 		this.enhanced = false;
 		this.discarded = false;
 		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
@@ -351,12 +353,14 @@
 			this.enhanced = this.instance === false? false:true;
 		}
 		if (this.enhanced) {
+			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
 			this.discardHandler = handlers.discard[this.role];
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
+			if (this.sizingHandler) sizingElements[this.uniqueId] = this;
 			if (this.layoutHandler) {
-				this.layout.enableRefresh = true;
+				this.layout.enable = true;
 				maintainedElements[this.uniqueId] = this;
 			}
 		} 
@@ -370,8 +374,8 @@
 				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
 				if (this.layouterParent) sizingElements[this.uniqueId] = this;
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
-					this.enableRefresh = true;
-	                this.flaggedLayout = true;
+					this.layout.enable = true;
+	                this.layout.queued = true;
 	                maintainedElements[this.uniqueId] = this;
 				}
 			}
@@ -386,8 +390,8 @@
 				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
 				sizingElements[this.uniqueId] = this;
 				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
-					this.enableRefresh = true;
-	                this.flaggedLayout = true;
+					this.layout.enable = true;
+	                this.layout.queued = true;
 	                maintainedElements[this.uniqueId] = this;
 				}
 			}
@@ -400,37 +404,20 @@
 
 	_EnhancedDescriptor.prototype.refresh = function() {
 		var getActiveArea = essential("getActiveArea"); //TODO switch to Resolver("page::activeArea")
-		var updateLayout = this.needUpdateLayout();
+		var updateLayout = false;
 		
 		if (this.layout.area != getActiveArea()) { 
 			this.layout.area = getActiveArea();
 			updateLayout = true;
 		}
 
-		if (updateLayout || this.flaggedLayout) {
+		if (updateLayout || this.layout.queued) {
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
 			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
 
-/*
-			// notify the parent layouter
-			if (layouter && this.layouterParent) {
-				var r = this.layouterParent.layouter.childLayouterUpdated(layouter,this.el,this.layout);
-				if (r === true) {
-					this.layouterParent.flaggedLayout = true;
-					this.layouterParent.refresh();
-				}
-			}
-			if (laidout && this.layouterParent) {
-				var r = this.layouterParent.layouter.childLaidoutUpdated(laidout,this.el,this.layout);
-				if (r === true) {
-					this.layouterParent.flaggedLayout = true;
-					this.layouterParent.refresh();
-				}
-			}
-*/
-            this.flaggedLayout = false;
+            this.layout.queued = false;
 		}	
 	};
 
@@ -456,41 +443,42 @@
 		}
 	};
 
-	_EnhancedDescriptor.prototype.needUpdateLayout = function() {
-		var updateLayout = false,
-			ow = this.el.offsetWidth, 
-			oh  = this.el.offsetHeight,
-			sw = this.el.scrollWidth,
-			sh = this.el.scrollHeight,
-			displayed = !(ow == 0 && oh == 0);
+	_EnhancedDescriptor.prototype._queueLayout = function(ow,oh,displayed) {
 
 		if (this.layout.displayed != displayed) {
 			this.layout.displayed = displayed;
-			updateLayout = true;
+			this.layout.queued = true;
 		}
 
 		if (this.layout.width != ow || this.layout.height != oh) {
 			this.layout.width = ow;
 			this.layout.height = oh;
-			updateLayout = true
+			this.layout.queued = true;
 		}
-		if (this.layout.contentWidth != sw || this.layout.contentHeight != sh) {
-			this.layout.contentWidth = sw;
-			this.layout.contentHeight = sh;
-			updateLayout = true
+		if (this.layout.contentWidth != this.sizing.contentWidth || this.layout.contentHeight != this.sizing.contentHeight) {
+			this.layout.contentWidth = this.sizing.contentWidth;
+			this.layout.contentHeight = this.sizing.contentHeight;
+			this.layout.queued = true;
 		}
-		return updateLayout;
 	};
 
 	_EnhancedDescriptor.prototype.checkSizing = function() {
-		var updateLayout = this.needUpdateLayout();
-		if (updateLayout) {
-			if (this.laidout) this.laidout.calcSizing(this.sizing);
-			if (this.layouterParent) this.layouterParent.flaggedLayout = true;
+		var ow = this.el.offsetWidth, 
+			oh  = this.el.offsetHeight,
+			displayed = !(ow == 0 && oh == 0);
+
+		this.sizing.contentWidth = this.el.scrollWidth;
+		this.sizing.contentHeight = this.el.scrollHeight;
+
+		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
+		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
+
+		this._queueLayout(ow,oh,displayed);
+		if (this.layout.queued) {
+			if (this.layouterParent) this.layouterParent.layout.queued = true;
 		}
 
-		this.sizing.contentWidth;
-		this.sizing.contentHeight;
+
 	};
 
 	// used to emulate IE uniqueId property
@@ -540,7 +528,7 @@
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.enableRefresh) {
+			if (desc.layout.enable) {
 				desc.refresh();
 			}
 		}
@@ -554,7 +542,7 @@
 
 			desc.liveCheck();
 			if (desc.discarded) {
-				if (desc.enableRefresh) delete maintainedElements[n];
+				if (desc.layout.enable) delete maintainedElements[n];
 				if (sizingElements[n]) delete sizingElements[n];
 				delete enhancedElements[n];
 			}

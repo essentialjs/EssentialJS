@@ -332,6 +332,7 @@
 
 	pageResolver.declare("handlers.init",{});
 	pageResolver.declare("handlers.enhance",{});
+	pageResolver.declare("handlers.sizing",{});
 	pageResolver.declare("handlers.layout",{});
 	pageResolver.declare("handlers.discard",{});
 

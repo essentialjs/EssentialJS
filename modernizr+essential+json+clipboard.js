@@ -2647,12 +2647,14 @@ Generator.ObjectGenerator = Generator(Object);
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
 		};
+		// sizingHandler
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
 			"lastDirectCall": 0,
-			"enableRefresh": false,
+			"enable": false,
 			"throttle": null //TODO throttle by default?
 		};
+		// layoutHandler
 		this.enhanced = false;
 		this.discarded = false;
 		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
@@ -2688,12 +2690,14 @@ Generator.ObjectGenerator = Generator(Object);
 			this.enhanced = this.instance === false? false:true;
 		}
 		if (this.enhanced) {
+			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
 			this.discardHandler = handlers.discard[this.role];
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
+			if (this.sizingHandler) sizingElements[this.uniqueId] = this;
 			if (this.layoutHandler) {
-				this.layout.enableRefresh = true;
+				this.layout.enable = true;
 				maintainedElements[this.uniqueId] = this;
 			}
 		} 
@@ -2707,8 +2711,8 @@ Generator.ObjectGenerator = Generator(Object);
 				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
 				if (this.layouterParent) sizingElements[this.uniqueId] = this;
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
-					this.enableRefresh = true;
-	                this.flaggedLayout = true;
+					this.layout.enable = true;
+	                this.layout.queued = true;
 	                maintainedElements[this.uniqueId] = this;
 				}
 			}
@@ -2723,8 +2727,8 @@ Generator.ObjectGenerator = Generator(Object);
 				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
 				sizingElements[this.uniqueId] = this;
 				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
-					this.enableRefresh = true;
-	                this.flaggedLayout = true;
+					this.layout.enable = true;
+	                this.layout.queued = true;
 	                maintainedElements[this.uniqueId] = this;
 				}
 			}
@@ -2737,37 +2741,20 @@ Generator.ObjectGenerator = Generator(Object);
 
 	_EnhancedDescriptor.prototype.refresh = function() {
 		var getActiveArea = essential("getActiveArea"); //TODO switch to Resolver("page::activeArea")
-		var updateLayout = this.needUpdateLayout();
+		var updateLayout = false;
 		
 		if (this.layout.area != getActiveArea()) { 
 			this.layout.area = getActiveArea();
 			updateLayout = true;
 		}
 
-		if (updateLayout || this.flaggedLayout) {
+		if (updateLayout || this.layout.queued) {
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
 			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
 
-/*
-			// notify the parent layouter
-			if (layouter && this.layouterParent) {
-				var r = this.layouterParent.layouter.childLayouterUpdated(layouter,this.el,this.layout);
-				if (r === true) {
-					this.layouterParent.flaggedLayout = true;
-					this.layouterParent.refresh();
-				}
-			}
-			if (laidout && this.layouterParent) {
-				var r = this.layouterParent.layouter.childLaidoutUpdated(laidout,this.el,this.layout);
-				if (r === true) {
-					this.layouterParent.flaggedLayout = true;
-					this.layouterParent.refresh();
-				}
-			}
-*/
-            this.flaggedLayout = false;
+            this.layout.queued = false;
 		}	
 	};
 
@@ -2793,41 +2780,42 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
-	_EnhancedDescriptor.prototype.needUpdateLayout = function() {
-		var updateLayout = false,
-			ow = this.el.offsetWidth, 
-			oh  = this.el.offsetHeight,
-			sw = this.el.scrollWidth,
-			sh = this.el.scrollHeight,
-			displayed = !(ow == 0 && oh == 0);
+	_EnhancedDescriptor.prototype._queueLayout = function(ow,oh,displayed) {
 
 		if (this.layout.displayed != displayed) {
 			this.layout.displayed = displayed;
-			updateLayout = true;
+			this.layout.queued = true;
 		}
 
 		if (this.layout.width != ow || this.layout.height != oh) {
 			this.layout.width = ow;
 			this.layout.height = oh;
-			updateLayout = true
+			this.layout.queued = true;
 		}
-		if (this.layout.contentWidth != sw || this.layout.contentHeight != sh) {
-			this.layout.contentWidth = sw;
-			this.layout.contentHeight = sh;
-			updateLayout = true
+		if (this.layout.contentWidth != this.sizing.contentWidth || this.layout.contentHeight != this.sizing.contentHeight) {
+			this.layout.contentWidth = this.sizing.contentWidth;
+			this.layout.contentHeight = this.sizing.contentHeight;
+			this.layout.queued = true;
 		}
-		return updateLayout;
 	};
 
 	_EnhancedDescriptor.prototype.checkSizing = function() {
-		var updateLayout = this.needUpdateLayout();
-		if (updateLayout) {
-			if (this.laidout) this.laidout.calcSizing(this.sizing);
-			if (this.layouterParent) this.layouterParent.flaggedLayout = true;
+		var ow = this.el.offsetWidth, 
+			oh  = this.el.offsetHeight,
+			displayed = !(ow == 0 && oh == 0);
+
+		this.sizing.contentWidth = this.el.scrollWidth;
+		this.sizing.contentHeight = this.el.scrollHeight;
+
+		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
+		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
+
+		this._queueLayout(ow,oh,displayed);
+		if (this.layout.queued) {
+			if (this.layouterParent) this.layouterParent.layout.queued = true;
 		}
 
-		this.sizing.contentWidth;
-		this.sizing.contentHeight;
+
 	};
 
 	// used to emulate IE uniqueId property
@@ -2877,7 +2865,7 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.enableRefresh) {
+			if (desc.layout.enable) {
 				desc.refresh();
 			}
 		}
@@ -2891,7 +2879,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 			desc.liveCheck();
 			if (desc.discarded) {
-				if (desc.enableRefresh) delete maintainedElements[n];
+				if (desc.layout.enable) delete maintainedElements[n];
 				if (sizingElements[n]) delete sizingElements[n];
 				delete enhancedElements[n];
 			}
@@ -4077,6 +4065,226 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
+
+	function _ElementPlacement(el,track) {
+		this.el = el;
+		this.style = {};
+		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
+		this.compute();
+	}
+	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
+
+	_ElementPlacement.prototype.compute = function() {
+		for(var i=0,s; s = this.track[i]; ++i) {
+			this.style[s] = this._compute(s);
+		}
+	};
+
+	_ElementPlacement.prototype.PIXEL = /^\d+(px)?$/i;
+
+	_ElementPlacement.prototype.CSS_PRECALCULATED_SIZES = {
+		'medium':"2px"	
+	};
+
+	_ElementPlacement.prototype.CSS_PROPERTY_TYPES = {
+		'border-width':'size',
+		'border-left-width':'size',
+		'border-right-width':'size',
+		'border-bottom-width':'top',
+		'border-top-width':'top',
+		'borderWidth':'size',
+		'borderLeftWidth':'size',
+		'borderRightWidth':'size',
+		'borderBottomWidth':'top',
+		'borderTopWidth':'top',
+
+
+		'padding': 'size',
+		'padding-left': 'size',
+		'padding-right': 'size',
+		'padding-top': 'top',
+		'padding-bottom': 'top',
+		'paddingLeft': 'size',
+		'paddingRight': 'size',
+		'paddingTop': 'top',
+		'paddingBottom': 'top',
+
+		'margin': 'size',
+		'margin-left': 'size',
+		'margin-right': 'size',
+		'margin-top': 'top',
+		'margin-bottom': 'top',
+		'marginLeft': 'size',
+		'marginRight': 'size',
+		'marginTop': 'top',
+		'marginBottom': 'top',
+		
+		'font-size': 'size',
+		'fontSize': 'size',
+		'line-height': 'top', 
+		'lineHeight': 'top', 
+		'text-indent': 'size',
+		'textIndent': 'size',
+		
+		'width': 'size',
+		'height': 'top',
+		'max-width': 'size',
+		'max-height': 'top',
+		'min-width': 'size',
+		'min-height': 'top',
+		'maxWidth': 'size',
+		'maxHeight': 'top',
+		'minWidth': 'size',
+		'minHeight': 'top',
+		'left':'size',
+		'right':'size',
+		'top': 'top',
+		'bottom': 'top'
+	};
+
+	_ElementPlacement.prototype.CSS_PROPERTY_FROM_JS = {
+		'backgroundColor':'background-color',
+		'backgroundImage':'background-image',
+		'backgroundPosition':'background-position',
+		'backgroundRepeat':'background-repeat',
+
+		'borderWidth':'border-width',
+		'borderLeft':'border-left',
+		'borderRight':'border-right',
+		'borderTop':'border-top',
+		'borderBottom':'border-bottom',
+		'borderLeftWidth':'border-left-width',
+		'borderRightWidth':'border-right-width',
+		'borderBottomWidth':'border-bottom-width',
+		'borderTopWidth':'border-top-width',
+
+		'paddingLeft': 'padding-left',
+		'paddingRight': 'padding-right',
+		'paddingTop': 'padding-top',
+		'paddingBottom': 'padding-bottom',
+
+		'marginLeft': 'margin-left',
+		'marginRight': 'margin-right',
+		'marginTop': 'margin-top',
+		'marginBottom': 'margin-bottom',
+		
+		'fontSize': 'font-size',
+		'lineHeight': 'line-height',
+		'textIndent': 'text-indent'
+		
+	};
+
+	_ElementPlacement.prototype.JS_PROPERTY_FROM_CSS = {
+		'background-color':'backgroundColor',
+		'background-image':'backgroundImage',
+		'background-position':'backgroundPosition',
+		'background-repeat':'backgroundRepeat',
+
+		'border-width':'borderWidth',
+		'border-left':'borderLeft',
+		'border-right':'borderRight',
+		'border-top':'borderTop',
+		'border-bottom':'borderBottom',
+		'border-left-width':'borderLeftWidth',
+		'border-right-width':'borderRightWidth',
+		'border-bottom-width':'borderBottomWidth',
+		'border-top-width':'borderTopWidth',
+
+		'padding-left':'paddingLeft',
+		'padding-right':'paddingRight',
+		'padding-top':'paddingTop',
+		'padding-bottom':'paddingBottom',
+
+		'margin-left':'marginLeft',
+		'margin-right':'marginRight',
+		'margin-top':'marginTop',
+		'margin-bottom':'marginBottom',
+		
+		'font-size':'fontSize',
+		'line-height':'lineHeight',
+		'text-indent':'textIndent'
+		
+	};
+
+/**
+ * Computes a value into pixels on InternetExplorer, if it is possible.
+ * @private
+ * 
+ * @param {String} sProp 'size', 'left' or 'top'
+ * @returns function that returns Pixels in CSS format. IE. 123px
+ */
+function _makeToPixelsIE(sProp)
+{
+	
+	var sPixelProp = "pixel" + sProp.substring(0,1).toUpperCase() + sProp.substring(1);
+
+	return function(eElement,sValue) {
+		var sInlineStyle = eElement.style[sProp];
+		var sRuntimeStyle = eElement.runtimeStyle[sProp];
+		try
+		{
+		  	eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
+		  	eElement.style[sProp] = sValue || 0;
+		  	sValue = eElement.style[sPixelProp] + "px";
+		}
+		catch(ex)
+		{
+			
+		}
+		eElement.style[sProp] = sInlineStyle;
+		eElement.runtimeStyle[sProp] = sRuntimeStyle;
+
+		return sValue
+	};
+};
+
+
+	_ElementPlacement.prototype.TO_PIXELS_IE = {
+		"left": _makeToPixelsIE("left"),
+		"top": _makeToPixelsIE("top"),
+		"size": _makeToPixelsIE("left")
+	};
+
+function _correctChromeWebkitDimensionsBug(s,v) {
+
+	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom")
+			&& v === "auto")
+	{
+		return true;
+	}
+}
+
+_ElementPlacement.prototype._compute = function(style)
+{
+	var value;
+	
+	style = this.JS_PROPERTY_FROM_CSS[style] || style;
+	if (this.el.currentStyle)
+	{
+		var v = this.el.currentStyle[style];
+		var sPrecalc = this.CSS_PRECALCULATED_SIZES[v];
+		if (sPrecalc !== undefined) return sPrecalc; 
+		if (this.PIXEL.test(v)) return v;
+
+		var fToPixels = this.TO_PIXELS_IE[this.CSS_PROPERTY_TYPES[style]];
+  		value = fToPixels? fToPixels(this.el, v) : v;
+
+	}
+	else if (document.defaultView)
+	{
+		value = document.defaultView.getComputedStyle(this.el, null)[style];
+	}
+	
+	//TODO fix bad performance overhead
+	if (!value || value === "" || _correctChromeWebkitDimensionsBug(style, value))
+	{
+		value = this.el.style[style];
+	}
+	
+	return value;
+};
+
+
 }();
 /*jslint white: true */
 /*
@@ -4412,6 +4620,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 	pageResolver.declare("handlers.init",{});
 	pageResolver.declare("handlers.enhance",{});
+	pageResolver.declare("handlers.sizing",{});
 	pageResolver.declare("handlers.layout",{});
 	pageResolver.declare("handlers.discard",{});
 
@@ -6279,7 +6488,7 @@ function(scripts) {
 			var desc = maintainedElements[n];
 			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
-			if (desc.enhanced && !this.discarded && desc.layout.enableRefresh) {
+			if (desc.layout.enable) {
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;
@@ -6291,7 +6500,7 @@ function(scripts) {
 						// call now
 						desc.refresh();
 						desc.layout.lastDirectCall = now;
-						if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
 					} else {
 						// call in a bit
 						var delay = now + throttle - desc.layout.lastDirectCall;
@@ -6302,7 +6511,7 @@ function(scripts) {
 								desc.refresh();
 								desc.layout.lastDirectCall = now;
 								desc.layout.delayed = false;
-								if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
 							},delay);
 						})(desc);
 					}
@@ -6316,10 +6525,10 @@ function(scripts) {
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.enhanced && desc.layout.enableRefresh) {
+			if (desc.layout.enable) {
 				// desc.layout.area = getActiveArea();
 				desc.refresh();
-				if (desc.layouterParent) desc.layouterParent.flaggedLayout = true;
+				// if (desc.layouterParent) desc.layouterParent.layout.queued = true;
 				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
 			}
 		}
@@ -6333,10 +6542,7 @@ function(scripts) {
 	}
 	
 	// Element specific handlers
-	DocumentRoles.presets.declare("handlers.init", pageResolver("handlers.init"));
-	DocumentRoles.presets.declare("handlers.enhance", pageResolver("handlers.enhance"));
-	DocumentRoles.presets.declare("handlers.layout", pageResolver("handlers.layout"));
-	DocumentRoles.presets.declare("handlers.discard", pageResolver("handlers.discard"));
+	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
 
 
 	_DocumentRoles.default_enhance = function(el,role,config) {
@@ -6357,6 +6563,7 @@ function(scripts) {
 		for(var i=0,r; r = list[i]; ++i) {
 			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
 			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
+			if (this["sizing_"+r]) this.presets.declare(["handlers","sizing",r], this["sizing_"+r]);
 			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
 			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
 		}

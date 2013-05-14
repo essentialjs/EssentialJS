@@ -175,6 +175,7 @@ test('Enhance element early or delayed',function() {
 			"early": sinon.stub(),
 			"delayed": sinon.stub()
 		},
+		"sizing": {},
 		"layout": {
 			"early": sinon.stub(),
 			"delayed": sinon.stub()
@@ -264,6 +265,7 @@ test("Enhance layouter element",function() {
 		"enhance": {
 			"early": sinon.stub()
 		},
+		"sizing": {},
 		"layout": {
 			"early": sinon.stub()
 		},
@@ -289,7 +291,7 @@ test("Enhance layouter element",function() {
 	// page.body.firstChild.nextSibling.layouter
 	ok(desc);
 	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
-	ok(desc.flaggedLayout);
+	ok(desc.layout.queued);
 	
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
@@ -420,6 +422,7 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 			"spinner": sinon.spy(DocumentRoles.enhance_spinner),// ,
 			"application": sinon.spy(DocumentRoles.enhance_application)// 
 		},
+		"sizing": {},
 		"layout": {
 			"dialog": sinon.spy(),// DocumentRoles.layout_dialog,
 			"navigation": sinon.spy(),// DocumentRoles.layout_toolbar,
@@ -496,6 +499,7 @@ test('Role navigation action',function(){
 		"enhance": {
 			"navigation": DocumentRoles.enhance_toolbar
 		},
+		"sizing": {},
 		"layout": {
 			"navigation": DocumentRoles.layout_toolbar
 		},
