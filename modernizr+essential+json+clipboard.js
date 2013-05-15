@@ -2769,15 +2769,19 @@ Generator.ObjectGenerator = Generator(Object);
 
 	_EnhancedDescriptor.prototype.liveCheck = function() {
 		if (!this.enhanced || this.discarded) return;
-		var inDom = essential("contains")(document.body,this.el); //TODO reorg import
+		var inDom = document.body==this.el || essential("contains")(document.body,this.el); //TODO reorg import
 		//TODO handle subpages
 		if (!inDom) {
-			// discard it
-			//TODO anything else ?
-			callCleaners(this.el);
-			delete this.el;
-			this.discarded = true;					
+			//TODO destroy and queue discard
+			this.discardNow();
 		}
+	};
+
+	_EnhancedDescriptor.prototype.discardNow = function() {
+		//TODO anything else ?
+		callCleaners(this.el);
+		delete this.el;
+		this.discarded = true;					
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function(ow,oh,displayed) {
@@ -2878,6 +2882,7 @@ Generator.ObjectGenerator = Generator(Object);
 			var desc = maintainedElements[n];
 
 			desc.liveCheck();
+			//TODO if destroyed, in round 2 discard & move out of maintained 
 			if (desc.discarded) {
 				if (desc.layout.enable) delete maintainedElements[n];
 				if (sizingElements[n]) delete sizingElements[n];
@@ -2986,6 +2991,7 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
 		}
+		Resolver("page").set("state.livepage",false);
 	}
 
     function doScrollCheck() {
@@ -4658,6 +4664,7 @@ _ElementPlacement.prototype._compute = function(style)
 			return;
 		}
 		
+		//TODO maintained & reacting to resolver change state.activeArea
 		for(var n in EnhancedDescriptor.all) {
 			var desc = EnhancedDescriptor.all[n];
 			if (desc.layouter) desc.layouter.updateActiveArea(areaName,desc.el);
@@ -4675,7 +4682,7 @@ _ElementPlacement.prototype._compute = function(style)
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 
 	function bringLive() {
-		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
+		// var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
 		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
 			w.openNow();
@@ -4687,14 +4694,13 @@ _ElementPlacement.prototype._compute = function(style)
 
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
-		ap.state.set("livepage",true);
+		pageResolver.set("state.livepage",true);
 
 	}
 
 	function onPageLoad(ev) {
-		var ap = ApplicationConfig();
 		_liveAreas = true;
-		ap.state.set("livepage",true);
+		pageResolver.set("state.livepage",true);
 	}
 
 	if (!_essentialTesting) {
@@ -5053,15 +5059,15 @@ _ElementPlacement.prototype._compute = function(style)
 		_Scripted.call(this);
 
 		updateOnlineStatus();
-		if (document.body.addEventListener) {
-			document.body.addEventListener("online",updateOnlineStatus);
-			document.body.addEventListener("offline",updateOnlineStatus);
+		if (this.body.addEventListener) {
+			this.body.addEventListener("online",updateOnlineStatus);
+			this.body.addEventListener("offline",updateOnlineStatus);
 		
 			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
-		} else if (document.body.attachEvent) {
+		} else if (this.body.attachEvent) {
 			// IE8
-			document.body.attachEvent("online",updateOnlineStatus);
-			document.body.attachEvent("offline",updateOnlineStatus);
+			this.body.attachEvent("online",updateOnlineStatus);
+			this.body.attachEvent("offline",updateOnlineStatus);
 		}
 		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
 
@@ -5077,6 +5083,7 @@ _ElementPlacement.prototype._compute = function(style)
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
 
+		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
 
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
@@ -5180,7 +5187,6 @@ _ElementPlacement.prototype._compute = function(style)
 	ApplicationConfig.prototype.onStateChange = function(ev) {
 		switch(ev.symbol) {
 			case "livepage":
-				pageResolver.reflectStateOn(document.body,false);
 				var ap = ev.data;
 				//if (ev.value == true) ap.reflectState();
 				ev.data.doInitScripts();
@@ -7247,10 +7253,20 @@ function(scripts) {
 	};
 }();
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
-Resolver("essential::EnhancedDescriptor::").maintainer = setInterval(Resolver("essential::EnhancedDescriptor::").maintainAll,330); // minimum frequency 3 per sec
-Resolver("essential::EnhancedDescriptor::").refresher = setInterval(Resolver("essential::EnhancedDescriptor::").refreshAll,160); // minimum frequency 3 per sec
 
 //TODO clearInterval on unload
+
+Resolver("page::state.livepage").on("change",function(ev) {
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	if (ev.value) { // bring live
+		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
+		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
+	} else { // unload
+		clearInterval(EnhancedDescriptor.maintainer);
+		clearInterval(EnhancedDescriptor.refresher);
+	}
+});
+
 
 
 if(!this.JSON){

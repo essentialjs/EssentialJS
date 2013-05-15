@@ -24,6 +24,8 @@ test("Destroying StatefulResolver",function(){
 	ok(1,"TODO cleaner");
 });
 
+// test("Discarding StatefulResolver")
+
 test("Stateful element initial class",function(){
 	var StatefulResolver = Resolver("essential::StatefulResolver::");
 

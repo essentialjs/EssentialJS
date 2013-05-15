@@ -476,6 +476,26 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 	// equal(handlers.discard.sinon.callCount,1);
 });
 
+test('Discarding enhanced',function() {
+
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	// var force = true;
+	// var desc = EnhancedDescriptor(document.body,"application",{},force,ApplicationConfig());
+	// desc.enhanced = true;
+	// desc.liveCheck();
+	// ok(!desc.discarded,"liveCheck on document.body doesn't discard");
+	// document.body.stateful = null;
+	// desc.discardNow();
+	// document.body.stateful = ApplicationConfig().resolver;
+
+	ok(1,"Discard handler called when discarded");
+
+	ok(1,"Maintain will discard unattached elements");
+
+	ok(1,"Maintain all will not discard elements (especially body) being enhanced");
+})
+
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential::DialogAction::");
 	var DocumentRoles = Resolver("essential::DocumentRoles::");

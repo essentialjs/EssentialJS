@@ -370,6 +370,7 @@
 			return;
 		}
 		
+		//TODO maintained & reacting to resolver change state.activeArea
 		for(var n in EnhancedDescriptor.all) {
 			var desc = EnhancedDescriptor.all[n];
 			if (desc.layouter) desc.layouter.updateActiveArea(areaName,desc.el);
@@ -387,7 +388,7 @@
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 
 	function bringLive() {
-		var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
+		// var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
 
 		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
 			w.openNow();
@@ -399,14 +400,13 @@
 
 		// Allow the browser to render the page, preventing initial transitions
 		_liveAreas = true;
-		ap.state.set("livepage",true);
+		pageResolver.set("state.livepage",true);
 
 	}
 
 	function onPageLoad(ev) {
-		var ap = ApplicationConfig();
 		_liveAreas = true;
-		ap.state.set("livepage",true);
+		pageResolver.set("state.livepage",true);
 	}
 
 	if (!_essentialTesting) {
@@ -765,15 +765,15 @@
 		_Scripted.call(this);
 
 		updateOnlineStatus();
-		if (document.body.addEventListener) {
-			document.body.addEventListener("online",updateOnlineStatus);
-			document.body.addEventListener("offline",updateOnlineStatus);
+		if (this.body.addEventListener) {
+			this.body.addEventListener("online",updateOnlineStatus);
+			this.body.addEventListener("offline",updateOnlineStatus);
 		
 			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
-		} else if (document.body.attachEvent) {
+		} else if (this.body.attachEvent) {
 			// IE8
-			document.body.attachEvent("online",updateOnlineStatus);
-			document.body.attachEvent("offline",updateOnlineStatus);
+			this.body.attachEvent("online",updateOnlineStatus);
+			this.body.attachEvent("offline",updateOnlineStatus);
 		}
 		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
 
@@ -789,6 +789,7 @@
 		this.pages = this.resolver.reference("pages",{ generator:SubPage});
 		SubPage.prototype.appConfig = this;
 
+		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
 
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
@@ -892,7 +893,6 @@
 	ApplicationConfig.prototype.onStateChange = function(ev) {
 		switch(ev.symbol) {
 			case "livepage":
-				pageResolver.reflectStateOn(document.body,false);
 				var ap = ev.data;
 				//if (ev.value == true) ap.reflectState();
 				ev.data.doInitScripts();

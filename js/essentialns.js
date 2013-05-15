@@ -432,15 +432,19 @@
 
 	_EnhancedDescriptor.prototype.liveCheck = function() {
 		if (!this.enhanced || this.discarded) return;
-		var inDom = essential("contains")(document.body,this.el); //TODO reorg import
+		var inDom = document.body==this.el || essential("contains")(document.body,this.el); //TODO reorg import
 		//TODO handle subpages
 		if (!inDom) {
-			// discard it
-			//TODO anything else ?
-			callCleaners(this.el);
-			delete this.el;
-			this.discarded = true;					
+			//TODO destroy and queue discard
+			this.discardNow();
 		}
+	};
+
+	_EnhancedDescriptor.prototype.discardNow = function() {
+		//TODO anything else ?
+		callCleaners(this.el);
+		delete this.el;
+		this.discarded = true;					
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function(ow,oh,displayed) {
@@ -541,6 +545,7 @@
 			var desc = maintainedElements[n];
 
 			desc.liveCheck();
+			//TODO if destroyed, in round 2 discard & move out of maintained 
 			if (desc.discarded) {
 				if (desc.layout.enable) delete maintainedElements[n];
 				if (sizingElements[n]) delete sizingElements[n];
@@ -649,6 +654,7 @@
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
 		}
+		Resolver("page").set("state.livepage",false);
 	}
 
     function doScrollCheck() {
