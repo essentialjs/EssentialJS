@@ -38,13 +38,6 @@
 	  Resolver("page").set(["state","authenticated"],false); //assume that login page passed
 	  Resolver("page").set(["state","authorised"],false);
 	  Resolver("page").set(["state","configured"],false);
-    Resolver(window).reference("app.APPLICATION_PROPERTIES").mixin({
-      "BOOTSTRAP.IS_DEVELOPEMENT": true,
-      "DEFAULTS.CELL.RENDERER": "text",
-      "APPLICATION.CONFIG": "resource.xmlbundle",
-      "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
-      "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
-    });
 	})();
   </script>
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
