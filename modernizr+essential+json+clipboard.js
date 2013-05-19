@@ -2994,6 +2994,13 @@ Generator.ObjectGenerator = Generator(Object);
 		Resolver("page").set("state.livepage",false);
 	}
 
+	// iBooks HTML widget
+	if (window.widget) {
+		widget.notifyContentExited = function() {
+			fireUnload();
+		};
+	}
+
     function doScrollCheck() {
       try {
         // If IE is used, use the trick by Diego Perini
@@ -4598,6 +4605,7 @@ _ElementPlacement.prototype._compute = function(style)
 
 	pageResolver.reference("state").mixin({
 		"livepage": false,
+		"background": false, // is the page running in the background
 		"authenticated": true,
 		"authorised": true,
 		"connected": true,
@@ -5224,6 +5232,7 @@ _ElementPlacement.prototype._compute = function(style)
 					if (document.body) essential("instantiatePageSingletons")();
 					ev.data.doInitScripts();	
 					enhanceUnhandledElements();
+					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
 					if (ev.base.configured == true && ev.base.authenticated == true 
 						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 						this.set("state.launching",true);
@@ -5333,6 +5342,17 @@ _ElementPlacement.prototype._compute = function(style)
 		}
 		this.context["this"] = undefined;
 	};
+
+	// iBooks HTML widget
+	if (window.widget) {
+		widget.pauseAudioVisual = function() {
+			pageResolver.set("state.background",true);
+		};
+
+		widget.didEnterWidgetMode = function() {
+			pageResolver.set("state.background",false);
+		};	
+	}
 
 	function onmessage(ev) {
 		var data = JSON.parse(ev.data);

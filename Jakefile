@@ -2,29 +2,29 @@ var fs = require('fs'), zlib = require('zlib');
 var uglify = require('uglify-js');
 
 var MODERNIZR_FILES = [
-  'modernizr-prefix.js',
-  'modernizr.js'];
+  'js/modernizr-prefix.js',
+  'js/modernizr.js'];
 
 var ESSENTIAL_FILES = [
-  'resolver.js',
-  'generator.js',
-  'essentialns.js',
-  'dom.js',
-  'page.js',
-  'xhr.js',
-  'elements.js',
-  'roles.js',
-  'configured.js'];
+  'js/resolver.js',
+  'js/generator.js',
+  'js/essentialns.js',
+  'js/dom.js',
+  'js/page.js',
+  'js/xhr.js',
+  'js/elements.js',
+  'js/roles.js',
+  'js/configured.js'];
 
 var EXTRAS_FILES = [
-  'json2.js',
-  'ZeroClipboard.js'];
+  'js/json2.js',
+  'js/ZeroClipboard.js'];
 
 function combine(files) {
   var all = '';
   files.forEach(function(file, i) {
     if (file.match(/^.*js$/)) {
-      all += "\n" + fs.readFileSync('js/'+file).toString();
+      all += "\n" + fs.readFileSync(file).toString();
     }
   });
   return all;
@@ -32,25 +32,11 @@ function combine(files) {
 
 function combine_and_minify(files) {
 
-  var toplevel = null;
-  files.forEach(function(file){
-    if (file.match(/^.*js$/)) {
-      var code = fs.readFileSync('js/'+file);
-      toplevel = uglify.parse(code, {
-          filename: file,
-          toplevel: toplevel
-      });
-    }
-  });  
+  var result = uglify.minify(files, {
 
-  var compressor = uglify.Compressor();
-  var compressed_ast = toplevel.transform(compressor);
+  });
 
-//  compressed_ast.figure_out_scope();
-//  compressed_ast.compute_char_frequency();
-//  compressed_ast.mangle_names();
-
-  return compressed_ast.print_to_string();
+  return result.code;
 }
 
 desc('Uglify JS');

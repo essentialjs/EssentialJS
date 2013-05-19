@@ -657,6 +657,13 @@
 		Resolver("page").set("state.livepage",false);
 	}
 
+	// iBooks HTML widget
+	if (window.widget) {
+		widget.notifyContentExited = function() {
+			fireUnload();
+		};
+	}
+
     function doScrollCheck() {
       try {
         // If IE is used, use the trick by Diego Perini
