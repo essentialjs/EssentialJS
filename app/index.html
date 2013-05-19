@@ -35,16 +35,9 @@
 
   <script>(function(){
 	  //Resolver("page").set(["state","connected"],false);
-	  Resolver("page").set(["state","authenticated"],false); //assume that login page passed
-	  Resolver("page").set(["state","authorised"],false);
-	  Resolver("page").set(["state","configured"],false);
-    Resolver(window).reference("app.APPLICATION_PROPERTIES").mixin({
-      "BOOTSTRAP.IS_DEVELOPEMENT": true,
-      "DEFAULTS.CELL.RENDERER": "text",
-      "APPLICATION.CONFIG": "resource.xmlbundle",
-      "APPLICATION.CONFIG.DEVELOPMENT": "resource.xmlbundle",
-      "APPLICATION.HTMLBUNDLE": "html_en.htmlbundle"
-    });
+	  //Resolver("page").set(["state","authenticated"],false); //assume that login page passed
+	  // Resolver("page").set(["state","authorised"],false);
+	  // Resolver("page").set(["state","configured"],false);
 	})();
   </script>
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
@@ -55,10 +48,10 @@
 
   <link rel="preload" type="text/javascript" src="js/jquery-1.7.2.min.js" >
 
-  <link rel="pastload" type="text/javascript" src="js/knockout.js"/>
-  <link rel="pastload" type="text/javascript" src="js/raphael.min.js" name="raphael"/>
-  <link rel="preload" type="text/javascript" src="js/raphael-resources.js"/>
-  <link rel="pastload" type="text/javascript" src="js/frontend.js"/>
+  <link rel="pastload" type="text/javascript" src="js/knockout.js">
+  <link rel="pastload" type="text/javascript" src="js/raphael.min.js" name="raphael">
+  <link rel="preload" type="text/javascript" src="js/raphael-resources.js">
+  <link rel="pastload" type="text/javascript" src="js/frontend.js" subpage="false">
 
   <script type="application/config">
     declare("logo",{"charset": "utf-8"});
