@@ -11,6 +11,8 @@
 		arrayContains = essential("arrayContains"),
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
+		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
+		serverUrl = location.protocol + "//" + location.host,
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		enhancedElements = essential("enhancedElements"),
@@ -415,8 +417,9 @@
 		else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
 	}
 
-	// page state & sub pages
+	// page state & sub pages instances of _Scripted indexed by logical URL / id
 	Resolver("page").declare("pages",{});
+	Resolver("page").declare("state.requiredPages",0);
 
 	function _Scripted() {
 		// the derived has to define resolver before this
@@ -553,6 +556,96 @@
 		this._prep(this.body,{});
 	};
 
+	function delayedScriptOnload(scriptRel) {
+		function delayedOnload(ev) {
+			var el = this;
+			var name = el.getAttribute("name");
+			if (name) {
+				ApplicationConfig().modules[name] = true;
+			}
+			setTimeout(function(){
+				// make sure it's not called before script executes
+				var scripts = pageResolver(["state","loadingScriptsUrl"]);
+				if (scripts[el.src.replace(baseUrl,"")] != undefined) {
+					// relative url
+					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
+					// absolute url
+					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
+				}
+			},0);
+		}
+		return delayedOnload;       
+	}
+
+	_Scripted.prototype._queueAssets = function() {
+
+		var links = this.document.getElementsByTagName("link");
+
+		//TODO differentiate on type == "text/javascript"
+		for(var i=0,l; l=links[i]; ++i) switch(l.rel) {
+			case "stylesheet":
+				this.resources().push(l);
+				break;			
+			case "pastload":
+			case "preload":
+				//TODO differentiate on lang
+				var attrsStr = l.getAttribute("attrs");
+				var attrs = {};
+				if (attrsStr) {
+					try {
+						eval("attrs = {" + attrsStr + "}");
+					} catch(ex) {
+						//TODO
+					}
+				}
+				attrs["type"] = l.getAttribute("type") || "text/javascript";
+				attrs["src"] = l.getAttribute("src");
+				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
+				attrs["base"] = baseUrl;
+				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
+				//attrs["id"] = l.getAttribute("script-id");
+				attrs["onload"] = delayedScriptOnload(l.rel);
+
+				var relSrc = attrs["src"].replace(baseUrl,"");
+				l.attrs = attrs;
+				if (l.rel == "preload") {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == this.resolver("state.lang"));
+					if (langOk) {
+						this.resolver.set(["state","preloading"],true);
+						this.resolver.set(["state","loadingScripts"],true);
+						this.resolver.set(["state","loadingScriptsUrl",relSrc],l); 
+						this.body.appendChild(HTMLScriptElement(attrs));
+						l.added = true;
+					} 
+				} else {
+					var langOk = true;
+					if (l.lang) langOk = (l.lang == this.resolver("state.lang"));
+					if (langOk) {
+						this.resolver.set(["state","loadingScripts"],true);
+						this.resolver.set(["state","loadingScriptsUrl",relSrc],l); 
+					} 
+				}
+				break;
+		}
+		if (! this.resolver(["state","preloading"])) {
+			var scripts = this.resolver(["state","loadingScriptsUrl"]);
+			for(var n in scripts) {
+				var link = scripts[n];
+				if (link.rel == "pastload") {
+					var langOk = true;
+					if (link.lang) langOk = (link.lang == this.resolver("state.lang"));
+					if (langOk) {
+						this.body.appendChild(HTMLScriptElement(link.attrs));
+						link.added = true;
+					} 
+				}
+			}
+		}
+
+	};
+
 
 
 	function _SubPage(appConfig) {
@@ -629,6 +722,11 @@
 		this.documentLoaded = true;
 
 		this.prepareEnhance();
+
+		if (this.requiredForLaunch) {
+			var requiredPages = pageResolver("state.requiredPages") - 1;
+			pageResolver.set("state.requiredPages",requiredPages);
+		}
 
 		if (this.appConfig.bodySrc && this.appConfig.bodySrc != this.appConfig.appliedSrc) {
 			//TODO unapply if another is applied
@@ -776,6 +874,7 @@
 			this.body.attachEvent("online",updateOnlineStatus);
 			this.body.attachEvent("offline",updateOnlineStatus);
 		}
+		//TODO manage interval in configured.js
 		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
@@ -796,15 +895,9 @@
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
+		this._markPermanents();
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
-		if (bodySrc) {
-			this._markPermanents();
-			//TODO if already there page.applyBody();
-			this.loadPage(bodySrc);
-			this.bodySrc = bodySrc;
-			this.appliedSrc = null;
-			//TODO queue loading this as the initial body content added before the first body child
-		}
+		if (bodySrc) this._requiredPage(bodySrc);
 
 		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
@@ -853,13 +946,28 @@
 		return page;
 	};
 
-	ApplicationConfig.prototype.loadPage = function(url) {
+	ApplicationConfig.prototype._requiredPage = function(src)
+	{
+		//TODO if already there page.applyBody();
+		var page = this.loadPage(src,true);
+		this.bodySrc = src;
+		this.appliedSrc = null;
+		//TODO what about multiple calls ?
+		//TODO queue loading this as the initial body content added before the first body child
+	};
+
+	ApplicationConfig.prototype.loadPage = function(url,requiredForLaunch) {
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
 		if (page == undefined) {
 			page = this.pages()[url] = SubPage();
+			page.url = url;
+			page.requiredForLaunch = requiredForLaunch;
+			if (requiredForLaunch) {
+				var requiredPages = pageResolver("state.requiredPages") + 1;
+				pageResolver.set("state.requiredPages",requiredPages);
+			}
 		}
 		if (!page.documentLoaded) {
-			page.url = url;
 			page.fetch();
 		}
 
@@ -963,10 +1071,14 @@
 					if (document.body) essential("instantiatePageSingletons")();
 					ev.data.doInitScripts();	
 					enhanceUnhandledElements();
-					if (ev.symbol == "launched") this.set("state.launching",false);
+					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
 				}
 				break;
-
+			case "requiredPages":
+				if (ev.value == 0 && !ev.base.launching) {
+					this.set("state.launching",false);
+				}
+				break
 			case "lang":
 				document.documentElement.lang = ev.value;
 				break;

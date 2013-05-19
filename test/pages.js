@@ -83,4 +83,3 @@ test("Explicit subpage definitions",function() {
 	//TODO alternate head + body call syntax
 });
 
-

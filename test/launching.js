@@ -157,3 +157,37 @@ test("Launching sub page to area",function(){
 	
 })
 
+test("Loading Sequence",function() {
+	ok(1);return;
+	
+	var pageResolver = Resolver("page"), pageState = pageResolver("state");
+	pageState.livepage = false;
+	pageState.loading = true;
+	pageState.launched = false;
+	pageState.launching = false;
+
+	ok(pageState.loading);
+
+	var l1 = { src: "js/scripts.js" };
+	var l2 = { src: "js/more.js" };
+
+	/*
+		Page goes live before loaded
+	*/
+	pageResolver.set("state.livepage",true);
+	// pageResolver.set("state.loading",true);
+
+	// pageResolver.set(["state","preloading"],true);
+
+	//TODO scan page to identify two links
+	pageResolver.set(["state","loadingScripts"],true);
+	pageResolver.set(["state","loadingScriptsUrl",l1.src],l1); 
+	pageResolver.set(["state","loadingScripts"],true);
+	pageResolver.set(["state","loadingScriptsUrl",l2.src],l2); 
+
+	pageResolver.set(["state","loadingScriptsUrl",l1.src],false); 
+
+	ok(pageState.loading);
+
+});
+
