@@ -516,7 +516,10 @@ function Resolver(name_andor_expr,ns,options)
                 var script = document.getElementById(this.options.touchScript);
                 if (script) {
                     var newScript = Resolver("essential::HTMLScriptElement")(script);
+                    try {
+                        //TODO if (! state.unloading)
                     script.parentNode.replaceChild(newScript,script);
+                    } catch(ex) {} // fails during unload
                 }
             }
         }
