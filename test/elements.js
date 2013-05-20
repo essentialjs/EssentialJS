@@ -297,6 +297,7 @@ test("Enhance layouter element",function() {
 	equal(_TestLayouter.prototype.layout.callCount,1);
 	//TODO test no queued layout.queued
 	//TODO sizing values
+	//TODO sizing object in stateful is the one from EnhancedElement
 });
 
 

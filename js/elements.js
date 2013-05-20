@@ -219,7 +219,8 @@
 
 			//TODO speed up outstanding enhance check
 
-			StatefulResolver(desc.el,true);
+			var stateful = StatefulResolver(desc.el,true);
+			stateful.set("sizing",desc.sizing);
 			if (!desc.enhanced) { //TODO flag needEnhance
 				desc._tryEnhance(this.handlers);
 				++enhancedCount;	//TODO only increase if enhance handler?

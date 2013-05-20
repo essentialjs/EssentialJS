@@ -211,8 +211,8 @@ function section_button_click(ev) {
 Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	this.el = el;
 
-	this.sizing = { glue:conf.glue };
-	this.el.stateful.set("sizing",this.sizing);
+	this.el.stateful.set("sizing.glue",conf.glue);
+
 
 	// addEventListeners(el, {
 	// 	"click": section_button_click

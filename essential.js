@@ -1688,16 +1688,16 @@ Generator.ObjectGenerator = Generator(Object);
 		this.discarded = true;					
 	};
 
-	_EnhancedDescriptor.prototype._queueLayout = function(ow,oh,displayed) {
+	_EnhancedDescriptor.prototype._queueLayout = function() {
 
-		if (this.layout.displayed != displayed) {
-			this.layout.displayed = displayed;
+		if (this.layout.displayed != this.sizing.displayed) {
+			this.layout.displayed = this.sizing.displayed;
 			this.layout.queued = true;
 		}
 
-		if (this.layout.width != ow || this.layout.height != oh) {
-			this.layout.width = ow;
-			this.layout.height = oh;
+		if (this.layout.width != this.sizing.width || this.layout.height != this.sizing.height) {
+			this.layout.width = this.sizing.width;
+			this.layout.height = this.sizing.height;
 			this.layout.queued = true;
 		}
 		if (this.layout.contentWidth != this.sizing.contentWidth || this.layout.contentHeight != this.sizing.contentHeight) {
@@ -1708,10 +1708,11 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 	_EnhancedDescriptor.prototype.checkSizing = function() {
-		var ow = this.el.offsetWidth, 
-			oh  = this.el.offsetHeight,
-			displayed = !(ow == 0 && oh == 0);
 
+		// update sizing with element state
+		var ow = this.sizing.width = this.el.offsetWidth;
+		var oh = this.sizing.height = this.el.offsetHeight;
+		this.sizing.displayed = !(ow == 0 && oh == 0);
 		this.sizing.contentWidth = this.el.scrollWidth;
 		this.sizing.contentHeight = this.el.scrollHeight;
 
@@ -1719,7 +1720,7 @@ Generator.ObjectGenerator = Generator(Object);
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
 		if (this.layouterParent) this.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
 
-		this._queueLayout(ow,oh,displayed);
+		this._queueLayout();
 		if (this.layout.queued) {
 			if (this.layouterParent) this.layouterParent.layout.queued = true;
 		}
@@ -1777,6 +1778,10 @@ Generator.ObjectGenerator = Generator(Object);
 			if (desc.layout.enable) {
 				desc.refresh();
 			}
+		}
+		for(var n in sizingElements) {
+			var desc = sizingElements[n];
+			desc.layout.queued = false;
 		}
 	};
 
@@ -5398,7 +5403,8 @@ function(scripts) {
 
 			//TODO speed up outstanding enhance check
 
-			StatefulResolver(desc.el,true);
+			var stateful = StatefulResolver(desc.el,true);
+			stateful.set("sizing",desc.sizing);
 			if (!desc.enhanced) { //TODO flag needEnhance
 				desc._tryEnhance(this.handlers);
 				++enhancedCount;	//TODO only increase if enhance handler?

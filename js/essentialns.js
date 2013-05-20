@@ -470,7 +470,7 @@
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
 
-		if (this.layout.displayed != displayed) {
+		if (this.layout.displayed != this.sizing.displayed) {
 			this.layout.displayed = this.sizing.displayed;
 			this.layout.queued = true;
 		}
