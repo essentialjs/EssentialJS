@@ -295,6 +295,8 @@ test("Enhance layouter element",function() {
 	
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
+	//TODO test no queued layout.queued
+	//TODO sizing values
 });
 
 
