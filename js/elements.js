@@ -14,6 +14,7 @@
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		callCleaners = essential("callCleaners"),
 		enhancedElements = essential("enhancedElements"),
+		sizingElements = essential("sizingElements"),
 		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
@@ -219,7 +220,7 @@
 			//TODO speed up outstanding enhance check
 
 			StatefulResolver(desc.el,true);
-			if (!desc.enhanced) {
+			if (!desc.enhanced) { //TODO flag needEnhance
 				desc._tryEnhance(this.handlers);
 				++enhancedCount;	//TODO only increase if enhance handler?
 			} 
@@ -227,6 +228,8 @@
 
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
+
+			if (desc.conf.sizingElement) sizingElements[desc.uniqueId] = desc;
 		}
 
 		//TODO enhance additional descriptors created during this instead of double call on loading = false

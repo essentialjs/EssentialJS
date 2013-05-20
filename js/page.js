@@ -15,6 +15,7 @@
 		serverUrl = location.protocol + "//" + location.host,
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
+		sizingElements = essential("sizingElements"),
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
    	var contains = essential("contains"),
@@ -531,8 +532,11 @@
 		while(e) {
 			if (e.attributes) {
 				var conf = this.getConfig(e), role = e.getAttribute("role");
+				// var sizingElement = false;
+				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
 				if (desc) {
+					// if (sizingElement) sizingElements[desc.uniqueId] = desc;
 					desc.layouterParent = context.layouter;
 					if (desc.conf.layouter) {
 						context.layouter = desc;

@@ -268,6 +268,23 @@
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
+	/*
+		Called for descendants of the layouter to allow forcing sizing, return true to force
+
+		TODO whould this be called for children during enhance?
+	*/
+	_Layouter.prototype.sizingElement = function(parent,child,role,conf) {
+
+	}
+
+	/*
+		Called for children in sizingElements
+	*/
+	_Layouter.prototype.calcSizing = function(el,sizing) {};
+
+	/*
+		Called to adjust the layout of the element and laid out children
+	*/
 	_Layouter.prototype.layout = function(el,layout) {};
 
 	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
@@ -281,7 +298,7 @@
 	var Laidout = essential.declare("Laidout",Generator(_Laidout));
 
 	_Laidout.prototype.layout = function(el,layout) {};
-	_Laidout.prototype.calcSizing = function(sizing) {};
+	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
 
 	// map of uniqueId referenced
@@ -423,10 +440,14 @@
 
 	_EnhancedDescriptor.prototype.laidouts = function() {
 		var laidouts = []; // laidouts and layouter
-		for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
-						c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
-			if (c.stateful && c.stateful("sizing","undefined")) laidouts.push(c);
-		}
+        for(var n in sizingElements) {
+            var desc = sizingElements[n];
+            if (desc.layouterParent == this) laidouts.push(desc.el);
+        }        
+		// for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
+		// 				c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
+		// 	if (c.stateful && c.stateful("sizing","undefined")) laidouts.push(c);
+		// }
 		return laidouts;
 	};
 
@@ -476,6 +497,7 @@
 
 		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
+		if (this.layouterParent) this.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
 
 		this._queueLayout(ow,oh,displayed);
 		if (this.layout.queued) {
@@ -626,7 +648,7 @@
 			instantiatePageSingletons();
 		}
 		catch(ex) {
-			console.error("Failed to launch delayed assets and singletons",ex);
+			essential("console").error("Failed to launch delayed assets and singletons",ex);
 			//debugger;
 		}
 	}
