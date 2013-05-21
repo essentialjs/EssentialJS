@@ -2627,7 +2627,7 @@ Generator.ObjectGenerator = Generator(Object);
 	*/
 	_Layouter.prototype.sizingElement = function(parent,child,role,conf) {
 		return false;
-	}
+	};
 
 	/*
 		Called for children in sizingElements
@@ -2705,6 +2705,23 @@ Generator.ObjectGenerator = Generator(Object);
 	_EnhancedDescriptor.prototype.discardHandler = function() {
 
 	};
+
+	_EnhancedDescriptor.prototype.ensureStateful = function() {
+		if (this.stateful) return;
+
+			var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
+			stateful.set("sizing",this.sizing);
+			stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
+	};	
+
+	_EnhancedDescriptor.prototype.onStateChange = function(ev) {
+		switch(ev.symbol) {
+			case "expanded":
+				ev.data.layout.queued = true;
+				break;
+		}
+	};
+
 
 	function _roleEnhancedCleaner(desc) {
 		return function() {
@@ -6535,8 +6552,8 @@ function(scripts) {
 
 			//TODO speed up outstanding enhance check
 
-			var stateful = StatefulResolver(desc.el,true);
-			stateful.set("sizing",desc.sizing);
+			desc.ensureStateful();
+
 			if (!desc.enhanced) { //TODO flag needEnhance
 				desc._tryEnhance(this.handlers);
 				++enhancedCount;	//TODO only increase if enhance handler?

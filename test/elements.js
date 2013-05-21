@@ -164,6 +164,7 @@ test('addEventListeners catch',function() {
 test('Enhance element early or delayed',function() {
 	var DocumentRoles = Resolver("essential::DocumentRoles::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var enhancedElements = Resolver("essential::enhancedElements::");
 	var appConfig = ApplicationConfig();
 
 
@@ -220,6 +221,14 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 
+
+	var delayedEl = page.body.getElementsByTagName("span")[0];
+	ok(delayedEl);
+	var delayedDesc = enhancedElements[delayedEl.uniqueId];
+	ok(delayedDesc);
+	ok(! delayedDesc.layout.queued);
+	delayedEl.stateful.set("state.expanded",true);
+	ok(delayedDesc.layout.queued);
 
 	//TODO all with roles are enhanced
 	//TODO discard called for all enhanced

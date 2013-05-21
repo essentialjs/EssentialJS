@@ -286,7 +286,7 @@
 	*/
 	_Layouter.prototype.sizingElement = function(parent,child,role,conf) {
 		return false;
-	}
+	};
 
 	/*
 		Called for children in sizingElements
@@ -364,6 +364,23 @@
 	_EnhancedDescriptor.prototype.discardHandler = function() {
 
 	};
+
+	_EnhancedDescriptor.prototype.ensureStateful = function() {
+		if (this.stateful) return;
+
+			var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
+			stateful.set("sizing",this.sizing);
+			stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
+	};	
+
+	_EnhancedDescriptor.prototype.onStateChange = function(ev) {
+		switch(ev.symbol) {
+			case "expanded":
+				ev.data.layout.queued = true;
+				break;
+		}
+	};
+
 
 	function _roleEnhancedCleaner(desc) {
 		return function() {
