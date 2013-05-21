@@ -122,18 +122,17 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 Layouter.variant("multisection",Generator(function(key,el,conf) {
 	this.el = el;
-	this.sizing = {};
-	this.el.stateful.set("sizing",this.sizing);
+	this.sizing = el.stateful("sizing");
 
 },Layouter,{ prototype: {
-	"layout": function(el,layout,laidouts) {
+	"layout": function(el,layout,sizingEls) {
 
 	var centered = [], after = [];
 	this.sizing.centerWidth = el.offsetWidth;
 	this.sizing.centerHeight = el.offsetHeight;
 
 	var left=0,right=0,top=0,bottom=0;
-	for(var i = 0, c; c = laidouts[i]; ++i) {
+	for(var i = 0, c; c = sizingEls[i]; ++i) {
 		var sizing = c.stateful("sizing");
 
 		// sizing.offset = offset;

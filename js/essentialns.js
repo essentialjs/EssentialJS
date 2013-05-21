@@ -285,7 +285,7 @@
 	/*
 		Called to adjust the layout of the element and laid out children
 	*/
-	_Layouter.prototype.layout = function(el,layout) {};
+	_Layouter.prototype.layout = function(el,layout,sizingEls) {};
 
 	_Layouter.prototype.updateActiveArea = function(areaName,el) {};
 	_Layouter.prototype.childLayouterUpdated = function(layouter,el,layout) {};
