@@ -270,7 +270,7 @@
 
 		for(var i=0,c; c = el.children[i]; ++i) {
 			var role = c.getAttribute("role"), conf = appConfig.getConfig(c) || {};
-			var se = this.sizingElement(el,c,role,conf);
+			var se = this.sizingElement(el,el,c,role,conf);
 			if (se) {
 				// set { sizingElement:true } on conf?
 				var desc = EnhancedDescriptor(c,role,conf,false,appConfig);
@@ -284,7 +284,7 @@
 	/*
 		Called for descendants of the layouter to allow forcing sizing, return true to force
 	*/
-	_Layouter.prototype.sizingElement = function(parent,child,role,conf) {
+	_Layouter.prototype.sizingElement = function(el,parent,child,role,conf) {
 		return false;
 	};
 
