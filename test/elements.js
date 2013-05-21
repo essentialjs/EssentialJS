@@ -244,6 +244,11 @@ function _TestLayouter(key,el,config) {
 }
 Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,Resolver("essential::Layouter::"),{
 	prototype:{
+
+		sizingElement : sinon.spy(function(parent,child,role,conf) {
+			return true;
+		}),
+
 		layout: sinon.stub()
 		// function(el,layout) {
 		// 	debugger;
@@ -254,6 +259,8 @@ Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,R
 
 test("Enhance layouter element",function() {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var sizingElements = Resolver("essential::sizingElements::");
+	var enhancedElements = Resolver("essential::enhancedElements::");
 	var DocumentRoles = Resolver("essential::DocumentRoles::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
@@ -279,7 +286,7 @@ test("Enhance layouter element",function() {
 		'<html><head>', '', '</head><body>',
 
 		'<span role="delayed"></span>',
-		'<span data-role="',"'layouter':'test-group'",'"></span>',
+		'<span data-role="',"'layouter':'test-group'",'"><em>abc</em></span>',
 
 		'</body>'
 		].join(""));
@@ -293,6 +300,13 @@ test("Enhance layouter element",function() {
 	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
 	ok(desc.layout.queued);
 	
+	equal(_TestLayouter.prototype.sizingElement.callCount,1);
+	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueId];
+	var emDesc = enhancedElements[page.body.firstChild.nextSibling.firstChild.uniqueId];
+	ok(emDesc);
+	equal(sizingElements[emDesc.uniqueId],emDesc);
+	equal(emDesc.layouterParent,desc);
+
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
 	//TODO test no queued layout.queued

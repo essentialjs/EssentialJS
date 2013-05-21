@@ -265,16 +265,27 @@
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
 
+		var layouterDesc = EnhancedDescriptor.all[el.uniqueId];
+		var appConfig = Resolver("essential::ApplicationConfig::")();
+
+		for(var i=0,c; c = el.children[i]; ++i) {
+			var role = c.getAttribute("role"), conf = appConfig.getConfig(c) || {};
+			var se = this.sizingElement(el,c,role,conf);
+			if (se) {
+				// set { sizingElement:true } on conf?
+				var desc = EnhancedDescriptor(c,role,conf,false,appConfig);
+				desc.layouterParent = layouterDesc;
+				sizingElements[desc.uniqueId] = desc;
+			}
+		}
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
 	/*
 		Called for descendants of the layouter to allow forcing sizing, return true to force
-
-		TODO whould this be called for children during enhance?
 	*/
 	_Layouter.prototype.sizingElement = function(parent,child,role,conf) {
-
+		return false;
 	}
 
 	/*
