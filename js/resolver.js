@@ -809,3 +809,4 @@ Resolver.exists = function(name) {
 };
 
 Resolver({},{ name:"default" });
+Resolver(window, {name:"window"});

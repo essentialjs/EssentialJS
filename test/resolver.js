@@ -36,6 +36,13 @@ test ("Named resolver",function(){
 })
 
 test("Window resolver",function(){
+	var win = Resolver("window");
+	equal(win.namespace,window);
+	equal(win("Array"),Array);
+	equal(win("Boolean"),Boolean);
+	equal(win("self"),window);
+	// equal(Resolver("window::"),window);
+
 	var win = Resolver(window);
 
 	equal(win.namespace,window);
