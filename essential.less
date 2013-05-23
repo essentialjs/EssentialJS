@@ -1,0 +1,294 @@
+/*
+	Global variables and mixins for common Essential Elements
+
+	Import this at the beginning of your stylesheets and override global variables with 
+	values specific to the application.
+*/
+
+@z-scroll-bar: 10;
+
+@scroll-bar-size: 9px;
+@scroll-bar-size-native: 15px;
+@scroll-bar-border-width: 1px;
+@scroll-background-color: white;
+@scroll-slider-color: rgba(0,0,0,0.5);
+@scroll-slider-border-color: transparent;
+
+.scrollbarLayout(@size: @scroll-bar-size, @size-native: @scroll-bar-size-native, @border-width: @scroll-bar-border-width, @min-size: 0) {
+    @bg-size: @size + 2px;
+
+	.vert-scroller, .horz-scroller {
+		box-sizing: border-box;
+		z-index: @z-scroll-bar;
+
+		header,footer {		
+			box-sizing: border-box; 
+		}
+		nav {
+			box-sizing: border-box;
+			display: block; position: absolute;
+			opacity:0;
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+			filter: alpha(opacity=0);
+			-webkit-transition: linear 300ms opacity;
+			-moz-transition: linear 300ms opacity;
+			-o-transition: linear 300ms opacity;
+			transition: linear 300ms opacity;
+
+			header,footer {
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+			filter: alpha(opacity=0);
+			}
+		}
+		&.shown nav {
+			opacity:1;
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
+			filter: alpha(opacity=100);
+
+			header,footer {
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
+			filter: alpha(opacity=100);
+			}
+		}
+	}
+
+	.vert-scroller {
+		display: block; position: absolute; right: 0;
+		top:@size-native; bottom: 2*@size-native;
+
+		overflow: visible;
+		width: @size-native;
+
+		> header, > footer {
+			display: block; position:absolute; 
+			right: 0;
+			width: 100%;
+			height: @size-native;
+		}
+		> header {
+			top: -@size-native;
+		}
+		> footer {
+			height: 2*@size-native;
+			bottom: -2*@size-native;
+		}
+
+		nav {
+			right: @border-width;
+			top:0; height:100%; min-height: @min-size;
+			overflow: visible;
+			width: @scroll-bar-size - 2*@border-width;
+
+			header {
+				display: block; position:absolute; top:-@size;
+				right: 0;
+				overflow: visible;
+				width: @scroll-bar-size - 2*@border-width; height: @size;
+
+                border-top-left-radius: @size - 2*@border-width;
+                -webkit-border-top-left-radius: @size - 2*@border-width;
+                -moz-border-top-left-radius: @size - 2*@border-width;
+                border-top-right-radius: @size - 2*@border-width;
+                -webkit-border-top-right-radius: @size - 2*@border-width;
+                -moz-border-top-right-radius: @size - 2*@border-width;
+			}
+			footer {
+				display: block; position:absolute; bottom:-@size;
+				right: 0;
+				overflow: visible;
+				width: @size - 2*@border-width; height: @size;
+
+                border-bottom-left-radius: @size - 2*@border-width;
+                -webkit-border-bottom-left-radius: @size - 2*@border-width;
+                -moz-border-bottom-left-radius: @size - 2*@border-width;
+                border-bottom-right-radius: @size - 2*@border-width;
+                -webkit-border-bottom-right-radius: @size - 2*@border-width;
+                -moz-border-bottom-right-radius: @size - 2*@border-width;
+			}
+		}
+	}
+
+    .vert-scroller.obscured {
+        width: @bg-size;
+		top:@size; bottom: 2*@size;
+		> header {
+			height: @size;
+			top: -@size;
+		}
+		> footer {
+			height: 2*@size;
+			bottom: -2*@size;
+		}
+		nav {
+	        left: @border-width; right: initial;
+	        // header,footer { left:0; right: initial;}
+		}
+    }
+
+	.horz-scroller {
+		display: block; position: absolute; bottom: 0;
+		left:@size-native; right:2*@size-native;
+		
+		overflow: visible;
+		height: @size-native;
+
+		> header, > footer {
+			display: block; position:absolute; 
+			bottom: 0;
+			width: @size;
+			height: 100%;
+		}
+		> header {
+			left: -@size-native;
+		}
+		> footer {
+			right: -2*@size-native;
+			width: 2*@size-native;
+		}
+
+		nav {
+			bottom: @border-width;
+			left:0; width:100%; min-width: @min-size;
+			overflow: visible;
+			height: @scroll-bar-size - 2*@border-width;
+
+            header {
+                display: block; position:absolute; left:-@size;
+                bottom: 0;
+                overflow: visible;
+                width: @size; height: @size - 2*@border-width;
+                border-top-left-radius: @size - 2*@border-width;
+                -webkit-border-top-left-radius: @size - 2*@border-width;
+                -moz-border-top-left-radius: @size - 2*@border-width;
+                border-bottom-left-radius: @size - 2*@border-width;
+                -webkit-border-bottom-left-radius: @size - 2*@border-width;
+                -moz-border-bottom-left-radius: @size - 2*@border-width;
+            }
+            footer {
+                display: block; position:absolute; right:-@size;
+                bottom: 0;
+                overflow: visible;
+                width: @size; height: @size - 2*@border-width;
+                border-top-right-radius: @size - 2*@border-width;
+                -webkit-border-top-right-radius: @size - 2*@border-width;
+                -moz-border-top-right-radius: @size - 2*@border-width;
+                border-bottom-right-radius: @size - 2*@border-width;
+                -webkit-border-bottom-right-radius: @size - 2*@border-width;
+                -moz-border-bottom-right-radius: @size - 2*@border-width;
+            }
+		}
+		
+	}
+
+    .horz-scroller.obscured {
+        height: @bg-size;
+		left:@bg-size; right: 2*@bg-size;
+		> header {
+			width: @bg-size;
+			left: -@bg-size;
+		}
+		> footer {
+			width: 2*@bg-size;
+			right: -2*@bg-size;
+		}
+		nav {
+	        top: @border-width; bottom: initial;
+		}
+    }
+
+}
+
+.scrollbarColor(@scrollbar-color: @scroll-background-color, @slider-color: @scroll-slider-color, @slider-border-color: @scroll-slider-border-color) {
+
+	.vert-scroller, .horz-scroller { 
+		background-color: @scrollbar-color; 
+		border-color: @slider-border-color;
+		> header, > footer { background-color: @scrollbar-color; }
+
+		nav {
+			background-color: @slider-color;
+			> header, > footer { background-color: @slider-color;}
+		}
+	}
+}
+
+.scrolledAppearance() {
+
+	&::-webkit-scrollbar {
+		-webkit-appearance: none;
+	}
+	&::scrollbar {
+		width:0; height:0;
+	}
+
+}
+
+.supportLang(en) {
+	html[lang=en] {
+		*[lang=not-en], 
+		.not-lang-en { display:none; }
+
+		*[lang=de] { display:none; }
+		*[lang=fr] { display:none; }
+	}
+}
+.supportLang(de) {
+	html[lang=de] { 
+		*[lang=not-de], 
+		.not-lang-de { display:none; }
+
+		*[lang=en] { display:none; }
+		*[lang=fr] { display:none; }
+	}
+}
+.supportLang(fr) {
+	html[lang=fr] { 
+		*[lang=not-fr], 
+		.not-lang-fr { display:none; }
+
+		*[lang=de] { display:none; }
+		*[lang=en] { display:none; }
+	}
+}
+
+.no-user-selection() {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.user-selection() {
+	-webkit-touch-callout: text;
+	-webkit-user-select: text;
+	-khtml-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+}
+
+.border-radius-withPie(@radius: 5px)
+{
+	.border-radius(@radius);
+	behavior: url(/PIE.htc);
+}
+
+// Transformations
+.rotateY(@degrees) {
+  -webkit-transform: rotateY(@degrees);
+     -moz-transform: rotateY(@degrees);
+      -ms-transform: rotateY(@degrees);
+       -o-transform: rotateY(@degrees);
+          transform: rotateY(@degrees);
+}
+
+// Some magic to get the input boxes to automatically adjust their size based
+// on the width of their parent.
+// See http://stackoverflow.com/questions/1030793/input-with-displayblock-is-not-a-block-why-not
+.input-width-auto(@width: 100%) {
+	width: @width;
+	.box-sizing(border-box);
+}
+
