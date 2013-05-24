@@ -3732,6 +3732,63 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 
+	var lowestDelta = 1E10, lowestDeltaXY = 1E10;
+
+	function MutableEvent_withMouseInfo() {
+		/*
+			deltaX,deltaY origin top left
+			wheelDeltaX,wheelDeltaY origin ?
+		*/
+		var delta = 0, deltaX = 0, deltaY = 0, absDelta = 0, absDeltaXY = 0;
+
+		// New school FF17+
+		if (typeof this.deltaX == "number" && typeof this.deltaY == "number") {
+			deltaX = this.deltaX; deltaY = this.deltaX;
+			this.delta = this.deltaY? this.deltaY : this.deltaX;
+
+			delta = this.delta;
+		}
+		// Webkit
+		else if (typeof this.wheelDeltaX == "number" && typeof this.wheelDeltaY == "number") {
+			this.deltaX = deltaX = this.wheelDeltaX;
+			this.deltaY = deltaY = this.wheelDeltaY;
+		}
+		else if (ev.axis != undefined) {
+			// DOMMouseScroll FF3.5+
+			deltaX = this.deltaX = ev.axis == ev.HORIZONTAL_AXIS? -this.delta : 0;
+			deltaY = this.deltaY = ev.axis == ev.VERTICAL_AXIS? this.delta : 0;
+		}
+		else {
+
+		}
+
+		//TODO normalised props based on jquery-mousewheel
+		absDelta = Math.abs(delta);
+		absDeltaXY = Math.max(Math.abs(deltaY),Math.abs(deltaX));
+
+		// console.log("deltas",{x:deltaX,y:deltaY},"scrollLeft",this.target.scrollLeft);
+
+		/*
+		var delta = this.delta;
+		this.deltaX = this.x;
+		this.deltaY = this.y;
+
+		// Old school scrollwheel delta
+		if (ev.wheelDelta) { delta = ev.wheelDelta/120; }
+		if (ev.detail) { delta = -ev.detail/3; }
+
+		// New school multidim scroll (touchpads) deltas
+		this.deltaY = delta;
+
+
+		// Webkit
+		if (ev.wheelDeltaY !== undefined) { this.deltaY = ev.wheelDeltaY/120; }
+		if (ev.wheelDeltaX !== undefined) { this.deltaX = -1 * ev.wheelDeltaX/120; }
+		*/
+		return this;
+	}
+
+
 	function MutableEvent_withActionInfo() {
 		var element = this.target;
 		// role of element or ancestor
@@ -3829,6 +3886,7 @@ Generator.ObjectGenerator = Generator(Object);
 		EVENTS[src.type].copyEvent.call(this,src);
 	}
 	_MutableEvent.prototype.relatedTarget = null;
+	_MutableEvent.prototype.withMouseInfo = MutableEvent_withMouseInfo;
 	_MutableEvent.prototype.withActionInfo = MutableEvent_withActionInfo;
 	_MutableEvent.prototype.withDefaultSubmit = MutableEvent_withDefaultSubmit;
 
@@ -3875,6 +3933,7 @@ Generator.ObjectGenerator = Generator(Object);
 		if (sourceEvent.withActionInfo) return sourceEvent;
 		function ClonedEvent() {
             this._original = sourceEvent;
+            this.withMouseInfo = MutableEvent_withMouseInfo;
 			this.withActionInfo = MutableEvent_withActionInfo;
 			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
             this.stopPropagation = function() { sourceEvent.stopPropagation(); };
@@ -3889,6 +3948,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function MutableEventFF(sourceEvent,props) {
         if (typeof sourceEvent == "string") return _NativeEvent(sourceEvent,props);
 
+        sourceEvent.withMouseInfo = MutableEvent_withMouseInfo;
         sourceEvent.withActionInfo = MutableEvent_withActionInfo;
 		sourceEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
 	    sourceEvent.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
