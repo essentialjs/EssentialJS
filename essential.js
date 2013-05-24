@@ -5980,42 +5980,32 @@ function(scripts) {
 			}
 			enhanced.refresh(this);
 		},
+		"DOMMouseScroll": function(ev) {
+			// Firefox with axis
+		},
+		"wheel": function(ev) {
+			// Newer Firefox + IE9/10
+		},
 		"mousewheel": function(ev) {
-			var delta = ev.delta, deltaX = ev.x, deltaY = ev.y;
-			// calcs from jquery.mousewheel.js
+			ev = MutableEvent(ev).withMouseInfo();
 
-			// Old school scrollwheel delta
-			if (ev.wheelDelta) { delta = ev.wheelDelta/120; }
-			if (ev.detail) { delta = -ev.detail/3; }
+			if ((ev.deltaX > 0 && 0 == this.scrollLeft) || 
+				(ev.deltaX < 0 && (this.scrollLeft + Math.ceil(this.offsetWidth) == this.scrollWidth))) {
 
-			// New school multidim scroll (touchpads) deltas
-			deltaY = delta;
+				// console.log("skipping X");
 
-			// Gecko
-			if (ev.axis != undefined && ev.axis == ev.HORIZONTAL_AXIS) {
-				deltaY = 0;
-				deltaX = -1 * delta;
-			}
-
-			// Webkit
-			if (ev.wheelDeltaY !== undefined) { deltaY = ev.wheelDeltaY/120; }
-			if (ev.wheelDeltaX !== undefined) { deltaX = -1 * ev.wheelDeltaX/120; }
-
-			if ((deltaX < 0 && 0 == this.scrollLeft) || 
-				(deltaX > 0 && (this.scrollLeft + Math.ceil(this.offsetWidth) == this.scrollWidth))) {
-
-				if (ev.preventDefault) ev.preventDefault();
+				ev.preventDefault();
 				return false;
 			}
 			// if webkitDirectionInvertedFromDevice == false do the inverse
-			/*
-			if ((deltaY < 0 && 0 == this.scrollTop) || 
-				(deltaY > 0 && (this.scrollTop + Math.ceil(this.offsetHeight) == this.scrollHeight))) {
+			if ((ev.deltaY > 0 && 0 == this.scrollTop) || 
+				(ev.deltaY < 0 && (this.scrollTop + Math.ceil(this.offsetHeight) == this.scrollHeight))) {
 
-				if (ev.preventDefault) ev.preventDefault();
+				// console.log("skipping Y");
+
+				ev.preventDefault();
 				return false;
 			}
-			*/
 		}
 
 		// mousedown, scroll, mousewheel
@@ -6024,6 +6014,9 @@ function(scripts) {
 	// Current active Movement activity
 	var activeMovement = null;
 
+	/*
+		The user operation of moving an element within the existing parent element.
+	*/
 	function ElementMovement() {
 	}
 
@@ -6061,7 +6054,7 @@ function(scripts) {
 				var y = Math.min( Math.max(movement.startY + movement.factorY*(ev.pageY - movement.startPageY),movement.minY), movement.maxY );
 				var x = Math.min( Math.max(movement.startX + movement.factorX*(ev.pageX - movement.startPageX),movement.minX), movement.maxX );
 				movement.track(ev,x,y);
-				console.log(movement.factorX,movement.factorY)
+				// console.log(movement.factorX,movement.factorY)
 			},
 			"mouseup": function(ev) {
 				movement.end();
@@ -6090,10 +6083,11 @@ function(scripts) {
 
 		if (ev.preventDefault) ev.preventDefault();
 		//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
-		var scrolled = this.parentNode.scrolled;
+		var scrolled = this.parentNode.scrolled; //TODO better way to pass ?
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
 			scrolled.scrollTop = y; //(scrolled.scrollHeight -  scrolled.clientHeight) * y / (scrolled.clientHeight - 9);
+			scrolled.stateful.set("pos.scrollTop",y);
 			//var posInfo = document.getElementById("pos-info");
 			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
 		};
@@ -6104,21 +6098,59 @@ function(scripts) {
 		movement.maxY = scrolled.scrollHeight - scrolled.clientHeight;
 		return false; // prevent default
 	}
+	function mousedownStatefulVert(ev) {
+		if (activeMovement != null) return;
+
+		if (ev.preventDefault) ev.preventDefault();
+		//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
+		var scrolled = this.parentNode.scrolled; //TODO better way to pass ?
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			scrolled.stateful.set("pos.scrollTop",y);
+			//var posInfo = document.getElementById("pos-info");
+			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
+		};
+		movement.start(this,ev);
+		movement.startY = scrolled.stateful("pos.scrollTop");
+		movement.startX = scrolled.stateful("pos.scrollLeft");
+		movement.factorY = scrolled.stateful("pos.scrollHeight") / movement.el.offsetHeight;
+		movement.maxY = scrolled.stateful("pos.scrollHeight") - scrolled.clientHeight;
+		return false; // prevent default
+	}
+
 	function mousedownHorz(ev) {
 		if (activeMovement != null) return;
 
 		if (ev.preventDefault) ev.preventDefault();
 		//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
-		var scrolled = this.parentNode.scrolled;
+		var scrolled = this.parentNode.scrolled; //TODO better way to pass ?
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
 			scrolled.scrollLeft = x; //(scrolled.scrollWidth -  scrolled.clientWidth) * x / (scrolled.clientWidth - 9);
+			scrolled.stateful.set("pos.scrollTop",x);
 		};
 		movement.start(this,ev);
 		movement.startY = scrolled.scrollTop;
 		movement.startX = scrolled.scrollLeft;
 		movement.factorX = scrolled.scrollWidth / movement.el.offsetWidth;
 		movement.maxX = scrolled.scrollWidth - scrolled.clientWidth;
+		return false; // prevent default
+	}
+	function mousedownStatefulHorz(ev) {
+		if (activeMovement != null) return;
+
+		if (ev.preventDefault) ev.preventDefault();
+		//TODO this.stateful instead of var scrolled = this.parentNode.scrolled;
+		var scrolled = this.parentNode.scrolled; //TODO better way to pass ?
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			scrolled.stateful.set("pos.scrollLeft",x);
+		};
+		movement.start(this,ev);
+		movement.startY = scrolled.stateful("pos.scrollTop");
+		movement.startX = scrolled.stateful("pos.scrollLeft");
+		movement.factorX = scrolled.stateful("pos.scrollWidth") / movement.el.offsetWidth;
+		movement.maxY = scrolled.stateful("pos.scrollWidth") - scrolled.clientWidth;
 		return false; // prevent default
 	}
 
@@ -6201,35 +6233,49 @@ function(scripts) {
 
 
 	function EnhancedScrolled(el,config) {
+
+        var sbsc = scrollbarSize();
+
 		//? this.el = el
 		var container = el.parentNode;
 		if (config.obscured) {
-			el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
-			el.style.right = "-" + scrollbarSize() + "px";
-			el.style.bottom = "-" + scrollbarSize() + "px";
-			el.style.paddingRight = scrollbarSize() + "px";
-			el.style.paddingBottom = scrollbarSize() + "px";
+			if (! config.unstyledParent) el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
+			el.style.right = "-" + sbsc + "px";
+			el.style.bottom = "-" + sbsc + "px";
+			el.style.paddingRight = sbsc + "px";
+			el.style.paddingBottom = sbsc + "px";
 			container = container.parentNode;
 		}
+
+		// var stateful = el.stateful;
+		// if (config.nativeScrollVert==false || config.nativeScrollHorz == false) {
+		// 	stateful.set("pos.scrollTop",el.scrollTop);
+		// 	stateful.set("pos.scrollLeft",el.scrollLeft);
+		// 	stateful.set("pos.scrollHeight",el.scrollHeight);
+		// 	stateful.set("pos.scrollWidth",el.scrollWidth);
+		// }
 
 		this.x = false !== config.x;
 		this.y = false !== config.y;
 		this.vert = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
 			initialDisplay: config.initialDisplay,
-			trackScroll: config.trackScroll,
-			sizeName: "Height", posName: "Top" 
-			},mousedownVert);
-		this.vert.el.style.width = scrollbarSize() + "px";
-		if (config.obscured) this.vert.el.style.right = "-" + scrollbarSize() + "px";
+			trackScroll: config.trackScrollVert || config.trackScroll,
+			sizeName: "Height", 
+			posName: "Top" 
+			},config.trackScrollVert==false? mousedownStatefulVert : mousedownVert);
+		if (config.obscured) this.vert.el.style.right = "-" + (config.vertOffset!=undefined? config.vertOffset:sbsc) + "px";
+        else this.vert.el.style.width = sbsc + "px";
+
 		this.horz = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
 			initialDisplay: config.initialDisplay, 
-			trackScroll: config.trackScroll,
-			sizeName: "Width", posName: "Left" 
-			},mousedownHorz);
-		this.horz.el.style.height = scrollbarSize() + "px";
-		if (config.obscured) this.horz.el.style.bottom = "-" + scrollbarSize() + "px";
+			trackScroll: config.trackScrollHorz ||  config.trackScroll,
+			sizeName: "Width", 
+			posName: "Left" 
+			},config.trackScrollHorz==false? mousedownStatefulHorz : mousedownHorz);
+		if (config.obscured) this.horz.el.style.bottom = "-" + (config.horzOffset!=undefined? config.vertOffset:sbsc) + "px";
+        else this.horz.el.style.height = sbsc + "px";
 
 		container.scrolled = el;
 		StatefulResolver(container,true);
