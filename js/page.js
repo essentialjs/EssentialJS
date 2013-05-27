@@ -732,11 +732,8 @@
 			pageResolver.set("state.requiredPages",requiredPages);
 		}
 
-		if (this.appConfig.bodySrc && this.appConfig.bodySrc != this.appConfig.appliedSrc) {
-			//TODO unapply if another is applied
-			this.applyBody();
-		}
-		//TODO apply to other destinations?
+        if (this.onload) this.onload({});
+		//TODO applyBody to other destinations?
 	};
 
 	SubPage.prototype.loadedPageError = function(status) {
@@ -878,8 +875,8 @@
 			this.body.attachEvent("online",updateOnlineStatus);
 			this.body.attachEvent("offline",updateOnlineStatus);
 		}
-		//TODO manage interval in configured.js
-		setInterval(updateOnlineStatus,1000); // for browsers that don't support events
+		//TODO manage interval in configured.js, and space it out consistent results
+		setInterval(updateOnlineStatus,5000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
@@ -956,11 +953,15 @@
 		var page = this.loadPage(src,true);
 		this.bodySrc = src;
 		this.appliedSrc = null;
+        this.onload = function(ev) {
+            //TODO unapply if another is applied
+            this.applyBody();
+        };
 		//TODO what about multiple calls ?
 		//TODO queue loading this as the initial body content added before the first body child
 	};
 
-	ApplicationConfig.prototype.loadPage = function(url,requiredForLaunch) {
+	ApplicationConfig.prototype.loadPage = function(url,requiredForLaunch,onload) {
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
 		if (page == undefined) {
 			page = this.pages()[url] = SubPage();
@@ -970,6 +971,7 @@
 				var requiredPages = pageResolver("state.requiredPages") + 1;
 				pageResolver.set("state.requiredPages",requiredPages);
 			}
+			page.onload = onload;
 		}
 		if (!page.documentLoaded) {
 			page.fetch();
