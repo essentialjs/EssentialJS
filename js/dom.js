@@ -364,10 +364,10 @@
 			this.deltaX = deltaX = this.wheelDeltaX;
 			this.deltaY = deltaY = this.wheelDeltaY;
 		}
-		else if (ev.axis != undefined) {
+		else if (this.axis != undefined) {
 			// DOMMouseScroll FF3.5+
-			deltaX = this.deltaX = ev.axis == ev.HORIZONTAL_AXIS? -this.delta : 0;
-			deltaY = this.deltaY = ev.axis == ev.VERTICAL_AXIS? this.delta : 0;
+			deltaX = this.deltaX = this.axis == ev.HORIZONTAL_AXIS? -this.delta : 0;
+			deltaY = this.deltaY = this.axis == ev.VERTICAL_AXIS? this.delta : 0;
 		}
 		else {
 

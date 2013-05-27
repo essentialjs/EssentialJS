@@ -386,6 +386,7 @@
 		return function() {
 			//TODO destroy
 			//TODO discard/destroy for layouter and laidout
+			// if (desc.discardHandler) 
 			return desc.discardHandler(desc.el,desc.role,desc.instance);
 		};
 	};
@@ -401,7 +402,8 @@
 			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
-			this.discardHandler = handlers.discard[this.role];
+			var discardHandler = handlers.discard[this.role];
+			if (discardHandler) this.discardHandler = discardHandler;
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
 			if (this.sizingHandler) sizingElements[this.uniqueId] = this;
 			if (this.layoutHandler) {

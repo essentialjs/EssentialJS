@@ -2727,6 +2727,7 @@ Generator.ObjectGenerator = Generator(Object);
 		return function() {
 			//TODO destroy
 			//TODO discard/destroy for layouter and laidout
+			// if (desc.discardHandler) 
 			return desc.discardHandler(desc.el,desc.role,desc.instance);
 		};
 	};
@@ -2742,7 +2743,8 @@ Generator.ObjectGenerator = Generator(Object);
 			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
-			this.discardHandler = handlers.discard[this.role];
+			var discardHandler = handlers.discard[this.role];
+			if (discardHandler) this.discardHandler = discardHandler;
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
 			if (this.sizingHandler) sizingElements[this.uniqueId] = this;
 			if (this.layoutHandler) {
@@ -3753,10 +3755,10 @@ Generator.ObjectGenerator = Generator(Object);
 			this.deltaX = deltaX = this.wheelDeltaX;
 			this.deltaY = deltaY = this.wheelDeltaY;
 		}
-		else if (ev.axis != undefined) {
+		else if (this.axis != undefined) {
 			// DOMMouseScroll FF3.5+
-			deltaX = this.deltaX = ev.axis == ev.HORIZONTAL_AXIS? -this.delta : 0;
-			deltaY = this.deltaY = ev.axis == ev.VERTICAL_AXIS? this.delta : 0;
+			deltaX = this.deltaX = this.axis == ev.HORIZONTAL_AXIS? -this.delta : 0;
+			deltaY = this.deltaY = this.axis == ev.VERTICAL_AXIS? this.delta : 0;
 		}
 		else {
 

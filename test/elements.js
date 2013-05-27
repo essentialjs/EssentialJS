@@ -174,7 +174,8 @@ test('Enhance element early or delayed',function() {
 		},		
 		"enhance": {
 			"early": sinon.stub(),
-			"delayed": sinon.stub()
+			"delayed": sinon.stub(),
+			"other": sinon.stub()
 		},
 		"sizing": {},
 		"layout": {
@@ -194,6 +195,7 @@ test('Enhance element early or delayed',function() {
 
 		'<span role="delayed" id="a"></span>',
 		'<span role="early" id="b"></span>',
+		'<span role="other" id="c"></span>',
 
 		'</body>'
 		].join(""));
@@ -239,6 +241,7 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,1,"early has been discarded");
 	equal(handlers.discard.delayed.callCount,1,"delayed has been discarded");
+	//TODO make sure that discardHandler for other is blank
 });
 
 //TODO layout and discard are optional handlers
