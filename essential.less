@@ -224,30 +224,30 @@
 }
 
 .supportLang(en) {
-	html[lang=en] {
+	html[lang=en] body {
 		*[lang=not-en], 
-		.not-lang-en { display:none; }
+		.not-lang-en { display:none !important; }
 
-		*[lang=de] { display:none; }
-		*[lang=fr] { display:none; }
+		*[lang=de] { display:none !important; }
+		*[lang=fr] { display:none !important; }
 	}
 }
 .supportLang(de) {
-	html[lang=de] { 
+	html[lang=de] body { 
 		*[lang=not-de], 
-		.not-lang-de { display:none; }
+		.not-lang-de { display:none !important; }
 
-		*[lang=en] { display:none; }
-		*[lang=fr] { display:none; }
+		*[lang=en] { display:none !important; }
+		*[lang=fr] { display:none !important; }
 	}
 }
 .supportLang(fr) {
-	html[lang=fr] { 
+	html[lang=fr] body { 
 		*[lang=not-fr], 
-		.not-lang-fr { display:none; }
+		.not-lang-fr { display:none !important; }
 
-		*[lang=de] { display:none; }
-		*[lang=en] { display:none; }
+		*[lang=de] { display:none !important; }
+		*[lang=en] { display:none !important; }
 	}
 }
 
