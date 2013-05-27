@@ -344,35 +344,35 @@ html[lang=fr] nav[action="navigation/lang"] a[name=fr] {
   width: 100%;
   height: 100%;
 }
-html[lang=en] *[lang=not-en],
-html[lang=en] .not-lang-en {
-  display: none;
+html[lang=en] body *[lang=not-en],
+html[lang=en] body .not-lang-en {
+  display: none !important;
 }
-html[lang=en] *[lang=de] {
-  display: none;
+html[lang=en] body *[lang=de] {
+  display: none !important;
 }
-html[lang=en] *[lang=fr] {
-  display: none;
+html[lang=en] body *[lang=fr] {
+  display: none !important;
 }
-html[lang=de] *[lang=not-de],
-html[lang=de] .not-lang-de {
-  display: none;
+html[lang=de] body *[lang=not-de],
+html[lang=de] body .not-lang-de {
+  display: none !important;
 }
-html[lang=de] *[lang=en] {
-  display: none;
+html[lang=de] body *[lang=en] {
+  display: none !important;
 }
-html[lang=de] *[lang=fr] {
-  display: none;
+html[lang=de] body *[lang=fr] {
+  display: none !important;
 }
-html[lang=fr] *[lang=not-fr],
-html[lang=fr] .not-lang-fr {
-  display: none;
+html[lang=fr] body *[lang=not-fr],
+html[lang=fr] body .not-lang-fr {
+  display: none !important;
 }
-html[lang=fr] *[lang=de] {
-  display: none;
+html[lang=fr] body *[lang=de] {
+  display: none !important;
 }
-html[lang=fr] *[lang=en] {
-  display: none;
+html[lang=fr] body *[lang=en] {
+  display: none !important;
 }
 textarea,
 input {
@@ -1232,7 +1232,7 @@ section.sheet {
 }
 .leftSide {
   left: 0;
-  right: 35%;
+  right: 55%;
   margin-right: 20px;
 }
 .leftSide table {
@@ -1248,7 +1248,7 @@ section.sheet {
 }
 .rightSide {
   right: 0;
-  width: 35%;
+  width: 55%;
 }
 [role=scrolled]::-webkit-scrollbar {
   -webkit-appearance: none;
