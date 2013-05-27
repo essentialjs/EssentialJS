@@ -240,14 +240,16 @@
 	 */
 	function callCleaners(el)
 	{
-		var _cleaners = el._cleaners, c;
-		if (_cleaners != undefined) {
-			do {
-				c = _cleaners.pop();
-				if (c) c.call(el);
-			} while(c);
-			_cleaners = undefined;
-		}
+		if (typeof el == "object" && el) {
+			var _cleaners = el._cleaners, c;
+			if (_cleaners != undefined) {
+				do {
+					c = _cleaners.pop();
+					if (c) c.call(el);
+				} while(c);
+				_cleaners = undefined;
+			}
+		} 
 	};
 	essential.declare("callCleaners",callCleaners);
 

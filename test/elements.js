@@ -104,6 +104,7 @@ test("MutableEvent preventDefault & stopPropagation",function() {
 
 test('Basic element construction',function(){
 	var HTMLElement = Resolver("essential::HTMLElement::");
+	var callCleaners = Resolver("essential::callCleaners::");
 
 	var div = HTMLElement("div",{ "class":"abc"},"<span>","abc","</span>");
 	equal(div.tagName,"DIV");
@@ -112,6 +113,11 @@ test('Basic element construction',function(){
 
 	var span = HTMLElement("span",{ "id":"def"})
 	equal(span.id,"def");
+
+	callCleaners(div);
+	equal(div._cleaners,undefined);
+	callCleaners(null);
+	callCleaners();
 })
 
 test('Script element construction',function(){
