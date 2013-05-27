@@ -463,6 +463,7 @@
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
 			scrolled.stateful.set("pos.scrollTop",y);
+			this.scrolledTo = y;
 			//var posInfo = document.getElementById("pos-info");
 			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
 		};
@@ -501,6 +502,7 @@
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
 			scrolled.stateful.set("pos.scrollLeft",x);
+			this.scrolledTo = x;
 		};
 		movement.start(this,ev);
 		movement.startY = scrolled.stateful("pos.scrollTop");
@@ -616,7 +618,7 @@
 		this.vert = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
 			initialDisplay: config.initialDisplay,
-			trackScroll: config.trackScrollVert || config.trackScroll,
+			trackScroll: config.trackScrollVert==false? false : config.trackScroll,
 			sizeName: "Height", 
 			posName: "Top" 
 			},config.trackScrollVert==false? mousedownStatefulVert : mousedownVert);
@@ -626,7 +628,7 @@
 		this.horz = new EnhancedScrollbar(el,container,{ 
 			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
 			initialDisplay: config.initialDisplay, 
-			trackScroll: config.trackScrollHorz ||  config.trackScroll,
+			trackScroll: config.trackScrollHorz==false? false :  config.trackScroll,
 			sizeName: "Width", 
 			posName: "Left" 
 			},config.trackScrollHorz==false? mousedownStatefulHorz : mousedownHorz);
