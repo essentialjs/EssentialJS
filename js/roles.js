@@ -16,7 +16,10 @@
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
+		ApplicationConfig = essential("ApplicationConfig"),
 		DocumentRoles = essential("DocumentRoles"),
+		pageResolver = Resolver("page"),
+		templates = pageResolver("templates"),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
@@ -290,6 +293,49 @@
 		return null;
 	}
 
+	// Templates
+
+	function Template(el) {
+		this.tagName = el.tagName;
+		this.html = el.innerHTML;
+		//TODO content = DocumentFragment that can be cloned and appendChild
+	}
+
+	function enhance_template(el,role,config) {
+		var id = config.id || el.id;
+		var template = templates[id] = new Template(el);
+		return template;
+	}
+	pageResolver.set("handlers.enhance.template",enhance_template);
+
+	DocumentRoles.init_template = function(el,role,config) {
+		this.contentManaged = true; // template content skipped
+	};
+	pageResolver.set("handlers.init.template",DocumentRoles.init_template);
+
+	DocumentRoles.init_templated = function(el,role,config) {
+		this.contentManaged = true; // templated content skipped
+	};
+
+/* TODO support on EnhancedDescriptor
+function enhance_templated(el,role,config) {
+	if (config.template && templates[config.template]) {
+		var template = templates[config.template];
+		//TODO replace element with template.tagName, mixed attributes and template.html
+		el.innerHTML = template.html; //TODO better
+		var context = { layouter: this.parentLayouter };
+		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
+		ApplicationConfig()._prep(el,context); //TODO prepAncestors
+		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
+		// DocumentRoles()._enhance_descs(descs);
+	}
+}
+
+pageResolver.set("handlers.enhance.templated",enhance_templated);
+*/
+
+	// Scrolled
+
 	var is_inside = 0;
 
 	var ENHANCED_SCROLLED_PARENT_EVENTS = {
@@ -322,19 +368,20 @@
 		// mousedown, scroll, mousewheel
 	};
 
+	var preventWheel = false; //navigator.userAgent.match(/Macintosh/) != null;
+
+	function parentChain(el) {
+		var p = [];
+		while(el && el != el.ownerDocument.body) { p.push(el); el = el.parentNode; }
+		return p;
+	}
+
 	var ENHANCED_SCROLLED_EVENTS = {
 		"scroll": function(ev) {
-			var enhanced = EnhancedDescriptor(this).instance;
-			// if not shown, show and if not entered and not dragging, hide after 1500 ms
-			if (!enhanced.vert.shown) {
-				enhanced.vert.show();
-				enhanced.horz.show();
-				if (!this.stateful("over") && !this.stateful("dragging")) {
-					enhanced.vert.delayedHide();
-					enhanced.horz.delayedHide();
-				}
-			}
-			enhanced.refresh(this);
+			var el = ev? (ev.target || ev.scrElement) : event.srcElement;
+
+			if (el.stateful("pos.scrollVert")) el.stateful.set("pos.scrollTop",el.scrollTop);
+			if (el.stateful("pos.scrollHorz")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
 		},
 		"DOMMouseScroll": function(ev) {
 			// Firefox with axis
@@ -344,21 +391,57 @@
 		},
 		"mousewheel": function(ev) {
 			ev = MutableEvent(ev).withMouseInfo();
+			// ev.stateful = ev.target.stateful; //TODO withStatefulTarget, self or parent that is stateful 
 
-			if ((ev.deltaX > 0 && 0 == this.scrollLeft) || 
-				(ev.deltaX < 0 && (this.scrollLeft + Math.ceil(this.offsetWidth) == this.scrollWidth))) {
+			// scrolling in two dimensions is problematic as you can only prevent or not. An acceleration is native
 
-				// console.log("skipping X");
-
-				ev.preventDefault();
-				return false;
-			}
+			//TODO check natural swipe setting/direction
 			// if webkitDirectionInvertedFromDevice == false do the inverse
-			if ((ev.deltaY > 0 && 0 == this.scrollTop) || 
-				(ev.deltaY < 0 && (this.scrollTop + Math.ceil(this.offsetHeight) == this.scrollHeight))) {
 
-				// console.log("skipping Y");
+			var chain = parentChain(ev.target);
+			var preventLeft = preventWheel && ev.deltaX > 0 && chain.every(function(el) { return el.scrollLeft == 0; });
+			// if (preventLeft) console.log("prevent left scroll ");
+			var preventTop = preventWheel && ev.deltaY > 0 && chain.every(function(el) { return el.scrollTop == 0; });
+			// if (preventTop) console.log("prevent top scroll ");
 
+			var prevent = false;
+
+			if (this.stateful("pos.scrollVert")) {
+				// native scrolling default works fine
+			} else {
+				if (ev.deltaY != 0) {
+					var top = this.stateful("pos.scrollTop");
+					top += ev.deltaY;
+					this.stateful.set("pos.scrollTop",top);
+					console.log('new top',top);
+					prevent = true;
+				}
+			}
+
+			if (this.stateful("pos.scrollHorz")) { // native scrolling?
+				// native scrolling default works fine
+			} else {
+				if (ev.deltaX != 0) {
+					var left = this.stateful("pos.scrollLeft");
+					left += ev.deltaY;
+					this.stateful.set("pos.scrollLeft",left);
+					prevent = true;
+				}
+			}
+
+
+			// if ((ev.deltaX < 0 && (this.scrollLeft + Math.ceil(this.offsetWidth) >= this.scrollWidth))) {
+
+			// 	ev.preventDefault();
+			// 	return false;
+			// }
+			// if ((ev.deltaY < 0 && (this.scrollTop + Math.ceil(this.offsetHeight) >= this.scrollHeight))) {
+
+			// 	ev.preventDefault();
+			// 	return false;
+			// }
+
+			if (prevent || preventLeft || preventTop) {
 				ev.preventDefault();
 				return false;
 			}
@@ -513,7 +596,7 @@
 	}
 
 
-	function EnhancedScrollbar(el,container,opts,mousedownEvent) {
+	function EnhancedScrollbar(el,container,config,opts,mousedownEvent) {
 		this.scrolled = el;
 		this.el = HTMLElement("div", { "class":opts["class"] }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		container.appendChild(this.el);
@@ -528,17 +611,25 @@
 		addEventListeners(el,ENHANCED_SCROLLED_EVENTS);
 		addEventListeners(this.el,{ "mousedown": mousedownEvent });
 
-		if (opts.initialDisplay !== false) {
+		if (config.initialDisplay !== false) {
 			if (this.show()) {
 				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
 			}
 		}
+        var sbsc = scrollbarSize();
+		var lc = opts.horzvert.toLowerCase();
+		if (config.obscured) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
+        else this.el.style[opts.thicknessName] = sbsc + "px";
 	}
 
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
 		if (this.trackScroll) {
 			this.scrolledTo = el["scroll"+this.posName];
 			this.scrolledContentSize = el["scroll"+this.sizeName];
+		}
+		else {
+			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName);
+			this.scrolledContentSize = this.scrolled.stateful("pos.scroll"+this.sizeName);
 		}
 		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
 	};
@@ -589,21 +680,10 @@
 		}
 	};
 
-
 	function EnhancedScrolled(el,config) {
 
-        var sbsc = scrollbarSize();
-
 		//? this.el = el
-		var container = el.parentNode;
-		if (config.obscured) {
-			if (! config.unstyledParent) el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
-			el.style.right = "-" + sbsc + "px";
-			el.style.bottom = "-" + sbsc + "px";
-			el.style.paddingRight = sbsc + "px";
-			el.style.paddingBottom = sbsc + "px";
-			container = container.parentNode;
-		}
+		var container = this._getContainer(el,config);
 
 		// var stateful = el.stateful;
 		// if (config.nativeScrollVert==false || config.nativeScrollHorz == false) {
@@ -613,27 +693,37 @@
 		// 	stateful.set("pos.scrollWidth",el.scrollWidth);
 		// }
 
+		var trackScrollVert = !(config.trackScrollVert==false || config.trackScroll == false),
+			trackScrollHorz = !(config.trackScrollHorz==false || config.trackScroll == false);
+
+		el.stateful.declare("pos.scrollVert",trackScrollVert);
+		el.stateful.declare("pos.scrollHorz",trackScrollHorz);
+		// if (trackScrollVert) 
+		el.stateful.declare("pos.scrollTop",0);
+		// if (trackScrollHorz) 
+		el.stateful.declare("pos.scrollLeft",0);
+
 		this.x = false !== config.x;
 		this.y = false !== config.y;
-		this.vert = new EnhancedScrollbar(el,container,{ 
+		this.vert = new EnhancedScrollbar(el,container,config,{
+			horzvert: "Vert", 
 			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
-			initialDisplay: config.initialDisplay,
-			trackScroll: config.trackScrollVert==false? false : config.trackScroll,
+			trackScroll: trackScrollVert,
 			sizeName: "Height", 
-			posName: "Top" 
-			},config.trackScrollVert==false? mousedownStatefulVert : mousedownVert);
-		if (config.obscured) this.vert.el.style.right = "-" + (config.vertOffset!=undefined? config.vertOffset:sbsc) + "px";
-        else this.vert.el.style.width = sbsc + "px";
+			posName: "Top",
+			thicknessName:"width",
+			edgeName: "right" 
+			},trackScrollVert? mousedownVert : mousedownStatefulVert);
 
-		this.horz = new EnhancedScrollbar(el,container,{ 
+		this.horz = new EnhancedScrollbar(el,container,config,{ 
+			horzvert: "Horz",
 			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
-			initialDisplay: config.initialDisplay, 
-			trackScroll: config.trackScrollHorz==false? false :  config.trackScroll,
+			trackScroll: trackScrollHorz,
 			sizeName: "Width", 
-			posName: "Left" 
-			},config.trackScrollHorz==false? mousedownStatefulHorz : mousedownHorz);
-		if (config.obscured) this.horz.el.style.bottom = "-" + (config.horzOffset!=undefined? config.vertOffset:sbsc) + "px";
-        else this.horz.el.style.height = sbsc + "px";
+			posName: "Left", 
+			thicknessName:"height",
+			edgeName: "bottom" 
+			},trackScrollHorz? mousedownHorz : mousedownStatefulHorz);
 
 		container.scrolled = el;
 		StatefulResolver(container,true);
@@ -641,7 +731,58 @@
 		container.scrollContainer = "top";
 
 		this.refresh(el);
+
+		el.stateful.on("change","pos.scrollTop",{el:el,es:this},this.scrollTopChanged);
+		el.stateful.on("change","pos.scrollLeft",{el:el,es:this},this.scrollLeftChanged);
 	}
+
+	EnhancedScrolled.prototype.scrollTopChanged = function(ev) {
+		var el = ev.data.el, es = ev.data.es;
+
+		// if not shown, show and if not entered and not dragging, hide after 1500 ms
+		if (!es.vert.shown) {
+			es.vert.show();
+			es.horz.show();
+			if (!ev.resolver("over") && !ev.resolver("dragging")) {
+				es.vert.delayedHide();
+				es.horz.delayedHide();
+			}
+		}
+		es.vert.trackScrolled(el);
+		es.vert.update(el);
+	};
+
+	EnhancedScrolled.prototype.scrollLeftChanged = function(ev) {
+		var el = ev.data.el, es = ev.data.es;
+
+		// if not shown, show and if not entered and not dragging, hide after 1500 ms
+		if (!es.vert.shown) {
+			es.vert.show();
+			es.horz.show();
+			if (!el.stateful("over") && !el.stateful("dragging")) {
+				es.vert.delayedHide();
+				es.horz.delayedHide();
+			}
+		}
+		es.horz.trackScrolled(el);
+		es.horz.update(el);
+	};
+
+	EnhancedScrolled.prototype._getContainer = function(el,config) {
+
+        var sbsc = scrollbarSize();
+
+		var container = el.parentNode;
+		if (config.obscured) {
+			if (! config.unstyledParent) el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
+			el.style.right = "-" + sbsc + "px";
+			el.style.bottom = "-" + sbsc + "px";
+			el.style.paddingRight = sbsc + "px";
+			el.style.paddingBottom = sbsc + "px";
+			container = container.parentNode;
+		}
+		return container;
+	};
 
 	EnhancedScrolled.prototype.refresh = function(el) {
 		this.vert.trackScrolled(el);
@@ -681,6 +822,17 @@
 	};
 
 	DocumentRoles.enhance_scrolled = function(el,role,config) {
+		if (config.template && templates[config.template]) {
+			var template = templates[config.template];
+			//TODO replace element with template.tagName, mixed attributes and template.html
+			el.innerHTML = template.html; //TODO better
+			var context = { layouter: this.parentLayouter };
+			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
+			ApplicationConfig()._prep(el,context); //TODO prepAncestors
+			// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
+			// DocumentRoles()._enhance_descs(descs);
+		}
+
 		StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
@@ -697,12 +849,4 @@
 		if (el.stateful) el.stateful.destroy();
 	};
 	
-	DocumentRoles.init_template = function(el,role,config) {
-		this.contentManaged = true; // template content skipped
-	};
-	Resolver("page").set("handlers.init.template",DocumentRoles.init_template);
-
-	DocumentRoles.init_templated = function(el,role,config) {
-		this.contentManaged = true; // templated content skipped
-	};
 }();

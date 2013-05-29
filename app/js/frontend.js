@@ -2,6 +2,7 @@
 	var essential = Resolver("essential"),
 		pageResolver = Resolver("page"),
 		templates = pageResolver("templates"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		console = essential("console");
@@ -90,19 +91,6 @@
 		}
 	});
 
-
-function Template(el) {
-	this.tagName = el.tagName;
-	this.html = el.innerHTML;
-}
-
-function enhance_template(el,role,config) {
-	var id = config.id || el.id;
-	var template = templates[id] = new Template(el);
-	return template;
-}
-
-pageResolver.set("handlers.enhance.template",enhance_template);
 
 function enhance_templated(el,role,config) {
 	if (config.template && templates[config.template]) {
@@ -230,6 +218,60 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		}
 	}
 }));
+
+	function EnhancedTable(el,role,config) {
+		this.el = el;
+		this.body = el.getElementsByTagName("TBODY")[0];
+
+		var desc = EnhancedDescriptor(el.parentNode);
+		if (desc && desc.role == "scrolled") {
+			this.scrolled = desc;
+			if (desc.conf.nativeScrollVert == false) {
+				this._enableVertScrolling(desc);
+			}
+
+		}
+	}
+
+	EnhancedTable.prototype._enableVertScrolling = function(desc)
+	{
+		desc.stateful.on("change","pos.scrollTop",this,function(ev) {
+			if (ev.data.body.style) ev.data.body.style.top = -ev.value+"px";
+		});
+
+		desc.stateful.set("pos.scrollHeight",this.el.offsetHeight);
+		desc.instance.vert.trackScrolled(desc.el);
+		desc.instance.vert.update(desc.el);
+	};
+
+
+	function enhance_table(el,role,config)
+	{
+		return new EnhancedTable(el,role,config);
+
+	}
+
+	function sizing_table(el,sizing,instance)
+	{
+
+	}
+
+	function layout_table(el,layout,instance)
+	{
+		if (instance.scrolled) {
+			instance.scrolled.stateful.set("pos.scrollHeight",el.offsetHeight);
+		}
+	}
+
+	function discard_table(el,role,instance)
+	{
+
+	}
+
+	DocumentRoles.presets.declare("handlers.enhance.table", enhance_table);
+	DocumentRoles.presets.declare("handlers.sizing.table", sizing_table);
+	DocumentRoles.presets.declare("handlers.layout.table", layout_table);
+	DocumentRoles.presets.declare("handlers.discard.table", discard_table);
 
 
 	function enhance_adorned(el,role,config) 
