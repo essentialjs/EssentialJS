@@ -410,10 +410,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaY != 0) {
+					var max = this.stateful("pos.scrollHeight") - this.offsetHeight;
 					var top = this.stateful("pos.scrollTop");
-					top += ev.deltaY;
+					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
-					console.log('new top',top);
 					prevent = true;
 				}
 			}
@@ -422,8 +422,9 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaX != 0) {
+					var max = this.stateful("pos.scrollWidth") - this.offsetWidth;
 					var left = this.stateful("pos.scrollLeft");
-					left += ev.deltaY;
+					left =  Math.min(max,Math.max(0,left + ev.deltaY)); //TODO inverted?
 					this.stateful.set("pos.scrollLeft",left);
 					prevent = true;
 				}
