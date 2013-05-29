@@ -223,26 +223,67 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		this.el = el;
 		this.body = el.getElementsByTagName("TBODY")[0];
 
+		this.defaultRowHeight = (this.body.children[0].offsetHeight + this.body.children[1].offsetHeight)/2;
+		this.rowHeights = [];
+
 		var desc = EnhancedDescriptor(el.parentNode);
 		if (desc && desc.role == "scrolled") {
-			this.scrolled = desc;
 			if (desc.conf.nativeScrollVert == false) {
+				this.scrolled = desc;
+				this._bodyHeight(desc);
 				this._enableVertScrolling(desc);
 			}
 
 		}
 	}
 
+	EnhancedTable.prototype._bodyHeight = function(desc) 
+	{
+		this.nonScrolledHeight = desc.el.scrollHeight - this.body.offsetHeight;
+		for(var i=0; i<this.body.children.length; ++i) {
+			var rowHeight = this.body.children[i].offsetHeight;
+			if (rowHeight || this.rowHeights[i]==undefined) this.rowHeights[i] = rowHeight;
+		}
+	};
+
 	EnhancedTable.prototype._enableVertScrolling = function(desc)
 	{
 		desc.stateful.on("change","pos.scrollTop",this,function(ev) {
-			if (ev.data.body.style) ev.data.body.style.top = -ev.value+"px";
+			// console.log("vert offset",ev.value);
+			ev.data._showRows(ev.value,desc.stateful);
 		});
 
-		desc.stateful.set("pos.scrollHeight",this.el.offsetHeight);
+		this._showRows(0,desc.stateful);
+
 		desc.instance.vert.trackScrolled(desc.el);
 		desc.instance.vert.update(desc.el);
+
 	};
+
+	EnhancedTable.prototype._showRows = function(offset,stateful) 
+	{
+		var height = this.scrolled.el.offsetHeight - this.nonScrolledHeight,
+			contentOffset = this.nonScrolledHeight;
+
+		for(var i=0,c; c = this.body.children[i]; ++i) {
+			var rowHeight = this.rowHeights[i];
+
+			// before to show
+			if (contentOffset < offset) {
+				c.style.display = "none";
+			} else if (contentOffset < offset+height) {
+				c.style.display = "";
+
+			} else {
+				c.style.display = "none";
+			}
+			contentOffset += rowHeight;
+		}
+
+		var scrollHeight = this.nonScrolledHeight + rowHeight * this.body.children.length;
+		stateful.set("pos.scrollHeight",scrollHeight);
+	};
+
 
 
 	function enhance_table(el,role,config)
@@ -260,6 +301,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	{
 		if (instance.scrolled) {
 			instance.scrolled.stateful.set("pos.scrollHeight",el.offsetHeight);
+			instance._showRows(instance.scrolled.stateful("pos.scrollTop") ,instance.scrolled.stateful);
 		}
 	}
 

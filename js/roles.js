@@ -410,8 +410,9 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaY != 0) {
-					var max = this.stateful("pos.scrollHeight") - this.offsetHeight;
+					var max = Math.max(0, this.stateful("pos.scrollHeight") - this.offsetHeight);
 					var top = this.stateful("pos.scrollTop");
+					// console.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
 					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
 					prevent = true;
@@ -422,7 +423,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaX != 0) {
-					var max = this.stateful("pos.scrollWidth") - this.offsetWidth;
+					var max = Math.max(0,this.stateful("pos.scrollWidth") - this.offsetWidth);
 					var left = this.stateful("pos.scrollLeft");
 					left =  Math.min(max,Math.max(0,left + ev.deltaY)); //TODO inverted?
 					this.stateful.set("pos.scrollLeft",left);
@@ -568,7 +569,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
 			scrolled.scrollLeft = x; //(scrolled.scrollWidth -  scrolled.clientWidth) * x / (scrolled.clientWidth - 9);
-			scrolled.stateful.set("pos.scrollTop",x);
+			scrolled.stateful.set("pos.scrollLeft",x);
 		};
 		movement.start(this,ev);
 		movement.startY = scrolled.scrollTop;
@@ -598,8 +599,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 
 	function EnhancedScrollbar(el,container,config,opts,mousedownEvent) {
+        var sbsc = scrollbarSize();
+		var lc = opts.horzvert.toLowerCase();
+
 		this.scrolled = el;
-		this.el = HTMLElement("div", { "class":opts["class"] }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
+		var className = config.obscured? lc+"-scroller obscured" : lc+"-scroller";
+		this.el = HTMLElement("div", { "class":className }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		container.appendChild(this.el);
 		this.sizeName = opts.sizeName; this.posName = opts.posName;
 		this.sizeStyle = opts.sizeName.toLowerCase();
@@ -617,8 +622,6 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
 			}
 		}
-        var sbsc = scrollbarSize();
-		var lc = opts.horzvert.toLowerCase();
 		if (config.obscured) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
         else this.el.style[opts.thicknessName] = sbsc + "px";
 	}
@@ -686,29 +689,19 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		//? this.el = el
 		var container = this._getContainer(el,config);
 
-		// var stateful = el.stateful;
-		// if (config.nativeScrollVert==false || config.nativeScrollHorz == false) {
-		// 	stateful.set("pos.scrollTop",el.scrollTop);
-		// 	stateful.set("pos.scrollLeft",el.scrollLeft);
-		// 	stateful.set("pos.scrollHeight",el.scrollHeight);
-		// 	stateful.set("pos.scrollWidth",el.scrollWidth);
-		// }
 
 		var trackScrollVert = !(config.trackScrollVert==false || config.trackScroll == false),
 			trackScrollHorz = !(config.trackScrollHorz==false || config.trackScroll == false);
 
 		el.stateful.declare("pos.scrollVert",trackScrollVert);
 		el.stateful.declare("pos.scrollHorz",trackScrollHorz);
-		// if (trackScrollVert) 
 		el.stateful.declare("pos.scrollTop",0);
-		// if (trackScrollHorz) 
 		el.stateful.declare("pos.scrollLeft",0);
 
 		this.x = false !== config.x;
 		this.y = false !== config.y;
 		this.vert = new EnhancedScrollbar(el,container,config,{
 			horzvert: "Vert", 
-			"class":config.obscured?"vert-scroller obscured":"vert-scroller", 
 			trackScroll: trackScrollVert,
 			sizeName: "Height", 
 			posName: "Top",
@@ -718,7 +711,6 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 		this.horz = new EnhancedScrollbar(el,container,config,{ 
 			horzvert: "Horz",
-			"class":config.obscured?"horz-scroller obscured":"horz-scroller", 
 			trackScroll: trackScrollHorz,
 			sizeName: "Width", 
 			posName: "Left", 
@@ -749,6 +741,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				es.horz.delayedHide();
 			}
 		}
+
 		es.vert.trackScrolled(el);
 		es.vert.update(el);
 	};

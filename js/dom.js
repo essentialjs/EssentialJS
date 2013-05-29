@@ -818,6 +818,7 @@
 	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
 
 	_ElementPlacement.prototype.compute = function() {
+		this.bounds = this.el.getBoundingClientRect();
 		for(var i=0,s; s = this.track[i]; ++i) {
 			this.style[s] = this._compute(s);
 		}
