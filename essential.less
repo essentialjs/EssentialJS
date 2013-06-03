@@ -292,3 +292,11 @@
 	.box-sizing(border-box);
 }
 
+.opacity(@opacity: 50) {
+	-moz-opacity: @opacity/100; 
+	-khtml-opacity: @opacity/100; 
+	-webkit-opacity: @opacity/100; 
+	opacity: @opacity/100; 
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=@{opacity})";
+	filter: ~"alpha(opacity=@{opacity})";
+}
