@@ -5378,7 +5378,7 @@ _ElementPlacement.prototype._compute = function(style)
 		var page = this.loadPage(src,true);
 		this.bodySrc = src;
 		this.appliedSrc = null;
-        this.onload = function(ev) {
+        page.onload = function(ev) {
             //TODO unapply if another is applied
             this.applyBody();
         };
