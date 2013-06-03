@@ -83,9 +83,16 @@ desc('Make CSS files for demos');
 task('css',function(params){
   var less = require('less');
   var basic = fs.readFileSync('app/css/basic.less').toString();
-  less.Parser({}).parse(basic,function(css){
+  less.Parser({}).parse(basic,function(error,root){
+    if (error) { console.log("Basic.css",error); return; } 
     var out = fs.openSync('app/css/basic.css', 'w+');
-    fs.writeSync(out, css);
+    fs.writeSync(out, root.toCSS());
+  })
+  var enhanced = fs.readFileSync('app/css/enhanced.less').toString();
+  less.Parser({}).parse(enhanced,function(error,root){
+    if (error) { console.log("Enhanced.css",error); return; } 
+    var out = fs.openSync('app/css/enhanced.css', 'w+');
+    fs.writeSync(out, root.toCSS());
   })
 });
 
@@ -94,6 +101,7 @@ task('default',function(params){
   jake.Task['combine'].invoke();
   jake.Task['minify'].invoke();
   jake.Task['gzip'].invoke();
+  //jake.Task['css'].invoke();
 });
 
 desc('Refreshing');
