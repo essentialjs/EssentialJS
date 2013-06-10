@@ -21,6 +21,98 @@
 	}
 	essential.declare("contains",contains);
 
+	// str includes the outerHTML for head
+	function _applyHead(doc,str) {
+		str = str.replace("<head",'<div was="head"').replace("</head>","</div>");
+		str = str.replace("<HEAD",'<div was="head"').replace("</HEAD>","</div>");
+
+		var _head = doc.createElement("head");
+		doc.appendChild(_head);
+
+		if (_head.canHaveHTML == false || true) {
+			var div = doc.createElement("div");
+			_head.appendChild(div);
+			div.innerHTML = str;
+			for(var c = div.firstChild.firstChild; c; c = div.firstChild.firstChild) _head.appendChild(c);
+			remove
+		} else {
+			_head.innerHTML = str;
+		}
+	}
+
+	// str includes the outerHTML for body
+	function _applyBody(doc,str) {
+		str = str.replace("<body",'<div was="body"').replace("</body>","</div>");
+		str = str.replace("<BODY",'<div was="body"').replace("</BODY>","</div>");
+
+		var _body = doc.createElement("body");
+		doc.appendChild(_body);
+
+		_body.innerHTML = str;
+
+		var src = _body.firstChild;
+		for(var i=0,a; a = src.attributes[0]; ++i) if (a.name != "was") _body.appendChild(a);
+		_body.innerHTML = src.innerHTML;
+
+	}
+
+	function _combindHeadAndBody(head,body) {
+		if (arguments.length == 2) return '<html>' + (head||"") + (body||"") + '</html>';
+		return head;
+	}
+
+   	/**
+   	 * (html) or (head,body)
+   	 */
+	function createImportedHTMLDocument(head,body) {
+		if (typeof head == "object" && typeof head.length == "number") {
+			head = head.join("");
+		}
+		if (typeof body == "object" && typeof body.length == "number") {
+			body = body.join("");
+		}
+		if (arguments.length == 2) {
+			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
+		}
+
+		var doc, r = {};
+		try {
+			doc = document.createElement("html");
+			doc.innerHTML = _combindHeadAndBody(head,body);
+			r.head = doc.head;
+			r.body = doc.body;
+		}
+		catch(ex) {
+			try {
+				doc = document.implementation.createHTMLDocument("");
+				doc.open();
+				doc.write(_combindHeadAndBody(head,body));
+				doc.close();
+				r.head = doc.head;
+				r.body = doc.body;
+			}
+			catch(ex) {
+				doc = new ActiveXObject("htmlfile");
+				// doc.open();
+				doc.write(_combindHeadAndBody(head,body));
+				// doc.close();
+				r.head = doc.getElementsByTagName("HEAD")[0];
+				r.body = doc.body;
+			}
+		}
+
+		try {
+			doc.head = document.importNode(r.head);
+			doc.body = document.importNode(r.body);
+		}
+		catch(ex) {
+			// ignore IE9- broken importNode
+		}
+
+		return doc;
+	}
+	essential.declare("createImportedHTMLDocument",createImportedHTMLDocument);
 
    	/**
    	 * (html) or (head,body)
@@ -40,44 +132,83 @@
 		// var doc = document.implementation.createDocument('','',
 		// 	document.implementation.createDocumentType('body','',''));
 		var doc;
-		if (document.implementation && document.implementation.createHTMLDocument) {
+		try {
 			doc = document.implementation.createHTMLDocument("");
+			doc.open();
+			doc.write(_combindHeadAndBody(head,body));
+			doc.close();
+			/*
 			if (arguments.length == 2) {
+				//IE 9/10 _applyHead, _applyBody
 				doc.documentElement.innerHTML = '<html>' + (head||"") + (body||"") + '</html>';
 			}
 			else {
+				// whole doc in head
 				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
 			}
-		} else  if (window.ActiveXObject) {
-		// 	text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
-		// 	text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
-		// 	text = text.replace("<head",'<washead').replace("</head>","</washead>");
-		// 	text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
-		// 	text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
-		// 	text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-		// 	var div = document.createElement("DIV");
-		// 	div.innerHTML = text;
-		// 	this.head = div.getElementsByTagName("washead");
-		// 	this.body = div.getElementsByTagName("wasbody") || div;
-		// 	//TODO offline htmlfile object?
-		// }
+			*/
+		} catch(ex) {
+			// IE can't or won't do it
 
-			doc = new ActiveXObject("htmlfile");
-			doc.appendChild(doc.createElement("html"));
-			var _head = doc.createElement("head");
-			var _body = doc.createElement("body");
-			doc.documentElement.appendChild(_head);
-			doc.documentElement.appendChild(_body);
-			if (arguments.length == 2) {
-				_body.innerHTML = body;
-				if (head != "") _head.innerHTML = head;
+			if (window.ActiveXObject) {
+			// 	text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
+			// 	text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
+			// 	var div = document.createElement("DIV");
+			// 	div.innerHTML = text;
+			// 	//TODO offline htmlfile object?
+			// }
+
+				//TODO make super sure that this is garbage collected, supposedly sticky
+				doc = new ActiveXObject("htmlfile");
+				// doc.appendChild(doc.createElement("html"));
+
+				if (arguments.length == 2) {
+					// doc.open();
+					doc.write('<html>' + (head||"") + (body||"") + '</html>');
+					// doc.close();
+					// _applyBody(doc,body);
+					// if (head != "") _applyHead(doc,head);
+				} else {
+					try {
+
+					} catch(ex) {
+						console.log(ex);
+					}
+					// doc.open();
+					doc.write(head);
+					// doc.close();
+					/*
+					var text = head;
+					text = text.replace(/<!DOCTYPE [^>]*>/,"");
+					text = text.replace(/<html[^>]*>/,""); //TODO pass the attributes
+					text = text.replace("</html>","");
+
+					var parts = text.replace("</HEAD>","</head>").split("</head>");
+					if (parts.length == 2) {
+						// with head element
+						parts[0] = parts[0].replace("<head>","").replace("<HEAD>","");
+
+						// if (_head.ie9_tagName != undefined) in IE9
+						// else if (_head.ie8_attributes != undefined) in IE8
+						_applyHead(doc,parts.shift())
+					} 
+					_applyBody(doc,parts.shift())
+					*/
+				}
+				if (doc.head == undefined) doc.head = doc.getElementsByTagName("HEAD")[0];
+
 			} else {
-				//TODO replace html/head/body and move them
-				debugger;
-			}
+				doc = document.createElement("DIV");// dummy default
 
-		} else {
-			return document.createElement("DIV");// dummy default
+					// text = text.replace("<head",'<washead').replace("</head>","</washead>");
+					// text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+					// text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+					// text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
+			// 	this.head = div.getElementsByTagName("washead");
+			// 	this.body = div.getElementsByTagName("wasbody") || div;
+					// var __head = _body.getElementsByTagName("washead");
+					// var __body = _body.getElementsByTagName("wasbody");
+			}
 		}
 
 		return doc;
@@ -188,159 +319,233 @@
 		this.toElement = src.toElement;
 		this.relatedTarget = src.relatedTarget;
 	}
+
+	function _defaultEventProps(ev) {
+		ev.bubbles = true; ev.view = window;
+
+		ev.detail = 0;
+		ev.screenX = 0; ev.screenY = 0; //TODO map client to screen
+		ev.clientX = 0; ev.clientY = 0;
+		ev.ctrlKey = false; ev.altKey = false; 
+		ev.shiftKey = false; ev.metaKey = false;
+		ev.button = 0; //?
+		ev.relatedTarget = undefined;
+	}
+
+	function createEventIE(type,props) {
+		var ev = document.createEventObject();
+		_defaultEventProps(ev);
+		ev.cancelable = this.cancelable;
+
+        if (props) {
+        	for (var name in props) ev[name] = props[name];
+			ev.button = {0:1, 1:4, 2:2}[props.button] || props.button; 
+        }
+
+		return ev;
+	}
+
+	function createEventDOM(type,props) {
+		var ev = document.createEvent(this.type || "Event"), combined = {};
+		_defaultEventProps(combined);
+		if (props) {
+			for (var name in props) (name == 'bubbles') ? (combined.bubbles = !!props[name]) : (combined[name] = props[name]);
+		}
+		this.init(ev,combined);
+
+
+
+		return ev;
+	}
+
+	function initEvent(ev,m) {
+		ev.initEvent(this.name,m.bubbles,m.cancelable, m.view,
+			m.detail,
+			m.screenX, m.screenY, m.clientX, m.clientY,
+			m.ctrlKey, m.altKey, m.shiftKey, m.metaKey,
+			m.button,
+			m.relatedTarget || document.body.parentNode);
+	}
+
+	function initFocusEvent(ev,m) {
+		ev.initFocusEvent(this.name,m.bubbles,m.cancelable, m.view,
+			m.detail,
+			m.relatedTarget || document.body.parentNode);
+	}
+
+	function initUIEvent(ev,m) {
+		ev.initUIEvent(this.name,m.bubbles,m.cancelable, m.view,m.detail);
+	}
+
+	function initMouseEvent(ev,m) {
+		var eventDoc, doc, body;
+
+		ev.initMouseEvent(this.name,m.bubbles,this.cancelable, m.view,
+			m.detail,
+			m.screenX, m.screenY, m.clientX, m.clientY,
+			m.ctrlKey, m.altKey, m.shiftKey, m.metaKey,
+			m.button,
+			m.relatedTarget || document.body.parentNode);
+
+
+		// IE 9+ creates events with pageX and pageY set to 0.
+		// Trying to modify the properties throws an error,
+		// so we define getters to return the correct values.
+		if ( ev.pageX === 0 && ev.pageY === 0 && Object.defineProperty ) {
+			eventDoc = ev.relatedTarget.ownerDocument || document;
+			doc = eventDoc.documentElement;
+			body = eventDoc.body;
+
+			Object.defineProperty( ev, "pageX", {
+				get: function() {
+					return m.clientX +
+						( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) -
+						( doc && doc.clientLeft || body && body.clientLeft || 0 );
+				}
+			});
+			Object.defineProperty( ev, "pageY", {
+				get: function() {
+					return m.clientY +
+						( doc && doc.scrollTop || body && body.scrollTop || 0 ) -
+						( doc && doc.clientTop || body && body.clientTop || 0 );
+				}
+			});
+		}
+	}
+
+	function triggerEventDOM(el,ev) {
+		return el.dispatchEvent(ev);
+	}
+
+	function triggerEventIE(el,ev) {
+		if (el) return el.fireEvent("on"+ ev.type,ev);
+		else return ev.target.fireEvent("on"+ ev.type,ev);
+	}
+
+
+	function AllEvents() {}
+	AllEvents.prototype.__ = function(m) { if (m) for(var n in m) this[n] = m[n]; };
+	AllEvents.prototype.cancelable = true;
+	AllEvents.prototype.create = createEventDOM;
+	AllEvents.prototype.init = initEvent;
+	AllEvents.prototype.trigger = triggerEventDOM;
+
+	if (typeof document.createEvent !== "function") {
+		AllEvents.prototype.createEvent = createEventIE;
+		AllEvents.prototype.triggerEvent = triggerEventIE;
+	}
+
+
+
+	function MouseEvents(m) {
+		this.__(m);
+	}
+	MouseEvents.prototype = new AllEvents();
+	MouseEvents.prototype.type = "MouseEvents";
+	MouseEvents.prototype.init = initMouseEvent;
+	MouseEvents.prototype.copy = copyMouseEvent;
+
+
+	function MouseOverOutEvents(m) {
+		this.__(m);
+	}
+	MouseOverOutEvents.prototype = new AllEvents();
+	MouseOverOutEvents.prototype.type = "MouseEvents";
+	MouseOverOutEvents.prototype.init = initMouseEvent;
+	MouseOverOutEvents.prototype.copy = copyMouseEventOverOut;
+
+
+	function KeyEvents(m) {
+		this.__(m);
+	}
+	KeyEvents.prototype = new AllEvents();
+	KeyEvents.prototype.type = "KeyboardEvent";
+	KeyEvents.prototype.init = initEvent;
+	KeyEvents.prototype.copy = copyKeyEvent;
+
+	
+	function InputEvents(m) {
+		this.__(m);
+	}
+	InputEvents.prototype = new AllEvents();
+	InputEvents.prototype.type = "FocusEvent";
+	InputEvents.prototype.init = initFocusEvent;
+	InputEvents.prototype.cancelable = false;
+	InputEvents.prototype.copy = copyInputEvent;
+
+
+	function FocusEvents(m) {
+		this.__(m);
+	}
+	FocusEvents.prototype = new AllEvents();
+	FocusEvents.prototype.type = "FocusEvent";
+	FocusEvents.prototype.init = initFocusEvent;
+	FocusEvents.prototype.cancelable = false;
+	FocusEvents.prototype.copy = copyInputEvent;
+
+
+	function UIEvents(m) {
+		this.__(m);
+	}
+	UIEvents.prototype = new AllEvents();
+	UIEvents.prototype.type = "UIEvent";
+	UIEvents.prototype.init = initUIEvent;
+	UIEvents.prototype.cancelable = false;
+	UIEvents.prototype.copy = copyNavigateEvent;
+
+
 	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
 	var EVENTS = {
 		// compositionstart/element/true compositionupdate/element/false
-		"click" : {
-			type: "MouseEvents",
-			cancelable:false, //true
-			copyEvent: copyMouseEvent
-		},
-		"dblclick" : {
-			type: "MouseEvents",
-			cancelable:false,
-			copyEvent: copyMouseEvent
-		},
-		"contextmenu": {
-			cancelable:false,
-			copyEvent: copyMouseEvent
-		},
-		"mousemove": {
-			type: "MouseEvents",
-			cancelable:true,
-			copyEvent: copyMouseEvent
-		},
-		"mouseup": {
-			type: "MouseEvents",
-			cancelable:true,
-			copyEvent: copyMouseEvent
-		},
-		"mousedown": {
-			type: "MouseEvents",
-			cancelable:true,
-			copyEvent: copyMouseEvent
-		},
-		"mousewheel": {
-			cancelable:false,
-			copyEvent: copyMouseEvent
-		},
-		"wheel": {
-			cancelable:true,
-			copyEvent: copyMouseEvent
-		},
-		"mouseenter": {
-			type: "MouseEvents",
-			cancelable:false,
-			copyEvent: copyMouseEvent
-		},
-		"mouseleave": {
-			type: "MouseEvents",
-			cancelable:false,
-			copyEvent: copyMouseEvent
-		},
-		"mouseout": {
-			type: "MouseEvents",
-			cancelable:true,
-			copyEvent: copyMouseEventOverOut
-		},
-		"mouseover": {
-			type: "MouseEvents",
-			cancelable:true,
-			copyEvent: copyMouseEventOverOut
-		},
+		"click" : new MouseEvents({cancelable:false}),
+		"dblclick" : new MouseEvents({cancelable:false}),
+		"contextmenu": new MouseEvents({cancelable:false}),
 
-		"keyup": {
-			cancelable:true,
-			copyEvent: copyKeyEvent
-		},
-		"keydown": {
-			cancelable:true,
-			copyEvent: copyKeyEvent
-		},
-		"keypress": {
-			cancelable:true,
-			copyEvent: copyKeyEvent
-		},
+		"mousemove": new MouseEvents(),
+		"mouseup": new MouseEvents(),
+		"mousedown": new MouseEvents(),
+		"mousewheel": new MouseEvents({cancelable:false,type:"MouseWheelEvent"}), //TODO initMouseWheelEvent
+		"wheel": new MouseEvents({type:"MouseEvent"}), //?? WheelEvent ?
+		"mouseenter": new MouseEvents({cancelable:false}),
+		"mouseleave": new MouseEvents({cancelable:false}),
 
-		"blur": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"focus": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"focusin": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"focusout": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
+		"mouseout": new MouseOverOutEvents(),
+		"mouseover": new MouseOverOutEvents(),
 
-		"copy": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"cut": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"change": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"input": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
-		"textinput": {
-			cancelable:false,
-			copyEvent: copyInputEvent
-		},
+		"keyup": new KeyEvents(),
+		"keydown": new KeyEvents(),
+		"keypress": new KeyEvents(),
 
-		"scroll": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"reset": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"submit": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"select": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
+		"blur": new FocusEvents(),
+		"focus": new FocusEvents(),
+		"focusin": new FocusEvents(),
+		"focusout": new FocusEvents(),
 
-		"error": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"haschange": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"load": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"unload": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
-		"resize": {
-			cancelable:false,
-			copyEvent: copyNavigateEvent
-		},
+		"copy": new InputEvents(),
+		"cut": new InputEvents(),
+		"change": new InputEvents(),
+		// "input": new InputEvents(),
+		// "textinput": new InputEvents(),
+
+		"scroll": new UIEvents(),
+
+		"reset": new InputEvents(),
+		"submit": new InputEvents(),
+
+		"select": new UIEvents(),
+		"abort": new UIEvents(),
+		"error": new UIEvents(),
+
+		"haschange": new UIEvents(),
+
+		"load": new UIEvents(),
+		"unload": new UIEvents(),
+		"resize": new UIEvents(),
 
 
 		"":{}
 	};
+	for(var n in EVENTS) EVENTS[n].name = n;
 
 
 	var lowestDelta = 1E10, lowestDeltaXY = 1E10;
@@ -491,10 +696,12 @@
 
 	function _MutableEvent(src) {
 		this._original = src;
-		this.type = src.type;
 		this.target = src.target || src.srcElement;
 		this.currentTarget = src.currentTarget|| src.target; 
-		EVENTS[src.type].copyEvent.call(this,src);
+		if (src.type) {
+			this.type = src.type;
+			EVENTS[src.type].copy.call(this,src);
+		}
 	}
 	_MutableEvent.prototype.relatedTarget = null;
 	_MutableEvent.prototype.withMouseInfo = MutableEvent_withMouseInfo;
@@ -518,22 +725,27 @@
 	_MutableEvent.prototype.BUBBLING_PHASE = 3;
     
     // trigger like jQuery
-    _MutableEvent.prototype.trigger = function() {
-        this.target.fireEvent("on" + this.type, this._original);
+    _MutableEvent.prototype.trigger = function(el) {
+    	// returns false if cancelled
+        return EVENTS[this.type].trigger(el || this.target, this._original);
     };
     
     function _NativeEventIE(type,props) {
-        var event = new _MutableEvent( document.createEventObject() );
-        if (props) for (var name in props) event._original[name] = props[name];
+    	var _native = EVENTS[type].create(type,props);
+    	// setting type/srcElement on _native breaks fireEvent
+        var event = new _MutableEvent( _native );
+        event.type = type;
+    	if (props && props.target) event.target = props.target;
         return event;
     }
     
     function _NativeEvent(type, props) {
-        var event = document.createEvent(EVENTS[type].type || "Events"), bubbles = true;
-        if (props) for (var name in props) (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name]);
-        event.initEvent(type, bubbles, EVENTS[type].cancelable, null, null, null, null, null, null, null, null, null, null, null, null);
+    	var event = EVENTS[type].create(type,props);
+        // var event = document.createEvent(EVENTS[type].type || "Events"), bubbles = true;
+        // if (props) for (var name in props) (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name]);
+        // event.initEvent(type, bubbles, EVENTS[type].cancelable, null, null, null, null, null, null, null, null, null, null, null, null);
         event.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
-        event.trigger = function(target) { (target || this.target).dispatchEvent(this); };
+        event.trigger = function(target) { return EVENTS[type].trigger(target || this.target,this); };
         return event;
     }
 

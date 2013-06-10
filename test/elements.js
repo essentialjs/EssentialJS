@@ -44,6 +44,7 @@ test('EnhancedDescriptor cross browser support',function(){
 
 test('addEventListeners catch',function() {
 	var HTMLElement = Resolver("essential::HTMLElement::");
+	var MutableEvent = Resolver("essential::MutableEvent::");
 	var addEventListeners = Resolver("essential::addEventListeners::");
 	var removeEventListeners = Resolver("essential::removeEventListeners::");
 
@@ -53,15 +54,16 @@ test('addEventListeners catch',function() {
 			
 		})
 	};
-	simulateClick(div);
+	MutableEvent("click").trigger(div);
 	equal(events.click.callCount,0);
 
+	// debugger;
 	addEventListeners(div,events,false);
-	simulateClick(div);
+	MutableEvent("click").trigger(div);
 	equal(events.click.callCount,1);
 
 	removeEventListeners(div,events);
-	simulateClick(div);
+	MutableEvent("click").trigger(div);
 	equal(events.click.callCount,1);
 });
 
