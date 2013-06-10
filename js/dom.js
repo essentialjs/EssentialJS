@@ -56,9 +56,28 @@
 
 	}
 
-	function _combindHeadAndBody(head,body) {
-		if (arguments.length == 2) return '<html>' + (head||"") + (body||"") + '</html>';
-		return head;
+	function parseFromStringArgs(markup, type) {
+		if (/^\s*text\/html\s*(?:;|$)/i.test(type)) {
+			var
+			  doc = document.implementation.createHTMLDocument("")
+			;
+	      		if (markup.toLowerCase().indexOf('<!doctype') > -1) {
+        			doc.documentElement.innerHTML = markup;
+      			}
+      			else {
+        			doc.body.innerHTML = markup;
+      			}
+			return doc;
+		} else {
+			return real_parseFromString.apply(this, arguments);
+		}
+	}
+
+	function _combindHeadAndBody(head,body) { //TODO ,doctype
+		var text = (head||"") + (body||"");
+		if (/<\/html>/.test(text) != false) '<html>' + text + '</html>'
+
+		return text;
 	}
 
    	/**
@@ -131,12 +150,22 @@
 
 		// var doc = document.implementation.createDocument('','',
 		// 	document.implementation.createDocumentType('body','',''));
-		var doc;
+		var doc,parser,markup = _combindHeadAndBody(head,body),hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 		try {
-			doc = document.implementation.createHTMLDocument("");
-			doc.open();
-			doc.write(_combindHeadAndBody(head,body));
-			doc.close();
+			if (/Gecko\/20/.test(navigator.userAgent)) {
+				doc = document.implementation.createHTMLDocument("");
+				// if (hasDoctype) 
+					doc.documentElement.innerHTML = markup;
+				// else doc.body.innerHTML = markup;
+				// parser = new DOMParser();
+				// doc = parser.parseFromString(_combindHeadAndBody(head,body),"text/html");
+			}
+			else {
+				doc = document.implementation.createHTMLDocument("");
+				doc.open();
+				doc.write(markup);
+				doc.close();
+			}
 			/*
 			if (arguments.length == 2) {
 				//IE 9/10 _applyHead, _applyBody
