@@ -1,7 +1,8 @@
 !function() {
 
 	var essential = Resolver("essential",{}),
-		console = essential("console");
+		console = essential("console"),
+		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
 
 	var contains;
 	function doc_contains(a,b) {
@@ -420,7 +421,7 @@
 		// IE 9+ creates events with pageX and pageY set to 0.
 		// Trying to modify the properties throws an error,
 		// so we define getters to return the correct values.
-		if ( ev.pageX === 0 && ev.pageY === 0 && Object.defineProperty ) {
+		if ( ev.pageX === 0 && ev.pageY === 0 && Object.defineProperty && isIE) {
 			eventDoc = ev.relatedTarget.ownerDocument || document;
 			doc = eventDoc.documentElement;
 			body = eventDoc.body;
