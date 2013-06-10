@@ -84,6 +84,20 @@
 		Reflect on property or attribute and aria equivalent. 
 	*/
 	function reflectAttributeAria(el,key,value) {
+		if (value) {
+			el.setAttribute(key,key);
+		} else {
+			el.removeAttribute(key);
+		}
+
+		if (value) {
+			el.setAttribute("aria-"+key,key);
+		} else {
+			el.removeAttribute("aria-"+key);
+		}
+	}
+
+	function reflectPropertyAria(el,key,value) {
 		if (typeof el[key] == "boolean") {
 			el[key] = !!value;
 		} else {
@@ -146,7 +160,7 @@
 	}
 
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
 		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
@@ -179,7 +193,8 @@
 
     //Temp Old IE check, TODO move to IE shim, shift disabled attr to aria-disabled if IE
     if (document.addEventListener) {
-        state_treatment.disabled.reflect = reflectAttributeAria;
+        state_treatment.disabled.reflect = reflectAria;
+        // state_treatment.disabled.read = readAttributeAria;
     }
  
 	var DOMTokenList_eitherClass = essential("DOMTokenList.eitherClass");
@@ -719,8 +734,6 @@
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = createHTMLDocument(text);
-			// this.head = document.importNode(doc.head);
-			// this.body = document.importNode(doc.body);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -743,9 +756,8 @@
 
 	SubPage.prototype.parseHTML = function(text) {
 		var doc = this.document = createHTMLDocument(text);
-
-		this.head = document.importNode(doc.head);
-		this.body = document.importNode(doc.body);
+		this.head = doc.head;
+		this.body = doc.body;
 		this.documentLoaded = true;
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
@@ -756,6 +768,18 @@
 		var e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild,
 			db = document.body,
 			fc = db.firstElementChild!==undefined? db.firstElementChild : db.firstChild;
+
+
+		//TODO import the elements ? or only allow getElement for a while
+		// try {
+		// 	this.head = document.importNode(doc.head,true);
+		// 	this.body = document.importNode(doc.body,true);
+		// }
+		// catch(ex) {
+		// 	this.head = doc.head;
+		// 	this.body = doc.body;
+		// }
+
 		while(e) {
 			// insert before the first permanent, or at the end
 			if (fc == null) {

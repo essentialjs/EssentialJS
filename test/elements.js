@@ -431,6 +431,35 @@ test('Discarding enhanced',function() {
 	ok(1,"Maintain all will not discard elements (especially body) being enhanced");
 })
 
+test('Template cloneNode',function() {
+
+	var enhance_template = Resolver("page::handlers.enhance.template::","null");
+	ok(enhance_template,"enhance_template");
+	if (enhance_template == null) {
+		debugger;
+		Resolver("page::handlers.enhance.template::","null");
+	}
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	ok(HTMLElement,"HTMLElement");
+
+	var div = HTMLElement("div",{},"abc<span>def</span>");
+	var tplAbc = enhance_template(div,"template",{ id:"abc" });
+	ok(tplAbc);
+
+	var tplAbc = Resolver("templates")(["#abc"]); //TODO Resolver("templates")("#abc");
+	ok(tplAbc);
+
+	var cloned = tplAbc.content.cloneNode(true);
+	// ok(cloned typeof document.DocumentFragment);
+	equal(cloned.childNodes[0].data,"abc");
+	equal(cloned.childNodes[1].innerHTML,"def");
+
+			//TODO anonymous template tag
+
+	//TODO test querySelector template lookup
+
+})
+
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential::DialogAction::");
 	var DocumentRoles = Resolver("essential::DocumentRoles::");

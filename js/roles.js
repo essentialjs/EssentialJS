@@ -19,7 +19,7 @@
 		ApplicationConfig = essential("ApplicationConfig"),
 		DocumentRoles = essential("DocumentRoles"),
 		pageResolver = Resolver("page"),
-		templates = pageResolver("templates"),
+		templates = Resolver("templates"),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
@@ -298,12 +298,50 @@
 	function Template(el) {
 		this.tagName = el.tagName;
 		this.html = el.innerHTML;
+
 		//TODO content = DocumentFragment that can be cloned and appendChild
+		this.content = document.createElement("DIV");
+		this.content.innerHTML = this.html;
+		//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+
+		this.content.cloneNode = this.contentCloneFunc(this.content);
 	}
+
+	Template.prototype.contentCloneFunc = function(el) {
+		return function(deep) {
+			var fragment = el.ownerDocument.createDocumentFragment();
+			if (! deep) return fragment; // shallow just gives fragment
+
+			for(var c = el.firstChild; c; c = c.nextSibling) {
+				switch(c.nodeType) {
+					case 1:
+						fragment.appendChild(c.cloneNode(true));
+						break;
+					case 3:
+						fragment.appendChild(el.ownerDocument.createTextNode(c.data));
+						break;
+					case 8: // comment ignored
+						// fragment.appendChild(el.ownerDocument.createComment(c.data));
+						break;
+
+				}
+			}
+
+			return fragment;
+		};
+	};
+
+	//TODO TemplateContent.prototype.clone = function(config,model) {}
 
 	function enhance_template(el,role,config) {
 		var id = config.id || el.id;
-		var template = templates[id] = new Template(el);
+		var template = new Template(el);
+		el.innerHTML = ''; // blank out the content
+
+		// template can be anonymouse
+		if (id) templates.set("#"+id,template);
+		// TODO class support, looking up on main document by querySelector
+
 		return template;
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
