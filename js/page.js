@@ -108,7 +108,7 @@
 		var value = el.getAttribute("aria-"+key), result = undefined;
 		if (value != null) result = value != "false" && value != ""; 
 
-		if (el[key] != undefined) result = el[key]; // el.disabled is undefined before attach
+		if (el[key] != undefined && !(el[key] === this["default"] && result !== undefined)) result = el[key]; // el.disabled is undefined before attach
 		if (result == undefined && ! contains(el.ownerDocument.body,el)) {
 			//TODO shift this to an init function used if not parentNode
 			var value = el.getAttribute(key);
