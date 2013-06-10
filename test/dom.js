@@ -80,6 +80,22 @@ test("HTMLElement construction",function(){
 	equal(div.childNodes[0].nodeName,"#text")
 	equal(div.childNodes[1].innerHTML,"def")
 	equal(div.childNodes[2].nodeName,"#text")
+
+	var range = HTMLElement("input",{type:"range"});
+	equal(range.tagName,"INPUT");
+	equal(range.getAttribute("type"),"range");
+
+	var range = HTMLElement("input",{type:"date"});
+	equal(range.tagName,"INPUT");
+	equal(range.getAttribute("type"),"date");
+
+	var range = HTMLElement("input",{type:"time"});
+	equal(range.tagName,"INPUT");
+	equal(range.getAttribute("type"),"time");
+
+	var range = HTMLElement("input",{type:"number"});
+	equal(range.tagName,"INPUT");
+	equal(range.getAttribute("type"),"number");
 })
 
 test("Native events",function() {

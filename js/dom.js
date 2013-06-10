@@ -988,9 +988,11 @@
 				case "rel":
 				case "lang":
 				case "language":
-				case "type":
 					if (_from[n] !== undefined) e[n] = _from[n]; 
 					break;
+
+				// "type" IE9 el.type is readonly:
+
 				//TODO case "onprogress": // partial script progress
 				case "onload":
 					regScriptOnload(e,_from.onload);
