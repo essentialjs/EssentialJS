@@ -444,10 +444,18 @@
 	}
 
 	function triggerEventDOM(el,ev) {
+		if (isIE && ev.type == "click") {
+			return el.click();
+		}
 		return el.dispatchEvent(ev);
 	}
 
 	function triggerEventIE(el,ev) {
+		if (ev.type == "click") {
+			return el.click();
+		}
+		//TODO doScroll for scroll-bars
+
 		if (el) return el.fireEvent("on"+ ev.type,ev);
 		else return ev.target.fireEvent("on"+ ev.type,ev);
 	}

@@ -156,6 +156,7 @@ test("MutableEvent preventDefault & stopPropagation",function() {
 	var MutableEvent = Resolver("essential::MutableEvent::");
 
 	var div = HTMLElement("div");
+	document.body.appendChild(div);
 
 	function onclick(ev) {
 		var event = MutableEvent(ev);
@@ -169,5 +170,7 @@ test("MutableEvent preventDefault & stopPropagation",function() {
 	else if (div.addEventListener) div.addEventListener("click",onclick);
 
     MutableEvent("click").trigger(div);
+
+    document.body.removeChild(div);
 });    
 
