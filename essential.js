@@ -2348,8 +2348,14 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	function _combindHeadAndBody(head,body) { //TODO ,doctype
+		if (head && body) {
+			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
+		}
+
 		var text = (head||"") + (body||"");
-		if (/<\/html>/.test(text) != false) '<html>' + text + '</html>'
+		if (head.substring(0,5) != "<head" && /<\/body>/.test(text) == false) text = "<body>" + text + "</body>";
+		if (/<\/html>/.test(text) == false) text = '<html>' + text + '</html>'
 
 		return text;
 	}
@@ -2363,10 +2369,6 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		if (typeof body == "object" && typeof body.length == "number") {
 			body = body.join("");
-		}
-		if (arguments.length == 2) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
 		}
 
 		var doc, r = {};
@@ -2417,10 +2419,6 @@ Generator.ObjectGenerator = Generator(Object);
 		if (typeof body == "object" && typeof body.length == "number") {
 			body = body.join("");
 		}
-		if (arguments.length == 2) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
-		}
 
 		// var doc = document.implementation.createDocument('','',
 		// 	document.implementation.createDocumentType('body','',''));
@@ -2464,22 +2462,10 @@ Generator.ObjectGenerator = Generator(Object);
 				//TODO make super sure that this is garbage collected, supposedly sticky
 				doc = new ActiveXObject("htmlfile");
 				// doc.appendChild(doc.createElement("html"));
-
-				if (arguments.length == 2) {
 					// doc.open();
-					doc.write('<html>' + (head||"") + (body||"") + '</html>');
 					// doc.close();
-					// _applyBody(doc,body);
-					// if (head != "") _applyHead(doc,head);
-				} else {
-					try {
+				doc.write(markup);
 
-					} catch(ex) {
-						console.log(ex);
-					}
-					// doc.open();
-					doc.write(head);
-					// doc.close();
 					/*
 					var text = head;
 					text = text.replace(/<!DOCTYPE [^>]*>/,"");
@@ -2497,8 +2483,7 @@ Generator.ObjectGenerator = Generator(Object);
 					} 
 					_applyBody(doc,parts.shift())
 					*/
-				}
-				if (doc.head == undefined) doc.head = doc.getElementsByTagName("HEAD")[0];
+				if (doc.head == undefined) doc.head = doc.body.previousSibling;
 
 			} else {
 				doc = document.createElement("DIV");// dummy default
@@ -2518,6 +2503,9 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("createHTMLDocument",createHTMLDocument);
 
+	function DOMParser() {
+		//TODO crossbrowser support text/html,text/xml, pluggable mimes
+	}
 
 	/*
 		Default roles for determining effective role
@@ -2628,7 +2616,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		ev.detail = 0;
 		ev.screenX = 0; ev.screenY = 0; //TODO map client to screen
-		ev.clientX = 0; ev.clientY = 0;
+		ev.clientX = 1; ev.clientY = 1;
 		ev.ctrlKey = false; ev.altKey = false; 
 		ev.shiftKey = false; ev.metaKey = false;
 		ev.button = 0; //?
@@ -2638,6 +2626,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function createEventIE(type,props) {
 		var ev = document.createEventObject();
 		_defaultEventProps(ev);
+		ev.type = type;
 		ev.cancelable = this.cancelable;
 
         if (props) {
@@ -2655,8 +2644,6 @@ Generator.ObjectGenerator = Generator(Object);
 			for (var name in props) (name == 'bubbles') ? (combined.bubbles = !!props[name]) : (combined[name] = props[name]);
 		}
 		this.init(ev,combined);
-
-
 
 		return ev;
 	}
@@ -2742,10 +2729,9 @@ Generator.ObjectGenerator = Generator(Object);
 	AllEvents.prototype.trigger = triggerEventDOM;
 
 	if (typeof document.createEvent !== "function") {
-		AllEvents.prototype.createEvent = createEventIE;
-		AllEvents.prototype.triggerEvent = triggerEventIE;
+		AllEvents.prototype.create = createEventIE;
+		AllEvents.prototype.trigger = triggerEventIE;
 	}
-
 
 
 	function MouseEvents(m) {
@@ -2812,7 +2798,7 @@ Generator.ObjectGenerator = Generator(Object);
 		"dblclick" : new MouseEvents({cancelable:false}),
 		"contextmenu": new MouseEvents({cancelable:false}),
 
-		"mousemove": new MouseEvents(),
+		"mousemove": new MouseEvents({cancelable:false}),
 		"mouseup": new MouseEvents(),
 		"mousedown": new MouseEvents(),
 		"mousewheel": new MouseEvents({cancelable:false,type:"MouseWheelEvent"}), //TODO initMouseWheelEvent
@@ -4436,12 +4422,13 @@ _ElementPlacement.prototype._compute = function(style)
 			pageResolver.set(["state","online"],online);	
 		}
 	}
+	pageResolver.updateOnlineStatus = updateOnlineStatus;
 
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
 		this.document = document;
-		this.head = this.document.head;
+		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
 		_Scripted.call(this);
 
@@ -4456,8 +4443,6 @@ _ElementPlacement.prototype._compute = function(style)
 			this.body.attachEvent("online",updateOnlineStatus);
 			this.body.attachEvent("offline",updateOnlineStatus);
 		}
-		//TODO manage interval in configured.js, and space it out consistent results
-		setInterval(updateOnlineStatus,5000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
@@ -6814,11 +6799,19 @@ Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecyc
 //TODO clearInterval on unload
 
 Resolver("page::state.livepage").on("change",function(ev) {
-	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+	var pageResolver = Resolver("page");
+
 	if (ev.value) { // bring live
+		
+		//TODO manage interval in configured.js, and space it out consistent results
+		// for browsers that don't support events
+		pageResolver.uosInterval = setInterval(pageResolver.updateOnlineStatus,5000);
+
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
 	} else { // unload
+		clearInterval(pageResolver.uosInterval);
 		clearInterval(EnhancedDescriptor.maintainer);
 		clearInterval(EnhancedDescriptor.refresher);
 	}
