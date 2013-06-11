@@ -81,6 +81,7 @@
 		}
 
 		var text = (head||"") + (body||"");
+		if (head.substring(0,5) != "<head" && /<\/body>/.test(text) == false) text = "<body>" + text + "</body>";
 		if (/<\/html>/.test(text) == false) text = '<html>' + text + '</html>'
 
 		return text;

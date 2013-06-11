@@ -45,6 +45,10 @@ test("Document Creations",function() {
 	equal(doc.body.id,"a2");
 	equal(doc.body.getAttribute("attr"),"a2");
 	//TODO test the construction in IE
+
+	var spans = '<span id="a" role="delayed"></span><span id="b" role="early"></span>';
+	var doc = createHTMLDocument(spans);
+	equal(doc.body.innerHTML.toLowerCase().replace(/"/g,""),spans.replace(/"/g,""));
 });
 
 test("HTMLElement construction",function(){
