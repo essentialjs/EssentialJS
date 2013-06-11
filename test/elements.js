@@ -57,7 +57,6 @@ test('addEventListeners catch',function() {
 	MutableEvent("click").trigger(div);
 	equal(events.click.callCount,0);
 
-	// debugger;
 	addEventListeners(div,events,false);
 	MutableEvent("click").trigger(div);
 	equal(events.click.callCount,1);
@@ -94,7 +93,6 @@ test('Enhance element early or delayed',function() {
 		}
 	};
 	handlers.enhance.delayed.returns(false);
-	Resolver("page").set("handlers",handlers);
 
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -198,7 +196,6 @@ test("Enhance layouter element",function() {
 			"early": sinon.stub()
 		}
 	};
-	Resolver("page").set("handlers",handlers);
 
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<html><head>', '', '</head><body>',
