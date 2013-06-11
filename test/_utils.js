@@ -122,39 +122,6 @@ function simulateKey(doc, element, eventName, props) {
 	else throw new ExampleException("No support for synthetic events");
 }
 
-function createDocument(head,body) {
-	if (typeof head == "object" && typeof head.length == "number") {
-		head = head.join("");
-	}
-	if (typeof body == "object" && typeof body.length == "number") {
-		body = body.join("");
-	}
-
-	// var doc = document.implementation.createDocument('','',
-	// 	document.implementation.createDocumentType('body','',''));
-	var doc;
-	if (document.implementation && document.implementation.createHTMLDocument) {
-		doc = document.implementation.createHTMLDocument("");
-		doc.documentElement.innerHTML = '<html><head>' + head + '</head><body>' + body + '</body>';
-
-	} else  if (window.ActiveXObject) {
-		doc = new ActiveXObject("htmlfile");
-		doc.appendChild(doc.createElement("html"));
-		var _head = doc.createElement("head");
-		var _body = doc.createElement("body");
-		doc.documentElement.appendChild(_head);
-		doc.documentElement.appendChild(_body);
-debugger;
-		_body.innerHTML = body;
-		if (head != "") _head.innerHTML = head;
-
-	} else {
-		return document.createElement("DIV");// dummy default
-	}
-
-	return doc;
-}
-
 test("Simulate MouseEvent",function(){
 	var el = document.createElement("div");
 	var clickHandler = sinon.spy();

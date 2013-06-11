@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]--><!--[if lt IE 7 ]><html class="no-js ie6" lang="en"><![endif]--><!--[if IE 7 ]><html class="no-js ie7" lang="en"><![endif]--><!--[if IE 8 ]><html class="no-js ie8" lang="en"><![endif]--><!--[if (gte IE 9)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]--><head>
+  <meta charset="utf-8">
+  <meta content="chrome=1,IE=edge" http-equiv="X-UA-Compatible">
+  <meta content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" name="SKYPE_TOOLBAR">
+	<title>Demo App</title>
+  <meta content="Novo Bank" name="description">
+  <meta content="Henrik Vendelbo" name="author">
+
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled">
+  <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
+  <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
+	
+
+	<link rel="stylesheet" href="css/basic.css" media="screen">
+  <link rel="stylesheet" href="css/enhanced.css" media="screen">
+
+	<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
+	<script type="text/javascript" src="../js/modernizr.js"></script>
+	<script type="text/javascript" src="../js/json2.js"></script>
+	<script type="text/javascript" src="../js/resolver.js"></script>
+  <script type="text/javascript" src="../js/generator.js"></script>
+	<script type="text/javascript" src="../js/essentialns.js"></script>
+  <script type="text/javascript" src="../js/dom.js"></script>
+  <script type="text/javascript" src="../js/page.js"></script>
+	<script type="text/javascript" src="../js/xhr.js"></script>
+	<script type="text/javascript" src="../js/elements.js"></script>
+  <script type="text/javascript" src="../js/roles.js"></script>
+  <script type="text/javascript" src="../js/configured.js"></script>
+  <script type="text/javascript" src="js/spin.min.js"></script>
+
+  <script type="text/javascript" src="js/demo-logging.js"></script>
+
+  <script type="text/javascript" src="js/early.js"></script>
+
+  <script>(function(){
+	  //Resolver("page").set(["state","connected"],false);
+	  //Resolver("page").set(["state","authenticated"],false); //assume that login page passed
+	  // Resolver("page").set(["state","authorised"],false);
+	  // Resolver("page").set(["state","configured"],false);
+	})();
+  </script>
+	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
+
+  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
+  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
+  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
+
+  <link rel="preload" type="text/javascript" src="js/jquery-1.7.2.min.js" >
+
+  <link rel="pastload" type="text/javascript" src="js/knockout.js">
+  <link rel="pastload" type="text/javascript" src="js/raphael.min.js" name="raphael">
+  <link rel="preload" type="text/javascript" src="js/raphael-resources.js">
+  <link rel="pastload" type="text/javascript" src="js/frontend.js" subpage="false">
+
+  <script type="application/config">
+    declare("logo",{"charset": "utf-8"});
+    declare("login",{"charset": "utf-8"});
+    declare("launched",{"charset": "utf-8"});
+
+    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+  </script>
+
+</head>
+<body class="loading" src="pages/index.html" role="application" data-role='"generator":"DemoApplication"'>
+  <div id="menu-driven">
+    
+    <article role="presentation" id="main-stage">
+    </article>
+
+   <header>
+   	<nav action="navigation/logo" role="navigation">
+      <button name="menu" role="button"></button>
+      <script type="application/init">
+      require("raphael");
+      defineLogo(parentElement);
+      </script>
+    </nav>
+    <nav action="navigation/application" role="navigation">
+      <button name="designer" role="button"><span class="icon"></span><label>Designer</label></button>
+      <button name="explorer" role="button"><span class="icon"></span><label>Explorer</label></button>
+      <button name="ongoing" role="button"><span class="icon"></span><label>Ongoing</label></button>
+      <button name="history" role="button"><span class="icon"></span><label>History</label></button>
+
+      <a href="pages/scrolling.html" rel="subpage" role="link">Scrolling</a>
+    </nav>
+
+    <nav action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="navigation">
+      <button name="logout">Logout</button>
+
+      <menu actions="navigation/menu" role="menu">
+        <command name="preferences" label="Preferences">
+        <command name="confidential" label="Show/Hide Confidential">
+        <command name="password" label="Change Password">
+        <command name="logout" label="Logout">
+      </menu>
+    </nav>
+   </header>
+
+   <aside id="warnings-and-alerts" role="toolbar" action="info/alerts">
+   </aside>
+   <aside class="leftmenu">
+   </aside>
+
+  </div>
+
+  <nav id="cpny-logo">
+  	<figure name="get-started" role="img"></figure> 
+	<span><h1>Essential<br/>JavaScript</h1></span>
+  </nav>
+
+  <nav id="app-logo">EssentialJS
+  </nav>
+  <footer>© Right Here Inc
+  </footer>
+  
+  <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
+  </div>
+  <output data-proxy="html: body.connection.loadingProgress" id="loadingProgress"></output>
+
+  <nav role="navigation" action="navigation/lang"> 
+    <a name="en">English</a> ◦ 
+    <a name="de">Deutch</a> ◦  
+    <a name="fr">Francais</a> 
+  </nav>
+  <script type="text/javascript">
+  Resolver("essential")("DialogAction").variant("navigation/lang",Generator(
+    function(){},Resolver("essential")("DialogAction"),
+    {
+      "prototype": {
+        "en": function(){ 
+          Resolver("translations").set("locale","en"); 
+        },
+        "de": function(){ 
+          Resolver("translations").set("locale","de"); 
+        },
+        "fr": function(){ 
+          Resolver("translations").set("locale","fr"); 
+        }
+      }
+    }));
+  </script>
+
+</body>
+
+<script id="next-page" type="text/html">
+  <body>
+    How to bundle multiple pages in one for standalone multipage apps
+  </body>
+</script>
+</html>

@@ -1,27 +1,3 @@
-.no-user-selection() {
-	-webkit-touch-callout: none;
-	-webkit-user-select: none;
-	-khtml-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
-}
-
-.user-selection() {
-	-webkit-touch-callout: text;
-	-webkit-user-select: text;
-	-khtml-user-select: text;
-	-moz-user-select: text;
-	-ms-user-select: text;
-	user-select: text;
-}
-
-.border-radius-withPie(@radius: 5px)
-{
-	.border-radius(@radius);
-	behavior: url(/PIE.htc);
-}
-
 .absolute-overlay() {
 	display: block;
 	position: absolute;
@@ -82,23 +58,6 @@
 	startColorstr='@from_color', endColorstr='@to_color',GradientType=0);	
 }
 
-
-// Transformations
-.rotateY(@degrees) {
-  -webkit-transform: rotateY(@degrees);
-     -moz-transform: rotateY(@degrees);
-      -ms-transform: rotateY(@degrees);
-       -o-transform: rotateY(@degrees);
-          transform: rotateY(@degrees);
-}
-
-// Some magic to get the input boxes to automatically adjust their size based
-// on the width of their parent.
-// See http://stackoverflow.com/questions/1030793/input-with-displayblock-is-not-a-block-why-not
-.input-width-auto(@width: 100%) {
-	width: @width;
-	.box-sizing(border-box);
-}
 
 // Adds a box shadow with a given blur length to the top and bottom only.
 .box-shadow-top-bottom(@shadowBlurLength, @color) {

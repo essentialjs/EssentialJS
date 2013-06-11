@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" essential-testing="yes">
 <head>
 	<title>QUnit Tests</title>
 	<link rel="stylesheet" href="test/qunit/qunit.css" media="screen">
@@ -9,20 +9,40 @@
 <script type="text/javascript" src="js/modernizr-prefix.js" data-save-as="modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/modernizr.js" data-save-as="modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/json2.js" data-save-as="modernizr+essential+json+clipboard"></script>
-<script type="text/javascript" src="js/constructive.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
+<script type="text/javascript" src="js/resolver.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
+<script type="text/javascript" src="js/generator.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/essentialns.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
+<script type="text/javascript" src="js/dom.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
+<script type="text/javascript" src="js/page.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/xhr.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/elements.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
+<script type="text/javascript" src="js/roles.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
+<script src="test/configured.js"></script>
 
+<script type="application/config">
+declare("logo",{"charset": "utf-8","glue":"to-other"});
+declare("login",{"charset": "utf-8","position":"undefined"});
+declare("launched",{"charset": "utf-8"});
+declare("test-scripted",{"abc":"def", "from-script":true, "charset": "utf-8"});
+declare("test-both-ways",{"test":"test", "charset": "utf-8"});
+declare("test-scripted.username",{ "default-value":"123" });
+</script>
 
+<script type="text/javascript" src="app/js/jquery-1.7.2.min.js"></script>
 <!-- test runner files -->
 	<script src="test/qunit/qunit.js"></script>
 	<script src="test/sinon.js"></script>
 	<script src="test/sinon-ie-1.4.2.js"></script>
-	<script src="test/_utils.js"></script>
+	<!-- // <script src="test/sinon-qunit-1.0.0.js"></script> -->
+	<!-- // <script src="test/_utils.js"></script> -->
+	<script src="test/dom.js"></script>
 	<script src="test/resolver.js"></script>
 	<script src="test/generator.js"></script>
 	<script src="test/console.js"></script>
+	<script src="test/translation.js"></script>
+	<script src="test/pages.js"></script>
+	<script src="test/config.js"></script>
+	<script src="test/launching.js"></script>
 	<script src="test/elements.js"></script>
 	<script src="test/stateful.js"></script>
 	<script src="test/tests.js"></script>

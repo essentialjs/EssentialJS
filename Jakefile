@@ -1,26 +1,30 @@
-var fs = require('fs');
+var fs = require('fs'), zlib = require('zlib');
 var uglify = require('uglify-js');
-var less = require('less');
 
 var MODERNIZR_FILES = [
-  'modernizr-prefix.js',
-  'modernizr.js'];
+  'js/modernizr-prefix.js',
+  'js/modernizr.js'];
 
 var ESSENTIAL_FILES = [
-  'constructive.js',
-  'essentialns.js',
-  'xhr.js',
-  'elements.js'];
+  'js/resolver.js',
+  'js/generator.js',
+  'js/essentialns.js',
+  'js/dom.js',
+  'js/page.js',
+  'js/xhr.js',
+  'js/elements.js',
+  'js/roles.js',
+  'js/configured.js'];
 
 var EXTRAS_FILES = [
-  'json2.js',
-  'ZeroClipboard.js'];
+  'js/json2.js',
+  'js/ZeroClipboard.js'];
 
 function combine(files) {
   var all = '';
   files.forEach(function(file, i) {
     if (file.match(/^.*js$/)) {
-      all += "\n" + fs.readFileSync('js/'+file).toString();
+      all += "\n" + fs.readFileSync(file).toString();
     }
   });
   return all;
@@ -28,17 +32,11 @@ function combine(files) {
 
 function combine_and_minify(files) {
 
-  var all = '';
-  files.forEach(function(file, i) {
-    if (file.match(/^.*js$/)) {
-      all += fs.readFileSync('js/'+file).toString();
-    }
+  var result = uglify.minify(files, {
+
   });
 
-  var ast = uglify.parser.parse(all);
-  ast = uglify.uglify.ast_mangle(ast);
-  ast = uglify.uglify.ast_squeeze(ast);
-  return uglify.uglify.gen_code(ast);
+  return result.code;
 }
 
 desc('Uglify JS');
@@ -55,6 +53,14 @@ task('minify', [], function(params) {
   fs.writeSync(out, combine_and_minify(ESSENTIAL_FILES));
   fs.writeSync(out, "\n");
   fs.writeSync(out, combine_and_minify(EXTRAS_FILES));
+});
+
+desc('GZip JS');
+task('gzip', [], function(params) {
+  var gzip = zlib.createGzip();
+  var inp = fs.createReadStream('essential.min.js'),
+      out = fs.createWriteStream('essential.min.js.gz');
+  inp.pipe(gzip).pipe(out);
 });
 
 desc('Combine files');
@@ -75,10 +81,18 @@ task('combine',function(params){
 
 desc('Make CSS files for demos');
 task('css',function(params){
+  var less = require('less');
   var basic = fs.readFileSync('app/css/basic.less').toString();
-  less.Parser({}).parse(basic,function(css){
+  less.Parser({}).parse(basic,function(error,root){
+    if (error) { console.log("Basic.css",error); return; } 
     var out = fs.openSync('app/css/basic.css', 'w+');
-    fs.writeSync(out, css);
+    fs.writeSync(out, root.toCSS());
+  })
+  var enhanced = fs.readFileSync('app/css/enhanced.less').toString();
+  less.Parser({}).parse(enhanced,function(error,root){
+    if (error) { console.log("Enhanced.css",error); return; } 
+    var out = fs.openSync('app/css/enhanced.css', 'w+');
+    fs.writeSync(out, root.toCSS());
   })
 });
 
@@ -86,4 +100,14 @@ desc('Build all files');
 task('default',function(params){
   jake.Task['combine'].invoke();
   jake.Task['minify'].invoke();
+  jake.Task['gzip'].invoke();
+  //jake.Task['css'].invoke();
 });
+
+desc('Refreshing');
+task('refreshing',function(params) {
+  var refreshing = require('refreshing');
+  //console.log(refreshing);
+  refreshing.watchTrees(__dirname);
+});
+

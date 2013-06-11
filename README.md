@@ -40,3 +40,9 @@ This will build plain and minified versions.
 
     ./node_modules/.bin/lessc app/css/basic.less app/css/basic.css
     ./node_modules/.bin/lessc app/css/enhanced.less app/css/enhanced.css
+
+## License
+
+You are quite free to use the library in your own projects. It is covered by an MIT license.
+
+The demos are intended to remain as such and are therefore covered by an AGPL license.
