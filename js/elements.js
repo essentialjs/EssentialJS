@@ -322,7 +322,7 @@
 		
 		//TODO
 		this._on_event.push({ "type":name,"func":func,"name":name,"role":role });
-	}
+	};
 	
 	// Element specific handlers
 	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));

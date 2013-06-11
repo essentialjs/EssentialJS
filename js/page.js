@@ -18,11 +18,11 @@
 		sizingElements = essential("sizingElements"),
 		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
-   	var contains = essential("contains"),
-   		createHTMLDocument = essential("createHTMLDocument");
+	var contains = essential("contains"),
+		createHTMLDocument = essential("createHTMLDocument");
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
-	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true }
+	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true };
 	
 	function outerHtml(e) {
 		var attrs = [e.tagName.toLowerCase()];
@@ -43,7 +43,7 @@
 	function readElementState(el,state) {
 
 		for(var n in state_treatment) {
-			var treatment = state_treatment[n], value = undefined;
+			var treatment = state_treatment[n], value;
 			if (treatment.read) value = treatment.read(el,n);
 			if (value == undefined) value = treatment["default"];
 			if (value !== undefined) state[n] = value;
@@ -119,13 +119,13 @@
 	}
 
 	function readPropertyAria(el,key) {
-		var value = el.getAttribute("aria-"+key), result = undefined;
+		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
 
 		if (el[key] != undefined && !(el[key] === this["default"] && result !== undefined)) result = el[key]; // el.disabled is undefined before attach
 		if (result == undefined && ! contains(el.ownerDocument.body,el)) {
 			//TODO shift this to an init function used if not parentNode
-			var value = el.getAttribute(key);
+			value = el.getAttribute(key);
 			if (value != null) result = value != "false";//TODO should this be special config for disabled?,.. && value != ""; 
 		}
 
@@ -133,27 +133,27 @@
 	}
 
 	function readAttribute(el,key) {
-		var value = el.getAttribute(key), result = undefined;
+		var value = el.getAttribute(key), result;
 		if (value != null) result = value != "false" && value != ""; 
 
 		return result;
 	}
 
 	function readAttributeAria(el,key) {
-		var value = el.getAttribute("aria-"+key), result = undefined;
+		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
 
-		var value = el.getAttribute(key);
+		value = el.getAttribute(key);
 		if (value != null) result = value != "false" && value != ""; 
 
 		return result;
 	}
 
 	function readAria(el,key) {
-		var value = el.getAttribute("aria-"+key), result = undefined;
+		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
 
-		var value = el.getAttribute(key);
+		value = el.getAttribute(key);
 		if (value != null) result = value != "false" && value != ""; 
 
 		return result;

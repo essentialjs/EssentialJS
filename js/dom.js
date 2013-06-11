@@ -22,25 +22,6 @@
 	}
 	essential.declare("contains",contains);
 
-	// str includes the outerHTML for head
-	function _applyHead(doc,str) {
-		str = str.replace("<head",'<div was="head"').replace("</head>","</div>");
-		str = str.replace("<HEAD",'<div was="head"').replace("</HEAD>","</div>");
-
-		var _head = doc.createElement("head");
-		doc.appendChild(_head);
-
-		if (_head.canHaveHTML == false || true) {
-			var div = doc.createElement("div");
-			_head.appendChild(div);
-			div.innerHTML = str;
-			for(var c = div.firstChild.firstChild; c; c = div.firstChild.firstChild) _head.appendChild(c);
-			remove
-		} else {
-			_head.innerHTML = str;
-		}
-	}
-
 	// str includes the outerHTML for body
 	function _applyBody(doc,str) {
 		str = str.replace("<body",'<div was="body"').replace("</body>","</div>");
@@ -52,26 +33,9 @@
 		_body.innerHTML = str;
 
 		var src = _body.firstChild;
-		for(var i=0,a; a = src.attributes[0]; ++i) if (a.name != "was") _body.appendChild(a);
+		for(var i=0,a; !!(a = src.attributes[0]); ++i) if (a.name != "was") _body.appendChild(a);
 		_body.innerHTML = src.innerHTML;
 
-	}
-
-	function parseFromStringArgs(markup, type) {
-		if (/^\s*text\/html\s*(?:;|$)/i.test(type)) {
-			var
-			  doc = document.implementation.createHTMLDocument("")
-			;
-	      		if (markup.toLowerCase().indexOf('<!doctype') > -1) {
-        			doc.documentElement.innerHTML = markup;
-      			}
-      			else {
-        			doc.body.innerHTML = markup;
-      			}
-			return doc;
-		} else {
-			return real_parseFromString.apply(this, arguments);
-		}
 	}
 
 	function _combindHeadAndBody(head,body) { //TODO ,doctype
@@ -81,15 +45,15 @@
 		}
 
 		var text = (head||"") + (body||"");
-		if (head.substring(0,5) != "<head" && /<\/body>/.test(text) == false) text = "<body>" + text + "</body>";
-		if (/<\/html>/.test(text) == false) text = '<html>' + text + '</html>'
+		if ((head.substring(0,5) != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
+		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
 
 		return text;
 	}
 
-   	/**
-   	 * (html) or (head,body)
-   	 */
+	/**
+	 * (html) or (head,body)
+	 */
 	function createImportedHTMLDocument(head,body) {
 		if (typeof head == "object" && typeof head.length == "number") {
 			head = head.join("");
@@ -114,7 +78,7 @@
 				r.head = doc.head;
 				r.body = doc.body;
 			}
-			catch(ex) {
+			catch(ex2) {
 				doc = new ActiveXObject("htmlfile");
 				// doc.open();
 				doc.write(_combindHeadAndBody(head,body));
@@ -136,9 +100,9 @@
 	}
 	essential.declare("createImportedHTMLDocument",createImportedHTMLDocument);
 
-   	/**
-   	 * (html) or (head,body)
-   	 */
+ 	/**
+ 	 * (html) or (head,body)
+ 	 */
 	function createHTMLDocument(head,body) {
 		if (typeof head == "object" && typeof head.length == "number") {
 			head = head.join("");
@@ -147,8 +111,6 @@
 			body = body.join("");
 		}
 
-		// var doc = document.implementation.createDocument('','',
-		// 	document.implementation.createDocumentType('body','',''));
 		var doc,parser,markup = _combindHeadAndBody(head,body),hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 		try {
 			if (/Gecko\/20/.test(navigator.userAgent)) {
@@ -165,52 +127,16 @@
 				doc.write(markup);
 				doc.close();
 			}
-			/*
-			if (arguments.length == 2) {
-				//IE 9/10 _applyHead, _applyBody
-				doc.documentElement.innerHTML = '<html>' + (head||"") + (body||"") + '</html>';
-			}
-			else {
-				// whole doc in head
-				doc.documentElement.innerHTML = head.replace(/<![^>]+>/,"");
-			}
-			*/
 		} catch(ex) {
 			// IE can't or won't do it
 
 			if (window.ActiveXObject) {
-			// 	text = text.replace("<html",'<div id="esp-html"').replace("</html>","</div>");
-			// 	text = text.replace("<HTML",'<div id="esp-html"').replace("</HTML>","</div>");
-			// 	var div = document.createElement("DIV");
-			// 	div.innerHTML = text;
-			// 	//TODO offline htmlfile object?
-			// }
-
 				//TODO make super sure that this is garbage collected, supposedly sticky
 				doc = new ActiveXObject("htmlfile");
-				// doc.appendChild(doc.createElement("html"));
 					// doc.open();
 					// doc.close();
 				doc.write(markup);
-
-					/*
-					var text = head;
-					text = text.replace(/<!DOCTYPE [^>]*>/,"");
-					text = text.replace(/<html[^>]*>/,""); //TODO pass the attributes
-					text = text.replace("</html>","");
-
-					var parts = text.replace("</HEAD>","</head>").split("</head>");
-					if (parts.length == 2) {
-						// with head element
-						parts[0] = parts[0].replace("<head>","").replace("<HEAD>","");
-
-						// if (_head.ie9_tagName != undefined) in IE9
-						// else if (_head.ie8_attributes != undefined) in IE8
-						_applyHead(doc,parts.shift())
-					} 
-					_applyBody(doc,parts.shift())
-					*/
-				if (doc.head == undefined) doc.head = doc.body.previousSibling;
+				if (doc.head === undefined) doc.head = doc.body.previousSibling;
 
 			} else {
 				doc = document.createElement("DIV");// dummy default
@@ -219,8 +145,8 @@
 					// text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
 					// text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
 					// text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-			// 	this.head = div.getElementsByTagName("washead");
-			// 	this.body = div.getElementsByTagName("wasbody") || div;
+					// this.head = div.getElementsByTagName("washead");
+					// this.body = div.getElementsByTagName("wasbody") || div;
 					// var __head = _body.getElementsByTagName("washead");
 					// var __body = _body.getElementsByTagName("wasbody");
 			}
@@ -357,7 +283,7 @@
 		ev.cancelable = this.cancelable;
 
         if (props) {
-        	for (var name in props) ev[name] = props[name];
+    	 	for (var name in props) ev[name] = props[name];
 			ev.button = {0:1, 1:4, 2:2}[props.button] || props.button; 
         }
 
@@ -692,20 +618,20 @@
 	}
 
 	function MutableEvent_withDefaultSubmit(form) {
-		var commandName = "trigger";
-		var commandElement = null;
+		var commandName = "trigger",
+			commandElement = null, i, e;
 
 		if (form.elements) {
-			for(var i=0,e; e=form.elements[i]; ++i) {
+			for(i=0; !!(e=form.elements[i]); ++i) {
 				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
 			}
 		} else {
 			var buttons = form.getElementsByTagName("button");
-			for(var i=0,e; e=buttons[i]; ++i) {
+			for(i=0;!!(e=buttons[i]); ++i) {
 				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
 			}
 			var inputs = form.getElementsByTagName("input");
-			if (commandElement) for(var i=0,e; e=inputs[i]; ++i) {
+			if (commandElement) for(i=0;!!(e=inputs[i]); ++i) {
 				if (e.type=="submit") { commandName = e.name; commandElement = e; break; }
 			}
 		}
@@ -750,21 +676,21 @@
     
     // trigger like jQuery
     _MutableEvent.prototype.trigger = function(el) {
-    	// returns false if cancelled
+	 	// returns false if cancelled
         return EVENTS[this.type].trigger(el || this.target, this._original);
     };
     
     function _NativeEventIE(type,props) {
-    	var _native = EVENTS[type].create(type,props);
-    	// setting type/srcElement on _native breaks fireEvent
+		var _native = EVENTS[type].create(type,props);
+		// setting type/srcElement on _native breaks fireEvent
         var event = new _MutableEvent( _native );
         event.type = type;
-    	if (props && props.target) event.target = props.target;
+		if (props && props.target) event.target = props.target;
         return event;
     }
     
     function _NativeEvent(type, props) {
-    	var event = EVENTS[type].create(type,props);
+		var event = EVENTS[type].create(type,props);
         // var event = document.createEvent(EVENTS[type].type || "Events"), bubbles = true;
         // if (props) for (var name in props) (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name]);
         // event.initEvent(type, bubbles, EVENTS[type].cancelable, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -785,7 +711,7 @@
 			this.withDefaultSubmit = MutableEvent_withDefaultSubmit;
             this.stopPropagation = function() { sourceEvent.stopPropagation(); };
             this.preventDefault = function() { sourceEvent.preventDefault(); };
-	        this.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
+			this.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
         }
 		ClonedEvent.prototype = sourceEvent; 
 
@@ -798,7 +724,7 @@
         sourceEvent.withMouseInfo = MutableEvent_withMouseInfo;
         sourceEvent.withActionInfo = MutableEvent_withActionInfo;
 		sourceEvent.withDefaultSubmit = MutableEvent_withDefaultSubmit;
-	    sourceEvent.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
+		sourceEvent.isDefaultPrevented = _MutableEvent.prototype.isDefaultPrevented;
 
 		return sourceEvent;
 	}
@@ -916,7 +842,7 @@
 		while(el){
 			top += el.offsetTop;
 			left += el.offsetLeft;
-			el = el.offsetParent
+			el = el.offsetParent;
 		}
 		return { left:left - scrolls.left, top:top - scrolls.top };
 	}
@@ -942,7 +868,7 @@
 		// real element with attributes
 		if (_from && _from.nodeName && _from.attributes && _from.nodeName[0] != "#") {
 			var __from = {};
-			for(var i=0,a; a = _from.attributes[i]; ++i) {
+			for(var i=0,a; !!(a = _from.attributes[i]); ++i) {
 				__from[a.name] = a.value;
 			}
 			_from = __from;
@@ -1057,7 +983,7 @@
 
 	_ElementPlacement.prototype.compute = function() {
 		this.bounds = this.el.getBoundingClientRect();
-		for(var i=0,s; s = this.track[i]; ++i) {
+		for(var i=0,s; !!(s = this.track[i]); ++i) {
 			this.style[s] = this._compute(s);
 		}
 	};
@@ -1205,9 +1131,9 @@ function _makeToPixelsIE(sProp)
 		var sRuntimeStyle = eElement.runtimeStyle[sProp];
 		try
 		{
-		  	eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
-		  	eElement.style[sProp] = sValue || 0;
-		  	sValue = eElement.style[sPixelProp] + "px";
+			eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
+			eElement.style[sProp] = sValue || 0;
+			sValue = eElement.style[sPixelProp] + "px";
 		}
 		catch(ex)
 		{
@@ -1216,9 +1142,9 @@ function _makeToPixelsIE(sProp)
 		eElement.style[sProp] = sInlineStyle;
 		eElement.runtimeStyle[sProp] = sRuntimeStyle;
 
-		return sValue
+		return sValue;
 	};
-};
+}
 
 
 	_ElementPlacement.prototype.TO_PIXELS_IE = {
@@ -1229,8 +1155,7 @@ function _makeToPixelsIE(sProp)
 
 function _correctChromeWebkitDimensionsBug(s,v) {
 
-	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom")
-			&& v === "auto")
+	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom") && v === "auto")
 	{
 		return true;
 	}

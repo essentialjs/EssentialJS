@@ -4,7 +4,7 @@ Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecyc
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
-	var pageResolver = Resolver("page");
+		pageResolver = Resolver("page");
 
 	if (ev.value) { // bring live
 		
