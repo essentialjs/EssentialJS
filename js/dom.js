@@ -352,6 +352,7 @@
 	function createEventIE(type,props) {
 		var ev = document.createEventObject();
 		_defaultEventProps(ev);
+		ev.type = type;
 		ev.cancelable = this.cancelable;
 
         if (props) {
@@ -369,8 +370,6 @@
 			for (var name in props) (name == 'bubbles') ? (combined.bubbles = !!props[name]) : (combined[name] = props[name]);
 		}
 		this.init(ev,combined);
-
-
 
 		return ev;
 	}
@@ -456,10 +455,9 @@
 	AllEvents.prototype.trigger = triggerEventDOM;
 
 	if (typeof document.createEvent !== "function") {
-		AllEvents.prototype.createEvent = createEventIE;
-		AllEvents.prototype.triggerEvent = triggerEventIE;
+		AllEvents.prototype.create = createEventIE;
+		AllEvents.prototype.trigger = triggerEventIE;
 	}
-
 
 
 	function MouseEvents(m) {

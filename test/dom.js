@@ -80,7 +80,7 @@ test("HTMLElement construction",function(){
 	var div = HTMLElement("div",{},"abc","<span>","def","</span>","ghi");
 	ok(div);
 	equal(div.tagName,"DIV");
-	equal(div.innerHTML,"abc<span>def</span>ghi");
+	equal(div.innerHTML.toLowerCase(),"abc<span>def</span>ghi");
 	equal(div.childNodes.length,3)
 	equal(div.childNodes[0].nodeName,"#text")
 	equal(div.childNodes[1].innerHTML,"def")
@@ -142,6 +142,30 @@ test("jQuery trigger click",function() {
   $doc.trigger( event );
 
 });
+
+test("MutableEvent construction mousemove",function() {
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var MutableEvent = Resolver("essential::MutableEvent::");
+
+	var div = HTMLElement("div");
+	document.body.appendChild(div);
+
+	function onmousemove(ev) {
+
+		var event = MutableEvent(ev);
+		equal(event.target,div);
+		//TODO addEventListeners pass currentTarget equal(event.currentTarget,div);
+		equal(event.type,"mousemove");
+
+	}	
+
+	if (div.attachEvent) div.attachEvent("onmousemove",onmousemove);
+	else if (div.addEventListener) div.addEventListener("mousemove",onmousemove,false);
+
+	MutableEvent("mousemove").trigger(div);
+
+    document.body.removeChild(div);
+})
 
 test("MutableEvent construction click",function(){
 	var HTMLElement = Resolver("essential::HTMLElement::");
