@@ -163,8 +163,8 @@ test("MutableEvent construction mousemove",function() {
 
 	}	
 
-	if (div.attachEvent) div.attachEvent("onmousemove",onmousemove);
-	else if (div.addEventListener) div.addEventListener("mousemove",onmousemove,false);
+	if (div.addEventListener) div.addEventListener("mousemove",onmousemove,false);
+	else if (div.attachEvent) div.attachEvent("onmousemove",onmousemove);
 
 	MutableEvent("mousemove").trigger(div);
 

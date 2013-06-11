@@ -343,7 +343,7 @@
 
 		ev.detail = 0;
 		ev.screenX = 0; ev.screenY = 0; //TODO map client to screen
-		ev.clientX = 0; ev.clientY = 0;
+		ev.clientX = 1; ev.clientY = 1;
 		ev.ctrlKey = false; ev.altKey = false; 
 		ev.shiftKey = false; ev.metaKey = false;
 		ev.button = 0; //?
@@ -525,7 +525,7 @@
 		"dblclick" : new MouseEvents({cancelable:false}),
 		"contextmenu": new MouseEvents({cancelable:false}),
 
-		"mousemove": new MouseEvents(),
+		"mousemove": new MouseEvents({cancelable:false}),
 		"mouseup": new MouseEvents(),
 		"mousedown": new MouseEvents(),
 		"mousewheel": new MouseEvents({cancelable:false,type:"MouseWheelEvent"}), //TODO initMouseWheelEvent
