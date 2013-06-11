@@ -1,7 +1,7 @@
 module('stateful elements');
 
 test ("Creating StatefulResolver",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	// Create a new one
 	var stateful = StatefulResolver();
@@ -13,7 +13,7 @@ test ("Creating StatefulResolver",function(){
 })
 
 test("Destroying StatefulResolver",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	// Create a new one
 	var stateful = StatefulResolver();
@@ -24,9 +24,10 @@ test("Destroying StatefulResolver",function(){
 	ok(1,"TODO cleaner");
 });
 
-test("Stateful element initial class",function(){
+// test("Discarding StatefulResolver")
 
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+test("Stateful element initial class",function(){
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	el.className = "a b c";
@@ -37,8 +38,51 @@ test("Stateful element initial class",function(){
 	equal(el.classList[2],"c");
 })
 
+test("Initial stateful element state",function() {
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var el = HTMLElement("div",{},
+		'<input type="checkbox" name="a">',
+		'<input type="checkbox" name="b" checked>',
+		'<input type="checkbox" name="c" aria-checked="checked">',
+
+		'<span aria-checked="checked"></span>',
+		'<span aria-expanded="false"></span>',
+		'<span aria-expanded="true"></span>',
+		'<span aria-expanded="expanded"></span>',
+		
+		'<span disabled></span>',
+		'<span aria-disabled="false"></span>',
+		'<span aria-disabled="true"></span>',
+		'');
+	var statefulDiv = StatefulResolver(el,true);
+
+	equal(statefulDiv("state.disabled","undefined"),false);
+	equal(statefulDiv("state.readOnly","undefined"),false);
+	equal(statefulDiv("state.hidden","undefined"),undefined);
+	equal(statefulDiv("state.required","undefined"),undefined);
+	equal(statefulDiv("state.expanded","undefined"),undefined);
+	equal(statefulDiv("state.checked","undefined"),undefined);
+
+	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false);
+	equal(StatefulResolver(el.childNodes[1],true)("state.checked","undefined"),true);
+	// equal(StatefulResolver(el.childNodes[2],true)("state.checked"),true); TODO should aria transfer to checked state
+	equal(StatefulResolver(el.childNodes[3],true)("state.checked","undefined"),true);
+
+	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false);
+	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true);
+	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true);
+
+	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true);
+	equal(StatefulResolver(el.childNodes[8],true)("state.disabled","undefined"),false);
+	equal(StatefulResolver(el.childNodes[9],true)("state.disabled","undefined"),true);
+
+	//TODO hidden required
+})
+
 test("Stateful element state",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
@@ -77,10 +121,20 @@ test("Stateful element state",function(){
 	ok(!el.required);
 	equal(el.getAttribute("required"),null);
 	equal(el.className,"");
+
+	ok(! stateful("state.expanded","undefined"));
+	stateful.set("state.expanded",true);
+	ok(el.expanded || (el.getAttribute("expanded") == "expanded"));
+	equal(el.getAttribute("aria-expanded"),"expanded");
+	equal(el.className,"state-expanded");
+	stateful.set("state.expanded",false);
+	ok(!el.required);
+	equal(el.getAttribute("expanded"),null);
+	equal(el.className,"");
 })
 
 test("Stateful element state with custom class",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
@@ -113,8 +167,56 @@ test("Stateful element state with custom class",function(){
 	equal(el.className,"is-not-disabled show");
 })
 
+test("Stateful element state with odd classes",function(){
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
+
+	var el = document.createElement("div");
+	var stateful = StatefulResolver(el,true);
+
+	var mapClass = stateful("map.class");
+	mapClass.state.disabled = "is-disabled";
+	mapClass.state.hidden = "hide";
+	mapClass.notstate.disabled = undefined;
+	mapClass.notstate.hidden = undefined;
+
+	stateful.set("state.disabled",false);
+	equal(el.className,"")
+	stateful.set("state.disabled",true);
+	equal(el.className,"is-disabled")
+	stateful.set("state.disabled",false);
+	equal(el.className,"")
+
+	stateful.set("state.hidden",false);
+	equal(el.className,"");
+	stateful.set("state.hidden",true);
+	equal(el.className,"hide");
+	stateful.set("state.hidden",false);
+	equal(el.className,"");
+
+
+	var mapClass = stateful("map.class");
+	mapClass.state.disabled = undefined;
+	mapClass.state.hidden = undefined;
+	mapClass.notstate.disabled = "is-not-disabled";
+	mapClass.notstate.hidden = "show";
+
+	stateful.set("state.disabled",true);
+	equal(el.className,"")
+	stateful.set("state.disabled",false);
+	equal(el.className,"is-not-disabled")
+	stateful.set("state.disabled",true);
+	equal(el.className,"")
+
+	stateful.set("state.hidden",true);
+	equal(el.className,"");
+	stateful.set("state.hidden",false);
+	equal(el.className,"show");
+	stateful.set("state.hidden",true);
+	equal(el.className,"");
+})
+
 test("Stateful element custom state ",function(){
-	var StatefulResolver = Resolver("essential")("StatefulResolver");
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
 
 	var el = document.createElement("div");
 
@@ -163,7 +265,35 @@ test("Stateful element custom state ",function(){
 	equal(el.className,"authenticated livepage");
 	stateful.set("state.livepage",false);
 
-})
+});
+
+test("Stateful element template class", function() {
+	var StatefulResolver = Resolver("essential::StatefulResolver::");
+
+	var el = document.createElement("div");
+
+	var stateful = StatefulResolver(el,true);
+	var mapClass = stateful("map.class");
+	mapClass.state.stage = "%-stage";
+	StatefulResolver.updateClass(stateful,el);
+
+	ok(! stateful("state.stage","undefined"));
+	stateful.set("state.stage","initial");
+	equal(el.className,"initial-stage");
+
+	stateful.set("state.stage","second");
+	equal(el.className,"second-stage");
+
+	stateful.set("state.stage",null);
+	equal(el.className,"");
+
+	// mapClass.notstate.other2 = "other";
+	// stateful.set("state.other2",false);
+	// StatefulResolver.updateClass(stateful,el);
+	// equal(el.className,"other");
+});
+
+
 
 // action + button allows action to be disabled causing disable on button
 

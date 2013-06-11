@@ -7,25 +7,42 @@ test ("Anonymous resolver",function(){
 })
 
 test ("Named resolver",function(){
-	var r = Resolver("A",{});
+
+	ok(! Resolver.exists("A"))
+	ok(! Resolver.exists("B"))
+	ok(! Resolver.exists("C"))
+
+	var rs = {"aa":"aa"}, r = Resolver("A",rs);
+	equal(r.namespace,rs,"Using namespace passed to Resolver");
 	var a = r.set("a","a");
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("A"));
+	ok(Resolver.exists("A"))
 
 	var r = Resolver({},{name:"B"});
 	r.set("a","a");
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("B"));
 	notEqual(r,Resolver("A"));
+	ok(Resolver.exists("B"))
 
 	var r = Resolver("C",null); // check for non-existent 
 	equal(r, null);
 
 	var r = Resolver("C"); // create blank one 
 	equal(typeof r, "function");
+
+	ok(Resolver.exists("C"))
 })
 
 test("Window resolver",function(){
+	var win = Resolver("window");
+	equal(win.namespace,window);
+	equal(win("Array"),Array);
+	equal(win("Boolean"),Boolean);
+	equal(win("self"),window);
+	// equal(Resolver("window::"),window);
+
 	var win = Resolver(window);
 
 	equal(win.namespace,window);
@@ -146,8 +163,26 @@ test('Resolver set/declare value',function(){
 	strictEqual(klm_value,"klm","returned value from declare");
 	equal(resolver(["k","l","m"]), "klm");	
 
+	var opq = resolver.declare(["o",null,"q"],"opq");
+	equal(resolver(["o",null,"q"]),"opq")
+
 	//TODO try string like objects for get/set/declare
 	//TODO try array like objects for get/set/declare
+})
+
+test('Resolver toggle value',function(){
+	var resolver = Resolver({});
+
+	var abc_value = resolver.set("a.b.c",false);
+	strictEqual(abc_value,false,"returned value from set");
+	equal(resolver("a.b.c"), false);	
+	resolver.toggle("a.b.c");
+	equal(resolver("a.b.c"), true);	
+	resolver.toggle("a.b.c");
+	equal(resolver("a.b.c"), false);	
+
+	resolver.toggle("a.b.d");
+	equal(resolver("a.b.d"), true);	
 })
 
 test('Resolver reference set/declare value',function(){
@@ -206,6 +241,44 @@ test('Resolver reference set/declare value',function(){
 	//TODO try array like objects for get/set/declare
 })
 
+test('Resolver namespace::expression API',function() {
+
+
+	Resolver().set("abcdef","abcdef");
+	equal(Resolver("::abcdef"),Resolver().reference("abcdef"));
+	equal(Resolver("::abcdef::","null"),"abcdef");
+
+	Resolver().set("abcde.f","abcdef");
+	equal(Resolver("::abcde.f"),Resolver().reference("abcde.f"));
+	equal(Resolver("::abcde.f::","null"),"abcdef");
+
+	ok(! Resolver.exists("F"));
+
+	Resolver("F",{
+		"a":"a",
+		"b":"b",
+		"c":"c"
+	});
+
+	equal(Resolver("F"),Resolver("F::"));
+
+	equal(Resolver("F::a"),Resolver("F").reference("a"));
+	equal(Resolver("F::b"),Resolver("F").reference("b"));
+	equal(Resolver("F::c"),Resolver("F").reference("c"));
+
+	equal(Resolver("F::a::","undefined"),"a");
+	equal(Resolver("F::b::","undefined"),"b");
+	equal(Resolver("F::c::","undefined"),"c");
+
+	equal(Resolver("F::a::","null"),"a");
+	equal(Resolver("F::b::","null"),"b");
+	equal(Resolver("F::c::","null"),"c");
+
+
+	var rg = Resolver("G::",{ "g":"g" });
+	equal(Resolver("G::"),rg);
+});
+
 test('Resolver reference',function(){
 
 	var resolver = Resolver({});
@@ -214,6 +287,14 @@ test('Resolver reference',function(){
 	var my = resolver.reference("my");
 	notEqual(my(), undefined, "namespace replaced");
 	notEqual(my.get(), undefined, "namespace replaced");
+
+	var top = resolver.reference(null);
+	equal(typeof top(),"object");
+	equal(top().my,my())
+
+	var top = resolver.reference("");
+	equal(typeof top(),"object");
+	equal(top().my,my())
 
 	var num = resolver.reference("num");
 	num.set(5);
@@ -271,11 +352,16 @@ test('Resolver change listener',function() {
 	var _onabc = sinon.spy();
 	abc.on("change",_onabc);
 
-	abc.set(function(){});
+	var abcVal = abc.set(function(){});
 	equal(typeof abc(),"function");
 	equal(_onabc.callCount,1);
 	//ok(_onabc.calledWith({value:5}));
 	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	//ok(_onabc.calledWith({value:5}));
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
 
 	abc.setEntry("d","dd");
 	equal(resolver("a.b.c.d"), "dd");
@@ -301,12 +387,55 @@ test('Resolver change listener',function() {
 	ok(1,"Removing change listener")
 	ok(1,"Resolver change listener with 3 params")
 
-	ok(1,"Change listener is only called if values have changed")
 	ok(1,"Change listener is only called recursively for 3 levels")
 
 	ok(1,"Specific condition listener on({ loading:false, authorised:false })")
 
 });
+
+test('Resolver bind + change listener',function() {
+
+	var resolver = Resolver({ "b":{ "c": "bc" }});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+
+	ab.on("bind change",_onab);
+	// ok(_onab.calledWith(sinon.match({
+	// 	"base": undefined,
+	// 	"symbol": "b",
+	// 	"value": undefined
+	// })));
+
+	equal(_onab.getCall(0).args[0].base,undefined);
+	equal(_onab.getCall(0).args[0].symbol,"b");
+	equal(_onab.getCall(0).args[0].value,undefined);
+	sinon.assert.calledOnce(_onab);
+
+	var abc = resolver.reference("a.b.c");
+
+	var abcVal = abc.set(function(){});
+	equal(typeof abc(),"function");
+	ok(_onab.calledWith(sinon.match({
+		"base": resolver("a.b"),
+		"symbol": "c",
+		"value": abcVal
+	})));
+	equal(_onab.callCount,2);
+
+	var bc = resolver.reference("b.c");
+	bc.set("bc")
+	var _onbc = sinon.spy(function(ev) {
+		equal(ev.base,resolver("b"));
+		equal(ev.symbol,"c")
+		equal(ev.value,"bc");
+	});
+	bc.on("bind change",_onbc);
+
+	equal(_onbc.callCount,1); // base should be object, value should be "bc"
+
+});
+
 
 //TODO reference.trigger
 //TODO test recursive triggers stopped

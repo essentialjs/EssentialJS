@@ -55,9 +55,111 @@ test('Generator inherit from generator defined on main constructor',function(){
 	ok(_Rectangle.calledWith(1,2,3,4))
 })
 
+test("Simple Generator and descendants",function() {
+
+	function _Simple(){
+		return { v:"v" };
+	}
+	var Simple = Generator(_Simple,{ alloc:false });
+
+	// simple gen
+	var s = Simple();
+	ok(s);
+	equal(s.v,"v");
+	equal(typeof s,"object")
+
+	// derived simple
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,Simple);
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+	// derived simple
+	var _Doubly = sinon.spy();
+	var Doubly = Generator(_Doubly,Derived);
+	var d = Doubly();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Doubly.callCount,1);
+
+	// derived simple, explicit
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,Simple, { alloc:false });
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+	function _Simple2(){
+		return { v:"v" };
+	}
+
+	// derived simple constructor, explicit
+	var _Derived = sinon.spy();
+	var Derived = Generator(_Derived,_Simple2, { alloc:false });
+	var d = Derived();
+	ok(d);
+	equal(d.v,"v");
+	equal(typeof d,"object");
+	equal(_Derived.callCount,1);
+
+})
+
+/*
+test("Generator inherit from Resolver generator",function() {
+
+	var _WithResolver = sinon.spy();
+	var WithResolver = Generator(_WithResolver,Resolver, { alloc:false });
+
+	var r = WithResolver({});
+	ok(r.namespace);
+	equal(typeof r,"function");
+})
+*/
+
+test('Generator with passed prototype',function(){
+	function constr() {
+
+	}
+	function method() {
+
+	}
+
+	var gen = Generator(constr, { prototype: { method:method }});
+
+	equal(gen.info.constructors[-1],constr);
+	equal(gen.prototype.method,method);
+	equal(constr.prototype.method,method);
+})
+
+test('Generator with passed prototype of other',function(){
+	function base() {
+
+	}
+	function method() {
+
+	}
+	base.prototype.method = method;
+
+	function constr() {
+
+	}
+
+	var gen = Generator(constr, { prototype: base.prototype });
+
+	equal(gen.info.constructors[-1],constr);
+	equal(gen.prototype.method,method);
+	equal(constr.prototype.method,method);
+})
+
 test('Shape generator with parameters',function() {
 
-	var NumberType = Resolver("essential")("Type").variant("Number");
+	var NumberType = Resolver("essential::Type::").variant("Number");
 
 	function _Shape() {}
 	_Shape.args = [ ];
@@ -162,6 +264,23 @@ test("Inherit from Builtin",function(){
 	equal(test.length,1);
 });
 
+
+test("Singleton generator is created and destroyed correctly",function(){
+
+	function _Test() {
+		this.a = "a";
+
+	}
+	var Test = Generator(_Test);
+	_Test.prototype.b = function(){
+		return "b";
+	}
+	Test.restrict({ "singleton":true });
+
+	var test = Test();
+	ok(test);
+	equal(typeof Test.info.existing[0],"object");
+});
 
 //TODO singleton construction and discard/teardown
 //TODO singleton page lifecycle

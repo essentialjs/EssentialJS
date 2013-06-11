@@ -1,5 +1,11 @@
 (function(){
-	var console = Resolver("essential")("console");
+	var essential = Resolver("essential"),
+		pageResolver = Resolver("page"),
+		templates = pageResolver("templates"),
+		Layouter = essential("Layouter"),
+		Laidout = essential("Laidout"),
+		console = essential("console");
+
 	var DocumentRoles = Resolver("essential")("DocumentRoles");
 	var DialogAction = Resolver("essential")("DialogAction");
 	var pageState = Resolver("page").reference("state");
@@ -34,6 +40,11 @@
 		},1000);
 	};
 
+	function _DemoApplication(el,role,config) {
+		console.log("Initialized DemoApplication on",el);
+	}
+	Resolver().declare("DemoApplication",_DemoApplication);
+
 	// manage the loading of the application
 	pageState.on("change",function(ev){
 		if (ev.base.loading) {
@@ -52,16 +63,52 @@
 			case "launched":
 				if (ev.value == true) pageProgress.set("Done.");
 				break;
+			case "lang":
+				pageProgress.set("Language selected: "+ev.value);
+				break;
 		}
 	});
 
+	Resolver("translations").reference("locale").stored("load unload change","cookie",{ id:"locale", encoding:"string", days:1000, touchScript:"cookie-reload" });
 	Resolver("page").declare("preferences",{});
 	Resolver("page").reference("preferences").stored("load unload","local");
 
 	var demoSession = Resolver().reference("demo-session");
 	demoSession.declare(false);
 	demoSession.on("change",function() {
-		pageState.set("authenticated",demoSession.get("loggedIn"));
+		if (demoSession.get("loggedIn")) {
+			// log in
+			pageState.set("authenticated",true);
+		} else {
+			// log out
+			pageState.set("authenticated",false);
+			pageState.set("launched",false);
+		}
 	});
 	demoSession.stored("load change unload","local");
+
+	Resolver().declare("UpdatingTable", Generator(function(el,role,config) {
+		this.el = el;
+		this.interval = setInterval(function(){
+			var tbody = el.lastElementChild || el.lastChild;
+			var tr = document.createElement("TR");
+			tr.innerHTML = [
+			"<td>10/1/2011<td>",
+			"<td>"+Math.ceil(Math.random()*1000)+"<td>",
+			"<td>Description<td>",
+			"<td>0<td>",
+			"<td>0<td>",
+			"<td>0<td>",
+			"<td>0<td>"
+			].join(""); 
+			tbody.appendChild(tr);
+		},3000);
+	},{
+		discarded: function(instance) {
+			if (instance.interval) clearInterval(instance.interval);
+		},
+		prototype: {
+
+		}
+	}));
 })();

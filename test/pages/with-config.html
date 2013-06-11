@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head data-role='"1":"1","2":"2"'>
+  <meta charset="utf-8">
+  <script type="application/config">
+    declare("head",{"3":"3"});
+    declare("body",{"c":"c"});
+
+    declare("logo",{"charset": "utf-8"});
+    declare("login",{"charset": "utf-8"});
+    declare("launched",{"charset": "utf-8"});
+
+    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+
+    //page("/from-config/side",{},'<h1>Demo</h1><p>This is a sample side window.</p>');
+  </script>
+
+  <style>
+  *[role=tabpanel] {
+    overflow: visible;
+  }
+  .panel-divider {
+    position: absolute;
+    top:0;
+    bottom:0;
+    width:5px;
+    left: -5px;
+  }
+  </style>
+
+</head>
+
+<body class="loading" data-role='"a":"a","b":"b"'>
+  <div role="group" id="main-stage" 
+        data-role='"layouter":"panel-group","type":"vertical","sizes":[100,50]'>
+
+      <div role="group" 
+          data-role='"layouter":"panel-group","type":"horizontal","sizes":[50,50,20]'>
+
+        <div data-role='"laidout":"tab-panel"'>
+          <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div class="panel-divider"></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+          </div>
+        </div>
+
+        <div role="tabpanel">
+          <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+          </div>
+        </div>
+
+        <div role="tabpanel">
+          <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+          </div>
+        </div>
+      </div>
+
+      <div role="tabpanel">
+        <div role="tablist"><button role="tab">1</button><button role="tab">2</button><button role="tab">3</button></div>
+          <div>
+            adds background slice
+            adds shield
+          </div>
+
+          <div role="content presentation">
+          </div>
+      </div>
+
+  </div>
+
+</body>
+</html>

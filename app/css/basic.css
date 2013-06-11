@@ -1,3 +1,9 @@
+/*
+	Global variables and mixins for common Essential Elements
+
+	Import this at the beginning of your stylesheets and override global variables with 
+	values specific to the application.
+*/
 @font-face {
   font-family: 'entyporegular';
   src: url('fonts/entypo-webfont.eot');
@@ -142,22 +148,6 @@ textarea {
   -moz-box-sizing: border-box;
   -ms-box-sizing: border-box;
   box-sizing: border-box;
-}
-body {
-  margin: 0;
-  font-family: FjordOne, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
-  color: #333333;
-  background-color: #ffffff;
-}
-a {
-  color: #0088cc;
-  text-decoration: none;
-}
-a:hover {
-  color: #005580;
-  text-decoration: underline;
 }
 p {
   margin: 0 0 9px;
@@ -1869,7 +1859,7 @@ table .span24 {
 .open {
   *z-index: 1000;
 }
-.open  > .dropdown-menu {
+.open > .dropdown-menu {
   display: block;
 }
 .pull-right > .dropdown-menu {
@@ -1971,4 +1961,48 @@ button.close {
   background: transparent;
   border: 0;
   -webkit-appearance: none;
+}
+[role=template] {
+  position: absolute;
+  visibility: hidden;
+}
+.leftSide section {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  transition: left .3s, right .3s, width .3s;
+}
+.leftSide section .content {
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 20px;
+  visibility: hidden;
+  height: 100%;
+}
+.leftSide section.state-expanded .content {
+  visibility: visible;
+}
+.leftSide section.left {
+  padding-left: 20px;
+}
+.leftSide section.right {
+  padding-right: 20px;
+}
+.leftSide section button[rel=adornment] {
+  position: absolute;
+  top: 0;
+}
+.leftSide .mock-navigate {
+  border: 1px solid black;
+}
+.leftSide .mock-detail {
+  border: 1px solid black;
+}
+.leftSide .panel {
+  position: absolute;
+  top: 20px;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }

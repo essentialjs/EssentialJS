@@ -91,7 +91,36 @@ body {
 			padding-top: 10px;
 		}
 	}
+
+	.supportDetails {
+		position: relative;
+		overflow: hidden;
+		height: 2.5em;
+		cursor: pointer;
+
+		&.state-expanded {
+			height: auto;
+		}
+	}
 }
+
+nav[action="navigation/lang"] {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	color: white;
+
+	a {
+		font-weight: bold;
+	}
+	a:hover,
+	html[lang=en] & a[name=en],
+	html[lang=de] & a[name=de],
+	html[lang=fr] & a[name=fr] {
+		color: white;
+	}
+}
+
 
 #login {
 	position: relative;
@@ -100,7 +129,7 @@ body {
 	
 	color: @common-label-color;
 	
-	padding-top: @login-app-logo-line-height;
+	//padding-top: @login-app-logo-line-height;
 		
 	label.details {
 		vertical-align: bottom;
@@ -109,7 +138,7 @@ body {
 	}
 
 	label.password { width:100px; position: absolute; left:0; }
-	input[name=j_password] { width:100px; position: absolute; left:0; margin-top: 2.2em; }
+	input[name=j_password] { width:100px; /*position: absolute;*/ left:0; margin-top: 2.2em; }
 
 	label.onetime { left:120px; width:90px; position: relative; }
 	input[name=j_password_onetime] { left:120px; width:90px; position: relative; }
