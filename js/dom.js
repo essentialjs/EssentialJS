@@ -75,8 +75,13 @@
 	}
 
 	function _combindHeadAndBody(head,body) { //TODO ,doctype
+		if (head && body) {
+			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
+		}
+
 		var text = (head||"") + (body||"");
-		if (/<\/html>/.test(text) != false) '<html>' + text + '</html>'
+		if (/<\/html>/.test(text) == false) text = '<html>' + text + '</html>'
 
 		return text;
 	}
@@ -90,10 +95,6 @@
 		}
 		if (typeof body == "object" && typeof body.length == "number") {
 			body = body.join("");
-		}
-		if (arguments.length == 2) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
 		}
 
 		var doc, r = {};
@@ -144,10 +145,6 @@
 		if (typeof body == "object" && typeof body.length == "number") {
 			body = body.join("");
 		}
-		if (arguments.length == 2) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
-		}
 
 		// var doc = document.implementation.createDocument('','',
 		// 	document.implementation.createDocumentType('body','',''));
@@ -191,22 +188,10 @@
 				//TODO make super sure that this is garbage collected, supposedly sticky
 				doc = new ActiveXObject("htmlfile");
 				// doc.appendChild(doc.createElement("html"));
-
-				if (arguments.length == 2) {
 					// doc.open();
-					doc.write('<html>' + (head||"") + (body||"") + '</html>');
 					// doc.close();
-					// _applyBody(doc,body);
-					// if (head != "") _applyHead(doc,head);
-				} else {
-					try {
+				doc.write(markup);
 
-					} catch(ex) {
-						console.log(ex);
-					}
-					// doc.open();
-					doc.write(head);
-					// doc.close();
 					/*
 					var text = head;
 					text = text.replace(/<!DOCTYPE [^>]*>/,"");
@@ -224,8 +209,7 @@
 					} 
 					_applyBody(doc,parts.shift())
 					*/
-				}
-				if (doc.head == undefined) doc.head = doc.getElementsByTagName("HEAD")[0];
+				if (doc.head == undefined) doc.head = doc.body.previousSibling;
 
 			} else {
 				doc = document.createElement("DIV");// dummy default
@@ -245,6 +229,9 @@
 	}
 	essential.declare("createHTMLDocument",createHTMLDocument);
 
+	function DOMParser() {
+		//TODO crossbrowser support text/html,text/xml, pluggable mimes
+	}
 
 	/*
 		Default roles for determining effective role
