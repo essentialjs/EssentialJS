@@ -29,7 +29,6 @@ test("Explicit subpage definitions",function() {
 	ok(typeof descs.a,"object");
 	ok(typeof descs.b,"object");
 
-
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<span role="delayed" id="a"></span>',
 		'<span role="early" id="b"></span>',

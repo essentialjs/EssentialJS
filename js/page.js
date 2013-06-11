@@ -879,12 +879,13 @@
 			pageResolver.set(["state","online"],online);	
 		}
 	}
+	pageResolver.updateOnlineStatus = updateOnlineStatus;
 
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
 		this.document = document;
-		this.head = this.document.head;
+		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
 		_Scripted.call(this);
 
@@ -899,8 +900,6 @@
 			this.body.attachEvent("online",updateOnlineStatus);
 			this.body.attachEvent("offline",updateOnlineStatus);
 		}
-		//TODO manage interval in configured.js, and space it out consistent results
-		setInterval(updateOnlineStatus,5000); // for browsers that don't support events
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
