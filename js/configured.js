@@ -3,7 +3,6 @@ Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecyc
 //TODO clearInterval on unload
 
 Resolver("page::state.livepage").on("change",function(ev) {
-	return;
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
 	var pageResolver = Resolver("page");
 
