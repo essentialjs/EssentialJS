@@ -399,14 +399,18 @@ test('Resolver bind + change listener',function() {
 
 	var ab = resolver.reference("a.b");
 	var _onab = sinon.spy();
-	ab.on("bind change",_onab);
-	ok(_onab.calledWith(sinon.match({
-		"base": undefined,
-		"symbol": "b",
-		"value": undefined
-	})));
 
-	equal(_onab.callCount,1); // base and value should be undefined
+	ab.on("bind change",_onab);
+	// ok(_onab.calledWith(sinon.match({
+	// 	"base": undefined,
+	// 	"symbol": "b",
+	// 	"value": undefined
+	// })));
+
+	equal(_onab.getCall(0).args[0].base,undefined);
+	equal(_onab.getCall(0).args[0].symbol,"b");
+	equal(_onab.getCall(0).args[0].value,undefined);
+	sinon.assert.calledOnce(_onab);
 
 	var abc = resolver.reference("a.b.c");
 
