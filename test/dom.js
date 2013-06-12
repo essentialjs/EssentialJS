@@ -223,3 +223,33 @@ test("MutableEvent preventDefault & stopPropagation",function() {
     document.body.removeChild(div);
 });    
 
+asyncTest("Element Placement",function() {
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var ElementPlacement = Resolver("essential::ElementPlacement::");
+
+	var div = HTMLElement("div");
+	document.body.appendChild(div);
+
+	setTimeout(function(){
+		var placement = ElementPlacement(div);
+		equal(placement.style.visibility.replace("inherit","visible"),"visible");
+		equal(placement.style.marginLeft,"0px");
+		equal(placement.style.marginRight,"0px");
+		equal(placement.style.marginTop,"0px");
+		equal(placement.style.marginBottom,"0px");
+
+		//TODO 
+		equal(placement.bounds.top,placement.bounds.bottom);
+		equal(placement.bounds.height,0);
+
+		//TODO refactor Webkit fix
+		/*
+			applies if value has %
+		*/
+
+	    document.body.removeChild(div);
+	    start();
+	},50);
+
+})
+

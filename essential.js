@@ -3248,26 +3248,47 @@ Generator.ObjectGenerator = Generator(Object);
 
 	function _ElementPlacement(el,track) {
 		this.el = el;
+		this.bounds = {};
 		this.style = {};
 		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
+
+		if (el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
+			this._compute = this._computeIE;
+		}
+		if (document.body.getBoundingClientRect().width == undefined) {
+			this._bounds = this._boundsIE;
+		}
+
 		this.compute();
 	}
 	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
 
 	_ElementPlacement.prototype.compute = function() {
-		this.bounds = this.el.getBoundingClientRect();
+		this._bounds();
 		for(var i=0,s; !!(s = this.track[i]); ++i) {
 			this.style[s] = this._compute(s);
 		}
 	};
 
+	_ElementPlacement.prototype._bounds = function() {
+		this.bounds = this.el.getBoundingClientRect();
+	};
+
+	_ElementPlacement.prototype._boundsIE = function() {
+		var bounds = this.el.getBoundingClientRect();
+		this.bounds = {
+			width: bounds.right - bounds.left, height: bounds.bottom - bounds.top,
+			left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom
+		};
+	};
+
 	_ElementPlacement.prototype.PIXEL = /^\d+(px)?$/i;
 
-	_ElementPlacement.prototype.CSS_PRECALCULATED_SIZES = {
+	_ElementPlacement.prototype.KEYWORDS = {
 		'medium':"2px"	
 	};
 
-	_ElementPlacement.prototype.CSS_PROPERTY_TYPES = {
+	_ElementPlacement.prototype.CSS_TYPES = {
 		'border-width':'size',
 		'border-left-width':'size',
 		'border-right-width':'size',
@@ -3323,7 +3344,14 @@ Generator.ObjectGenerator = Generator(Object);
 		'bottom': 'top'
 	};
 
-	_ElementPlacement.prototype.CSS_PROPERTY_FROM_JS = {
+	_ElementPlacement.prototype.OFFSET_NAME = {
+		"left":"offsetLeft",
+		"width":"offsetWidth",
+		"top":"offsetTop",
+		"height":"offsetHeight"
+	};
+
+	_ElementPlacement.prototype.CSS_NAME = {
 		'backgroundColor':'background-color',
 		'backgroundImage':'background-image',
 		'backgroundPosition':'background-position',
@@ -3355,7 +3383,7 @@ Generator.ObjectGenerator = Generator(Object);
 		
 	};
 
-	_ElementPlacement.prototype.JS_PROPERTY_FROM_CSS = {
+	_ElementPlacement.prototype.JS_NAME = {
 		'background-color':'backgroundColor',
 		'background-image':'backgroundImage',
 		'background-position':'backgroundPosition',
@@ -3420,47 +3448,38 @@ function _makeToPixelsIE(sProp)
 }
 
 
-	_ElementPlacement.prototype.TO_PIXELS_IE = {
-		"left": _makeToPixelsIE("left"),
-		"top": _makeToPixelsIE("top"),
-		"size": _makeToPixelsIE("left")
-	};
+_ElementPlacement.prototype.TO_PIXELS_IE = {
+	"left": _makeToPixelsIE("left"),
+	"top": _makeToPixelsIE("top"),
+	"size": _makeToPixelsIE("left")
+};
 
-function _correctChromeWebkitDimensionsBug(s,v) {
-
-	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom") && v === "auto")
-	{
-		return true;
-	}
-}
 
 _ElementPlacement.prototype._compute = function(style)
 {
+	var value = document.defaultView.getComputedStyle(this.el, null)[style];
+	//TODO do this test at load to see if needed
+	if (typeof value == "string" && value.indexOf("%")>-1) {
+		value = this.el[this.OFFSET_NAME[style]] + "px";
+	}
+		
+	return value;
+};
+
+_ElementPlacement.prototype._computeIE = function(style)
+{
 	var value;
 	
-	style = this.JS_PROPERTY_FROM_CSS[style] || style;
-	if (this.el.currentStyle)
-	{
-		var v = this.el.currentStyle[style];
-		var sPrecalc = this.CSS_PRECALCULATED_SIZES[v];
-		if (sPrecalc !== undefined) return sPrecalc; 
-		if (this.PIXEL.test(v)) return v;
+	style = this.JS_NAME[style] || style;
 
-		var fToPixels = this.TO_PIXELS_IE[this.CSS_PROPERTY_TYPES[style]];
-  		value = fToPixels? fToPixels(this.el, v) : v;
+	var v = this.el.currentStyle[style];
+	var sPrecalc = this.KEYWORDS[v];
+	if (sPrecalc !== undefined) return sPrecalc; 
+	if (this.PIXEL.test(v)) return v;
 
-	}
-	else if (document.defaultView)
-	{
-		value = document.defaultView.getComputedStyle(this.el, null)[style];
-	}
-	
-	//TODO fix bad performance overhead
-	if (!value || value === "" || _correctChromeWebkitDimensionsBug(style, value))
-	{
-		value = this.el.style[style];
-	}
-	
+	var fToPixels = this.TO_PIXELS_IE[this.CSS_TYPES[style]];
+		value = fToPixels? fToPixels(this.el, v) : v;
+		
 	return value;
 };
 
