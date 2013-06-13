@@ -13,6 +13,7 @@
 		HTMLElement = essential("HTMLElement"),
 		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		callCleaners = essential("callCleaners"),
+		addEventListeners = essential("addEventListeners"),
 		enhancedElements = essential("enhancedElements"),
 		sizingElements = essential("sizingElements"),
 		maintainedElements = essential("maintainedElements"),
@@ -34,6 +35,9 @@
 		var metas = document.getElementsByTagName("meta");
 		for(var i=0,m; m = metas[i]; ++i) {
 			switch((m.getAttribute("name") || "").toLowerCase()) {
+				case "text selection":
+					DocumentRoles.textSelection((m.getAttribute("content") || "").split(" "));
+					break;
 				case "enhanced roles":
 					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
 					break;
@@ -351,6 +355,22 @@
 			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
 		}
 	};
+
+	DocumentRoles.textSelection = function(tags) {
+		var pass = {};
+		for(var i=0,n; n = tags[i]; ++i) {
+			pass[n] = true;
+			pass[n.toUpperCase()] = true;
+		}
+		addEventListeners(document.body, {
+			"selectstart": function(ev) {
+				ev = MutableEvent(ev);
+				var allow = pass[ev.target.tagName || ""] || false;
+				if (!allow) ev.preventDefault();
+				return allow;
+			}
+		});
+	}
 
 	var _scrollbarSize;
 	function scrollbarSize() {
