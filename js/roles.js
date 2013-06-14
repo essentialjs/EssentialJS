@@ -22,7 +22,6 @@
 		templates = Resolver("templates"),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host;
 
 

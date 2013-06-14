@@ -11,7 +11,6 @@
 		arrayContains = essential("arrayContains"),
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host,
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
@@ -585,9 +584,9 @@
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				if (scripts[el.src.replace(baseUrl,"")] != undefined) {
+				if (scripts[el.src.replace(essential("baseUrl"),"")] != undefined) {
 					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(essential("baseUrl"),"")],false);
 				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
 					// absolute url
 					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
@@ -621,12 +620,12 @@
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
 				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
-				attrs["base"] = baseUrl;
+				attrs["base"] = essential("baseUrl");
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");
 				attrs["onload"] = delayedScriptOnload(l.rel);
 
-				var relSrc = attrs["src"].replace(baseUrl,"");
+				var relSrc = attrs["src"].replace(essential("baseUrl"),"");
 				l.attrs = attrs;
 				if (l.rel == "preload") {
 					var langOk = true;

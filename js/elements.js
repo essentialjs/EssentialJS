@@ -11,7 +11,6 @@
 		pageResolver = Resolver("page"),
 		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		enhancedElements = essential("enhancedElements"),
@@ -94,7 +93,7 @@
 		var el = ev.actionElement, action = ev.action, name = ev.commandName;
 		if (! el.actionVariant) {
 			if (action) {
-				action = action.replace(baseUrl,"");
+				action = action.replace(essential("baseUrl"),"");
 			} else {
 				action = "submit";
 			}

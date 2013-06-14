@@ -4,6 +4,16 @@
 		console = essential("console"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
 
+	essential.declare("baseUrl",location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1));
+
+	var base = document.getElementsByTagName("BASE")[0];
+	if (base) {
+		var baseUrl = base.href;
+		if (baseUrl.charAt(baseUrl.length - 1) != "/") baseUrl += "/";
+		// debugger;
+		essential.set("baseUrl",baseUrl);
+	}
+
 	var contains;
 	function doc_contains(a,b) {
 		return a !== b && (a.contains ? a.contains(b) : true);
