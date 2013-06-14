@@ -858,9 +858,31 @@
 	}
 	essential.declare("getPageOffsets",getPageOffsets);
 
+	var _innerHTML = function(_document,el,html) {
+		el.innerHTML = html;
+	}
+	if (isIE){
+		_innerHTML = _innerHTMLIE; //TODO do all IE do this shit?
+	}
+
+	function _innerHTMLIE(_document,el,html) {
+		if (_document.body==null) return; // no way to set html then :(
+		if (contains(document.body,el)) el.innerHTML = html;
+		else {
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = l.join("");
+			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+		}
+	}
+
 	// (tagName,{attributes},content)
 	// ({attributes},content)
 	function HTMLElement(tagName,from,content_list,_document) {
+			//TODO _document
 		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
 		
 		// optional document arg
@@ -938,15 +960,7 @@
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
 		if (l.length) {
-			//TODO _document
-			_document = document;
-			var drop = _document._inner_drop;
-			if (drop == undefined) {
-				drop = _document._inner_drop = _document.createElement("DIV");
-				_document.body.appendChild(drop);
-			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+			_innerHTML(_document||document,e,l.join("")); 
 		} 
 		
 		//TODO .appendTo function
