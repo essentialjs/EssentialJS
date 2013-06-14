@@ -3054,6 +3054,7 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
 		}
+		Resolver("page").set("state.launched",false);
 		Resolver("page").set("state.livepage",false);
 	}
 
@@ -3396,6 +3397,16 @@ Generator.ObjectGenerator = Generator(Object);
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
+
+	essential.declare("baseUrl",location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1));
+
+	var base = document.getElementsByTagName("BASE")[0];
+	if (base) {
+		var baseUrl = base.href;
+		if (baseUrl.charAt(baseUrl.length - 1) != "/") baseUrl += "/";
+		// debugger;
+		essential.set("baseUrl",baseUrl);
+	}
 
 	var contains;
 	function doc_contains(a,b) {
@@ -4241,9 +4252,31 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("getPageOffsets",getPageOffsets);
 
+	var _innerHTML = function(_document,el,html) {
+		el.innerHTML = html;
+	}
+	if (isIE){
+		_innerHTML = _innerHTMLIE; //TODO do all IE do this shit?
+	}
+
+	function _innerHTMLIE(_document,el,html) {
+		if (_document.body==null) return; // no way to set html then :(
+		if (contains(document.body,el)) el.innerHTML = html;
+		else {
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = l.join("");
+			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+		}
+	}
+
 	// (tagName,{attributes},content)
 	// ({attributes},content)
 	function HTMLElement(tagName,from,content_list,_document) {
+			//TODO _document
 		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
 		
 		// optional document arg
@@ -4321,15 +4354,7 @@ Generator.ObjectGenerator = Generator(Object);
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
 		if (l.length) {
-			//TODO _document
-			_document = document;
-			var drop = _document._inner_drop;
-			if (drop == undefined) {
-				drop = _document._inner_drop = _document.createElement("DIV");
-				_document.body.appendChild(drop);
-			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+			_innerHTML(_document||document,e,l.join("")); 
 		} 
 		
 		//TODO .appendTo function
@@ -4618,7 +4643,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		arrayContains = essential("arrayContains"),
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host,
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
@@ -5192,9 +5216,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				if (scripts[el.src.replace(baseUrl,"")] != undefined) {
+				if (scripts[el.src.replace(essential("baseUrl"),"")] != undefined) {
 					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(essential("baseUrl"),"")],false);
 				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
 					// absolute url
 					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
@@ -5228,12 +5252,12 @@ _ElementPlacement.prototype._computeIE = function(style)
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
 				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
-				attrs["base"] = baseUrl;
+				attrs["base"] = essential("baseUrl");
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");
 				attrs["onload"] = delayedScriptOnload(l.rel);
 
-				var relSrc = attrs["src"].replace(baseUrl,"");
+				var relSrc = attrs["src"].replace(essential("baseUrl"),"");
 				l.attrs = attrs;
 				if (l.rel == "preload") {
 					var langOk = true;
@@ -6616,7 +6640,6 @@ function(scripts) {
 		pageResolver = Resolver("page"),
 		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		enhancedElements = essential("enhancedElements"),
@@ -6699,7 +6722,7 @@ function(scripts) {
 		var el = ev.actionElement, action = ev.action, name = ev.commandName;
 		if (! el.actionVariant) {
 			if (action) {
-				action = action.replace(baseUrl,"");
+				action = action.replace(essential("baseUrl"),"");
 			} else {
 				action = "submit";
 			}
@@ -7018,7 +7041,6 @@ function(scripts) {
 		templates = Resolver("templates"),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host;
 
 
