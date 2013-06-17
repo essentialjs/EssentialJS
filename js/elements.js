@@ -260,12 +260,8 @@
 	_DocumentRoles.discarded = function(instance) {
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			if (desc.role && desc.enhanced && !desc.discarded) {
-
-				callCleaners(desc.el);
-				delete desc.el;
-				delete enhancedElements[n];
-			}
+			desc.discardNow();
+			desc._unlist();
 		}
 	};
 
@@ -273,9 +269,9 @@
 		//TODO migrate to desc.refresh
 		for(var n in maintainedElements) { //TODO maintainedElements
 			var desc = maintainedElements[n];
-			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
 			if (desc.layout.enable) {
+				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;

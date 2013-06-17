@@ -2835,10 +2835,20 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 	_EnhancedDescriptor.prototype.discardNow = function() {
+		if (this.discarded) return;
+
 		//TODO anything else ?
 		callCleaners(this.el);
-		delete this.el;
+		this.el = undefined;
 		this.discarded = true;					
+		this.layout.enable = false;					
+	};
+
+	_EnhancedDescriptor.prototype._unlist = function() {
+		this.discarded = true;					
+		if (this.layout.enable) delete maintainedElements[this.uniqueId];
+		if (sizingElements[this.uniqueId]) delete sizingElements[this.uniqueId];
+		delete enhancedElements[this.uniqueId];
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -2877,8 +2887,6 @@ Generator.ObjectGenerator = Generator(Object);
 		if (this.layout.queued) {
 			if (this.layouterParent) this.layouterParent.layout.queued = true;
 		}
-
-
 	};
 
 	// used to emulate IE uniqueId property
@@ -2928,7 +2936,7 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable) {
+			if (desc.layout.enable && !desc.discarded) {
 				desc.refresh();
 			}
 		}
@@ -2946,11 +2954,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.discarded) {
-				if (desc.layout.enable) delete maintainedElements[n];
-				if (sizingElements[n]) delete sizingElements[n];
-				delete enhancedElements[n];
-			}
+			if (desc.discarded) desc._unlist();
 		}
 	};
 
@@ -6889,12 +6893,8 @@ function(scripts) {
 	_DocumentRoles.discarded = function(instance) {
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			if (desc.role && desc.enhanced && !desc.discarded) {
-
-				callCleaners(desc.el);
-				delete desc.el;
-				delete enhancedElements[n];
-			}
+			desc.discardNow();
+			desc._unlist();
 		}
 	};
 
@@ -6902,9 +6902,9 @@ function(scripts) {
 		//TODO migrate to desc.refresh
 		for(var n in maintainedElements) { //TODO maintainedElements
 			var desc = maintainedElements[n];
-			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 
 			if (desc.layout.enable) {
+				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
 				if (desc.layout.width != ow || desc.layout.height != oh) {
 					desc.layout.width = ow;
 					desc.layout.height = oh;

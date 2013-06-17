@@ -494,10 +494,20 @@
 	};
 
 	_EnhancedDescriptor.prototype.discardNow = function() {
+		if (this.discarded) return;
+
 		//TODO anything else ?
 		callCleaners(this.el);
-		delete this.el;
+		this.el = undefined;
 		this.discarded = true;					
+		this.layout.enable = false;					
+	};
+
+	_EnhancedDescriptor.prototype._unlist = function() {
+		this.discarded = true;					
+		if (this.layout.enable) delete maintainedElements[this.uniqueId];
+		if (sizingElements[this.uniqueId]) delete sizingElements[this.uniqueId];
+		delete enhancedElements[this.uniqueId];
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -536,8 +546,6 @@
 		if (this.layout.queued) {
 			if (this.layouterParent) this.layouterParent.layout.queued = true;
 		}
-
-
 	};
 
 	// used to emulate IE uniqueId property
@@ -587,7 +595,7 @@
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable) {
+			if (desc.layout.enable && !desc.discarded) {
 				desc.refresh();
 			}
 		}
@@ -605,11 +613,7 @@
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.discarded) {
-				if (desc.layout.enable) delete maintainedElements[n];
-				if (sizingElements[n]) delete sizingElements[n];
-				delete enhancedElements[n];
-			}
+			if (desc.discarded) desc._unlist();
 		}
 	};
 
