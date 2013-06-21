@@ -430,21 +430,23 @@ test('Discarding enhanced',function() {
 
 test('Template cloneNode',function() {
 
+	equal(typeof Resolver("templates::",undefined),"object");
+
 	var enhance_template = Resolver("page::handlers.enhance.template::","null");
-	ok(enhance_template,"enhance_template");
-	if (enhance_template == null) {
-		debugger;
-		Resolver("page::handlers.enhance.template::","null");
-	}
+	equal(typeof enhance_template,"function","enhance_template");
+
+
 	var HTMLElement = Resolver("essential::HTMLElement::","null");
 	ok(HTMLElement,"HTMLElement");
 
 	var div = HTMLElement("div",{},"abc<span>def</span>");
-	var tplAbc = enhance_template(div,"template",{ id:"abc" });
-	ok(tplAbc);
+	var tplAbcNew = enhance_template(div,"template",{ id:"abc" });
+	ok(tplAbcNew);
+	equal(tplAbcNew,Resolver("templates::#abc::","undefined"));
 
 	var tplAbc = Resolver("templates")(["#abc"]); //TODO Resolver("templates")("#abc");
 	ok(tplAbc);
+	equal(tplAbc,tplAbcNew);
 
 	var cloned = tplAbc.content.cloneNode(true);
 	// ok(cloned typeof document.DocumentFragment);
