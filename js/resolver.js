@@ -34,13 +34,14 @@ function Resolver(name_andor_expr,ns,options)
                 return _resolver(name,ns,options,arguments.length==1 || ns); //TODO return namespace
 
             case 2: 
+                var _r = _resolver(name,ns,options,arguments.length==1 || ns);
                 // Resolver("abc::") returns the namespace of resolver 
                 if (expr == "") {
-                    return _resolver(name,ns,options,arguments.length==1 || ns);
+                    return _r.namespace;
 
                 // Resolver("abc::def") returns reference for expression
                 } else {
-                    return Resolver[name].reference(expr,ns);
+                    return _r.reference(expr,ns);
 
                 }
                 break;

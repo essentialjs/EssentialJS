@@ -6,6 +6,14 @@ test ("Anonymous resolver",function(){
 	equal(Resolver()("a","undefined"),undefined);
 })
 
+test ("Default resolver",function() {
+	var d = Resolver();
+	equal(Resolver["default"],d);
+	equal(Resolver("default"),d);
+
+	equal(Resolver("::"),d.namespace);
+})
+
 test ("Named resolver",function(){
 
 	ok(! Resolver.exists("A"))
@@ -18,6 +26,7 @@ test ("Named resolver",function(){
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("A"));
 	ok(Resolver.exists("A"))
+	equal(Resolver("A::"),rs,"Looking up the A namespace");
 
 	var r = Resolver({},{name:"B"});
 	r.set("a","a");
@@ -41,7 +50,7 @@ test("Window resolver",function(){
 	equal(win("Array"),Array);
 	equal(win("Boolean"),Boolean);
 	equal(win("self"),window);
-	// equal(Resolver("window::"),window);
+	equal(Resolver("window::"),window);
 
 	var win = Resolver(window);
 
@@ -260,7 +269,7 @@ test('Resolver namespace::expression API',function() {
 		"c":"c"
 	});
 
-	equal(Resolver("F"),Resolver("F::"));
+	equal(Resolver("F::"),Resolver("F").namespace);
 
 	equal(Resolver("F::a"),Resolver("F").reference("a"));
 	equal(Resolver("F::b"),Resolver("F").reference("b"));
