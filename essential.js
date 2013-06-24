@@ -1548,6 +1548,42 @@ Generator.ObjectGenerator = Generator(Object);
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
+	function enhanceQuery() {
+		var handlers = essential("DocumentRoles")().handlers;
+		for(var i=0,desc; desc = this[i]; ++i) {
+
+			desc.ensureStateful();
+			if (!desc.enhanced) { //TODO flag needEnhance
+				desc._tryEnhance(handlers);
+			} 
+			desc._tryMakeLayouter(""); //TODO key?
+			desc._tryMakeLaidout(""); //TODO key?
+
+			if (desc.conf.sizingElement) sizingElements[desc.uniqueId] = desc;
+		}
+
+	}
+
+	function DescriptorQuery(sel,el) {
+		var q = [], conf = { list:q };
+
+		if (typeof sel == "string") {
+			//TODO
+			if (el) {
+
+			}
+		} else {
+			el=sel; sel=undefined;
+			//TODO if the el is a layouter, pass that in conf
+			essential("ApplicationConfig")()._prep(el,conf);
+
+		}
+		q.el = el;
+		q.enhance = enhanceQuery;
+		return q;
+	}
+	essential.declare("DescriptorQuery",DescriptorQuery);
+
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
 
@@ -4067,6 +4103,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
 				if (desc) {
+					if (context.list) context.list.push(desc);
 					// if (sizingElement) sizingElements[desc.uniqueId] = desc;
 					desc.layouterParent = context.layouter;
 					if (desc.conf.layouter) {
@@ -4075,7 +4112,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 				} else {
 
 				}
-				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter});
+				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}

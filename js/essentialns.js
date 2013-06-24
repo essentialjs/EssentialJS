@@ -326,6 +326,42 @@
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
+	function enhanceQuery() {
+		var handlers = essential("DocumentRoles")().handlers;
+		for(var i=0,desc; desc = this[i]; ++i) {
+
+			desc.ensureStateful();
+			if (!desc.enhanced) { //TODO flag needEnhance
+				desc._tryEnhance(handlers);
+			} 
+			desc._tryMakeLayouter(""); //TODO key?
+			desc._tryMakeLaidout(""); //TODO key?
+
+			if (desc.conf.sizingElement) sizingElements[desc.uniqueId] = desc;
+		}
+
+	}
+
+	function DescriptorQuery(sel,el) {
+		var q = [], conf = { list:q };
+
+		if (typeof sel == "string") {
+			//TODO
+			if (el) {
+
+			}
+		} else {
+			el=sel; sel=undefined;
+			//TODO if the el is a layouter, pass that in conf
+			essential("ApplicationConfig")()._prep(el,conf);
+
+		}
+		q.el = el;
+		q.enhance = enhanceQuery;
+		return q;
+	}
+	essential.declare("DescriptorQuery",DescriptorQuery);
+
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
 

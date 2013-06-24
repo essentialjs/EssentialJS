@@ -550,6 +550,7 @@
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
 				if (desc) {
+					if (context.list) context.list.push(desc);
 					// if (sizingElement) sizingElements[desc.uniqueId] = desc;
 					desc.layouterParent = context.layouter;
 					if (desc.conf.layouter) {
@@ -558,7 +559,7 @@
 				} else {
 
 				}
-				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter});
+				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
