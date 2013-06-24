@@ -298,12 +298,19 @@
 		this.tagName = el.tagName;
 		this.html = el.innerHTML;
 
-		//TODO content = DocumentFragment that can be cloned and appendChild
-		this.content = document.createElement("DIV");
-		this.content.innerHTML = this.html;
-		//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+		// HTML5 template tag support
+		if ('content' in el) {
+			this.content = el.content;
+			//TODO additional functionality in cloneNode
+		// HTML4 shim
+		} else {
+			this.content = el.content = el.ownerDocument.createDocumentFragment();
+			while(el.firstChild) this.content.appendChild(el.firstChild);
+			//TODO handle img preloading
+			//TODO handle sources in img/object/audio/video in cloneNode, initially inert
 
-		this.content.cloneNode = this.contentCloneFunc(this.content);
+			this.content.cloneNode = this.contentCloneFunc(this.content);
+		}
 	}
 
 	Template.prototype.contentCloneFunc = function(el) {
