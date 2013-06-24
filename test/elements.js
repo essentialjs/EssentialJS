@@ -454,15 +454,15 @@ test('Template cloneNode',function() {
 	equal(cloned.childNodes[0].data,"abc");
 	equal(cloned.childNodes[1].innerHTML,"def");
 
-	// var tpl2 = HTMLElement("template",{ id:"tpl2" });
+	var tpl2 = HTMLElement("template",{ id:"tpl2" }, "abc<span>def</span>");
 	// document.body.appendChild(tpl2);
 	// (tpl2.content || tpl2).appendChild(document.createTextNode("abc"));
 	// (tpl2.content || tpl2).appendChild(HTMLElement("span",{},"def"));
-	// enhance_template(tpl2,"template",{ id:"2" });
+	enhance_template(tpl2,"template",{ id:"2" });
 
-	// var cloned2 = tpl2.content.cloneNode(true);
-	// equal(cloned2.childNodes[0].data,"abc");
-	// equal(cloned2.childNodes[1].innerHTML,"def");
+	var cloned2 = tpl2.content.cloneNode(true);
+	equal(cloned2.childNodes[0].data,"abc");
+	equal(cloned2.childNodes[1].innerHTML,"def");
 	// document.body.removeChild(tpl2);
 
 	// Cloning template loaded in page
