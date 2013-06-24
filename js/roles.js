@@ -296,7 +296,6 @@
 
 	function Template(el) {
 		this.tagName = el.tagName;
-		this.html = el.innerHTML;
 
 		// HTML5 template tag support
 		if ('content' in el) {
@@ -342,7 +341,6 @@
 	function enhance_template(el,role,config) {
 		var id = config.id || el.id;
 		var template = new Template(el);
-		el.innerHTML = ''; // blank out the content
 
 		// template can be anonymouse
 		if (id) templates.set("#"+id,template);

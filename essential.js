@@ -58,13 +58,14 @@ function Resolver(name_andor_expr,ns,options)
                 return _resolver(name,ns,options,arguments.length==1 || ns); //TODO return namespace
 
             case 2: 
+                var _r = _resolver(name,ns,options,arguments.length==1 || ns);
                 // Resolver("abc::") returns the namespace of resolver 
                 if (expr == "") {
-                    return _resolver(name,ns,options,arguments.length==1 || ns);
+                    return _r.namespace;
 
                 // Resolver("abc::def") returns reference for expression
                 } else {
-                    return Resolver[name].reference(expr,ns);
+                    return _r.reference(expr,ns);
 
                 }
                 break;
@@ -3152,8 +3153,8 @@ Generator.ObjectGenerator = Generator(Object);
 				drop = _document._inner_drop = _document.createElement("DIV");
 				_document.body.appendChild(drop);
 			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+			drop.innerHTML = html;
+			for(var c = drop.firstChild; c; c = drop.firstChild) el.appendChild(c);
 		}
 	}
 
@@ -3165,7 +3166,7 @@ Generator.ObjectGenerator = Generator(Object);
 		
 		// optional document arg
 		var d = arguments[c_to];
-		var _doc = document;
+		var _doc = document; //TODO override if last arg is a document
 		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
 		
 		// optional tagName arg
@@ -3238,7 +3239,7 @@ Generator.ObjectGenerator = Generator(Object);
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
 		if (l.length) {
-			_innerHTML(_document||document,e,l.join("")); 
+			_innerHTML(_doc,e,l.join("")); 
 		} 
 		
 		//TODO .appendTo function
@@ -5918,7 +5919,7 @@ function(scripts) {
 		ApplicationConfig = essential("ApplicationConfig"),
 		DocumentRoles = essential("DocumentRoles"),
 		pageResolver = Resolver("page"),
-		templates = Resolver("templates"),
+		templates = Resolver("templates",{}),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
 		serverUrl = location.protocol + "//" + location.host;
@@ -6195,14 +6196,20 @@ function(scripts) {
 
 	function Template(el) {
 		this.tagName = el.tagName;
-		this.html = el.innerHTML;
 
-		//TODO content = DocumentFragment that can be cloned and appendChild
-		this.content = document.createElement("DIV");
-		this.content.innerHTML = this.html;
-		//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+		// HTML5 template tag support
+		if ('content' in el) {
+			this.content = el.content;
+			//TODO additional functionality in cloneNode
+		// HTML4 shim
+		} else {
+			this.content = el.content = el.ownerDocument.createDocumentFragment();
+			while(el.firstChild) this.content.appendChild(el.firstChild);
+			//TODO handle img preloading
+			//TODO handle sources in img/object/audio/video in cloneNode, initially inert
 
-		this.content.cloneNode = this.contentCloneFunc(this.content);
+			this.content.cloneNode = this.contentCloneFunc(this.content);
+		}
 	}
 
 	Template.prototype.contentCloneFunc = function(el) {
@@ -6234,7 +6241,6 @@ function(scripts) {
 	function enhance_template(el,role,config) {
 		var id = config.id || el.id;
 		var template = new Template(el);
-		el.innerHTML = ''; // blank out the content
 
 		// template can be anonymouse
 		if (id) templates.set("#"+id,template);
@@ -6255,8 +6261,8 @@ function(scripts) {
 
 /* TODO support on EnhancedDescriptor
 function enhance_templated(el,role,config) {
-	if (config.template && templates[config.template]) {
-		var template = templates[config.template];
+	if (config.template && templates.getEntry(config.template)) {
+		var template = templates.getEntry(config.template);
 		//TODO replace element with template.tagName, mixed attributes and template.html
 		el.innerHTML = template.html; //TODO better
 		var context = { layouter: this.parentLayouter };
@@ -6752,8 +6758,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 	};
 
 	DocumentRoles.enhance_scrolled = function(el,role,config) {
-		if (config.template && templates[config.template]) {
-			var template = templates[config.template];
+		if (config.template && templates.getEntry(config.template)) {
+			var template = templates.getEntry(config.template);
 			//TODO replace element with template.tagName, mixed attributes and template.html
 			el.innerHTML = template.html; //TODO better
 			var context = { layouter: this.parentLayouter };

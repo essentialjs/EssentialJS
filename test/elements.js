@@ -432,12 +432,13 @@ test('Template cloneNode',function() {
 
 	equal(typeof Resolver("templates::",undefined),"object");
 
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	ok(HTMLElement,"HTMLElement");
 	var enhance_template = Resolver("page::handlers.enhance.template::","null");
 	equal(typeof enhance_template,"function","enhance_template");
 
-
-	var HTMLElement = Resolver("essential::HTMLElement::","null");
-	ok(HTMLElement,"HTMLElement");
 
 	var div = HTMLElement("div",{},"abc<span>def</span>");
 	var tplAbcNew = enhance_template(div,"template",{ id:"abc" });
@@ -449,9 +450,33 @@ test('Template cloneNode',function() {
 	equal(tplAbc,tplAbcNew);
 
 	var cloned = tplAbc.content.cloneNode(true);
-	// ok(cloned typeof document.DocumentFragment);
+	// ok(isDocumentFragment(cloned));
 	equal(cloned.childNodes[0].data,"abc");
 	equal(cloned.childNodes[1].innerHTML,"def");
+
+	// var tpl2 = HTMLElement("template",{ id:"tpl2" });
+	// document.body.appendChild(tpl2);
+	// (tpl2.content || tpl2).appendChild(document.createTextNode("abc"));
+	// (tpl2.content || tpl2).appendChild(HTMLElement("span",{},"def"));
+	// enhance_template(tpl2,"template",{ id:"2" });
+
+	// var cloned2 = tpl2.content.cloneNode(true);
+	// equal(cloned2.childNodes[0].data,"abc");
+	// equal(cloned2.childNodes[1].innerHTML,"def");
+	// document.body.removeChild(tpl2);
+
+	// Cloning template loaded in page
+	var conf = ApplicationConfig();
+	var tpl3 = document.getElementById("abcd");
+	var desc3 = EnhancedDescriptor(tpl3,"template",{},false,conf);
+
+	enhance_template(tpl3,"template",{}); //TODO call on descriptor
+
+	var cloned3 = tpl3.content.cloneNode(true);
+	equal(cloned3.childNodes[0].data,"hello");
+	equal(cloned3.childNodes[1].innerHTML,"there");
+	equal(cloned3.childNodes[2].data,"how");
+	equal(cloned3.childNodes[3].innerHTML,"are");
 
 			//TODO anonymous template tag
 
