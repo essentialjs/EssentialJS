@@ -874,8 +874,8 @@
 				drop = _document._inner_drop = _document.createElement("DIV");
 				_document.body.appendChild(drop);
 			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+			drop.innerHTML = html;
+			for(var c = drop.firstChild; c; c = drop.firstChild) el.appendChild(c);
 		}
 	}
 
@@ -887,7 +887,7 @@
 		
 		// optional document arg
 		var d = arguments[c_to];
-		var _doc = document;
+		var _doc = document; //TODO override if last arg is a document
 		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
 		
 		// optional tagName arg
@@ -960,7 +960,7 @@
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
 		if (l.length) {
-			_innerHTML(_document||document,e,l.join("")); 
+			_innerHTML(_doc,e,l.join("")); 
 		} 
 		
 		//TODO .appendTo function
