@@ -292,10 +292,22 @@
 		return null;
 	}
 
+	function JSON2Attr(obj,excludes) {
+		excludes = excludes || {};
+		var r = {};
+		for(var n in obj) if (! (n in excludes)) r[n] = obj[n];
+		var txt = JSON.stringify(r);
+		return txt.substring(1,txt.length-1);
+	}
+	essential.declare("JSON2Attr",JSON2Attr);
+
+
 	// Templates
 
-	function Template(el) {
+	function Template(el,config) {
+		this.el = el; // TODO switch to uniqueId
 		this.tagName = el.tagName;
+		this.dataRole = JSON2Attr(config,{id:true});
 
 		// HTML5 template tag support
 		if ('content' in el) {
@@ -311,6 +323,19 @@
 			this.content.cloneNode = this.contentCloneFunc(this.content);
 		}
 	}
+
+	Template.prototype.getDataRole = function() {
+		return this.dataRole;
+	};
+
+	Template.prototype.getAttribute = function(name) {
+		return this.el.getAttribute(name);
+	};
+
+	Template.prototype.setAttribute = function(name,value) {
+		return this.el.setAttribute(name,value);
+	};
+
 
 	Template.prototype.contentCloneFunc = function(el) {
 		return function(deep) {
@@ -340,7 +365,7 @@
 
 	function enhance_template(el,role,config) {
 		var id = config.id || el.id;
-		var template = new Template(el);
+		var template = new Template(el,config);
 
 		// template can be anonymouse
 		if (id) templates.set("#"+id,template);

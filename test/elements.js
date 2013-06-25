@@ -39,6 +39,16 @@ test('Enhanced element config',function(){
 });
 
 test('EnhancedDescriptor cross browser support',function(){
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var sizingElements = Resolver("essential::sizingElements::");
+
+	var div = HTMLElement("div",{ "abc":"abc" });
+	var desc = EnhancedDescriptor(div,null,{},false,ApplicationConfig());
+	equal(desc.uniqueId,div.uniqueId);
+	equal(desc.getAttribute("abc"),"abc");
+
 	ok(true,"TODO uniqueId works across multiple documents");
 });
 

@@ -253,3 +253,12 @@ asyncTest("Element Placement",function() {
 
 })
 
+test("JSON2Attr data-role construction",function() {
+	var JSON2Attr = Resolver("essential::JSON2Attr::");
+
+	equal(JSON2Attr({a:"a",b:"b"}),'"a":"a","b":"b"');
+	equal(JSON2Attr({a:"a",b:"b"},{a:true}),'"b":"b"');
+	equal(JSON2Attr({}),"");
+	equal(JSON2Attr({id:'abc',"laidout":"laidout2","layouter":"layouter1"}),'"id":"abc","laidout":"laidout2","layouter":"layouter1"');
+})
+

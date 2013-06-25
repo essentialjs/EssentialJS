@@ -419,6 +419,14 @@
 		}
 	};
 
+	_EnhancedDescriptor.prototype.getAttribute = function(name) {
+		return this.el.getAttribute(name);
+	};
+
+	_EnhancedDescriptor.prototype.setAttribute = function(name,value) {
+		return this.el.setAttribute(name,value);
+	};
+
 
 	function _roleEnhancedCleaner(desc) {
 		return function() {
@@ -604,6 +612,7 @@
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
+	EnhancedDescriptor.query = DescriptorQuery;
 	EnhancedDescriptor.maintainer = null; // interval handler
 	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
 
