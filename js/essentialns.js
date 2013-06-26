@@ -681,6 +681,7 @@
 		}
 		enhancedWindows = null;
 		essential.set("enhancedWindows",[]);
+		//TODO clearInterval(placement.broadcaster) ?
 	}
 
 	function instantiatePageSingletons()
@@ -740,7 +741,7 @@
 	}
 	function fireLoad()
 	{
-		
+
 	}
 	function fireUnload()
 	{

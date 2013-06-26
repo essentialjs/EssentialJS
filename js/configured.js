@@ -4,6 +4,7 @@ Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecyc
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		placement = Resolver("essential::placement::"),
 		pageResolver = Resolver("page");
 
 	if (ev.value) { // bring live
@@ -16,7 +17,23 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
 	} else { // unload
 		clearInterval(pageResolver.uosInterval);
+		pageResolver.uosInterval = null;
 		clearInterval(EnhancedDescriptor.maintainer);
+		EnhancedDescriptor.maintainer = null;
 		clearInterval(EnhancedDescriptor.refresher);
+		EnhancedDescriptor.refresher = null;
+		if (placement.broadcaster) clearInterval(placement.broadcaster);
+		placement.broadcaster = null;
+		placement.stopTrackMain();
 	}
 });
+
+Resolver("page::state.managed").on("change",function(ev) {
+
+	var	placement = Resolver("essential::placement::");
+
+	if (ev.value) {
+		placement.startTrackMain();
+	}
+});
+

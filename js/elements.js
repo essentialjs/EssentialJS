@@ -40,6 +40,11 @@
 				case "enhanced roles":
 					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
 					break;
+				case "track main":
+					if (this.opener) {
+						pageResolver.set("state.managed",true);
+					}
+					break;
 			}
 		}
 	}
