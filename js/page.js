@@ -793,6 +793,10 @@
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 		this.applied = true;
+		var descriptors = this.resolver("descriptors");
+		for(var n in descriptors) {
+			pageResolver.set(["descriptors",n],descriptors[n]);
+		}
 		enhanceUnhandledElements();
 	};
 
@@ -816,6 +820,8 @@
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 		}
 		this.applied = false;
+
+		//TODO move descriptors out
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {

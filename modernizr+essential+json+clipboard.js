@@ -3023,6 +3023,7 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		enhancedWindows = null;
 		essential.set("enhancedWindows",[]);
+		//TODO clearInterval(placement.broadcaster) ?
 	}
 
 	function instantiatePageSingletons()
@@ -3082,7 +3083,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	function fireLoad()
 	{
-		
+
 	}
 	function fireUnload()
 	{
@@ -5004,6 +5005,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	pageResolver.reference("state").mixin({
 		"livepage": false,
 		"background": false, // is the page running in the background
+		"managed": false, // managed by a main window
 		"authenticated": true,
 		"authorised": true,
 		"connected": true,
@@ -5436,8 +5438,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.documentLoaded = true;
 	};
 
-	SubPage.prototype.parseHTML = function(text) {
-		var doc = this.document = createHTMLDocument(text);
+	//TODO should it be(head,body,options) ?
+	SubPage.prototype.parseHTML = function(text,text2) {
+		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
+		var doc = this.document = createHTMLDocument(head,text);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -5472,6 +5476,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 		this.applied = true;
+		var descriptors = this.resolver("descriptors");
+		for(var n in descriptors) {
+			pageResolver.set(["descriptors",n],descriptors[n]);
+		}
 		enhanceUnhandledElements();
 	};
 
@@ -5495,6 +5503,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 		}
 		this.applied = false;
+
+		//TODO move descriptors out
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -5520,9 +5530,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 			base = link.attrs.base;
 			if (this.doesElementApply(link)) p.push( outerHtml(link) );
 		}
-		if (base) base = '<base href="'+base+'">';
+		if (this.options && this.options["track main"]) p.push('<meta name="track main" content="true">');
+		if (base) p.push('<base href="'+base+'">');
 		p.push('</head>');
-		return escapeJs(this.headPrefix.join("") + base + p.join(""));
+		return escapeJs(this.headPrefix.join("") + p.join(""));
 
 	};
 
@@ -5541,7 +5552,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			'javascript:document.write("',
 			'<html><!-- From Main Window -->',
 			this.getHeadHtml(),
-			this.getBodyHtml(),
+			this.getBodyHtml(),//.replace("</body>",'<script>debugger;Resolver("essential::_queueDelayedAssets::")();</script></body>'),
 			'</html>',
 			'");'
 		];
@@ -5637,6 +5648,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		return this.resolver("authenticated-area","null") || "authenticated";
 	};
 
+	//TODO sure we want to support many content strings?
 	ApplicationConfig.prototype.page = function(url,options,content,content2) {
 		//this.pages.declare(key,value);
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
@@ -5877,13 +5889,29 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 
 	function onmessage(ev) {
-		var data = JSON.parse(ev.data);
-		if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
-			placement.setOptions(data.enhanced.options);
-			placement.setMain(data.enhanced.main);
-			placement.track();
+		if (ev.data) {
+			var data = JSON.parse(ev.data);
+			if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
+				placement.setOptions(data.enhanced.options);
+				placement.setMain(data.enhanced.main);
+				placement.track();
+			}
 		}
+		//TODO else foreign message, or IE support?
 	} 
+
+	function placementBroadcaster() {
+		placement.measure();
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify();
+		}
+		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
+		placement.notifyNeeded = false;
+	}
+
+	function trackMainWindow() {
+		placement.track();
+	}
 
 	var placement = {
 		x: undefined, y: undefined,
@@ -5957,46 +5985,49 @@ _ElementPlacement.prototype._computeIE = function(style)
 			this.y = y;
 			this.width = width;
 			this.height = height;
+		},
+
+		"startTrackMain": function() {
+			if (this.mainTracker) return;
+
+			this.mainTracker = setInterval(trackMainWindow,250);
+
+			if (window.postMessage) {
+				if (window.addEventListener) {
+					window.addEventListener("message",onmessage,false);
+
+				} else if (window.attachEvent) {
+					window.attachEvent("onmessage",onmessage);
+				}
+			}
+		},
+		"stopTrackMain": function() {
+			if (!this.mainTracker) return;
+
+			clearInterval(this.mainTracker);
+			this.mainTracker = null;
+
+			if (window.postMessage) {
+				if (window.removeEventListener) {
+					window.removeEventListener("message",onmessage);
+
+				} else if (window.attachEvent) {
+					window.deattachEvent("onmessage",onmessage);
+				}
+			}
+		},
+
+		"ensureBroadcaster": function() {
+			if (this.broadcaster) return;
+
+			placement.measure();
+			placement.notifyNeeded = false;
+			this.broadcaster = setInterval(placementBroadcaster,250);
 		}
 	};
-	placement.measure();
-	placement.notifyNeeded = false;
+
 	essential.declare("placement",placement);
 
-	//TODO make this testable
-	placement.broadcaster = setInterval(function() {
-		placement.measure();
-		for(var i=0,w; w = enhancedWindows[i]; ++i) {
-			w.notify();
-		}
-		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
-		placement.notifyNeeded = false;
-	},250);
-
-
-	function trackMainWindow() {
-		placement.track();
-	}
-
-	// tracking main window
-	if (window.opener) {
-
-		// TODO might not be needed
-		setInterval(trackMainWindow,250);
-
-		if (window.postMessage) {
-			if (window.addEventListener) {
-				window.addEventListener("message",onmessage,false);
-
-			} else if (window.attachEvent) {
-				window.attachEvent("onmessage",onmessage);
-
-			}
-			//TODO removeEvent
-		}
-
-
-	}
 
 	function EnhancedWindow(url,name,options,index) {
 		this.name = name;
@@ -6006,6 +6037,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.index = index;
 		this.width = this.options.width || 100;
 		this.height = this.options.height || 500;
+
+		placement.ensureBroadcaster();
 	}
 
 	EnhancedWindow.prototype.override = function(url,options) {
@@ -6719,6 +6752,11 @@ function(scripts) {
 					break;
 				case "enhanced roles":
 					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
+					break;
+				case "track main":
+					if (this.opener) {
+						pageResolver.set("state.managed",true);
+					}
 					break;
 			}
 		}
@@ -7983,6 +8021,7 @@ Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecyc
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		placement = Resolver("essential::placement::"),
 		pageResolver = Resolver("page");
 
 	if (ev.value) { // bring live
@@ -7995,10 +8034,26 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
 	} else { // unload
 		clearInterval(pageResolver.uosInterval);
+		pageResolver.uosInterval = null;
 		clearInterval(EnhancedDescriptor.maintainer);
+		EnhancedDescriptor.maintainer = null;
 		clearInterval(EnhancedDescriptor.refresher);
+		EnhancedDescriptor.refresher = null;
+		if (placement.broadcaster) clearInterval(placement.broadcaster);
+		placement.broadcaster = null;
+		placement.stopTrackMain();
 	}
 });
+
+Resolver("page::state.managed").on("change",function(ev) {
+
+	var	placement = Resolver("essential::placement::");
+
+	if (ev.value) {
+		placement.startTrackMain();
+	}
+});
+
 
 
 
