@@ -314,8 +314,10 @@
 	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
 
-	// map of uniqueId referenced
+	// map of uniqueId referenced (TODO array for performance/memory?)
 	var enhancedElements = essential.declare("enhancedElements",{});
+
+	var unfinishedElements = essential.declare("unfinishedElements",{});
 
 	// map of uniqueId referenced
 	var sizingElements = essential.declare("sizingElements",{});
@@ -327,13 +329,12 @@
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
 	function enhanceQuery() {
-		var handlers = essential("DocumentRoles")().handlers;
+		var pageResolver = Resolver("page"),
+			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 		for(var i=0,desc; desc = this[i]; ++i) {
 
 			desc.ensureStateful();
-			if (!desc.enhanced) { //TODO flag needEnhance
-				desc._tryEnhance(handlers);
-			} 
+			desc._tryEnhance(handlers,enabledRoles);
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
 
@@ -367,6 +368,7 @@
 
 		var roles = role? role.split(" ") : [];
 
+		this.needEnhance = roles.length > 0;
 		this.uniqueId = uniqueId;
 		this.roles = roles;
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
@@ -390,6 +392,7 @@
 
 		this.page = page;
 		this.handlers = page.resolver("handlers");
+		this.enabledRoles = page.resolver("enabledRoles");
 		this._init();
 	}
 
@@ -437,12 +440,16 @@
 		};
 	};
 
+	//TODO keep params on page
 
-	_EnhancedDescriptor.prototype._tryEnhance = function(handlers) {
+	_EnhancedDescriptor.prototype._tryEnhance = function(handlers,enabledRoles) {
+		if (!this.needEnhance) return;
+		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
-		if (this.role && handlers.enhance[this.role]) {
+		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
 			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
 			this.enhanced = this.instance === false? false:true;
+			this.needEnhance = !this.enhanced;
 		}
 		if (this.enhanced) {
 			this.sizingHandler = handlers.sizing[this.role];
@@ -540,8 +547,7 @@
 	_EnhancedDescriptor.prototype.discardNow = function() {
 		if (this.discarded) return;
 
-		//TODO anything else ?
-		callCleaners(this.el);
+		cleanRecursively(this.el);
 		this.el = undefined;
 		this.discarded = true;					
 		this.layout.enable = false;					
@@ -551,6 +557,7 @@
 		this.discarded = true;					
 		if (this.layout.enable) delete maintainedElements[this.uniqueId];
 		if (sizingElements[this.uniqueId]) delete sizingElements[this.uniqueId];
+		if (unfinishedElements[this.uniqueId]) delete unfinishedElements[this.uniqueId];
 		delete enhancedElements[this.uniqueId];
 	};
 
@@ -612,6 +619,7 @@
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
+	EnhancedDescriptor.unfinished = unfinishedElements;
 	EnhancedDescriptor.query = DescriptorQuery;
 	EnhancedDescriptor.maintainer = null; // interval handler
 	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
@@ -620,14 +628,14 @@
 	{
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			if (desc.el) {
-				callCleaners(desc.el); //TODO perhaps use cleanRecursively
-				delete desc.el;
-			}
+
+			desc.discardNow();
+			desc._unlist();
 			delete enhancedElements[n];
 		}
 		enhancedElements = essential.set("enhancedElements",{});
 	}
+	EnhancedDescriptor.discardAll = discardEnhancedElements;
 
 	EnhancedDescriptor.refreshAll = function() {
 		if (document.body == undefined) return;

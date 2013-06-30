@@ -77,9 +77,8 @@ test('addEventListeners catch',function() {
 });
 
 test('Enhance element early or delayed',function() {
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
-	var enhancedElements = Resolver("essential::enhancedElements::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var appConfig = ApplicationConfig();
 
 
@@ -104,6 +103,8 @@ test('Enhance element early or delayed',function() {
 	};
 	handlers.enhance.delayed.returns(false);
 
+	Resolver("page::handlers").mixin(handlers);
+
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
 
@@ -113,9 +114,9 @@ test('Enhance element early or delayed',function() {
 
 		'</body>'
 		].join(""));
-
-
-	var dr = DocumentRoles(handlers,page);
+	var delayedSpan = page.body.getElementsByTagName("span")[1];
+	var earlySpan = page.body.getElementsByTagName("span")[1];
+	page.applyBody();
 
 	var sinonConfig = {}; //TODO config for the sinon elem
 
@@ -124,38 +125,42 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 
-	ok(handlers.enhance.early.alwaysCalledWith(page.body.getElementsByTagName("span")[1],"early"))
+	ok(handlers.enhance.early.alwaysCalledWith(earlySpan,"early"));
 	//TODO equal(handlers.enhance.early.args[0][2],sinonConfig);
 
 	ok(true,"TODO additional handlers, enhance call after initial round")
 
 	handlers.enhance.additional = sinon.stub();
 	handlers.enhance.delayed.returns({});
-	dr._enhance_descs(page.resolver("descriptors"));
+	EnhancedDescriptor.enhanceUnfinished();
 	equal(handlers.enhance.early.callCount,1,"enhance should be completed already");
 	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 
-
-	var delayedEl = page.body.getElementsByTagName("span")[0];
-	ok(delayedEl);
-	var delayedDesc = enhancedElements[delayedEl.uniqueId];
+	ok(delayedSpan);
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
 	ok(delayedDesc);
 	ok(! delayedDesc.layout.queued);
-	delayedEl.stateful.set("state.expanded",true);
+	delayedSpan.stateful.set("state.expanded",true);
 	ok(delayedDesc.layout.queued);
 
 	//TODO all with roles are enhanced
 	//TODO discard called for all enhanced
 
-	DocumentRoles.info.constructors[-1].discarded(dr); // emulate singleton teardown
+	page.unapplyBody();
+	page.destroy();
+
+	EnhancedDescriptor.discardAll();
 	equal(handlers.enhance.early.callCount,1);
 	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,1,"early has been discarded");
 	equal(handlers.discard.delayed.callCount,1,"delayed has been discarded");
 	//TODO make sure that discardHandler for other is blank
+
+	Resolver("page::handlers").unmix(handlers);
+	Resolver.set("page::enabledRoles",{});
 });
 
 //TODO layout and discard are optional handlers
@@ -171,7 +176,7 @@ function _TestLayouter(key,el,config) {
 Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,Resolver("essential::Layouter::"),{
 	prototype:{
 
-		sizingElement : sinon.spy(function(parent,child,role,conf) {
+		sizingElement : sinon.spy(function(el,parent,child,role,conf) {
 			return true;
 		}),
 
@@ -186,8 +191,6 @@ Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,R
 test("Enhance layouter element",function() {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var sizingElements = Resolver("essential::sizingElements::");
-	var enhancedElements = Resolver("essential::enhancedElements::");
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
@@ -206,6 +209,7 @@ test("Enhance layouter element",function() {
 			"early": sinon.stub()
 		}
 	};
+	Resolver("page::handlers").mixin(handlers);
 
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -215,11 +219,11 @@ test("Enhance layouter element",function() {
 
 		'</body>'
 		].join(""));
+	var layouterSpan = page.body.firstChild.nextSibling;
+	page.applyBody();
 
-
-	var dr = DocumentRoles(handlers,page);
-	equal(typeof page.body.firstChild.nextSibling.layouter,"object");
-	var desc = page.resolver("descriptors")[page.body.firstChild.nextSibling.uniqueId];
+	equal(typeof layouterSpan.layouter,"object");
+	var desc = page.resolver("descriptors")[layouterSpan.uniqueId];
 	// page.body.firstChild.nextSibling.layouter
 	ok(desc);
 	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
@@ -227,7 +231,8 @@ test("Enhance layouter element",function() {
 	
 	equal(_TestLayouter.prototype.sizingElement.callCount,1);
 	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueId];
-	var emDesc = enhancedElements[page.body.firstChild.nextSibling.firstChild.uniqueId];
+	ok(layouterSpan.firstChild.uniqueId);
+	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueId];
 	ok(emDesc);
 	equal(sizingElements[emDesc.uniqueId],emDesc);
 	equal(emDesc.layouterParent,desc);
@@ -237,6 +242,12 @@ test("Enhance layouter element",function() {
 	//TODO test no queued layout.queued
 	//TODO sizing values
 	//TODO sizing object in stateful is the one from EnhancedElement
+
+	page.unapplyBody();
+	page.destroy();
+	EnhancedDescriptor.discardAll();
+	Resolver("page::handlers").unmix(handlers);
+	Resolver.set("page::enabledRoles",{});
 });
 
 
@@ -352,32 +363,37 @@ test("Enhancing elements creating stateful fields",function() {
 	equal(buttonField.prototype.discard.callCount,4);
 });
 
-test('Enhancing DocumentRoles with builtin handlers',function(){
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
+/* TODO what do we want to test here without hacking the handlers 
+  and considering enhancedRoles.dialog = true
+
+test('Enhancing Document Roles with builtin handlers',function(){
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var appConfig = ApplicationConfig();
+	var pageHandlers = Resolver("page::handlers::");
 
 	var handlers = {
 		"enhance": {
-			"dialog": sinon.spy(DocumentRoles.enhance_dialog),// ,
-			"navigation": sinon.spy(DocumentRoles.enhance_toolbar),// ,
-			"spinner": sinon.spy(DocumentRoles.enhance_spinner),// ,
-			"application": sinon.spy(DocumentRoles.enhance_application)// 
+			"dialog": sinon.spy(pageHandlers.enhance.dialog),// ,
+			"navigation": sinon.spy(pageHandlers.enhance.toolbar),// ,
+			"spinner": sinon.spy(pageHandlers.enhance.spinner),// ,
+			"application": sinon.spy(pageHandlers.enhance.application)// 
 		},
 		"sizing": {},
 		"layout": {
-			"dialog": sinon.spy(),// DocumentRoles.layout_dialog,
-			"navigation": sinon.spy(),// DocumentRoles.layout_toolbar,
-			"spinner": sinon.spy(),// DocumentRoles.layout_spinner,
-			"application": sinon.spy()// DocumentRoles.layout_application
+			"dialog": sinon.spy(),// pageHandlers.layout.dialog,
+			"navigation": sinon.spy(),// pageHandlers.layout_toolbar,
+			"spinner": sinon.spy(),// pageHandlers.layout_spinner,
+			"application": sinon.spy()// pageHandlers.layout_application
 		},
 		"discard": {
-			"dialog": sinon.spy(),// DocumentRoles.discard_dialog,
-			"navigation": sinon.spy(),// DocumentRoles.discard_toolbar,
-			"spinner": sinon.spy(),// DocumentRoles.discard_spinner,
-			"application": sinon.spy()// DocumentRoles.discard_application
+			"dialog": sinon.spy(),// pageHandlers.discard_dialog,
+			"navigation": sinon.spy(),// pageHandlers.discard_toolbar,
+			"spinner": sinon.spy(),// pageHandlers.discard_spinner,
+			"application": sinon.spy()// pageHandlers.discard_application
 		}
 	};
+	Resolver("page::handlers").mixin(handlers);
 
 	var page = appConfig.page("/test/pages/a4.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -389,12 +405,13 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 		'</body>'
 		].join(""));
 
-	var dr = DocumentRoles(handlers,page);
+	page.applyBody();
+
 	equal(handlers.enhance.navigation.callCount,1);
 	equal(handlers.layout.navigation.callCount,0);
 	equal(handlers.discard.navigation.callCount,0);
 
-	dr._enhance_descs(page.resolver("descriptors"));
+	EnhancedDescriptor.enhanceUnfinished();
 	equal(handlers.enhance.navigation.callCount,1,"enhance should be completed already");
 	equal(handlers.layout.navigation.callCount,0);
 	equal(handlers.discard.navigation.callCount,0);
@@ -412,11 +429,14 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 	//TODO all with roles are enhanced
 	//TODO discard called for all enhanced
 
-	DocumentRoles.info.constructors[-1].discarded(dr); // emulate singleton teardown
-	// equal(handlers.enhance.sinon.callCount,1);
-	// equal(handlers.layout.sinon.callCount,0);
-	// equal(handlers.discard.sinon.callCount,1);
+	page.unapplyBody();
+	page.destroy();
+
+	EnhancedDescriptor.discardAll();
+	//TODO Resolver("page::handlers").unmix(handlers);
+	Resolver.set("page::enabledRoles",{});
 });
+*/
 
 test('Discarding enhanced',function() {
 
@@ -436,6 +456,8 @@ test('Discarding enhanced',function() {
 	ok(1,"Maintain will discard unattached elements");
 
 	ok(1,"Maintain all will not discard elements (especially body) being enhanced");
+
+	EnhancedDescriptor.discardAll();
 })
 
 test('Template cloneNode',function() {
@@ -496,7 +518,7 @@ test('Template cloneNode',function() {
 
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential::DialogAction::");
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
+	var pageHandlers = Resolver("page::handlers::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 	var fireAction = Resolver("essential::fireAction::");
@@ -515,16 +537,17 @@ test('Role navigation action',function(){
 
 	var handlers = {
 		"enhance": {
-			"navigation": DocumentRoles.enhance_toolbar
+			"navigation": pageHandlers.enhance.toolbar
 		},
 		"sizing": {},
 		"layout": {
-			"navigation": DocumentRoles.layout_toolbar
+			"navigation": pageHandlers.layout.toolbar
 		},
 		"discard": {
-			"navigation": DocumentRoles.discard_toolbar
+			"navigation": pageHandlers.discard.toolbar
 		}
 	};
+	Resolver("page::handlers").mixin(handlers);
 
 	var page = appConfig.page("/test/pages/a5.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -537,8 +560,9 @@ test('Role navigation action',function(){
 		'</body>'
 		].join(""));
 
-	var dr = DocumentRoles(handlers,page);
 	var dialog = page.body.firstChild;
+
+	page.applyBody();
 
 	//page.body.firstChild.firstChild.click();
 	//simulateClick(page.body.firstChild);//.firstChild);
@@ -551,6 +575,12 @@ test('Role navigation action',function(){
 	// permissions and routers
 
 	//TODO assert action(el,ev)
+	page.unapplyBody();
+	page.destroy();
+
+	EnhancedDescriptor.discardAll();
+	Resolver("page::handlers").unmix(handlers);
+	Resolver.set("page::enabledRoles",{});
 });
 
 

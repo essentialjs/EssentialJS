@@ -35,10 +35,10 @@
 		for(var i=0,m; m = metas[i]; ++i) {
 			switch((m.getAttribute("name") || "").toLowerCase()) {
 				case "text selection":
-					DocumentRoles.textSelection((m.getAttribute("content") || "").split(" "));
+					textSelection((m.getAttribute("content") || "").split(" "));
 					break;
 				case "enhanced roles":
-					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
+					useBuiltins((m.getAttribute("content") || "").split(" "));
 					break;
 				case "track main":
 					if (this.opener) {
@@ -190,10 +190,6 @@
 			window.attachEvent("onresize",resizeTriggersReflow);
 			this.page.body.attachEvent("onclick",defaultButtonClick);
 		}
-
-		var descs = this.page.resolver("descriptors");
-		this._enhance_descs(descs);
-		//this.enhanceBranch(doc);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -262,14 +258,6 @@
 		} 
 	};
 
-	_DocumentRoles.discarded = function(instance) {
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
-			desc.discardNow();
-			desc._unlist();
-		}
-	};
-
 	_DocumentRoles.prototype._resize_descs = function() {
 		//TODO migrate to desc.refresh
 		for(var n in maintainedElements) { //TODO maintainedElements
@@ -332,31 +320,11 @@
 	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
 
 
-	_DocumentRoles.default_enhance = function(el,role,config) {
-		
-		return {};
-	};
+	function useBuiltins(list) {
+		for(var i=0,r; r = list[i]; ++i) pageResolver.set(["enabledRoles",r],true);
+	}
 
-	_DocumentRoles.default_layout = function(el,layout,instance) {
-		
-	};
-	
-	_DocumentRoles.default_discard = function(el,role,instance) {
-		
-	};
-
-	DocumentRoles.useBuiltins = function(list) {
-		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
-		for(var i=0,r; r = list[i]; ++i) {
-			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
-			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
-			if (this["sizing_"+r]) this.presets.declare(["handlers","sizing",r], this["sizing_"+r]);
-			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
-			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
-		}
-	};
-
-	DocumentRoles.textSelection = function(tags) {
+	function textSelection(tags) {
 		var pass = {};
 		for(var i=0,n; n = tags[i]; ++i) {
 			pass[n] = true;

@@ -17,9 +17,7 @@
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		DocumentRoles = essential("DocumentRoles"),
 		pageResolver = Resolver("page"),
-		templates = Resolver("templates",{}),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
 		serverUrl = location.protocol + "//" + location.host;
@@ -123,7 +121,7 @@
 	}
 
 
-	DocumentRoles.enhance_dialog = function (el,role,config) {
+	function enhance_dialog(el,role,config) {
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -153,13 +151,16 @@
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
-	DocumentRoles.layout_dialog = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_dialog = function (el,role,instance) {
-	};
+	function layout_dialog(el,layout,instance) {		
+	}
+	pageResolver.set("handlers.layout.dialog",layout_dialog);
+
+	function discard_dialog(el,role,instance) {
+	}
+	pageResolver.set("handlers.discard.dialog",discard_dialog);
 
 	function applyDefaultRole(elements) {
 		for(var i=0,el; (el = elements[i]); ++i) {
@@ -186,7 +187,7 @@
 		}
 	}
 
-	DocumentRoles.enhance_toolbar = function(el,role,config) {
+	function enhance_toolbar(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -199,32 +200,29 @@
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.toolbar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menu",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menubar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.navigation",enhance_toolbar);
 
-	DocumentRoles.layout_toolbar = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_toolbar = function(el,role,instance) {
-		
-	};
+	function layout_toolbar(el,layout,instance) {		
+	}
+	pageResolver.set("handlers.layout.toolbar",layout_toolbar);
 
-	// menu, menubar
-	DocumentRoles.enhance_navigation = 
-	DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
+	function discard_toolbar(el,role,instance) {
+	}
+	pageResolver.set("handlers.discard.toolbar",discard_toolbar);
 
-	DocumentRoles.enhance_sheet = function(el,role,config) {
+	function enhance_sheet(el,role,config) {
 		
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.sheet",enhance_sheet);
 
-	DocumentRoles.layout_sheet = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_sheet = function(el,role,instance) {
-		
-	};
+	function enhance_spinner(el,role,config) {
+		if (window.Spinner == undefined) return false;
 
-	DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -241,15 +239,19 @@
 			left: 'auto'
 		};
 		return new Spinner(opts).spin(el);
-	};
+	}
+	pageResolver.set("handlers.enhance.spinner",enhance_spinner);
 
-	DocumentRoles.layout_spinner = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_spinner = function(el,role,instance) {
+	function layout_spinner(el,layout,instance) {
+		//TODO when hiding stop the spinner		
+	}
+	pageResolver.set("handlers.layout.spinner",layout_spinner);
+
+	function discard_spinner(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
-	};
+	}
+	pageResolver.set("handlers.discard.spinner",discard_spinner);
 	
 	function _lookup_generator(name,resolver) {
 		var constructor = Resolver(resolver || "default")(name,"null");
@@ -257,7 +259,7 @@
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRoles.enhance_application = function(el,role,config) {
+	function enhance_application(el,role,config) {
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
@@ -272,13 +274,16 @@
 		
 		return {};
 	};
+	pageResolver.set("handlers.enhance.application",enhance_application);
 
-	DocumentRoles.layout_application = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_application = function(el,role,instance) {
-		
-	};
+	function layout_application(el,layout,instance) {	
+	}
+	pageResolver.set("handlers.layout.application",layout_application);
+
+	function discard_application(el,role,instance) {	
+		//TODO destroy/discard support on generator ?
+	}
+	pageResolver.set("handlers.discard.application",discard_application);
 
 	//TODO find parent of scrolled role
 
@@ -368,21 +373,22 @@
 		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (id) templates.set("#"+id,template);
+		if (id) pageResolver.set(["templates","#"+id],template);
 		// TODO class support, looking up on main document by querySelector
 
 		return template;
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
-	DocumentRoles.init_template = function(el,role,config) {
+	function init_template(el,role,config) {
 		this.contentManaged = true; // template content skipped
-	};
-	pageResolver.set("handlers.init.template",DocumentRoles.init_template);
+	}
+	pageResolver.set("handlers.init.template",init_template);
 
-	DocumentRoles.init_templated = function(el,role,config) {
+	function init_templated(el,role,config) {
 		this.contentManaged = true; // templated content skipped
-	};
+	}
+	pageResolver.set("handlers.init.templated",init_templated);
 
 /* TODO support on EnhancedDescriptor
 function enhance_templated(el,role,config) {
@@ -882,9 +888,9 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
-	DocumentRoles.enhance_scrolled = function(el,role,config) {
-		if (config.template && templates.getEntry(config.template)) {
-			var template = templates.getEntry(config.template);
+	function enhance_scrolled(el,role,config) {
+		if (config.template && pageResolver.get(["templates",config.template])) {
+			var template = pageResolver.get(["templates",config.template]);
 			//TODO replace element with template.tagName, mixed attributes and template.html
 			el.innerHTML = template.html; //TODO better
 			var context = { layouter: this.parentLayouter };
@@ -899,15 +905,18 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		var r = new EnhancedScrolled(el,config);
 
 		return r;
-	};
+	}
+	pageResolver.set("handlers.enhance.scrolled",enhance_scrolled);
 
-	DocumentRoles.layout_scrolled = function(el,layout,instance) {
+	function layout_scrolled(el,layout,instance) {
 		instance.layout(el,layout);
-	};
+	}
+	pageResolver.set("handlers.layout.scrolled",layout_scrolled);
 	
-	DocumentRoles.discard_scrolled = function(el,role,instance) {
+	function discard_scrolled(el,role,instance) {
 		instance.discard(el);
 		if (el.stateful) el.stateful.destroy();
-	};
+	}
+	pageResolver.set("handlers.discard.scrolled",discard_scrolled);
 	
 }();

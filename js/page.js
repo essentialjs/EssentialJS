@@ -349,11 +349,31 @@
 		"logStatus": false
 	});
 
+	pageResolver.declare("enabledRoles",{});
 	pageResolver.declare("handlers.init",{});
 	pageResolver.declare("handlers.enhance",{});
 	pageResolver.declare("handlers.sizing",{});
 	pageResolver.declare("handlers.layout",{});
 	pageResolver.declare("handlers.discard",{});
+
+	pageResolver.declare("templates",{});
+
+	// Object.defineProperty(pageResolver.namespace,'handlers',{
+	// 	get: function() { return pageResolver.namespace.__handlers; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.__handlers = value;
+	// 	}
+	// });
+
+	// Object.defineProperty(pageResolver("handlers"),'enhance',{
+	// 	get: function() { return pageResolver.namespace.handlers.__enhance; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.handlers.__enhance = value;
+	// 	}
+	// });
+
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
@@ -670,7 +690,7 @@
 
 	function _SubPage(appConfig) {
 		// subpage application/config and enhanced element descriptors
-		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers") });
+		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers"), "enabledRoles":pageResolver("enabledRoles") });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -678,6 +698,16 @@
 		this.body = document.createElement("DIV");
 	}
 	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
+
+	SubPage.prototype.destroy = function() {
+		if (this.applied) this.unapplyBody();
+		this.head = undefined;
+		this.body = undefined;
+		this.document = undefined;
+		if (this.url) {
+			delete Resolver("page::pages::")[this.url];
+		}
+	};
 
 	SubPage.prototype.page = function(url) {
 		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
@@ -782,7 +812,9 @@
 		// 	this.head = doc.head;
 		// 	this.body = doc.body;
 		// }
+		if (this.applied) return;
 
+		var applied = this.applied = [];
 		while(e) {
 			// insert before the first permanent, or at the end
 			if (fc == null) {
@@ -790,12 +822,13 @@
 			} else {
 				db.insertBefore(e,fc);
 			}
+			applied.push(e);
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
-		this.applied = true;
-		var descriptors = this.resolver("descriptors");
-		for(var n in descriptors) {
-			pageResolver.set(["descriptors",n],descriptors[n]);
+
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
 		}
 		enhanceUnhandledElements();
 	};
@@ -805,23 +838,20 @@
 			pc = null,
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 
-		while(e) {
-			if (e.permanent) {
-				// not part of subpage
-				e = e.previousElementSibling || e.previousSibling;
-			} else {
-				if (pc == null) {
-					this.body.appendChild(e);
-				} else {
-					this.body.insertBefore(e,pc)
-				}
-				pc = e;
-			}
-			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
-		}
-		this.applied = false;
+		if (this.applied == null) return;
+		var applied = this.applied;
+		this.applied = null;
 
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+		enhanceUnhandledElements();
 		//TODO move descriptors out
+
+		// move out of main page body into subpage body
+		for(var i=0,e; e = applied[i]; ++i) this.body.appendChild(e);
+
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -929,7 +959,13 @@
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
-		this._markPermanents();
+		this._markPermanents(); 
+		this.applied = true; // descriptors are always applied
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) this._requiredPage(bodySrc);
 
@@ -1015,6 +1051,34 @@
 	};
 
 	function enhanceUnhandledElements() {
+		var handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
+
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
+
+			//TODO speed up outstanding enhance check
+			if (desc) {
+				if (desc.page.applied) {
+					// enhance elements of applied subpage
+
+					desc.ensureStateful();
+					desc._tryEnhance(handlers,enabledRoles);
+					desc._tryMakeLayouter(""); //TODO key?
+					desc._tryMakeLaidout(""); //TODO key?
+
+					if (desc.conf.sizingElement) sizingElements[n] = desc;
+					if (!desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				} else {
+					// freeze in unapplied subpage
+					//TODO & reheat
+					// if (desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				}
+			}
+		}
+	}
+	EnhancedDescriptor.enhanceUnfinished = enhanceUnhandledElements;
+
+	function old_enhanceUnhandledElements() {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
@@ -1169,6 +1233,7 @@
 		this.resolver.set(["state",whichState],v);
 	};
 
+	//TODO split list of permanent and those with page, put it in subpage
 	ApplicationConfig.prototype._markPermanents = function() 
 	{
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;

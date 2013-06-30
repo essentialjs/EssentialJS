@@ -124,6 +124,8 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		equal(config["2"],"2","head data-role attribute");
 		equal(config["3"],"3","head application/config");
 
+		page.destroy();
+
 		clearInterval(interval);
 		start();
 	}},100);

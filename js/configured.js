@@ -1,4 +1,5 @@
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
+Resolver("essential::DocumentRoles::").restrict({ singleton: true, lifecycle: "page" });
 
 //TODO clearInterval on unload
 
