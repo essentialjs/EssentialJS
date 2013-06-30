@@ -631,7 +631,7 @@
 
 			desc.discardNow();
 			desc._unlist();
-			delete enhancedElements[n];
+			// delete enhancedElements[n];
 		}
 		enhancedElements = essential.set("enhancedElements",{});
 	}
