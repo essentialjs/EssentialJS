@@ -207,6 +207,8 @@ test("Enhance layouter element",function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
+	equal(typeof Resolver("essential::Layouter.variants.test-group.generator::","undefined"),"function");
+
 	var handlers = {
 		"init": {
 
@@ -227,6 +229,8 @@ test("Enhance layouter element",function() {
 	Resolver("page::handlers.sizing").mixin(handlers.sizing);
 	Resolver("page::handlers.layout").mixin(handlers.layout);
 	Resolver("page::handlers.discard").mixin(handlers.discard);
+
+	equal(Resolver("page")(["pages","/test/pages/a3.html"],"undefined"),undefined);
 
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -487,7 +491,7 @@ test('Discarding enhanced',function() {
 
 test('Template cloneNode',function() {
 
-	equal(typeof Resolver("templates::",undefined),"object");
+	equal(typeof Resolver("page::templates::",undefined),"object");
 
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
@@ -500,9 +504,9 @@ test('Template cloneNode',function() {
 	var div = HTMLElement("div",{},"abc<span>def</span>");
 	var tplAbcNew = enhance_template(div,"template",{ id:"abc" });
 	ok(tplAbcNew);
-	equal(tplAbcNew,Resolver("templates::#abc::","undefined"));
+	equal(tplAbcNew,Resolver("page")(["templates","#abc"],"undefined"));
 
-	var tplAbc = Resolver("templates")(["#abc"]); //TODO Resolver("templates")("#abc");
+	var tplAbc = Resolver("page")(["templates","#abc"],"undefined"); //TODO Resolver("templates")("#abc"); ?
 	ok(tplAbc);
 	equal(tplAbc,tplAbcNew);
 

@@ -68,7 +68,7 @@ test("Apply/unapply body",function() {
 
 	ok(page.documentLoaded);
 
-	return;//buggy
+	page.destroy(); return;//buggy
 
 	var descs = page.resolver("descriptors");
 	for(var id in descs) {
