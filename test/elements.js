@@ -103,7 +103,11 @@ test('Enhance element early or delayed',function() {
 	};
 	handlers.enhance.delayed.returns(false);
 
-	Resolver("page::handlers").mixin(handlers);
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
 
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -159,7 +163,11 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.discard.delayed.callCount,1,"delayed has been discarded");
 	//TODO make sure that discardHandler for other is blank
 
-	Resolver("page::handlers").unmix(handlers);
+	Resolver("page::handlers.init").unmix(handlers.init);
+	Resolver("page::handlers.enhance").unmix(handlers.enhance);
+	Resolver("page::handlers.sizing").unmix(handlers.sizing);
+	Resolver("page::handlers.layout").unmix(handlers.layout);
+	Resolver("page::handlers.discard").unmix(handlers.discard);
 	Resolver.set("page::enabledRoles",{});
 });
 
@@ -209,7 +217,11 @@ test("Enhance layouter element",function() {
 			"early": sinon.stub()
 		}
 	};
-	Resolver("page::handlers").mixin(handlers);
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
 
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -246,7 +258,11 @@ test("Enhance layouter element",function() {
 	page.unapplyBody();
 	page.destroy();
 	EnhancedDescriptor.discardAll();
-	Resolver("page::handlers").unmix(handlers);
+	Resolver("page::handlers.init").unmix(handlers.init);
+	Resolver("page::handlers.enhance").unmix(handlers.enhance);
+	Resolver("page::handlers.sizing").unmix(handlers.sizing);
+	Resolver("page::handlers.layout").unmix(handlers.layout);
+	Resolver("page::handlers.discard").unmix(handlers.discard);
 	Resolver.set("page::enabledRoles",{});
 });
 
@@ -393,7 +409,11 @@ test('Enhancing Document Roles with builtin handlers',function(){
 			"application": sinon.spy()// pageHandlers.discard_application
 		}
 	};
-	Resolver("page::handlers").mixin(handlers);
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
 
 	var page = appConfig.page("/test/pages/a4.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -547,7 +567,11 @@ test('Role navigation action',function(){
 			"navigation": pageHandlers.discard.toolbar
 		}
 	};
-	Resolver("page::handlers").mixin(handlers);
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
 
 	var page = appConfig.page("/test/pages/a5.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -579,7 +603,11 @@ test('Role navigation action',function(){
 	page.destroy();
 
 	EnhancedDescriptor.discardAll();
-	Resolver("page::handlers").unmix(handlers);
+	Resolver("page::handlers.init").unmix(handlers.init);
+	Resolver("page::handlers.enhance").unmix(handlers.enhance);
+	Resolver("page::handlers.sizing").unmix(handlers.sizing);
+	Resolver("page::handlers.layout").unmix(handlers.layout);
+	Resolver("page::handlers.discard").unmix(handlers.discard);
 	Resolver.set("page::enabledRoles",{});
 });
 
