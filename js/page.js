@@ -15,7 +15,6 @@
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		sizingElements = essential("sizingElements"),
-		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 	var contains = essential("contains"),
 		createHTMLDocument = essential("createHTMLDocument");
@@ -1083,7 +1082,6 @@
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
 		var dr = essential("DocumentRoles")()
-		// dr._enhance_descs(enhancedElements);
 		var descs = statefuls.resolver("descriptors");
 		dr._enhance_descs(descs);
 		dr._enhance_descs(descs);

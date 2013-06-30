@@ -633,7 +633,7 @@
 			desc._unlist();
 			// delete enhancedElements[n];
 		}
-		enhancedElements = essential.set("enhancedElements",{});
+		enhancedElements = EnhancedDescriptor.all = essential.set("enhancedElements",{});
 	}
 	EnhancedDescriptor.discardAll = discardEnhancedElements;
 

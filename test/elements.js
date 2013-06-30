@@ -121,7 +121,12 @@ test('Enhance element early or delayed',function() {
 		].join(""));
 	var delayedSpan = page.body.getElementsByTagName("span")[1];
 	var earlySpan = page.body.getElementsByTagName("span")[1];
+	ok(delayedSpan);
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	ok(delayedDesc);
 	page.applyBody();
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	ok(delayedDesc);
 
 	var sinonConfig = {}; //TODO config for the sinon elem
 
@@ -143,7 +148,6 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 
-	ok(delayedSpan);
 	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
 	ok(delayedDesc);
 	ok(! delayedDesc.layout.queued);
