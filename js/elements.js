@@ -13,8 +13,6 @@
 		HTMLElement = essential("HTMLElement"),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
-		enhancedElements = essential("enhancedElements"),
-		sizingElements = essential("sizingElements"),
 		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
@@ -216,6 +214,7 @@
 
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
+		var sizingElements = essential("sizingElements");
 		var incomplete = false, enhancedCount = 0;
 
 		for(var n in descs) {
