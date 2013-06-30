@@ -550,6 +550,7 @@ test('Role navigation action',function(){
 	var pageHandlers = Resolver("page::handlers::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var fireAction = Resolver("essential::fireAction::");
 
 	function ABC_DialogAction() {
@@ -581,6 +582,7 @@ test('Role navigation action',function(){
 	Resolver("page::handlers.sizing").mixin(handlers.sizing);
 	Resolver("page::handlers.layout").mixin(handlers.layout);
 	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page::enabledRoles").set({"navigation":true})
 
 	var page = appConfig.page("/test/pages/a5.html",{},[
 		'<html><head>', '', '</head><body>',
