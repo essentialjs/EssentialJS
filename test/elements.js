@@ -108,6 +108,7 @@ test('Enhance element early or delayed',function() {
 	Resolver("page::handlers.sizing").mixin(handlers.sizing);
 	Resolver("page::handlers.layout").mixin(handlers.layout);
 	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page").set("enabledRoles",{"early":true,"delayed":true});
 
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -168,7 +169,7 @@ test('Enhance element early or delayed',function() {
 	Resolver("page::handlers.sizing").unmix(handlers.sizing);
 	Resolver("page::handlers.layout").unmix(handlers.layout);
 	Resolver("page::handlers.discard").unmix(handlers.discard);
-	Resolver.set("page::enabledRoles",{});
+	Resolver("page").set("enabledRoles",{});
 });
 
 //TODO layout and discard are optional handlers
@@ -263,7 +264,7 @@ test("Enhance layouter element",function() {
 	Resolver("page::handlers.sizing").unmix(handlers.sizing);
 	Resolver("page::handlers.layout").unmix(handlers.layout);
 	Resolver("page::handlers.discard").unmix(handlers.discard);
-	Resolver.set("page::enabledRoles",{});
+	Resolver("page").set("enabledRoles",{});
 });
 
 
@@ -454,7 +455,7 @@ test('Enhancing Document Roles with builtin handlers',function(){
 
 	EnhancedDescriptor.discardAll();
 	//TODO Resolver("page::handlers").unmix(handlers);
-	Resolver.set("page::enabledRoles",{});
+	Resolver("page").set("enabledRoles",{});
 });
 */
 
@@ -608,7 +609,7 @@ test('Role navigation action',function(){
 	Resolver("page::handlers.sizing").unmix(handlers.sizing);
 	Resolver("page::handlers.layout").unmix(handlers.layout);
 	Resolver("page::handlers.discard").unmix(handlers.discard);
-	Resolver.set("page::enabledRoles",{});
+	Resolver("page").set("enabledRoles",{});
 });
 
 
