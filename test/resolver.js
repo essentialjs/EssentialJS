@@ -339,6 +339,11 @@ test('Resolver reference',function(){
 	equal(r.getEntry("g"), "g");
 	equal(r.getEntry("h"), "h");
 	equal(r.getEntry("i"), "i");
+
+	r.unmix({ "g":"g", "h":"h", "i":"i" });
+	equal(r.getEntry("g"), undefined);
+	equal(r.getEntry("h"), undefined);
+	equal(r.getEntry("i"), undefined);
 })
 
 // test trigger function handler(event) .trigger(eventName)

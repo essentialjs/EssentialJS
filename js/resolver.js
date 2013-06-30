@@ -402,6 +402,25 @@ function Resolver(name_andor_expr,ns,options)
 	    	this._callListener("change",names,null,mods);
 	    	//TODO parent listeners
         }
+        function unmix(map) {
+            var symbol = names.pop();
+            var base = _resolve(names,null,onundefined);
+            names.push(symbol);
+
+            if (base[symbol] === undefined) _setValue({},names,base,symbol);
+            var ni = names.length;
+            var mods = {};
+
+            for(var n in map) {
+                names[ni] = n;
+                if (_setValue(undefined,names,base[symbol],n)) {
+                    mods[n] = undefined;
+                }
+            }
+
+            names.pop(); // return names to unchanged
+            this._callListener("change",names,null,mods);
+        }
         function mixinto(target) {
             var base = _resolve(names,null,onundefined);
             for(var n in base) {
@@ -586,6 +605,7 @@ function Resolver(name_andor_expr,ns,options)
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
+        get.unmix = unmix;
         get.mixinto = mixinto;
         get.getEntry = getEntry;
         get.declareEntry = declareEntry;
