@@ -87,7 +87,7 @@ function Resolver(name_andor_expr,ns,options)
     function _resolver(name,ns,options,auto) {
         if (Resolver[name] == undefined) {
             if (!auto) return ns;
-            Resolver[name] = Resolver(ns,options || {});
+            Resolver[name] = Resolver(ns || {},options || {});
             Resolver[name].named = name;
         }
         return Resolver[name];

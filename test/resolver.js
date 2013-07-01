@@ -40,6 +40,7 @@ test ("Named resolver",function(){
 
 	var r = Resolver("C"); // create blank one 
 	equal(typeof r, "function");
+	equal(Resolver["default"].named,"default");
 
 	ok(Resolver.exists("C"))
 })
@@ -77,7 +78,7 @@ test("Document resolver",function(){
 })
 
 test('Namespace and package creation',function(){
-  	expect(6);
+  	expect(7);
 	var shapes = Resolver()("my.shapes");
 	var tools = Resolver()("my.tools");
 
@@ -89,6 +90,7 @@ test('Namespace and package creation',function(){
 
 	Resolver("default").override({});
 	equal(Resolver["default"].namespace.my, undefined, "namespace replaced");
+	equal(Resolver["default"].named,"default");
 
 	Resolver()("my")
 	notEqual(Resolver["default"].namespace.my, undefined, "namespace replaced");
