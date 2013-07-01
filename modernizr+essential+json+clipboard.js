@@ -1231,7 +1231,7 @@ function Resolver(name_andor_expr,ns,options)
     function _resolver(name,ns,options,auto) {
         if (Resolver[name] == undefined) {
             if (!auto) return ns;
-            Resolver[name] = Resolver(ns,options || {});
+            Resolver[name] = Resolver(ns || {},options || {});
             Resolver[name].named = name;
         }
         return Resolver[name];
@@ -1546,6 +1546,25 @@ function Resolver(name_andor_expr,ns,options)
 	    	this._callListener("change",names,null,mods);
 	    	//TODO parent listeners
         }
+        function unmix(map) {
+            var symbol = names.pop();
+            var base = _resolve(names,null,onundefined);
+            names.push(symbol);
+
+            if (base[symbol] === undefined) _setValue({},names,base,symbol);
+            var ni = names.length;
+            var mods = {};
+
+            for(var n in map) {
+                names[ni] = n;
+                if (_setValue(undefined,names,base[symbol],n)) {
+                    mods[n] = undefined;
+                }
+            }
+
+            names.pop(); // return names to unchanged
+            this._callListener("change",names,null,mods);
+        }
         function mixinto(target) {
             var base = _resolve(names,null,onundefined);
             for(var n in base) {
@@ -1627,7 +1646,7 @@ function Resolver(name_andor_expr,ns,options)
             //TODO if (ref is defined)
             try {
                 localStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) {} //TODO consider feedback
+            } catch(ex) { console.warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
         }
         function store_cookie(ref) {
             if (ref._reading_cookie) return; //TODO only if same cookie
@@ -1730,6 +1749,7 @@ function Resolver(name_andor_expr,ns,options)
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
+        get.unmix = unmix;
         get.mixinto = mixinto;
         get.getEntry = getEntry;
         get.declareEntry = declareEntry;
@@ -1942,6 +1962,23 @@ function Resolver(name_andor_expr,ns,options)
 
 Resolver.readloads = [];
 Resolver.storeunloads = [];
+
+Resolver.loadReadStored = function() {
+    for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
+        for(var n in ref.readloads) {
+            ref.readloads[n].call(ref);
+        }
+    }
+};
+
+Resolver.unloadWriteStored = function() {
+
+    for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
+        for(var n in ref.storeunloads) {
+            ref.storeunloads[n].call(ref);
+        }
+    }
+};
 
 Resolver.hasGenerator = function(subject) {
 	if (subject.__generator__) return true;
@@ -2656,8 +2693,10 @@ Generator.ObjectGenerator = Generator(Object);
 	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
 
-	// map of uniqueId referenced
+	// map of uniqueId referenced (TODO array for performance/memory?)
 	var enhancedElements = essential.declare("enhancedElements",{});
+
+	var unfinishedElements = essential.declare("unfinishedElements",{});
 
 	// map of uniqueId referenced
 	var sizingElements = essential.declare("sizingElements",{});
@@ -2669,13 +2708,12 @@ Generator.ObjectGenerator = Generator(Object);
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
 	function enhanceQuery() {
-		var handlers = essential("DocumentRoles")().handlers;
+		var pageResolver = Resolver("page"),
+			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 		for(var i=0,desc; desc = this[i]; ++i) {
 
 			desc.ensureStateful();
-			if (!desc.enhanced) { //TODO flag needEnhance
-				desc._tryEnhance(handlers);
-			} 
+			desc._tryEnhance(handlers,enabledRoles);
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
 
@@ -2709,6 +2747,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		var roles = role? role.split(" ") : [];
 
+		this.needEnhance = roles.length > 0;
 		this.uniqueId = uniqueId;
 		this.roles = roles;
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
@@ -2732,6 +2771,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		this.page = page;
 		this.handlers = page.resolver("handlers");
+		this.enabledRoles = page.resolver("enabledRoles");
 		this._init();
 	}
 
@@ -2779,12 +2819,16 @@ Generator.ObjectGenerator = Generator(Object);
 		};
 	};
 
+	//TODO keep params on page
 
-	_EnhancedDescriptor.prototype._tryEnhance = function(handlers) {
+	_EnhancedDescriptor.prototype._tryEnhance = function(handlers,enabledRoles) {
+		if (!this.needEnhance) return;
+		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
-		if (this.role && handlers.enhance[this.role]) {
+		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
 			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
 			this.enhanced = this.instance === false? false:true;
+			this.needEnhance = !this.enhanced;
 		}
 		if (this.enhanced) {
 			this.sizingHandler = handlers.sizing[this.role];
@@ -2882,8 +2926,7 @@ Generator.ObjectGenerator = Generator(Object);
 	_EnhancedDescriptor.prototype.discardNow = function() {
 		if (this.discarded) return;
 
-		//TODO anything else ?
-		callCleaners(this.el);
+		cleanRecursively(this.el);
 		this.el = undefined;
 		this.discarded = true;					
 		this.layout.enable = false;					
@@ -2893,6 +2936,7 @@ Generator.ObjectGenerator = Generator(Object);
 		this.discarded = true;					
 		if (this.layout.enable) delete maintainedElements[this.uniqueId];
 		if (sizingElements[this.uniqueId]) delete sizingElements[this.uniqueId];
+		if (unfinishedElements[this.uniqueId]) delete unfinishedElements[this.uniqueId];
 		delete enhancedElements[this.uniqueId];
 	};
 
@@ -2954,6 +2998,7 @@ Generator.ObjectGenerator = Generator(Object);
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
+	EnhancedDescriptor.unfinished = unfinishedElements;
 	EnhancedDescriptor.query = DescriptorQuery;
 	EnhancedDescriptor.maintainer = null; // interval handler
 	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
@@ -2962,14 +3007,14 @@ Generator.ObjectGenerator = Generator(Object);
 	{
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			if (desc.el) {
-				callCleaners(desc.el); //TODO perhaps use cleanRecursively
-				delete desc.el;
-			}
-			delete enhancedElements[n];
+
+			desc.discardNow();
+			desc._unlist();
+			// delete enhancedElements[n];
 		}
-		enhancedElements = essential.set("enhancedElements",{});
+		enhancedElements = EnhancedDescriptor.all = essential.set("enhancedElements",{});
 	}
+	EnhancedDescriptor.discardAll = discardEnhancedElements;
 
 	EnhancedDescriptor.refreshAll = function() {
 		if (document.body == undefined) return;
@@ -3063,12 +3108,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		//TODO derive state.lang and locale from html.lang
 		
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
-			for(var n in ref.readloads) {
-				ref.readloads[n].call(ref);
-			}
-		}
+		Resolver.loadReadStored();
 
 		try {
 			essential("_queueDelayedAssets")();
@@ -3078,7 +3118,6 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		catch(ex) {
 			essential("console").error("Failed to launch delayed assets and singletons",ex);
-			//debugger;
 		}
 	}
 	function fireLoad()
@@ -3089,14 +3128,11 @@ Generator.ObjectGenerator = Generator(Object);
 	{
 		//TODO singleton deconstruct / before discard?
 
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
-			for(var n in ref.storeunloads) {
-				ref.storeunloads[n].call(ref);
-			}
-		}
+		Resolver.unloadWriteStored();
 
 		discardRestricted();
+
+		//TODO move to configured
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
 		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
@@ -4698,7 +4734,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		sizingElements = essential("sizingElements"),
-		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 	var contains = essential("contains"),
 		createHTMLDocument = essential("createHTMLDocument");
@@ -5032,11 +5067,31 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"logStatus": false
 	});
 
+	pageResolver.declare("enabledRoles",{});
 	pageResolver.declare("handlers.init",{});
 	pageResolver.declare("handlers.enhance",{});
 	pageResolver.declare("handlers.sizing",{});
 	pageResolver.declare("handlers.layout",{});
 	pageResolver.declare("handlers.discard",{});
+
+	pageResolver.declare("templates",{});
+
+	// Object.defineProperty(pageResolver.namespace,'handlers',{
+	// 	get: function() { return pageResolver.namespace.__handlers; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.__handlers = value;
+	// 	}
+	// });
+
+	// Object.defineProperty(pageResolver("handlers"),'enhance',{
+	// 	get: function() { return pageResolver.namespace.handlers.__enhance; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.handlers.__enhance = value;
+	// 	}
+	// });
+
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
@@ -5353,7 +5408,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	function _SubPage(appConfig) {
 		// subpage application/config and enhanced element descriptors
-		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers") });
+		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers"), "enabledRoles":pageResolver("enabledRoles") });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -5361,6 +5416,16 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.body = document.createElement("DIV");
 	}
 	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
+
+	SubPage.prototype.destroy = function() {
+		if (this.applied) this.unapplyBody();
+		this.head = undefined;
+		this.body = undefined;
+		this.document = undefined;
+		if (this.url) {
+			delete Resolver("page::pages::")[this.url];
+		}
+	};
 
 	SubPage.prototype.page = function(url) {
 		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
@@ -5465,7 +5530,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 		// 	this.head = doc.head;
 		// 	this.body = doc.body;
 		// }
+		if (this.applied) return;
 
+		var applied = this.applied = [];
 		while(e) {
 			// insert before the first permanent, or at the end
 			if (fc == null) {
@@ -5473,12 +5540,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 			} else {
 				db.insertBefore(e,fc);
 			}
+			applied.push(e);
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
-		this.applied = true;
-		var descriptors = this.resolver("descriptors");
-		for(var n in descriptors) {
-			pageResolver.set(["descriptors",n],descriptors[n]);
+
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
 		}
 		enhanceUnhandledElements();
 	};
@@ -5488,23 +5556,20 @@ _ElementPlacement.prototype._computeIE = function(style)
 			pc = null,
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 
-		while(e) {
-			if (e.permanent) {
-				// not part of subpage
-				e = e.previousElementSibling || e.previousSibling;
-			} else {
-				if (pc == null) {
-					this.body.appendChild(e);
-				} else {
-					this.body.insertBefore(e,pc)
-				}
-				pc = e;
-			}
-			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
-		}
-		this.applied = false;
+		if (this.applied == null) return;
+		var applied = this.applied;
+		this.applied = null;
 
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+		enhanceUnhandledElements();
 		//TODO move descriptors out
+
+		// move out of main page body into subpage body
+		for(var i=0,e; e = applied[i]; ++i) this.body.appendChild(e);
+
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -5612,7 +5677,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
-		this._markPermanents();
+		this._markPermanents(); 
+		this.applied = true; // descriptors are always applied
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) this._requiredPage(bodySrc);
 
@@ -5698,11 +5769,38 @@ _ElementPlacement.prototype._computeIE = function(style)
 	};
 
 	function enhanceUnhandledElements() {
+		var handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
+
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
+
+			//TODO speed up outstanding enhance check
+			if (desc) {
+				if (desc.page.applied) {
+					// enhance elements of applied subpage
+
+					desc.ensureStateful();
+					desc._tryEnhance(handlers,enabledRoles);
+					desc._tryMakeLayouter(""); //TODO key?
+					desc._tryMakeLaidout(""); //TODO key?
+
+					if (desc.conf.sizingElement) sizingElements[n] = desc;
+					if (!desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				} else {
+					// freeze in unapplied subpage
+					//TODO & reheat
+					// if (desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				}
+			}
+		}
+	}
+	EnhancedDescriptor.enhanceUnfinished = enhanceUnhandledElements;
+
+	function old_enhanceUnhandledElements() {
 		var statefuls = ApplicationConfig(); // Ensure that config is present
 		//var handlers = DocumentRoles.presets("handlers");
 		//TODO listener to presets -> Doc Roles additional handlers
 		var dr = essential("DocumentRoles")()
-		// dr._enhance_descs(enhancedElements);
 		var descs = statefuls.resolver("descriptors");
 		dr._enhance_descs(descs);
 		dr._enhance_descs(descs);
@@ -5852,6 +5950,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.resolver.set(["state",whichState],v);
 	};
 
+	//TODO split list of permanent and those with page, put it in subpage
 	ApplicationConfig.prototype._markPermanents = function() 
 	{
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
@@ -6726,8 +6825,6 @@ function(scripts) {
 		HTMLElement = essential("HTMLElement"),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
-		enhancedElements = essential("enhancedElements"),
-		sizingElements = essential("sizingElements"),
 		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
 
@@ -6748,10 +6845,10 @@ function(scripts) {
 		for(var i=0,m; m = metas[i]; ++i) {
 			switch((m.getAttribute("name") || "").toLowerCase()) {
 				case "text selection":
-					DocumentRoles.textSelection((m.getAttribute("content") || "").split(" "));
+					textSelection((m.getAttribute("content") || "").split(" "));
 					break;
 				case "enhanced roles":
-					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
+					useBuiltins((m.getAttribute("content") || "").split(" "));
 					break;
 				case "track main":
 					if (this.opener) {
@@ -6903,10 +7000,6 @@ function(scripts) {
 			window.attachEvent("onresize",resizeTriggersReflow);
 			this.page.body.attachEvent("onclick",defaultButtonClick);
 		}
-
-		var descs = this.page.resolver("descriptors");
-		this._enhance_descs(descs);
-		//this.enhanceBranch(doc);
 	}
 	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
 	
@@ -6933,6 +7026,7 @@ function(scripts) {
 
 	_DocumentRoles.prototype._enhance_descs = function(descs) 
 	{
+		var sizingElements = essential("sizingElements");
 		var incomplete = false, enhancedCount = 0;
 
 		for(var n in descs) {
@@ -6973,14 +7067,6 @@ function(scripts) {
 				}
 			}
 		} 
-	};
-
-	_DocumentRoles.discarded = function(instance) {
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
-			desc.discardNow();
-			desc._unlist();
-		}
 	};
 
 	_DocumentRoles.prototype._resize_descs = function() {
@@ -7045,31 +7131,11 @@ function(scripts) {
 	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
 
 
-	_DocumentRoles.default_enhance = function(el,role,config) {
-		
-		return {};
-	};
+	function useBuiltins(list) {
+		for(var i=0,r; r = list[i]; ++i) pageResolver.set(["enabledRoles",r],true);
+	}
 
-	_DocumentRoles.default_layout = function(el,layout,instance) {
-		
-	};
-	
-	_DocumentRoles.default_discard = function(el,role,instance) {
-		
-	};
-
-	DocumentRoles.useBuiltins = function(list) {
-		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
-		for(var i=0,r; r = list[i]; ++i) {
-			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
-			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
-			if (this["sizing_"+r]) this.presets.declare(["handlers","sizing",r], this["sizing_"+r]);
-			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
-			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
-		}
-	};
-
-	DocumentRoles.textSelection = function(tags) {
+	function textSelection(tags) {
 		var pass = {};
 		for(var i=0,n; n = tags[i]; ++i) {
 			pass[n] = true;
@@ -7121,9 +7187,7 @@ function(scripts) {
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		DocumentRoles = essential("DocumentRoles"),
 		pageResolver = Resolver("page"),
-		templates = Resolver("templates",{}),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
 		serverUrl = location.protocol + "//" + location.host;
@@ -7227,7 +7291,7 @@ function(scripts) {
 	}
 
 
-	DocumentRoles.enhance_dialog = function (el,role,config) {
+	function enhance_dialog(el,role,config) {
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -7257,13 +7321,16 @@ function(scripts) {
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
-	DocumentRoles.layout_dialog = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_dialog = function (el,role,instance) {
-	};
+	function layout_dialog(el,layout,instance) {		
+	}
+	pageResolver.set("handlers.layout.dialog",layout_dialog);
+
+	function discard_dialog(el,role,instance) {
+	}
+	pageResolver.set("handlers.discard.dialog",discard_dialog);
 
 	function applyDefaultRole(elements) {
 		for(var i=0,el; (el = elements[i]); ++i) {
@@ -7290,7 +7357,7 @@ function(scripts) {
 		}
 	}
 
-	DocumentRoles.enhance_toolbar = function(el,role,config) {
+	function enhance_toolbar(el,role,config) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -7303,32 +7370,29 @@ function(scripts) {
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.toolbar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menu",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menubar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.navigation",enhance_toolbar);
 
-	DocumentRoles.layout_toolbar = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_toolbar = function(el,role,instance) {
-		
-	};
+	function layout_toolbar(el,layout,instance) {		
+	}
+	pageResolver.set("handlers.layout.toolbar",layout_toolbar);
 
-	// menu, menubar
-	DocumentRoles.enhance_navigation = 
-	DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
+	function discard_toolbar(el,role,instance) {
+	}
+	pageResolver.set("handlers.discard.toolbar",discard_toolbar);
 
-	DocumentRoles.enhance_sheet = function(el,role,config) {
+	function enhance_sheet(el,role,config) {
 		
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.sheet",enhance_sheet);
 
-	DocumentRoles.layout_sheet = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_sheet = function(el,role,instance) {
-		
-	};
+	function enhance_spinner(el,role,config) {
+		if (window.Spinner == undefined) return false;
 
-	DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -7345,15 +7409,19 @@ function(scripts) {
 			left: 'auto'
 		};
 		return new Spinner(opts).spin(el);
-	};
+	}
+	pageResolver.set("handlers.enhance.spinner",enhance_spinner);
 
-	DocumentRoles.layout_spinner = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_spinner = function(el,role,instance) {
+	function layout_spinner(el,layout,instance) {
+		//TODO when hiding stop the spinner		
+	}
+	pageResolver.set("handlers.layout.spinner",layout_spinner);
+
+	function discard_spinner(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
-	};
+	}
+	pageResolver.set("handlers.discard.spinner",discard_spinner);
 	
 	function _lookup_generator(name,resolver) {
 		var constructor = Resolver(resolver || "default")(name,"null");
@@ -7361,7 +7429,7 @@ function(scripts) {
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRoles.enhance_application = function(el,role,config) {
+	function enhance_application(el,role,config) {
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
@@ -7376,13 +7444,16 @@ function(scripts) {
 		
 		return {};
 	};
+	pageResolver.set("handlers.enhance.application",enhance_application);
 
-	DocumentRoles.layout_application = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_application = function(el,role,instance) {
-		
-	};
+	function layout_application(el,layout,instance) {	
+	}
+	pageResolver.set("handlers.layout.application",layout_application);
+
+	function discard_application(el,role,instance) {	
+		//TODO destroy/discard support on generator ?
+	}
+	pageResolver.set("handlers.discard.application",discard_application);
 
 	//TODO find parent of scrolled role
 
@@ -7472,21 +7543,22 @@ function(scripts) {
 		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (id) templates.set("#"+id,template);
+		if (id) pageResolver.set(["templates","#"+id],template);
 		// TODO class support, looking up on main document by querySelector
 
 		return template;
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
-	DocumentRoles.init_template = function(el,role,config) {
+	function init_template(el,role,config) {
 		this.contentManaged = true; // template content skipped
-	};
-	pageResolver.set("handlers.init.template",DocumentRoles.init_template);
+	}
+	pageResolver.set("handlers.init.template",init_template);
 
-	DocumentRoles.init_templated = function(el,role,config) {
+	function init_templated(el,role,config) {
 		this.contentManaged = true; // templated content skipped
-	};
+	}
+	pageResolver.set("handlers.init.templated",init_templated);
 
 /* TODO support on EnhancedDescriptor
 function enhance_templated(el,role,config) {
@@ -7986,9 +8058,9 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
-	DocumentRoles.enhance_scrolled = function(el,role,config) {
-		if (config.template && templates.getEntry(config.template)) {
-			var template = templates.getEntry(config.template);
+	function enhance_scrolled(el,role,config) {
+		if (config.template && pageResolver.get(["templates",config.template])) {
+			var template = pageResolver.get(["templates",config.template]);
 			//TODO replace element with template.tagName, mixed attributes and template.html
 			el.innerHTML = template.html; //TODO better
 			var context = { layouter: this.parentLayouter };
@@ -8003,19 +8075,23 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		var r = new EnhancedScrolled(el,config);
 
 		return r;
-	};
+	}
+	pageResolver.set("handlers.enhance.scrolled",enhance_scrolled);
 
-	DocumentRoles.layout_scrolled = function(el,layout,instance) {
+	function layout_scrolled(el,layout,instance) {
 		instance.layout(el,layout);
-	};
+	}
+	pageResolver.set("handlers.layout.scrolled",layout_scrolled);
 	
-	DocumentRoles.discard_scrolled = function(el,role,instance) {
+	function discard_scrolled(el,role,instance) {
 		instance.discard(el);
 		if (el.stateful) el.stateful.destroy();
-	};
+	}
+	pageResolver.set("handlers.discard.scrolled",discard_scrolled);
 	
 }();
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
+Resolver("essential::DocumentRoles::").restrict({ singleton: true, lifecycle: "page" });
 
 //TODO clearInterval on unload
 
