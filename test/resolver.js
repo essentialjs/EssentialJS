@@ -61,6 +61,8 @@ test("Window resolver",function(){
 
 	win.set("global_api.a.b.func",function(){ return "return"});
 	equal(global_api.a.b.func(),"return");
+
+	delete window.global_api;
 })
 
 test("Document resolver",function(){
