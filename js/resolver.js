@@ -502,7 +502,7 @@ function Resolver(name_andor_expr,ns,options)
             //TODO if (ref is defined)
             try {
                 localStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) {} //TODO consider feedback
+            } catch(ex) { console.warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
         }
         function store_cookie(ref) {
             if (ref._reading_cookie) return; //TODO only if same cookie
@@ -818,6 +818,23 @@ function Resolver(name_andor_expr,ns,options)
 
 Resolver.readloads = [];
 Resolver.storeunloads = [];
+
+Resolver.loadReadStored = function() {
+    for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
+        for(var n in ref.readloads) {
+            ref.readloads[n].call(ref);
+        }
+    }
+};
+
+Resolver.unloadWriteStored = function() {
+
+    for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
+        for(var n in ref.storeunloads) {
+            ref.storeunloads[n].call(ref);
+        }
+    }
+};
 
 Resolver.hasGenerator = function(subject) {
 	if (subject.__generator__) return true;

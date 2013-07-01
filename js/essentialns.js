@@ -729,12 +729,7 @@
 
 		//TODO derive state.lang and locale from html.lang
 		
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
-			for(var n in ref.readloads) {
-				ref.readloads[n].call(ref);
-			}
-		}
+		Resolver.loadReadStored();
 
 		try {
 			essential("_queueDelayedAssets")();
@@ -744,7 +739,6 @@
 		}
 		catch(ex) {
 			essential("console").error("Failed to launch delayed assets and singletons",ex);
-			//debugger;
 		}
 	}
 	function fireLoad()
@@ -755,14 +749,11 @@
 	{
 		//TODO singleton deconstruct / before discard?
 
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
-			for(var n in ref.storeunloads) {
-				ref.storeunloads[n].call(ref);
-			}
-		}
+		Resolver.unloadWriteStored();
 
 		discardRestricted();
+
+		//TODO move to configured
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
 		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();

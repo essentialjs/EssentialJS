@@ -500,13 +500,54 @@ test("Resolver proxying",function(){
 	ok(1,"when resolver is destroyed the proxies are deregistered")
 });
 
-test("Resolver entries locally stored",function(){
-	ok(1)
+if (window.localStorage) test("Resolver entries locally stored",function(){
+	localStorage.clear(); 
+
+	// load
+	var demoSession = Resolver("::demo-session");
+	demoSession.declare(false);
+	demoSession.stored("load change unload","local");
+
+	Resolver.loadReadStored();
+	equal(demoSession(),false,"Entry with no stored value is set to declared value");
+
+	localStorage.setItem("resolver.default#demo-session","true");
+	Resolver.loadReadStored();
+	equal(demoSession(),true,"Entry with stored value is set to stored value");
+
+	localStorage.setItem("resolver.default#demo-session",'{"a":"A"}');
+	Resolver.loadReadStored();
+	deepEqual(demoSession(),{a:'A'},"Entry with stored value is set to stored value");
+
+	// change
+	demoSession.set("abc");
+	equal(localStorage["resolver.default#demo-session"],'"abc"');
+
+	demoSession.set("");
+	equal(localStorage["resolver.default#demo-session"],'""');
+
+	demoSession.set(false);
+	equal(localStorage["resolver.default#demo-session"],'false');
+
+	demoSession.set({});
+	equal(localStorage["resolver.default#demo-session"],'{}');
+
+	// unload
+	demoSession.set({});
+	localStorage.removeItem("resolver.default#demo-session");
+	Resolver.unloadWriteStored();
+	equal(localStorage["resolver.default#demo-session"],'{}');
+
+	// test options.id, options.name
+
+	//TODO switch off the stored config
 });
 
 test("Resolver entries server stored",function(){
 	ok(1)
 });
+
+//TODO test combinations of storage & cookie
 
 test("Resolver reference logging changes",function(){
 	ok(1,'ref.log("change","info")')
