@@ -84,6 +84,7 @@
 		if (clicked == undefined) { clicked = MutableEvent().withDefaultSubmit(this); }
 
 		if (clicked.commandElement) {
+			clicked.submitElement = this;
 			fireAction(clicked);
 		} 
 		//else {
@@ -122,6 +123,7 @@
 
 	function mousedownDialogHeader(ev) {
 		if (activeMovement != null) return;
+		if (ev.target.tagName == "BUTTON") return; // don't drag on close button
 		var dialog = this.parentNode;
 		Resolver("page").set("activeElement",dialog);
 		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;

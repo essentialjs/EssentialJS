@@ -95,22 +95,36 @@
 	function fireAction(ev) 
 	{
 		var el = ev.actionElement, action = ev.action, name = ev.commandName;
-		if (! el.actionVariant) {
-			if (action) {
-				action = action.replace(essential("baseUrl"),"");
-			} else {
-				action = "submit";
+		if (el) {
+
+			if (! el.actionVariant) {
+				if (action) {
+					action = action.replace(essential("baseUrl"),"");
+				} else {
+					action = "submit";
+				}
+
+				el.actionVariant = DialogAction.variant(action)(action);
 			}
 
-			el.actionVariant = DialogAction.variant(action)(action);
-		}
+			if (el.actionVariant[name]) el.actionVariant[name](el,ev);
+			else {
+				var sn = name.replace("-","_").replace(" ","_");
+				if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
+			}
+			//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 
-		if (el.actionVariant[name]) el.actionVariant[name](el,ev);
-		else {
-			var sn = name.replace("-","_").replace(" ","_");
-			if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
+		} 
+		else switch(ev.commandName) {
+			//TODO other builtin commands
+			case "close":
+				//TODO close up shop
+				if (ev.submitElement) {
+					callCleaners(ev.submitElement);
+					ev.submitElement.parentNode.removeChild(ev.submitElement);
+				}
+				break;
 		}
-		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 	}
 	essential.declare("fireAction",fireAction);
 
