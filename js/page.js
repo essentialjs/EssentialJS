@@ -163,7 +163,8 @@
 		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
 		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
 		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
-		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" } //TODO ariaChecked ?
+		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
+		active: { index:6, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
 		//TODO draggable
@@ -238,6 +239,7 @@
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
 	ClassForState.prototype.expanded = "state-expanded";
+	ClassForState.prototype.active = "state-active";
 
 	function ClassForNotState() {
 
@@ -247,6 +249,7 @@
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
 	ClassForNotState.prototype.expanded = "";
+	ClassForNotState.prototype.active = "";
 
 	function make_Stateful_fireAction(el) {
 		return function() {
@@ -396,6 +399,17 @@
 			stateful.reference("state."+n,"null").trigger("change");
 		}
 	};
+
+
+	/* Active Element (pagewide) */
+	var oldActiveElement = null;
+	pageResolver.set("activeElement",null);
+	pageResolver.reference("activeElement").on("change",function(ev){
+		if (oldActiveElement) StatefulResolver(oldActiveElement).set("state.active",false);
+		if (ev.value) StatefulResolver(ev.value,true).set("state.active",true);
+		oldActiveElement = ev.value;
+	});
+
 
 	/*
 		Area Activation

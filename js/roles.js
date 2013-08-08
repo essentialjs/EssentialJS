@@ -122,10 +122,11 @@
 
 	function mousedownDialogHeader(ev) {
 		if (activeMovement != null) return;
+		var dialog = this.parentNode;
+		Resolver("page").set("activeElement",dialog);
 		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
 
 		if (ev.preventDefault) ev.preventDefault();
-		var dialog = this.parentNode;
 
 		var movement = new ElementMovement();
 		movement.track = function(ev,x,y) {
@@ -133,7 +134,6 @@
 			dialog.style.top = y + "px"; 
 		};
 		movement.start(this,ev);
-		// debugger;
 		movement.startY = dialog.offsetTop;
 		movement.startX = dialog.offsetLeft;
 		movement.maxY = document.body.offsetHeight - dialog.offsetHeight;
