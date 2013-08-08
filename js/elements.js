@@ -88,6 +88,7 @@
 			//TODO action event filtering
 			//TODO disabled
 			fireAction(ev);
+			if (ev.isDefaultPrevented()) return false;
 		}
 	}
 

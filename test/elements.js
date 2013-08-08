@@ -545,6 +545,8 @@ test('Template cloneNode',function() {
 
 })
 
+//TODO if preventDefault is called on event during action, prevent it in button click event
+
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential::DialogAction::");
 	var pageHandlers = Resolver("page::handlers::");
