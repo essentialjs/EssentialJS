@@ -120,8 +120,67 @@
 		if (ev.defaultPrevented) return false;
 	}
 
+	function mousedownDialogHeader(ev) {
+		if (activeMovement != null) return;
+		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
+
+		if (ev.preventDefault) ev.preventDefault();
+		var dialog = this.parentNode;
+
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			dialog.style.left = x + "px"; 
+			dialog.style.top = y + "px"; 
+		};
+		movement.start(this,ev);
+		// debugger;
+		movement.startY = dialog.offsetTop;
+		movement.startX = dialog.offsetLeft;
+		movement.maxY = document.body.offsetHeight - dialog.offsetHeight;
+		movement.maxX = document.body.offsetWidth - dialog.offsetWidth;
+
+		return false; // prevent default
+	}
+
+	var dialog_top = 100, dialog_left = 100, dialog_top_inc = 20, dialog_left_inc = 20;
 
 	function enhance_dialog(el,role,config) {
+
+		// template around the content
+		if (config.template) {
+			var template = Resolver("page::templates","null")([config.template]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+		var contentTemplate = config['content-template'];
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+
+			var wrap = (el.querySelector)? el.querySelector("[role=content]") : undefined;
+			(wrap || el).appendChild(content);
+		}
+
+		// position the dialog
+		dialog_top += dialog_top_inc;
+		dialog_left += dialog_left_inc;
+		el.style.top = dialog_top + "px";
+		el.style.left = dialog_left + "px";
+
+		// dialog header present
+		var header = el.getElementsByTagName("HEADER")[0];
+		if (header && header.parentNode == el) {
+
+			addEventListeners(header,{ "mousedown": mousedownDialogHeader });
+		}
+
+		//TODO header instrumentation
+
+
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;

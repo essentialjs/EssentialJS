@@ -52,9 +52,9 @@
 		} catch(ex) {}
 	};
 
-	DocumentRoles.presets.declare("handlers.enhance.presentation", PresentationLoader.enhance_presentation);
-	DocumentRoles.presets.declare("handlers.layout.presentation", PresentationLoader.layout_presentation);
-	DocumentRoles.presets.declare("handlers.discard.presentation", PresentationLoader.discard_presentation);
+	Resolver("page").declare("handlers.enhance.presentation", PresentationLoader.enhance_presentation);
+	Resolver("page").declare("handlers.layout.presentation", PresentationLoader.layout_presentation);
+	Resolver("page").declare("handlers.discard.presentation", PresentationLoader.discard_presentation);
 
 	//TODO role that requires permissions
 
@@ -310,10 +310,10 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 	}
 
-	DocumentRoles.presets.declare("handlers.enhance.table", enhance_table);
-	DocumentRoles.presets.declare("handlers.sizing.table", sizing_table);
-	DocumentRoles.presets.declare("handlers.layout.table", layout_table);
-	DocumentRoles.presets.declare("handlers.discard.table", discard_table);
+	Resolver("page").declare("handlers.enhance.table", enhance_table);
+	Resolver("page").declare("handlers.sizing.table", sizing_table);
+	Resolver("page").declare("handlers.layout.table", layout_table);
+	Resolver("page").declare("handlers.discard.table", discard_table);
 
 
 	function enhance_adorned(el,role,config) 
@@ -379,12 +379,37 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		} catch(ex) {}
 	}
 
-	DocumentRoles.presets.declare("handlers.enhance.adorned", enhance_adorned);
-	DocumentRoles.presets.declare("handlers.sizing.adorned", sizing_adorned);
-	DocumentRoles.presets.declare("handlers.layout.adorned", layout_adorned);
-	DocumentRoles.presets.declare("handlers.discard.adorned", discard_adorned);
+	Resolver("page").declare("handlers.enhance.adorned", enhance_adorned);
+	Resolver("page").declare("handlers.sizing.adorned", sizing_adorned);
+	Resolver("page").declare("handlers.layout.adorned", layout_adorned);
+	Resolver("page").declare("handlers.discard.adorned", discard_adorned);
 
 
+	function enhance_dialog(el,role,config) 
+	{
+		alert("role")
+	}
+
+	function sizing_dialog(el,sizing,instance)
+	{
+
+	}
+
+	function layout_dialog(el,layout,instance) 
+	{
+
+	}
+
+	function discard_dialog(el,role,instance) 
+	{
+
+	}
+
+
+	Resolver("page").declare("handlers.enhance.dialog", enhance_dialog);
+	Resolver("page").declare("handlers.sizing.dialog", sizing_dialog);
+	Resolver("page").declare("handlers.layout.dialog", layout_dialog);
+	Resolver("page").declare("handlers.discard.dialog", discard_dialog);
 
 	console.log("frontend.js finished load execution");
 

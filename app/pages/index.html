@@ -1,5 +1,74 @@
 <html>
 <body>
-<div role="template" id="blank-tpl"></div>
+	<section role="dummy" data-role="'template':'#blank-tpl'"></section>
+
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
+
+
+	<div role="template" id="blank-tpl">The is a lazy template</div>
+
+	<div role="template" id="test-dialog">
+		<header>
+		<h3></h3>
+		<button name="close">&times;</button>
+		</header>
+
+		<div class="dialogContent" role="content">
+		</div>
+	</div>
+
+	<div role="template" id="test-content">
+		<table>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+		</table>
+	</div>
+
+	<style>
+	.dialogContent table td {
+		width: 3em; text-align: center;
+	}
+	[role=dialog] {
+		position: fixed;
+
+		top:100px; left:100px;
+		z-index: 500;
+
+		width: 300px;
+
+		background-color: white;
+
+		border: 1px solid #aaa;
+-webkit-box-shadow: 8px 8px 12px rgba(50, 50, 50, 0.4);
+-moz-box-shadow:    8px 8px 12px rgba(50, 50, 50, 0.4);
+box-shadow:         8px 8px 12px rgba(50, 50, 50, 0.4);		
+	}
+	[role=dialog] header {
+		position:relative;
+		width: 300px;
+		height: 20px;
+		border-bottom: 1px solid #bbb;
+		margin-bottom: 6px;
+	}
+	[role=dialog] [name=close] {
+		position: absolute;
+		top:0; right:0;
+		height: 100%;
+		background: transparent;
+		border: 0;
+		line-height: 1em;
+	}
+	[role=dialog] [role=content]{
+		top-margin: 20px;
+		position: relative;
+	}
+	</style>
+
 </body>
 </html>
