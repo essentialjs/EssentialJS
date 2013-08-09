@@ -144,7 +144,7 @@
 		return false; // prevent default
 	}
 
-	var dialog_top = 100, dialog_left = 100, dialog_top_inc = 20, dialog_left_inc = 20;
+	var dialog_top = 100, dialog_left = 100, dialog_top_inc = 22, dialog_left_inc = 22;
 
 	function enhance_dialog(el,role,config) {
 
@@ -168,10 +168,17 @@
 		}
 
 		// position the dialog
-		dialog_top += dialog_top_inc;
-		dialog_left += dialog_left_inc;
+		if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
+			dialog_top = 100;
+			//TODO width of first dialog if reasonable
+			// dialog_left = first + 200;
+		}
 		el.style.top = dialog_top + "px";
 		el.style.left = dialog_left + "px";
+
+		dialog_top += dialog_top_inc;
+		dialog_left += dialog_left_inc;
+		//TODO move down by height of header
 
 		// dialog header present
 		var header = el.getElementsByTagName("HEADER")[0];
