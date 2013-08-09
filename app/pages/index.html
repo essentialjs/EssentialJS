@@ -1,5 +1,9 @@
 <html>
 <body>
+	<div role="toolbar" action="dialogs">
+	<button name="new">New Dialog</button>
+	</div>
+
 	<section role="dummy" data-role="'template':'#blank-tpl'"></section>
 
 	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
@@ -13,7 +17,7 @@
 
 	<div role="template" id="test-dialog">
 		<header>
-		<h3></h3>
+		<h5>Dialog Title</h5>
 		<button name="close">&times;</button>
 		</header>
 
@@ -58,6 +62,9 @@ box-shadow:         8px 8px 12px rgba(50, 50, 50, 0.4);
 		border-bottom: 1px solid #bbb;
 		margin-bottom: 6px;
 	}
+	[role=dialog] header h5 {
+		padding: 3px;
+	}
 	[role=dialog] [name=close] {
 		position: absolute;
 		top:0; right:0;
@@ -67,9 +74,13 @@ box-shadow:         8px 8px 12px rgba(50, 50, 50, 0.4);
 		line-height: 1em;
 	}
 	[role=dialog] [role=content]{
+		/* change selector to allow role to be changed */
 		top-margin: 20px;
 		position: relative;
 		min-width: 200px;
+	}
+	[role=dialog] [role=content] table {
+		margin: 1em;
 	}
 	</style>
 

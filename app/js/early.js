@@ -6,7 +6,9 @@
 		Laidout = essential("Laidout"),
 		console = essential("console");
 
+	var HTMLElement = Resolver("essential::HTMLElement::");
 	var DialogAction = Resolver("essential::DialogAction::");
+	var DescriptorQuery = Resolver("essential::DescriptorQuery::");
 	var pageState = Resolver("page::state");
 	var pageProgress = Resolver("page::connection.loadingProgress");
 
@@ -38,6 +40,22 @@
 			Resolver("::demo-session").set("loggedIn",false);
 		},1000);
 	};
+
+	var DialogsAction = DialogAction.variant("dialogs",Generator(function(){},DialogAction,{
+		"prototype": {
+			"new":function(el,ev) {
+				var dialog = HTMLElement("div",{
+					"role":"dialog",
+					"data-role": {
+						'template':'#test-dialog','content-template':'#test-content','inline':false
+					}
+				});
+				document.body.appendChild( dialog );
+				// DescriptorQuery(dialog).enhance();
+				DescriptorQuery(document.body).enhance();
+			}
+		}
+	}))
 
 	function _DemoApplication(el,role,config) {
 		console.log("Initialized DemoApplication on",el);
