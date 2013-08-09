@@ -21,7 +21,7 @@
 		<button name="close">&times;</button>
 		</header>
 
-		<div class="dialogContent" role="content">
+		<div role="content">
 		</div>
 	</div>
 
@@ -35,7 +35,7 @@
 	</div>
 
 	<style>
-	.dialogContent table td {
+	.dialog-content table td {
 		width: 3em; text-align: center;
 	}
 	[role=dialog] {
@@ -73,13 +73,14 @@ box-shadow:         8px 8px 12px rgba(50, 50, 50, 0.4);
 		border: 0;
 		line-height: 1em;
 	}
-	[role=dialog] [role=content]{
+	[role=dialog] .dialog-content {
 		/* change selector to allow role to be changed */
 		top-margin: 20px;
 		position: relative;
 		min-width: 200px;
+		min-height: 40px;
 	}
-	[role=dialog] [role=content] table {
+	[role=dialog] .dialog-content table {
 		margin: 1em;
 	}
 	</style>
