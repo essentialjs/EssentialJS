@@ -58,12 +58,13 @@ test("Window resolver",function(){
 	equal(win.namespace,window);
 	equal(win("Array"),Array);
 	equal(win("Boolean"),Boolean);
-	equal(win("self"),window);
+	equal(win("self"),window,"window.self == window");
 
 	win.set("global_api.a.b.func",function(){ return "return"});
-	equal(global_api.a.b.func(),"return");
+	equal(typeof global_api.a.b.func,"function","New global function was set")
+	equal(global_api.a.b.func(),"return","calling global function works");
 
-	delete window.global_api;
+	window.global_api = undefined; // clean up
 })
 
 test("Document resolver",function(){
