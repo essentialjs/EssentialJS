@@ -1252,7 +1252,12 @@
 	{
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
 		while(e) {
-			e.permanent = true;
+			try {
+				e.permanent = true;
+			} catch(ex) {
+				//TODO handle text elements
+				// will probably have to be a managed list of permanent elements or uniqueId
+			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
 	};
