@@ -384,32 +384,32 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	Resolver("page").declare("handlers.layout.adorned", layout_adorned);
 	Resolver("page").declare("handlers.discard.adorned", discard_adorned);
 
+	// already defined
+	// function enhance_dialog(el,role,config) 
+	// {
+	// 	alert("role")
+	// }
 
-	function enhance_dialog(el,role,config) 
-	{
-		alert("role")
-	}
+	// function sizing_dialog(el,sizing,instance)
+	// {
 
-	function sizing_dialog(el,sizing,instance)
-	{
+	// }
 
-	}
+	// function layout_dialog(el,layout,instance) 
+	// {
 
-	function layout_dialog(el,layout,instance) 
-	{
+	// }
 
-	}
+	// function discard_dialog(el,role,instance) 
+	// {
 
-	function discard_dialog(el,role,instance) 
-	{
-
-	}
+	// }
 
 
-	Resolver("page").declare("handlers.enhance.dialog", enhance_dialog);
-	Resolver("page").declare("handlers.sizing.dialog", sizing_dialog);
-	Resolver("page").declare("handlers.layout.dialog", layout_dialog);
-	Resolver("page").declare("handlers.discard.dialog", discard_dialog);
+	// Resolver("page").declare("handlers.enhance.dialog", enhance_dialog);
+	// Resolver("page").declare("handlers.sizing.dialog", sizing_dialog);
+	// Resolver("page").declare("handlers.layout.dialog", layout_dialog);
+	// Resolver("page").declare("handlers.discard.dialog", discard_dialog);
 
 	console.log("frontend.js finished load execution");
 

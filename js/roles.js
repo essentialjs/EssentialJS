@@ -156,16 +156,33 @@
 			var content = template.content.cloneNode(true);
 			el.appendChild(content);
 		}
-		var contentTemplate = config['content-template'];
-		if (contentTemplate) {
-			var template = Resolver("page::templates","null")([contentTemplate]);
-			if (template == null) return false;
+		var wrap = (el.querySelector)? el.querySelector("[role=content]") : undefined;
+		var contentTemplate = config['content-template'], 
+			contentRole = config['content-role'], contentConfig = config['content-config'];
+		if (wrap) {
+			wrap.className = ((wrap.className||"") + " dialog-content").replace("  "," ");
+			if (contentTemplate) {
+				var template = Resolver("page::templates","null")([contentTemplate]);
+				if (template == null) return false;
 
-			var content = template.content.cloneNode(true);
+				var content = template.content.cloneNode(true);
 
-			var wrap = (el.querySelector)? el.querySelector("[role=content]") : undefined;
-			(wrap || el).appendChild(content);
+				(wrap || el).appendChild(content);
+			}
+			else if (contentRole) {
+				wrap.setAttribute("role",contentRole);
+			}
+
+			if (contentConfig) {
+				if (typeof contentConfig == "object") {
+					var c = JSON.stringify(contentConfig);
+					contentConfig = c.substring(1,c.length-1);
+				}
+				wrap.setAttribute("data-role",contentConfig);
+			}
 		}
+
+		//("essential::DescriptorQuery::")(el).enhance();
 
 		// position the dialog
 		if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
@@ -328,6 +345,15 @@
 	}
 
 	function enhance_application(el,role,config) {
+		// template around the content
+		if (config.template) {
+			var template = Resolver("page::templates","null")([config.template]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}

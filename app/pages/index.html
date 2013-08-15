@@ -1,13 +1,14 @@
 <html>
 <body>
-	<div role="toolbar" action="dialogs">
+	<div role="toolbar" action="dialogs" style="height:30px; padding-left:40px;">
+		<span style="display:block;position:absolute;left:0;height:100%;font-size:2em;color:#e0e0e0;">&#12283;</span>
 	<button name="new">New Dialog</button>
 	</div>
 
 	<section role="dummy" data-role="'template':'#blank-tpl'"></section>
 
 	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
-	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-role':'application','content-config':{'template':'#test-content'},'inline':false"></div>
 	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
 	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
 	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false"></div>
