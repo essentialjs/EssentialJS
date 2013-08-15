@@ -125,15 +125,17 @@ test("Native events",function() {
 
 });
 
-test("jQuery trigger click",function() {
-    expect(1);
-    
+asyncTest("jQuery trigger click",function() {
+    // expect(1);
+
+	function onClick(ev) {
+        ok(true,"did the click");
+        start();
+	}    
     function Clicker(target) {
         this.target = target;
         
-        this.target.off("click").on("click",function(ev) {
-            ok(1,"did the click");
-        });
+        this.target.one("click",onClick);
     }
     
   var event,
