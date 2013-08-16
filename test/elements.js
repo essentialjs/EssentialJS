@@ -529,11 +529,14 @@ test('Template cloneNode',function() {
 	// Cloning template loaded in page
 	var conf = ApplicationConfig();
 	var tpl3 = document.getElementById("abcd");
-	var desc3 = EnhancedDescriptor(tpl3,"template",{},false,conf);
+	ok(tpl3);
+	ok(tpl3.innerHTML.length>0,"template isn't empty")
+	var desc3 = EnhancedDescriptor(tpl3,"template",{},false,conf); // make sure it is enhanced
 
 	enhance_template(tpl3,"template",{}); //TODO call on descriptor
 
 	var cloned3 = tpl3.content.cloneNode(true);
+	equal(cloned3.childNodes.length,5,"cloned elements")
 	equal(cloned3.childNodes[0].data,"hello");
 	equal(cloned3.childNodes[1].innerHTML,"there");
 	equal(cloned3.childNodes[2].data,"how");
