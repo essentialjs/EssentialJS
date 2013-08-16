@@ -124,8 +124,9 @@
     <a name="fr">Francais</a> 
   </nav>
   <script type="text/javascript">
-  Resolver("essential")("DialogAction").variant("navigation/lang",Generator(
-    function(){},Resolver("essential")("DialogAction"),
+  Resolver("essential::DialogAction::").variant("navigation/lang",Generator(
+    function(){},
+    Resolver("essential::DialogAction::"),
     {
       "prototype": {
         "en": function(){ 
