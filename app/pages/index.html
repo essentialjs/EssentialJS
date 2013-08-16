@@ -35,56 +35,5 @@
 		</table>
 	</div>
 
-	<style>
-	.dialog-content table td {
-		width: 3em; text-align: center;
-	}
-	[role=dialog] {
-		position: fixed;
-
-		top:100px; left:100px;
-		z-index: 500;
-
-		background-color: white;
-
-		border: 1px solid #aaa;
--webkit-box-shadow: 8px 8px 12px rgba(50, 50, 50, 0.4);
--moz-box-shadow:    8px 8px 12px rgba(50, 50, 50, 0.4);
-box-shadow:         8px 8px 12px rgba(50, 50, 50, 0.4);		
-	}
-	[role=dialog].state-active {
-		z-index: 600;
-	}
-
-	[role=dialog] header {
-		position:relative;
-		width: 100%;
-		height: 20px;
-		border-bottom: 1px solid #bbb;
-		margin-bottom: 6px;
-	}
-	[role=dialog] header h5 {
-		padding: 3px;
-	}
-	[role=dialog] [name=close] {
-		position: absolute;
-		top:0; right:0;
-		height: 100%;
-		background: transparent;
-		border: 0;
-		line-height: 1em;
-	}
-	[role=dialog] .dialog-content {
-		/* change selector to allow role to be changed */
-		top-margin: 20px;
-		position: relative;
-		min-width: 200px;
-		min-height: 40px;
-	}
-	[role=dialog] .dialog-content table {
-		margin: 1em;
-	}
-	</style>
-
 </body>
 </html>

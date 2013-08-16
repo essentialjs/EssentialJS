@@ -1,5 +1,8 @@
 title: EssentialJS
 server_port: 9292
+
+exclude: essential.less
+
 modules :
   modernizr: 
     - js/modernizr-prefix.js
@@ -14,6 +17,9 @@ modules :
     - js/elements.js
     - js/roles.js
     - js/configured.js
+
+js-base: app/js
+css-base: app/css
 
 concatenate:
 - js/modernizr+essential.js
