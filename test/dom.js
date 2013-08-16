@@ -1,5 +1,19 @@
 module("DOM API helpers");
 
+test("Sub Document Creations",function() {
+	var importHTMLDocument = Resolver("essential::importHTMLDocument::");
+
+	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"><div id="first-id"></div></body></html>');
+	equal(doc.head.id,"a1");
+	equal(doc.head.getAttribute("attr"),"a1");
+	if (! /MSIE 8/.test(navigator.userAgent)) equal(doc.head.firstChild.getAttribute("charset"),"utf-8");
+	equal(doc.body.id,"a2");
+	equal(doc.body.getAttribute("attr"),"a2");
+
+	equal(doc.body.ownerDocument,document,"Imported owner to main document");
+	ok(doc.body.querySelector("#first-id"));
+});
+
 test("Document Creations",function() {
 	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
 

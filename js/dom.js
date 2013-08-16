@@ -48,23 +48,7 @@
 
 	}
 
-	function _combindHeadAndBody(head,body) { //TODO ,doctype
-		if (head && body) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
-		}
-
-		var text = (head||"") + (body||"");
-		if ((head.substring(0,5) != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
-		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
-
-		return text;
-	}
-
-	/**
-	 * (html) or (head,body)
-	 */
-	function createImportedHTMLDocument(head,body) {
+	function _combineHeadAndBody(head,body) { //TODO ,doctype
 		if (typeof head == "object" && typeof head.length == "number") {
 			head = head.join("");
 		}
@@ -72,93 +56,119 @@
 			body = body.join("");
 		}
 
-		var doc, r = {};
-		try {
-			doc = document.createElement("html");
-			doc.innerHTML = _combindHeadAndBody(head,body);
-			r.head = doc.head;
-			r.body = doc.body;
-		}
-		catch(ex) {
-			try {
-				doc = document.implementation.createHTMLDocument("");
-				doc.open();
-				doc.write(_combindHeadAndBody(head,body));
-				doc.close();
-				r.head = doc.head;
-				r.body = doc.body;
-			}
-			catch(ex2) {
-				doc = new ActiveXObject("htmlfile");
-				// doc.open();
-				doc.write(_combindHeadAndBody(head,body));
-				// doc.close();
-				r.head = doc.getElementsByTagName("HEAD")[0];
-				r.body = doc.body;
-			}
+		if (head && body) {
+			if (head.substring(0,5).toLowerCase() != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5).toLowerCase() != "<body") body = '<body>'+body+'</body>';
 		}
 
+		var text = (head||"") + (body||"");
+		if ((head.substring(0,5).toLowerCase() != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
+		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
+
+		text = text.replace("<!DOCTYPE","<!doctype");
+
+		return text;
+	}
+
+	function _createStandardsDoc(markup) {
+		var doc;
+		if (/Gecko\/20/.test(navigator.userAgent)) {
+			doc = document.implementation.createHTMLDocument("");
+			// if (hasDoctype) 
+				doc.documentElement.innerHTML = markup;
+			// else doc.body.innerHTML = markup;
+			// parser = new DOMParser();
+			// doc = parser.parseFromString(_combineHeadAndBody(head,body),"text/html");
+		}
+		else {
+			doc = document.implementation.createHTMLDocument("");
+			doc.open();
+			doc.write(markup);
+			doc.close();
+		}
+		return doc;
+	}
+
+	function _importNode(doc,node,all) {
+		if (node.nodeType == 1) { // ELEMENT_NODE
+			var nn = doc.createElement(node.nodeName);
+			if (node.attributes && node.attributes.length > 0) {
+				for(var i=0,a; a=node.attributes[i]; ++i) nn.setAttribute(a.nodeName, node.getAttribute(a.nodeName));
+			}
+			if (all && node.childNodes && node.childNodes.length>0) {
+				for(var i=0,c; c = node.childNodes[i]; ++i) nn.appendChild(_importNode(doc,c,all));
+			}
+			return nn;
+		}
+
+		// TEXT_NODE CDATA_SECTION_NODE COMMENT_NODE
+		return doc.createTextNode(node.nodeValue);
+	}
+
+	/**
+	 * (html) or (head,body) rename to importHTMLDocument ?
+
+	 * head will belong to external doc
+	 * body will be imported so elements can be mixed in
+	 */
+	function importHTMLDocument(head,body) {
+
+		var doc = {},
+			markup = _combineHeadAndBody(head,body),
+			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
+
 		try {
-			doc.head = document.importNode(r.head);
-			doc.body = document.importNode(r.body);
+			var ext = _createStandardsDoc(markup);
+			if (document.adoptNode) {
+				doc.head = document.adoptNode(ext.head);
+				doc.body = document.adoptNode(ext.body);
+			} else {
+				doc.head = document.importNode(ext.head);
+				doc.body = document.importNode(ext.body);
+			}
 		}
 		catch(ex) {
-			// ignore IE9- broken importNode
+			var ext = new ActiveXObject("htmlfile");
+			ext.write(markup);
+			if (ext.head === undefined) ext.head = ext.body.previousSibling;
+
+			doc.head = ext.head;
+			doc.body = _importNode(document,ext.body,true);
+
+			// markup = markup.replace("<head",'<washead').replace("</head>","</washead>");
+			// markup = markup.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+			// markup = markup.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+			// markup = markup.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
 		}
 
 		return doc;
 	}
-	essential.declare("createImportedHTMLDocument",createImportedHTMLDocument);
+	essential.declare("importHTMLDocument",importHTMLDocument);
 
  	/**
  	 * (html) or (head,body)
  	 */
 	function createHTMLDocument(head,body) {
-		if (typeof head == "object" && typeof head.length == "number") {
-			head = head.join("");
-		}
-		if (typeof body == "object" && typeof body.length == "number") {
-			body = body.join("");
-		}
 
-		var doc,parser,markup = _combindHeadAndBody(head,body),hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
+		var doc,parser,markup = _combineHeadAndBody(head,body),
+			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 		try {
-			if (/Gecko\/20/.test(navigator.userAgent)) {
-				doc = document.implementation.createHTMLDocument("");
-				// if (hasDoctype) 
-					doc.documentElement.innerHTML = markup;
-				// else doc.body.innerHTML = markup;
-				// parser = new DOMParser();
-				// doc = parser.parseFromString(_combindHeadAndBody(head,body),"text/html");
-			}
-			else {
-				doc = document.implementation.createHTMLDocument("");
-				doc.open();
-				doc.write(markup);
-				doc.close();
-			}
+			doc = _createStandardsDoc(markup);
 		} catch(ex) {
 			// IE can't or won't do it
 
 			if (window.ActiveXObject) {
 				//TODO make super sure that this is garbage collected, supposedly sticky
 				doc = new ActiveXObject("htmlfile");
-					// doc.open();
-					// doc.close();
 				doc.write(markup);
 				if (doc.head === undefined) doc.head = doc.body.previousSibling;
-
 			} else {
 				doc = document.createElement("DIV");// dummy default
 
-					// text = text.replace("<head",'<washead').replace("</head>","</washead>");
-					// text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
-					// text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
-					// text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-					// this.head = div.getElementsByTagName("washead");
-					// this.body = div.getElementsByTagName("wasbody") || div;
-					// var __head = _body.getElementsByTagName("washead");
-					// var __body = _body.getElementsByTagName("wasbody");
+				// this.head = div.getElementsByTagName("washead");
+				// this.body = div.getElementsByTagName("wasbody") || div;
+				// var __head = _body.getElementsByTagName("washead");
+				// var __body = _body.getElementsByTagName("wasbody");
 			}
 		}
 

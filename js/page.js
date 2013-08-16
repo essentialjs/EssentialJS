@@ -17,7 +17,7 @@
 		sizingElements = essential("sizingElements"),
 		enhancedWindows = essential("enhancedWindows");
 	var contains = essential("contains"),
-		createHTMLDocument = essential("createHTMLDocument");
+		importHTMLDocument = essential("importHTMLDocument");
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true };
@@ -548,7 +548,8 @@
 
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
-		var el = this.document.getElementById(keys[0]);
+		// var el = this.document.getElementById(keys[0]);
+		var el = this.document.body.querySelector("#"+keys[0]); //TODO API
 		if (el && keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
@@ -779,7 +780,7 @@
     }
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
-		var doc = this.document = createHTMLDocument(text);
+		var doc = this.document = importHTMLDocument(text);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -803,7 +804,7 @@
 	//TODO should it be(head,body,options) ?
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
-		var doc = this.document = createHTMLDocument(head,text);
+		var doc = this.document = importHTMLDocument(head,text);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
