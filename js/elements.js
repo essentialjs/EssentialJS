@@ -163,7 +163,7 @@
 	    "fieldset": new _WrapperImplementation(),
 	    "form": new _WrapperImplementation(),
 
-	    "#document-fragment": new _HTMLImplementation(),
+	    "#document-fragment": new _FragmentImplementation(),
 	    // "label": new _HTMLImplementation(),
 	    // "div": new _HTMLImplementation(),
 
