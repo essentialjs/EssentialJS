@@ -514,6 +514,15 @@ test('Describe Stream',function() {
 	var stream = HTMLElement.describeStream(root,policy);
 	ok(stream);
 	equal(stream.length,4);
+	equal(stream[0].original.nodeName,"SPAN");
+	equal(stream[0].toClone.innerHTML,"hello ");
+	equal(stream[1],1);
+	equal(stream[2].original.nodeName,"B");
+	equal(stream[2].toClone.nodeName,"B");
+	equal(stream[2].toClone.innerHTML,"you");
+	equal(stream[2].postfix," STOP!");
+	equal(stream[3],-1);
+
 });
 
 test('Render Stream',function() {

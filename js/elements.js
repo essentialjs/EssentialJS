@@ -467,7 +467,8 @@
 	                stream.push(impl);
 	                prev = impl;
 
-	                if (node.firstElementChild || (node.firstChild && node.firstChild.nodeType == 1)) {
+	                if (node.firstElementChild || // modern browser
+	                	(node.children && node.children[0])) { // IE browser
 	                    stream.push(1);
 	                    this._describeStream(node,stream,impl,policy);
 	                    stream.push(-1);
