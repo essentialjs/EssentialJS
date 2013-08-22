@@ -194,7 +194,7 @@
 	 */
 	HTMLElement.fn.copyAttributes = function(src,dst,attrs)
 	{
-		if (!attrs) return;
+		if (!attrs) attrs = this.CLONED_ATTRIBUTES;
 
 		if (attrs["class"] !== undefined) {
 		 	dst.className = dst.className? dst.className + " " + src.className : src.className;
@@ -266,6 +266,26 @@
 	    }
 	};
 
+	// IE workaround for cloneNode not working for HTML5 elements
+	function ieClonable(child,deep) {
+		var pseudo = {
+			"cloneNode":function() {
+				var el = this.ownerDocument.createElement(this.tagName);
+				this.impl.copyAttributes(child,el);
+				el.innerHTML = this.innerHTML;
+				return el;
+			},
+			"removeAttribute": function() {},
+
+			"ownerDocument":child.ownerDocument,
+			"impl": HTMLElement.impl(child),
+			"tagName": child.tagName,
+			"nodeName": child.nodeName,
+			"innerHTML": deep? child.innerHTML : ""
+		};
+		return pseudo;
+	}
+
 	/*
 		Make an implementation for a cloned element which knows about the original
 		from snippet/template. The cloned element is slightly different, as some content
@@ -275,6 +295,7 @@
 	{
 		var impl = this.uniqueForChild(child,policy);
 	    impl.original = child;
+	    // impl.toClone = el.children? ieClonable(child,false) : child.cloneNode(false);
 	    impl.toClone = child.cloneNode(false);
 	    var firstText = child.childNodes[0];
 	    if (firstText && firstText.nodeType != 3) firstText = null;
@@ -306,6 +327,20 @@
 
 	    return impl;
 	};
+
+	HTMLElement.fn._cloneNode = function(src,deep) {
+		return src.cloneNode(deep);
+	};
+
+	HTMLElement.fn._cloneNodeIE = function(src,deep) {
+		var el = src.ownerDocument.createElement(src.tagName);
+		this.copyAttributes(src,el);
+		el.innerHTML = src.innerHTML;
+		return el;
+	};
+
+	//IE8 cloneNode for HTML5
+	if (/MSIE/.test(navigator.userAgent)) HTMLElement.fn._cloneNode = HTMLElement.fn._cloneNodeIE;
 
 	/**
 	 * Default behaviour for making a unique template implementation wrapper.
@@ -441,9 +476,9 @@
 	{
 	    //TODO allow configuration override
 	    
-	    var el = this.toClone.cloneNode(true);
+	    var el = this._cloneNode(this.toClone,true);
 	    el.impl = this;
-	    el.state = state; //TODO really?
+	    // el.state = state; //TODO really?
 	    
 	    this.decorate(el); //TODO (el,container/enhanced,names)
 

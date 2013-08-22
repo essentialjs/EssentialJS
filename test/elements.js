@@ -530,17 +530,30 @@ test('Render Stream',function() {
 	var HTMLElement = Resolver("essential::HTMLElement::","null");
 	ok(HTMLElement,"HTMLElement");
 
+	var policy = {};
+
 	var root = HTMLElement("div",{},"<span>",
 		"hello ",
 		"<b>you</b>",
 		" STOP!",
 		"</span>");
-	var policy = {};
 	var stream = HTMLElement.describeStream(root,policy);
 
 	var wrapper = HTMLElement("div",{"impl":true});
 	wrapper.impl.renderStream(wrapper,stream);
-	equal(root.innerHTML,wrapper.innerHTML);
+	equal(wrapper.innerHTML,root.innerHTML);
+
+	var root = HTMLElement("div",{},'<output class="abc">',
+		"hello ",
+		"<b>you</b>",
+		" STOP!",
+		"</output>");
+	var stream = HTMLElement.describeStream(root,policy);
+	equal(stream[0].original.className,"abc");
+	var wrapper = HTMLElement("div",{"impl":true});
+	wrapper.impl.renderStream(wrapper,stream);
+	equal(wrapper.innerHTML,root.innerHTML);
+
 
 	//TODO with state
 });
