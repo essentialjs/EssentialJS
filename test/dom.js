@@ -12,6 +12,14 @@ test("Sub Document Creations",function() {
 
 	equal(doc.body.ownerDocument,document,"Imported owner to main document");
 	ok(doc.body.querySelector("#first-id"));
+
+	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head>'+
+			'<body id="a2" attr="a2"><header><h1></h1></header><article><section>section</section></article><footer>footer<q>q</q></footer></body></html>');
+	equal(doc.body.childNodes[0].tagName.toLowerCase(),"header");	
+	equal(doc.body.childNodes[1].tagName.toLowerCase(),"article");	
+	equal(doc.body.childNodes[2].tagName.toLowerCase(),"footer");	
+	equal(doc.body.childNodes.length,3);	
+
 });
 
 test("Document Creations",function() {

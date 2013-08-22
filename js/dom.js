@@ -105,6 +105,22 @@
 		return doc.createTextNode(node.nodeValue);
 	}
 
+	var SUPPORTED_TAGS = "template message abbr article aside audio bdi canvas data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video".split(" ");
+	var IE_HTML_SHIM;
+
+	function shimMarkup(markup) {
+		if (IE_HTML_SHIM == undefined) {
+
+			var bits = ["<script>"];
+			for(var i=0,t; t = SUPPORTED_TAGS[i]; ++i) bits.push('document.createElement("'+t+'");');			
+			bits.push("</script>");
+			IE_HTML_SHIM = bits.join("");
+		}
+		markup = markup.replace("</head>","</head>" + IE_HTML_SHIM);
+		markup = markup.replace("</HEAD>","</HEAD>" + IE_HTML_SHIM);
+		return markup;
+	}
+
 	/**
 	 * (html) or (head,body) rename to importHTMLDocument ?
 
@@ -129,6 +145,7 @@
 		}
 		catch(ex) {
 			var ext = new ActiveXObject("htmlfile");
+			markup = shimMarkup(markup);
 			ext.write(markup);
 			if (ext.head === undefined) ext.head = ext.body.previousSibling;
 
