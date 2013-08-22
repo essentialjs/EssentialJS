@@ -103,6 +103,13 @@
 	_WrapperImplementation.prototype = new _HTMLImplementation;
 	HTMLElement.Wrapper = _WrapperImplementation;
 
+	function _FragmentImplementation(fn) {
+		this._init(fn);
+	}
+	_FragmentImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Fragment = _FragmentImplementation;
+	_FragmentImplementation.prototype.copyAttributes = function() {}
+
 
 	var IMPL = HTMLImplementation.IMPL = {
 		"input": new _TextInputImplementation(),
@@ -188,7 +195,6 @@
 	HTMLElement.fn.copyAttributes = function(src,dst,attrs)
 	{
 		if (!attrs) return;
-		if (src.nodeName.charAt(0) == "#") return;
 
 		if (attrs["class"] !== undefined) {
 		 	dst.className = dst.className? dst.className + " " + src.className : src.className;
