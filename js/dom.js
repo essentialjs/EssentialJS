@@ -116,8 +116,13 @@
 			bits.push("</script>");
 			IE_HTML_SHIM = bits.join("");
 		}
-		markup = markup.replace("</head>","</head>" + IE_HTML_SHIM);
-		markup = markup.replace("</HEAD>","</HEAD>" + IE_HTML_SHIM);
+		if (markup.indexOf("</head>") >= 0 || markup.indexOf("</HEAD>") >= 0) {
+			markup = markup.replace("</head>","</head>" + IE_HTML_SHIM);
+			markup = markup.replace("</HEAD>","</HEAD>" + IE_HTML_SHIM);
+		} else {
+			markup = markup.replace("<body",IE_HTML_SHIM + "<body");
+			markup = markup.replace("<BODY",IE_HTML_SHIM + "<BODY");
+		}
 		return markup;
 	}
 
