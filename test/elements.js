@@ -489,6 +489,53 @@ test('Discarding enhanced',function() {
 	EnhancedDescriptor.discardAll();
 })
 
+test("impl",function(){
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	equal(typeof HTMLElement.impl("span"),"object");
+	equal(typeof HTMLElement.impl("b"),"object");
+	equal(typeof HTMLElement.impl("strong"),"object");
+	equal(typeof HTMLElement.impl("div"),"object");
+	equal(typeof HTMLElement.impl("label"),"object");
+	equal(typeof HTMLElement.impl("input"),"object");
+	equal(typeof HTMLElement.impl("unknown"),"object");
+})
+
+test('Describe Stream',function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	ok(HTMLElement,"HTMLElement");
+
+	var root = HTMLElement("div",{},"<span>",
+		"hello ",
+		"<b>you</b>",
+		" STOP!",
+		"</span>");
+	var policy = {};
+	var stream = HTMLElement.describeStream(root,policy);
+	ok(stream);
+	equal(stream.length,4);
+});
+
+test('Render Stream',function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	ok(HTMLElement,"HTMLElement");
+
+	var root = HTMLElement("div",{},"<span>",
+		"hello ",
+		"<b>you</b>",
+		" STOP!",
+		"</span>");
+	var policy = {};
+	var stream = HTMLElement.describeStream(root,policy);
+
+	var wrapper = HTMLElement("div",{"impl":true});
+	wrapper.impl.renderStream(wrapper,stream);
+	equal(root.innerHTML,wrapper.innerHTML);
+
+	//TODO with state
+});
+
 test('Template cloneNode',function() {
 
 	equal(typeof Resolver("page::templates::",undefined),"object");
@@ -546,6 +593,13 @@ test('Template cloneNode',function() {
 
 	//TODO test querySelector template lookup
 
+	var tpl4 = HTMLElement("template",{ id:"tpl4" }, "abc<header>header</header><section>section</section><footer>footer</footer>");
+	enhance_template(tpl4,"template",{ id:"4" });
+
+	var cloned4 = tpl4.content.cloneNode(true);
+	equal(cloned4.childNodes[0].data,"abc");
+	equal(cloned4.childNodes[1].tagName.toLowerCase(),"header");
+	equal(cloned4.childNodes[1].innerHTML,"header");
 })
 
 //TODO if preventDefault is called on event during action, prevent it in button click event
@@ -636,6 +690,44 @@ test("Language choice",function(){
 	equal(document.documentElement.lang,"de");
 	pager.set("state.lang","fr");
 	equal(document.documentElement.lang,"fr");
+
+});
+
+test("impl copyAttributes",function() {
+
+	var FEW_HTML_ATTRS = {
+		"class": "",
+		"style": "",
+		"id": "",
+		"name": ""	
+	};
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var basic = HTMLElement("span");
+	var implementation = HTMLElement.impl(basic);
+	
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(basic,dest,FEW_HTML_ATTRS);
+	equal(dest.className,"");
+	equal(dest.style.cssText,"");
+	equal(dest.getAttribute("id") || "","");
+	equal(dest.getAttribute("name") || "","");
+
+	var styled = HTMLElement('span',{},'<span class="cls" style="vertical-align: top"></span>').firstChild;
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(styled,dest,FEW_HTML_ATTRS);
+	equal(dest.className,"cls");
+	var cssText = dest.style.cssText.replace(/^\s|\s$|;\s*$/g,"").toLowerCase();
+	equal(cssText,"vertical-align: top");
+	equal(dest.getAttribute("id") || "","");
+	equal(dest.getAttribute("name") || "","");
+
+	var named = HTMLElement('span',{},'<span name="nm" id="id1"></span>').firstChild;
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(named,dest,FEW_HTML_ATTRS);
+	equal(dest.id,"id1");
+	equal(dest.getAttribute("name"),"nm");
 
 });
 

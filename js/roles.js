@@ -416,10 +416,12 @@
 		} else {
 			this.content = el.content = el.ownerDocument.createDocumentFragment();
 			while(el.firstChild) this.content.appendChild(el.firstChild);
+			var policy = {};
+			this.stream = HTMLElement.describeStream(this.content,policy);
 			//TODO handle img preloading
 			//TODO handle sources in img/object/audio/video in cloneNode, initially inert
 
-			this.content.cloneNode = this.contentCloneFunc(this.content);
+			this.content.cloneNode = this.stream.cloneNode.bind(this.stream);
 		}
 	}
 

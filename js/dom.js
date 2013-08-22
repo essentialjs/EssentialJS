@@ -956,6 +956,10 @@
 					if (_from[n] !== undefined) e[n] = _from[n]; 
 					break;
 
+				case "impl":
+					if (_from[n]) e.impl = HTMLElement.impl(e);
+					break;
+
 				// "type" IE9 el.type is readonly:
 
 				//TODO case "onprogress": // partial script progress
