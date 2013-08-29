@@ -4038,6 +4038,17 @@ _ElementPlacement.prototype._computeIE = function(style)
 		}
 	};
 
+
+	/* Active Element (pagewide) */
+	var oldActiveElement = null;
+	pageResolver.set("activeElement",null);
+	pageResolver.reference("activeElement").on("change",function(ev){
+		if (oldActiveElement) StatefulResolver(oldActiveElement).set("state.active",false);
+		if (ev.value) StatefulResolver(ev.value,true).set("state.active",true);
+		oldActiveElement = ev.value;
+	});
+
+
 	/*
 		Area Activation
 	*/
