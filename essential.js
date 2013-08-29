@@ -3801,7 +3801,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
 		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
 		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
-		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" } //TODO ariaChecked ?
+		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
+		active: { index:6, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
 		//TODO draggable
@@ -3876,6 +3877,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
 	ClassForState.prototype.expanded = "state-expanded";
+	ClassForState.prototype.active = "state-active";
 
 	function ClassForNotState() {
 
@@ -3885,6 +3887,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
 	ClassForNotState.prototype.expanded = "";
+	ClassForNotState.prototype.active = "";
 
 	function make_Stateful_fireAction(el) {
 		return function() {
