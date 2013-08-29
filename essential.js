@@ -6743,6 +6743,7 @@ function(scripts) {
 		if (clicked == undefined) { clicked = MutableEvent().withDefaultSubmit(this); }
 
 		if (clicked.commandElement) {
+			clicked.submitElement = this;
 			fireAction(clicked);
 		} 
 		//else {
