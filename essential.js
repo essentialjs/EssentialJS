@@ -4186,7 +4186,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
-		var el = this.document.getElementById(keys[0]);
+		// var el = this.document.getElementById(keys[0]);
+		var el = this.document.body.querySelector("#"+keys[0]); //TODO API
 		if (el && keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
