@@ -16,7 +16,15 @@
 
 	Generator(function(){
 		pageProgress.on("change",document.getElementById("loadingProgress"),function(ev) {
-			ev.data.innerHTML = ev.value;
+			var el = ev.data;
+
+			if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode());
+			el.lastChild.value = ev.value;
+			// try {
+			// 	el.innerHTML = ev.value;
+			// } catch(ex) {
+			// 	//TODO fix on IE, unknow error assigning to innerHTML
+			// }
 		});
 	}).restrict({ "singleton":true, "lifecycle":"page" });
 
