@@ -4250,7 +4250,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
-			var el = this;
+			var el = this, src = el.getAttribute("src");
 			var name = el.getAttribute("name");
 			if (name) {
 				ApplicationConfig().modules[name] = true;
@@ -4258,11 +4258,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				if (scripts[el.src.replace(essential("baseUrl"),"")] != undefined) {
+				//console.info("script",el.getAttribute("src"),el.src,scriptRel);
+
+				if (scripts[src] != undefined) {
 					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(essential("baseUrl"),"")],false);
+					pageResolver.set(["state","loadingScriptsUrl",src],false);
 				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
-					// absolute url
+					//TODO absolute url
 					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
 				}
 			},0);
