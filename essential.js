@@ -2871,7 +2871,7 @@ Generator.ObjectGenerator = Generator(Object);
 		"change": new InputEvents(),
 		// "input": new InputEvents(),
 		// "textinput": new InputEvents(),
-        "selectstart": new InputEvents(),
+		"selectstart": new InputEvents(),
 
 		"scroll": new UIEvents(),
 
@@ -3046,9 +3046,9 @@ Generator.ObjectGenerator = Generator(Object);
 		this.currentTarget = src.currentTarget|| src.target; 
 		if (src.type) {
 			this.type = src.type;
-            var r = EVENTS[src.type];
-            if (r) r.copy.call(this,src);
-            else console.warn("unhandled essential event",src.type,src);
+			var r = EVENTS[src.type];
+			if (r) r.copy.call(this,src);
+			else console.warn("unhandled essential event",src.type,src);
 		}
 	}
 	_MutableEvent.prototype.relatedTarget = null;
