@@ -7004,6 +7004,15 @@ function(scripts) {
 	}
 
 	function enhance_application(el,role,config) {
+		// template around the content
+		if (config.template) {
+			var template = Resolver("page::templates","null")([config.template]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
