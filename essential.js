@@ -1,6 +1,6 @@
-/*
+/*!
     Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011 by Henrik Vendelbo
+    Copyright (C) 2011-2013 by Henrik Vendelbo
 
     This program is free software: you can redistribute it and/or modify it under the terms of
     the GNU Affero General Public License version 3 as published by the Free Software Foundation.
@@ -21,14 +21,6 @@
     DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
-/*!
-    Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011 by Henrik Vendelbo
-
-    Licensed under GNU Affero v3 and MIT. See http://essentialjs.com/license/
-*/
-
 
 /**
  *

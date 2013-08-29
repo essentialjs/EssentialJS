@@ -1,4 +1,4 @@
-/*
+/*!
     Essential JavaScript ❀ http://essentialjs.com
     Copyright (C) 2011-2013 by Henrik Vendelbo
 
