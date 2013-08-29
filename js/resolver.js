@@ -1,11 +1,3 @@
-/*!
-    Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011 by Henrik Vendelbo
-
-    Licensed under GNU Affero v3 and MIT. See http://essentialjs.com/license/
-*/
-
-
 /**
  *
  * options.name
