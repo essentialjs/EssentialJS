@@ -6374,28 +6374,43 @@ function(scripts) {
 			//TODO action event filtering
 			//TODO disabled
 			fireAction(ev);
+			if (ev.isDefaultPrevented()) return false;
 		}
 	}
 
 	function fireAction(ev) 
 	{
 		var el = ev.actionElement, action = ev.action, name = ev.commandName;
-		if (! el.actionVariant) {
-			if (action) {
-				action = action.replace(essential("baseUrl"),"");
-			} else {
-				action = "submit";
+		if (el) {
+
+			if (! el.actionVariant) {
+				if (action) {
+					action = action.replace(essential("baseUrl"),"");
+				} else {
+					action = "submit";
+				}
+
+				el.actionVariant = DialogAction.variant(action)(action);
 			}
 
-			el.actionVariant = DialogAction.variant(action)(action);
-		}
+			if (el.actionVariant[name]) el.actionVariant[name](el,ev);
+			else {
+				var sn = name.replace("-","_").replace(" ","_");
+				if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
+			}
+			//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 
-		if (el.actionVariant[name]) el.actionVariant[name](el,ev);
-		else {
-			var sn = name.replace("-","_").replace(" ","_");
-			if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
+		} 
+		else switch(ev.commandName) {
+			//TODO other builtin commands
+			case "close":
+				//TODO close up shop
+				if (ev.submitElement) {
+					callCleaners(ev.submitElement);
+					ev.submitElement.parentNode.removeChild(ev.submitElement);
+				}
+				break;
 		}
-		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 	}
 	essential.declare("fireAction",fireAction);
 
@@ -6764,8 +6779,92 @@ function(scripts) {
 		if (ev.defaultPrevented) return false;
 	}
 
+	function mousedownDialogHeader(ev) {
+		if (activeMovement != null) return;
+		if (ev.target.tagName == "BUTTON") return; // don't drag on close button
+		var dialog = this.parentNode;
+		Resolver("page").set("activeElement",dialog);
+		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
+
+		if (ev.preventDefault) ev.preventDefault();
+
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			dialog.style.left = x + "px"; 
+			dialog.style.top = y + "px"; 
+		};
+		movement.start(this,ev);
+		movement.startY = dialog.offsetTop;
+		movement.startX = dialog.offsetLeft;
+		movement.maxY = document.body.offsetHeight - dialog.offsetHeight;
+		movement.maxX = document.body.offsetWidth - dialog.offsetWidth;
+
+		return false; // prevent default
+	}
+
+	var dialog_top = 100, dialog_left = 100, dialog_top_inc = 22, dialog_left_inc = 22;
 
 	function enhance_dialog(el,role,config) {
+
+		// template around the content
+		if (config.template) {
+			var template = Resolver("page::templates","null")([config.template]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+		var wrap = (el.querySelector)? el.querySelector("[role=content]") : undefined;
+		var contentTemplate = config['content-template'], 
+			contentRole = config['content-role'], contentConfig = config['content-config'];
+		if (wrap) {
+			wrap.className = ((wrap.className||"") + " dialog-content").replace("  "," ");
+			if (contentTemplate) {
+				var template = Resolver("page::templates","null")([contentTemplate]);
+				if (template == null) return false;
+
+				var content = template.content.cloneNode(true);
+
+				(wrap || el).appendChild(content);
+			}
+			else if (contentRole) {
+				wrap.setAttribute("role",contentRole);
+			}
+
+			if (contentConfig) {
+				if (typeof contentConfig == "object") {
+					var c = JSON.stringify(contentConfig);
+					contentConfig = c.substring(1,c.length-1);
+				}
+				wrap.setAttribute("data-role",contentConfig);
+			}
+		}
+
+		//("essential::DescriptorQuery::")(el).enhance();
+
+		// position the dialog
+		if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
+			dialog_top = 100;
+			//TODO width of first dialog if reasonable
+			// dialog_left = first + 200;
+		}
+		el.style.top = dialog_top + "px";
+		el.style.left = dialog_left + "px";
+
+		dialog_top += dialog_top_inc;
+		dialog_left += dialog_left_inc;
+		//TODO move down by height of header
+
+		// dialog header present
+		var header = el.getElementsByTagName("HEADER")[0];
+		if (header && header.parentNode == el) {
+
+			addEventListeners(header,{ "mousedown": mousedownDialogHeader });
+		}
+
+		//TODO header instrumentation
+
+
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
