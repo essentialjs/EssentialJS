@@ -2040,17 +2040,17 @@ button.close {
 [role=dialog].state-active {
   z-index: 600;
 }
-[role=dialog] header {
+[role=dialog] > header {
   position: relative;
   width: 100%;
   height: 20px;
   border-bottom: 1px solid #bbb;
   margin-bottom: 6px;
 }
-[role=dialog] header h5 {
+[role=dialog] > header h5 {
   padding: 3px;
 }
-[role=dialog] [name=close] {
+[role=dialog] > header [name=close] {
   position: absolute;
   top: 0;
   right: 0;

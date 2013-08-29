@@ -148,17 +148,21 @@
 
 	function enhance_dialog(el,role,config) {
 
+		var configTemplate = config.template,
+			contentTemplate = config['content-template'], 
+			contentRole = config['content-role'], contentConfig = config['content-config'];
+		var children = [];
+		for(var i=0,c; c = el.childNodes[i]; ++i) children.push(c);
+
 		// template around the content
-		if (config.template) {
-			var template = Resolver("page::templates","null")([config.template]);
+		if (configTemplate) {
+			var template = Resolver("page::templates","null")([configTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
 			el.appendChild(content);
 		}
 		var wrap = (el.querySelector)? el.querySelector("[role=content]") : undefined;
-		var contentTemplate = config['content-template'], 
-			contentRole = config['content-role'], contentConfig = config['content-config'];
 		if (wrap) {
 			wrap.className = ((wrap.className||"") + " dialog-content").replace("  "," ");
 			if (contentTemplate) {
@@ -169,9 +173,12 @@
 
 				(wrap || el).appendChild(content);
 			}
-			else if (contentRole) {
-				wrap.setAttribute("role",contentRole);
-			}
+			else {
+				if (contentRole) {
+					wrap.setAttribute("role",contentRole);
+				}
+				while(children.length) wrap.appendChild(children.shift());
+			} 
 
 			if (contentConfig) {
 				if (typeof contentConfig == "object") {
@@ -985,15 +992,18 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 	};
 
 	function enhance_scrolled(el,role,config) {
-		if (config.template && pageResolver.get(["templates",config.template])) {
-			var template = pageResolver.get(["templates",config.template]);
-			//TODO replace element with template.tagName, mixed attributes and template.html
-			el.innerHTML = template.html; //TODO better
+
+		var contentTemplate = config.template;
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+
+			el.appendChild(content);
 			var context = { layouter: this.parentLayouter };
 			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
 			ApplicationConfig()._prep(el,context); //TODO prepAncestors
-			// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-			// DocumentRoles()._enhance_descs(descs);
 		}
 
 		StatefulResolver(el,true);
