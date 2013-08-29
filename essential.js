@@ -3315,6 +3315,14 @@ Generator.ObjectGenerator = Generator(Object);
 					}
 					break;
 
+				case "data-role":
+					if (typeof _from[n] == "object") {
+						var s = JSON.stringify(_from[n]);
+						e.setAttribute(n,s.substring(1,s.length-1));
+					}
+					else e.setAttribute(n,_from[n]);
+					break;
+
 				case "id":
 				case "className":
 				case "rel":
