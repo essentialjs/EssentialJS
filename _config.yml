@@ -18,9 +18,14 @@ modules :
     - js/elements.js
     - js/roles.js
     - js/configured.js
+  plus:
+    - app/js/raphael.min.js
+    - app/js/spin.min.js
 
 js-base: app/js
 css-base: app/css
 
 concatenate:
-- js/modernizr+essential.js
+- modernizr+essential+plus.js
+- modernizr+essential.js
+- essential.js
