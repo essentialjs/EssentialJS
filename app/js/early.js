@@ -18,7 +18,7 @@
 		pageProgress.on("change",document.getElementById("loadingProgress"),function(ev) {
 			var el = ev.data;
 
-			if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode());
+			if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
 			el.lastChild.value = ev.value;
 			// try {
 			// 	el.innerHTML = ev.value;
