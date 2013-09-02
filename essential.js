@@ -6053,7 +6053,7 @@ function(scripts) {
 	    var firstText = child.childNodes[0];
 	    if (firstText && firstText.nodeType != 3) firstText = null;
 	    if (firstText) {
-	        impl.toClone.innerHTML = firstText.nodeValue;
+	        impl.toClone.appendChild(impl.toClone.ownerDocument.createTextNode(firstText.nodeValue));
 	    }
 
 	    //TODO deep if no enhancement needed
@@ -6088,7 +6088,8 @@ function(scripts) {
 	HTMLElement.fn._cloneNodeIE = function(src,deep) {
 		var el = src.ownerDocument.createElement(src.tagName);
 		this.copyAttributes(src,el);
-		el.innerHTML = src.innerHTML;
+		// el.innerHTML = src.innerHTML;
+		if (src.firstChild) el.appendChild(el.ownerDocument.createTextNode(src.firstChild.data)); //TODO review this
 		return el;
 	};
 
