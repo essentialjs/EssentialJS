@@ -489,6 +489,13 @@
 		return el; 
 	};
 
+	HTMLElement.fn.setPostfix = function(el,text) {
+
+		if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
+		// if (ev.lastChild.)
+		el.lastChild.nodeValue = ev.value;
+	};
+
 
 	HTMLElement._describeStream = function(root,stream,rootImpl,policy)
 	{

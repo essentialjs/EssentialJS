@@ -19,7 +19,8 @@
 			var el = ev.data;
 
 			if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
-			el.lastChild.value = ev.value;
+			// if (ev.lastChild.)
+			el.lastChild.nodeValue = ev.value;
 			// try {
 			// 	el.innerHTML = ev.value;
 			// } catch(ex) {
