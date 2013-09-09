@@ -105,6 +105,8 @@ test('Resolve defined and undefined',function(){
 	equal(typeof resolver("d.e.f","generate"),"object");
 	equal(resolver("g.h.i","null"),null);
 	equal(resolver("g.h.i","undefined"),undefined);
+	equal(resolver("g.h.i","0"),0);
+	equal(resolver("g.h.i","false"),false);
 	raises(function(){ resolver("j.k.l","throw") },"The 'j' part of 'j.k.l' couldn't be resolved.");
 
 	strictEqual(resolver({ name: "m.n.o", onundefined:"null"}), null);

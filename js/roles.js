@@ -556,8 +556,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		"scroll": function(ev) {
 			var el = ev? (ev.target || ev.scrElement) : event.srcElement;
 
-			if (el.stateful("pos.scrollVert")) el.stateful.set("pos.scrollTop",el.scrollTop);
-			if (el.stateful("pos.scrollHorz")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
+			if (el.stateful("pos.scrollVert","0")) el.stateful.set("pos.scrollTop",el.scrollTop);
+			if (el.stateful("pos.scrollHorz","0")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
 		},
 		"DOMMouseScroll": function(ev) {
 			// Firefox with axis
@@ -582,12 +582,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 			var prevent = false;
 
-			if (this.stateful("pos.scrollVert")) {
+			if (this.stateful("pos.scrollVert","0")) {
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaY != 0) {
-					var max = Math.max(0, this.stateful("pos.scrollHeight") - this.offsetHeight);
-					var top = this.stateful("pos.scrollTop");
+					var max = Math.max(0, this.stateful("pos.scrollHeight","0") - this.offsetHeight);
+					var top = this.stateful("pos.scrollTop","0");
 					// console.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
 					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
@@ -595,12 +595,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				}
 			}
 
-			if (this.stateful("pos.scrollHorz")) { // native scrolling?
+			if (this.stateful("pos.scrollHorz","0")) { // native scrolling?
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaX != 0) {
-					var max = Math.max(0,this.stateful("pos.scrollWidth") - this.offsetWidth);
-					var left = this.stateful("pos.scrollLeft");
+					var max = Math.max(0,this.stateful("pos.scrollWidth","0") - this.offsetWidth);
+					var left = this.stateful("pos.scrollLeft","0");
 					left =  Math.min(max,Math.max(0,left + ev.deltaY)); //TODO inverted?
 					this.stateful.set("pos.scrollLeft",left);
 					prevent = true;
@@ -729,10 +729,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
 		};
 		movement.start(this,ev);
-		movement.startY = scrolled.stateful("pos.scrollTop");
-		movement.startX = scrolled.stateful("pos.scrollLeft");
-		movement.factorY = scrolled.stateful("pos.scrollHeight") / movement.el.offsetHeight;
-		movement.maxY = scrolled.stateful("pos.scrollHeight") - scrolled.clientHeight;
+		movement.startY = scrolled.stateful("pos.scrollTop","0");
+		movement.startX = scrolled.stateful("pos.scrollLeft","0");
+		movement.factorY = scrolled.stateful("pos.scrollHeight","0") / movement.el.offsetHeight;
+		movement.maxY = scrolled.stateful("pos.scrollHeight","0") - scrolled.clientHeight;
 		return false; // prevent default
 	}
 
@@ -766,10 +766,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			this.scrolledTo = x;
 		};
 		movement.start(this,ev);
-		movement.startY = scrolled.stateful("pos.scrollTop");
-		movement.startX = scrolled.stateful("pos.scrollLeft");
-		movement.factorX = scrolled.stateful("pos.scrollWidth") / movement.el.offsetWidth;
-		movement.maxY = scrolled.stateful("pos.scrollWidth") - scrolled.clientWidth;
+		movement.startY = scrolled.stateful("pos.scrollTop","0");
+		movement.startX = scrolled.stateful("pos.scrollLeft","0");
+		movement.factorX = scrolled.stateful("pos.scrollWidth","0") / movement.el.offsetWidth;
+		movement.maxY = scrolled.stateful("pos.scrollWidth","0") - scrolled.clientWidth;
 		return false; // prevent default
 	}
 
@@ -808,15 +808,20 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			this.scrolledContentSize = el["scroll"+this.sizeName];
 		}
 		else {
-			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName);
-			this.scrolledContentSize = this.scrolled.stateful("pos.scroll"+this.sizeName);
+			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName,"0");
+			this.scrolledContentSize = this.scrolled.stateful("pos.scroll"+this.sizeName,"0");
 		}
 		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
 	};
 
 	EnhancedScrollbar.prototype.update = function(scrolled) {
-		this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
-		this.el.lastChild.style[this.sizeStyle] = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+		if (this.scrolledContentSize) {
+			this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+			this.el.lastChild.style[this.sizeStyle] = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+		} else {
+			this.el.lastChild.style[this.posStyle] = "0%";
+			this.el.lastChild.style[this.sizeStyle] = "0%";
+		}
 	};
 
 	EnhancedScrollbar.prototype.show = function() {

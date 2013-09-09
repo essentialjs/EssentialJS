@@ -52,6 +52,8 @@ function Resolver(name_andor_expr,ns,options)
         if (name_expr.length>1 && expr) {
             var call = "reference";
             switch(ns) {
+                case "0":
+                case "false":
                 case "generate":
                 case "null":
                 case "undefined":
@@ -102,13 +104,19 @@ function Resolver(name_andor_expr,ns,options)
 	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
 	                    continue; // go to next now that we filled in an object
                 	}
-                //TODO "false"
+                //TODO use map to determine return
+                case "false":
+                    if (top === undefined) return false;
+                    break;
                 case "null":
                 	if (top === undefined) return null;
                 	break;
                 case "undefined":
                 	if (top === undefined) return undefined;
                 	break;
+                case "0":
+                    if (top === undefined) return 0;
+                    break;
                 }
                 if (j < names.length-1) {
 	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
@@ -127,13 +135,18 @@ function Resolver(name_andor_expr,ns,options)
 		                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
 		                    continue; // go to next now that we filled in an object
 	                	}
-	                //TODO "false"
+                    case "false":
+                        if (top === undefined) return false;
+                        break;
 	                case "null":
 	                	if (top === undefined) return null;
 	                	break;
 	                case "undefined":
 	                	if (top === undefined) return undefined;
 	                	break;
+                    case "0":
+                        if (top === undefined) return 0;
+                        break;
 	                }
 	                if (j < names.length-1) {
 		            	throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
@@ -235,7 +248,7 @@ function Resolver(name_andor_expr,ns,options)
             names.push(leafName);
         }
 
-        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
+        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
 
     	function get() {
     		if (arguments.length==1) {
