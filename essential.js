@@ -6255,6 +6255,13 @@ function(scripts) {
 		return el; 
 	};
 
+	HTMLElement.fn.setPostfix = function(el,text) {
+
+		if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
+		// if (ev.lastChild.)
+		el.lastChild.nodeValue = ev.value;
+	};
+
 
 	HTMLElement._describeStream = function(root,stream,rootImpl,policy)
 	{
@@ -6817,6 +6824,19 @@ function(scripts) {
 		return false; // prevent default
 	}
 
+	function getChildWithRole(el,role) {
+		if (el.querySelector && !/; MSIE /.test(navigator.userAgent)) return el.querySelector("[role="+role+"]");
+
+		for(var c=el.firstChild; c; c = c.nextSibling) if (c.getAttribute) {
+			if (c.getAttribute("role") == role) return c;
+			if (c.firstChild) {
+				var match = getChildWithRole(c,role);
+				if (match) return match;
+			}
+		}
+		return null;
+	}
+
 	var dialog_top = 100, dialog_left = 100, dialog_top_inc = 22, dialog_left_inc = 22;
 
 	function enhance_dialog(el,role,config) {
@@ -6835,7 +6855,7 @@ function(scripts) {
 			var content = template.content.cloneNode(true);
 			el.appendChild(content);
 		}
-		var wrap = (el.querySelector)? el.querySelector("[role=content]") : undefined;
+		var wrap = getChildWithRole(el,"content");
 		if (wrap) {
 			wrap.className = ((wrap.className||"") + " dialog-content").replace("  "," ");
 			if (contentTemplate) {
