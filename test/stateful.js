@@ -89,7 +89,7 @@ test("Stateful element state",function(){
 
 	ok(! stateful("state.disabled","undefined"));
 	stateful.set("state.disabled",true);
-	ok(!el.disabled,"The disabled property should not be applied to avoid IE styling");
+	if (navigator.userAgent.indexOf(" MSIE ") == -1) ok(!el.disabled,"The disabled property should not be applied to avoid IE styling");
 	equal(el.getAttribute("aria-disabled"),"disabled");
 	equal(el.className,"state-disabled");
 	stateful.set("state.disabled",false);

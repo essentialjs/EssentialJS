@@ -112,9 +112,11 @@ test("HTMLElement construction",function(){
 	equal(div.childNodes[1].innerHTML,"def")
 	equal(div.childNodes[2].nodeName,"#text")
 
-	var range = HTMLElement("input",{type:"range"});
-	equal(range.tagName,"INPUT");
-	equal(range.getAttribute("type"),"range");
+	if (!/ MSIE /.test(navigator.userAgent)) {
+		var range = HTMLElement("input",{type:"range"});
+		equal(range.tagName,"INPUT");
+		equal(range.getAttribute("type"),"range");
+	}
 
 	var range = HTMLElement("input",{type:"date"});
 	equal(range.tagName,"INPUT");
