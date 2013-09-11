@@ -5984,6 +5984,7 @@ function(scripts) {
 		"cols": 0,
 		"rows": 0,
 		// not supported properly by IE, "type": true,
+		"role": "",
 		"name": "",
 		"id": "",
 		"title": "",
