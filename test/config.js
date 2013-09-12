@@ -16,6 +16,24 @@ test("Loading config in html",function(){
 	var config = ac.getConfig(section);
 	equal(config.position,"center");
 	equal(config.abc,"def");
+
+	var dialog = HTMLElement("div",{
+		"role":"dialog",
+		"data-role": 
+			"'template':'#test-dialog',"+
+			"'content-role':'presenter',"+
+			"'content-config':{'templateId':'etp.styling.order-entry','presentationModel':'etp.MockSide'},"+
+			"'inline':false"
+	});
+	var config = ac.getConfig(dialog);
+	equal(config.template,'#test-dialog');
+	equal(config['content-role'],'presenter');
+	deepEqual(config['content-config'],{
+			'templateId':'etp.styling.order-entry',
+			'presentationModel':'etp.MockSide'
+		});
+	equal(config['inline'],false);
+
 });
 
 	//TODO css like syntax for data-role
