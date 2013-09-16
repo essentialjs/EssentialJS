@@ -1616,7 +1616,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	function DescriptorQuery(sel,el) {
-		var q = [], conf = { list:q };
+		var q = [], context = { list:q };
 
 		if (typeof sel == "string") {
 			//TODO

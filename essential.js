@@ -1608,7 +1608,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	function DescriptorQuery(sel,el) {
-		var q = [], conf = { list:q };
+		var q = [], context = { list:q };
 
 		if (typeof sel == "string") {
 			//TODO
@@ -1616,16 +1616,34 @@ Generator.ObjectGenerator = Generator(Object);
 
 			}
 		} else {
+			var ac = essential("ApplicationConfig")();
 			el=sel; sel=undefined;
-			//TODO if the el is a layouter, pass that in conf
-			essential("ApplicationConfig")()._prep(el,conf);
+			if (el instanceof Array) {
+				for(var i=0,e; e = el[i]; ++i) {
 
+					var conf = ac.getConfig(e), role = e.getAttribute("role");
+					var desc = EnhancedDescriptor(e,role,conf,false,ac);
+					if (desc) {
+						q.push(desc);
+						// if (sizingElement) sizingElements[desc.uniqueId] = desc;
+						desc.layouterParent = context.layouter;
+						if (desc.conf.layouter) {
+							context.layouter = desc;
+						}
+					} 
+				}
+			} else {
+				//TODO if the el is a layouter, pass that in conf
+				ac._prep(el,context);
+				//TODO push those matched descriptors into q
+			}
 		}
 		q.el = el;
 		q.enhance = enhanceQuery;
 		return q;
 	}
 	essential.declare("DescriptorQuery",DescriptorQuery);
+	essential("HTMLElement").query = DescriptorQuery;
 
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
