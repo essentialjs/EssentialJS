@@ -56,12 +56,14 @@
 				var dialog = HTMLElement("div",{
 					"role":"dialog",
 					"data-role": {
-						'template':'#test-dialog','content-template':'#test-content','inline':false
+						'template':'#test-dialog','content-template':'#test-content',
+						'tile':true,
+						'inline':false
 					}
 				});
 				document.body.appendChild( dialog );
 				// DescriptorQuery(dialog).enhance();
-				DescriptorQuery(document.body).enhance();
+				DescriptorQuery([dialog]).enhance();
 			}
 		}
 	}))

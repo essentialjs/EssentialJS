@@ -3333,7 +3333,7 @@ Generator.ObjectGenerator = Generator(Object);
 			_from = __from;
 		}
 		
-		var e = _doc.createElement(_tagName);
+		var e = _doc.createElement(_tagName), enhanced = false;
 		for(var n in _from) {
 			switch(n) {
 				case "tagName": break; // already used
@@ -3374,6 +3374,10 @@ Generator.ObjectGenerator = Generator(Object);
 					if (_from[n]) e.impl = HTMLElement.impl(e);
 					break;
 
+				case "enhanced":
+					enhanced = _from[n];
+					break;
+
 				// "type" IE9 el.type is readonly:
 
 				//TODO case "onprogress": // partial script progress
@@ -3403,6 +3407,8 @@ Generator.ObjectGenerator = Generator(Object);
 		} 
 		
 		//TODO .appendTo function
+		
+		if (enhanced) HTMLElement.query([e]); //TODO call enhance?
 		
 		return e;
 	}
