@@ -1252,6 +1252,8 @@ section.sheet {
 }
 [role=scrolled]::-webkit-scrollbar {
   -webkit-appearance: none;
+  width: 0;
+  height: 0;
 }
 [role=scrolled]::scrollbar {
   width: 0;
