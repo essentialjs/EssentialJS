@@ -2044,6 +2044,7 @@ button.close {
   height: 20px;
   border-bottom: 1px solid #bbb;
   margin-bottom: 6px;
+  cursor: default;
 }
 [role=dialog] > header h5 {
   padding: 3px;
@@ -2064,6 +2065,7 @@ button.close {
   position: relative;
   min-width: 200px;
   min-height: 40px;
+  overflow-y: auto;
 }
 [role=dialog] .dialog-content table {
   margin: 1em;
