@@ -64,6 +64,19 @@
 				document.body.appendChild( dialog );
 				// DescriptorQuery(dialog).enhance();
 				DescriptorQuery([dialog]).enhance();
+			},
+			"new-html5":function(el,ev) {
+				var dialog = HTMLElement("div",{
+					"role":"dialog",
+					"data-role": {
+						'template':'#test-dialog','content-template':'#test-html5',
+						'tile':true,
+						'inline':false
+					}
+				});
+				document.body.appendChild( dialog );
+				// DescriptorQuery(dialog).enhance();
+				DescriptorQuery([dialog]).enhance();
 			}
 		}
 	}))

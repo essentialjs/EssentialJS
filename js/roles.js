@@ -179,6 +179,10 @@
 			var content = template.content.cloneNode(true);
 			el.appendChild(content);
 		}
+
+		var header = el.getElementsByTagName("HEADER")[0],
+			footer = el.getElementsByTagName("FOOTER")[0];
+
 		var wrap = getChildWithRole(el,"content");
 		// content-template appended to role=content or element
 		if (contentTemplate) {
@@ -208,7 +212,13 @@
 		} 
 		if (wrap) wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
 
-
+		// restrict height to body (TODO use layouter to restrict this on page resize)
+		if (el.offsetHeight > document.body.offsetHeight) {
+			var height = document.body.offsetHeight - 20;
+			if (header) height -= header.offsetHeight;
+			if (footer) height -= footer.offsetHeight;
+			wrap.style.maxHeight = height + "px";
+		}
 		//("essential::DescriptorQuery::")(el).enhance();
 
 		// position the dialog
@@ -234,7 +244,7 @@
 					dialog_top = dialog_next_down;
 				}
 			}
-			el.style.top = dialog_top + "px";
+			el.style.top = Math.min(dialog_top,document.body.offsetHeight - el.offsetHeight - 12) + "px";
 			el.style.left = dialog_left + "px";
 
 			if (config.tile) { // side by side
@@ -249,7 +259,6 @@
 
 
 		// dialog header present
-		var header = el.getElementsByTagName("HEADER")[0];
 		if (header && header.parentNode == el) {
 
 			addEventListeners(header,{ "mousedown": mousedownDialogHeader });
