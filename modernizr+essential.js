@@ -1624,16 +1624,34 @@ Generator.ObjectGenerator = Generator(Object);
 
 			}
 		} else {
+			var ac = essential("ApplicationConfig")();
 			el=sel; sel=undefined;
-			//TODO if the el is a layouter, pass that in conf
-			essential("ApplicationConfig")()._prep(el,conf);
+			if (el instanceof Array) {
+				for(var i=0,e; e = el[i]; ++i) {
 
+					var conf = ac.getConfig(e), role = e.getAttribute("role");
+					var desc = EnhancedDescriptor(e,role,conf,false,ac);
+					if (desc) {
+						q.push(desc);
+						// if (sizingElement) sizingElements[desc.uniqueId] = desc;
+						desc.layouterParent = context.layouter;
+						if (desc.conf.layouter) {
+							context.layouter = desc;
+						}
+					} 
+				}
+			} else {
+				//TODO if the el is a layouter, pass that in conf
+				ac._prep(el,context);
+				//TODO push those matched descriptors into q
+			}
 		}
 		q.el = el;
 		q.enhance = enhanceQuery;
 		return q;
 	}
 	essential.declare("DescriptorQuery",DescriptorQuery);
+	essential("HTMLElement").query = DescriptorQuery;
 
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
@@ -6846,12 +6864,16 @@ function(scripts) {
 		return null;
 	}
 
-	var dialog_top = 100, dialog_left = 100, dialog_top_inc = 22, dialog_left_inc = 22;
+	var initial_top = 100, initial_left = 40, dialog_top_inc = 32, dialog_left_inc = 32, 
+		dialog_top = initial_top, dialog_left = initial_left,
+		dialog_next_down = initial_top;
 
 	function enhance_dialog(el,role,config) {
+		// TODO if (config['invalid-config']) console.log()
 
 		var configTemplate = config.template,
 			contentTemplate = config['content-template'], 
+			contentClass = config['content-class'] || "dialog-content",
 			contentRole = config['content-role'], contentConfig = config['content-config'];
 		var children = [];
 		for(var i=0,c; c = el.childNodes[i]; ++i) children.push(c);
@@ -6865,22 +6887,23 @@ function(scripts) {
 			el.appendChild(content);
 		}
 		var wrap = getChildWithRole(el,"content");
-		if (wrap) {
-			wrap.className = ((wrap.className||"") + " dialog-content").replace("  "," ");
-			if (contentTemplate) {
-				var template = Resolver("page::templates","null")([contentTemplate]);
-				if (template == null) return false;
+		// content-template appended to role=content or element
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
 
-				var content = template.content.cloneNode(true);
+			var content = template.content.cloneNode(true);
 
-				(wrap || el).appendChild(content);
+			(wrap || el).appendChild(content);
+		}
+		else {
+			if (wrap == null) wrap = HTMLElement("div",{});
+				
+			if (contentRole) {
+				wrap.setAttribute("role",contentRole);
 			}
-			else {
-				if (contentRole) {
-					wrap.setAttribute("role",contentRole);
-				}
-				while(children.length) wrap.appendChild(children.shift());
-			} 
+			while(children.length) wrap.appendChild(children.shift());
+
 
 			if (contentConfig) {
 				if (typeof contentConfig == "object") {
@@ -6889,22 +6912,48 @@ function(scripts) {
 				}
 				wrap.setAttribute("data-role",contentConfig);
 			}
-		}
+		} 
+		if (wrap) wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+
 
 		//("essential::DescriptorQuery::")(el).enhance();
 
 		// position the dialog
-		if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
-			dialog_top = 100;
-			//TODO width of first dialog if reasonable
-			// dialog_left = first + 200;
-		}
-		el.style.top = dialog_top + "px";
-		el.style.left = dialog_left + "px";
+		if (config.placement) { // explicit position
+			if (config.placement.bottom) el.style.bottom = config.placement.bottom + "px";
+			else el.style.top = (config.placement.top || 0) + "px";
 
-		dialog_top += dialog_top_inc;
-		dialog_left += dialog_left_inc;
-		//TODO move down by height of header
+			if (config.placement.right) el.style.right = config.placement.right + "px";
+			else el.style.left = (config.placement.left || 0) + "px";
+		} else { // managed position
+
+			if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
+				dialog_top = initial_top;
+			}
+			if (dialog_left + el.offsetWidth > document.body.offsetWidth) {
+				initial_left += dialog_left_inc;
+				dialog_left = initial_left;
+				if (config.tile) {
+					if (dialog_next_down + el.offsetHeight > document.body.offsetHeight) {
+						initial_top += dialog_top_inc;
+						dialog_next_down =  initial_top;
+					}
+					dialog_top = dialog_next_down;
+				}
+			}
+			el.style.top = dialog_top + "px";
+			el.style.left = dialog_left + "px";
+
+			if (config.tile) { // side by side
+				dialog_left += el.offsetWidth + dialog_left_inc;
+				dialog_next_down = dialog_top + el.offsetHeight + dialog_top_inc;
+			} else { // stacked
+				dialog_top += dialog_top_inc;
+				dialog_left += dialog_left_inc;
+				//TODO move down by height of header
+			}
+		}
+
 
 		// dialog header present
 		var header = el.getElementsByTagName("HEADER")[0];
