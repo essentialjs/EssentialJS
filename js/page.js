@@ -61,7 +61,7 @@
 			return;
 		}
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
@@ -72,7 +72,7 @@
 	*/
 	function reflectAria(el,key,value) {
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -83,13 +83,13 @@
 	*/
 	function reflectAttributeAria(el,key,value) {
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
 
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -100,13 +100,13 @@
 			el[key] = !!value;
 		} else {
 			if (value) {
-				el.setAttribute(key,key);
+				el.setAttribute(key,this["true"] || "true");
 			} else {
 				el.removeAttribute(key);
 			}
 		}
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -158,13 +158,14 @@
 	}
 
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled", "true":"disabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
 		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
 		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
 		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
-		active: { index:6, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
+		selected: { index:6, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"selected" },
+		active: { index:7, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
 		//TODO draggable
@@ -174,14 +175,13 @@
 		//TODO down ariaPressed
 		//TODO ariaHidden
 		//TODO ariaDisabled
-		//TODO ariaSelected
 
 		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
 		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
 
 		/*TODO IE aria props
 			string:
-			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
+			ariaPressed ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
 			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
 		*/
 
@@ -575,6 +575,22 @@
 		return this._getElementRoleConfig(element);
 	};
 
+	_Scripted.prototype.doInitScripts = function() {
+		var inits = this.inits();
+		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
+			// this.currently = s
+			try {
+				this.context["element"] = s;
+				this.context["parentElement"] = s.parentElement || s.parentNode;
+				with(this.context) eval(s.text);
+				s.done = true;
+			} catch(ex) {
+				// debugger;
+			} //TODO only ignore ex.ignore
+		}
+		this.context["this"] = undefined;
+	};
+
 	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -841,6 +857,8 @@
 			applied.push(e);
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
+
+		this.doInitScripts();
 
 		var descs = this.resolver("descriptors");
 		for(var n in descs) {
@@ -1261,22 +1279,6 @@
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
-	};
-
-	ApplicationConfig.prototype.doInitScripts = function() {
-		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
-			// this.currently = s
-			try {
-				this.context["element"] = s;
-				this.context["parentElement"] = s.parentElement || s.parentNode;
-				with(this.context) eval(s.text);
-				s.done = true;
-			} catch(ex) {
-				// debugger;
-			} //TODO only ignore ex.ignore
-		}
-		this.context["this"] = undefined;
 	};
 
 	// iBooks HTML widget

@@ -3744,7 +3744,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			return;
 		}
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
@@ -3755,7 +3755,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	*/
 	function reflectAria(el,key,value) {
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -3766,13 +3766,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 	*/
 	function reflectAttributeAria(el,key,value) {
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
 
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -3783,13 +3783,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 			el[key] = !!value;
 		} else {
 			if (value) {
-				el.setAttribute(key,key);
+				el.setAttribute(key,this["true"] || "true");
 			} else {
 				el.removeAttribute(key);
 			}
 		}
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -3841,13 +3841,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled", "true":"disabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
 		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
 		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
 		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
-		selected: { index:6, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaSelected" },
+		selected: { index:6, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"selected" },
 		active: { index:7, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
@@ -4258,6 +4258,22 @@ _ElementPlacement.prototype._computeIE = function(style)
 		return this._getElementRoleConfig(element);
 	};
 
+	_Scripted.prototype.doInitScripts = function() {
+		var inits = this.inits();
+		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
+			// this.currently = s
+			try {
+				this.context["element"] = s;
+				this.context["parentElement"] = s.parentElement || s.parentNode;
+				with(this.context) eval(s.text);
+				s.done = true;
+			} catch(ex) {
+				// debugger;
+			} //TODO only ignore ex.ignore
+		}
+		this.context["this"] = undefined;
+	};
+
 	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -4524,6 +4540,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 			applied.push(e);
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
+
+		this.doInitScripts();
 
 		var descs = this.resolver("descriptors");
 		for(var n in descs) {
@@ -4944,22 +4962,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
-	};
-
-	ApplicationConfig.prototype.doInitScripts = function() {
-		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
-			// this.currently = s
-			try {
-				this.context["element"] = s;
-				this.context["parentElement"] = s.parentElement || s.parentNode;
-				with(this.context) eval(s.text);
-				s.done = true;
-			} catch(ex) {
-				// debugger;
-			} //TODO only ignore ex.ignore
-		}
-		this.context["this"] = undefined;
 	};
 
 	// iBooks HTML widget

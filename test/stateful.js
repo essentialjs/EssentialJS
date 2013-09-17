@@ -55,6 +55,13 @@ test("Initial stateful element state",function() {
 		'<span disabled></span>',
 		'<span aria-disabled="false"></span>',
 		'<span aria-disabled="true"></span>',
+
+		'<select><option>A</option><option selected>B</option></select>',
+		// row gridcell
+
+		'<button role="tab">Tab</button>',
+		'<button role="tab" aria-selected="selected">Tab</button>',
+		'<button role="tab" aria-selected="true">Tab</button>',
 		'');
 	var statefulDiv = StatefulResolver(el,true);
 
@@ -65,18 +72,30 @@ test("Initial stateful element state",function() {
 	equal(statefulDiv("state.expanded","undefined"),undefined);
 	equal(statefulDiv("state.checked","undefined"),undefined);
 
-	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false);
+	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false,"checked");
 	equal(StatefulResolver(el.childNodes[1],true)("state.checked","undefined"),true);
 	// equal(StatefulResolver(el.childNodes[2],true)("state.checked"),true); TODO should aria transfer to checked state
 	equal(StatefulResolver(el.childNodes[3],true)("state.checked","undefined"),true);
 
-	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false);
+	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false,"expanded");
 	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true);
 	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true);
 
-	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true);
+	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true,"disabled");
 	equal(StatefulResolver(el.childNodes[8],true)("state.disabled","undefined"),false);
 	equal(StatefulResolver(el.childNodes[9],true)("state.disabled","undefined"),true);
+
+	equal(el.childNodes[10].tagName,"SELECT");
+	equal(StatefulResolver(el.childNodes[10].firstChild,true)("state.selected","undefined"),false,"selected");
+	equal(StatefulResolver(el.childNodes[10].firstChild.nextSibling,true)("state.selected","undefined"),true,"selected option 2");
+
+	// debugger;
+	equal(el.childNodes[11].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[11],true)("state.selected","undefined"),false);
+	equal(el.childNodes[12].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[12],true)("state.selected","undefined"),true);
+	equal(el.childNodes[13].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[13],true)("state.selected","undefined"),true);
 
 	//TODO hidden required
 })
@@ -87,7 +106,7 @@ test("Stateful element state",function(){
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
 
-	ok(! stateful("state.disabled","undefined"));
+	ok(! stateful("state.disabled","undefined"),"disabled undefined");
 	stateful.set("state.disabled",true);
 	if (navigator.userAgent.indexOf(" MSIE ") == -1) ok(!el.disabled,"The disabled property should not be applied to avoid IE styling");
 	equal(el.getAttribute("aria-disabled"),"disabled");
@@ -96,7 +115,7 @@ test("Stateful element state",function(){
 	ok(!el.disabled,"The disabled property should still be unaffected");
 	equal(el.className,"");
 
-	ok(! stateful("state.readOnly","undefined"));
+	ok(! stateful("state.readOnly","undefined"),"readOnly undefined");
 	stateful.set("state.readOnly",true);
 	ok(el.readOnly);
 	equal(el.className,"state-readOnly");
@@ -104,28 +123,37 @@ test("Stateful element state",function(){
 	ok(!el.readOnly);
 	equal(el.className,"");
 
-	ok(! stateful("state.hidden","undefined"));
+	ok(! stateful("state.hidden","undefined"),"hidden undefined");
 	stateful.set("state.hidden",true);
-	ok(el.hidden || (el.getAttribute("hidden") == "hidden"));
+	ok(el.hidden || (el.getAttribute("hidden") == "true"));
 	equal(el.className,"state-hidden");
 	stateful.set("state.hidden",false);
 	ok(!el.hidden);
 	equal(el.className,"");
 
-	ok(! stateful("state.required","undefined"));
+	ok(! stateful("state.required","undefined"),"required undefined");
 	stateful.set("state.required",true);
-	ok(el.required || (el.getAttribute("required") == "required"));
-	equal(el.getAttribute("aria-required"),"required");
+	ok(el.required || (el.getAttribute("required") == "true"));
+	equal(el.getAttribute("aria-required"),"true");
 	equal(el.className,"state-required");
 	stateful.set("state.required",false);
 	ok(!el.required);
 	equal(el.getAttribute("required"),null);
 	equal(el.className,"");
 
+	ok(! stateful("state.selected","undefined"));
+	stateful.set("state.selected",true);
+	ok((el.getAttribute("aria-selected") == "true"));
+	// equal(el.className,"state-selected");
+	stateful.set("state.selected",false);
+	equal(el.getAttribute("aria-selected"),null);
+	// ok(!el.selected);
+	// equal(el.className,"");
+
 	ok(! stateful("state.expanded","undefined"));
 	stateful.set("state.expanded",true);
-	ok(el.expanded || (el.getAttribute("expanded") == "expanded"));
-	equal(el.getAttribute("aria-expanded"),"expanded");
+	ok(el.expanded || (el.getAttribute("expanded") == "true"));
+	equal(el.getAttribute("aria-expanded"),"true");
 	equal(el.className,"state-expanded");
 	stateful.set("state.expanded",false);
 	ok(!el.required);
