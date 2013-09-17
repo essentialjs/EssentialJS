@@ -157,6 +157,7 @@
 		return null;
 	}
 
+	// TODO resolver entries for bounds, use layouter to position
 	var initial_top = 100, initial_left = 40, dialog_top_inc = 32, dialog_left_inc = 32, 
 		dialog_top = initial_top, dialog_left = initial_left,
 		dialog_next_down = initial_top;
@@ -244,8 +245,8 @@
 					dialog_top = dialog_next_down;
 				}
 			}
-			el.style.top = Math.min(dialog_top,document.body.offsetHeight - el.offsetHeight - 12) + "px";
-			el.style.left = dialog_left + "px";
+			el.style.top = Math.max(0,Math.min(dialog_top,document.body.offsetHeight - el.offsetHeight - 12)) + "px";
+			el.style.left = Math.max(0,dialog_left) + "px";
 
 			if (config.tile) { // side by side
 				dialog_left += el.offsetWidth + dialog_left_inc;
@@ -707,12 +708,17 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
-		document.onselectstart = function(ev) { return false; };
+		document.onselectstart = function(ev) { return false; }; //TODO save old handler?
 
 		//TODO capture in IE
 		//movement.track(event,0,0);
 
 		if (el.stateful) el.stateful.set("dragging",true);
+		this.target = document.body;
+		if (document.body.setCapture) {
+			this.target = this.el;
+			this.target.setCapture();
+		}
 
 		this.drag_events = {
 			//TODO  keyup ESC
@@ -726,11 +732,19 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				movement.track(ev,x,y);
 				// console.log(movement.factorX,movement.factorY)
 			},
+			"click": function(ev) {
+				ev.preventDefault();
+				ev.stopPropagation(); //TODO ev.stopImmediatePropagation() ?
+				return false;
+			},
 			"mouseup": function(ev) {
 				movement.end();
+				ev.preventDefault();
+				ev.stopPropagation(); //TODO ev.stopImmediatePropagation() ?
+				return false;
 			}
 		};
-		addEventListeners(document.body,this.drag_events);
+		addEventListeners(this.target,this.drag_events);
 
 		activeMovement = this;
 
@@ -739,7 +753,9 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	ElementMovement.prototype.end = function() {
 		if (this.el.stateful) this.el.stateful.set("dragging",false);
-		removeEventListeners(document.body,this.drag_events);
+		removeEventListeners(this.target,this.drag_events);
+		if (this.target.releaseCapture) this.target.releaseCapture();
+		this.target = null;
 
 		delete document.onselectstart ;
 
