@@ -64,10 +64,14 @@ test("Initial stateful element state",function() {
 		'<button role="tab" aria-selected="true">Tab</button>',
 
 		'<input required="required">',
-		'<input aria-required="true">',
-		'<input>',
+		'<input aria-required="true" aria-invalid="true">',
+		'<input aria-invalid="other">',
 		'<input hidden="hidden">',
 		'<input aria-hidden="true">',
+
+		'<button aria-pressed="true"></button>',
+		'<button aria-pressed="false"></button>',
+		'<button></button>',
 
 		'');
 	var statefulDiv = StatefulResolver(el,true);
@@ -109,15 +113,28 @@ test("Initial stateful element state",function() {
 	equal(el.childNodes[14].tagName,"INPUT");
 	equal(StatefulResolver(el.childNodes[14])("state.required","undefined"),true);
 	equal(StatefulResolver(el.childNodes[15])("state.required","undefined"),true);
+	equal(StatefulResolver(el.childNodes[15])("state.invalid","undefined"),true);
 	equal(StatefulResolver(el.childNodes[16])("state.required","undefined"),false);
 	equal(StatefulResolver(el.childNodes[16])("state.hidden","undefined"),false);
+	equal(StatefulResolver(el.childNodes[16])("state.invalid","undefined"),true);
 	//TODO combobox gridcell listbox radiogroup spinbutton textbox tree
 
 	equal(el.childNodes[17].tagName,"INPUT");
 	equal(StatefulResolver(el.childNodes[17])("state.hidden","undefined"),true);
 	equal(StatefulResolver(el.childNodes[18])("state.hidden","undefined"),true);
 
+	equal(el.childNodes[19].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[19])("state.pressed","undefined"),true);
+	equal(StatefulResolver(el.childNodes[20])("state.pressed","undefined"),false);
+	equal(StatefulResolver(el.childNodes[21])("state.pressed","undefined"),false);
+
+	// tristate ?
+
 })
+
+		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
+		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
+
 
 test("Stateful element state",function(){
 	var StatefulResolver = Resolver("essential::StatefulResolver::");
@@ -170,6 +187,15 @@ test("Stateful element state",function(){
 	// equal(el.className,"");
 
 	//TODO role: option tab gridcell row
+
+
+	ok(! stateful("state.pressed","undefined"));
+	stateful.set("state.pressed",true);
+	ok((el.getAttribute("aria-pressed") == "true"));
+	// equal(el.className,"state-pressed");
+	stateful.set("state.pressed",false);
+	equal(el.getAttribute("aria-pressed"),null);
+
 
 
 	ok(! stateful("state.expanded","undefined"));

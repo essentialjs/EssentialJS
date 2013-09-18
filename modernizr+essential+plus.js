@@ -3802,11 +3802,11 @@ _ElementPlacement.prototype._computeIE = function(style)
 	function reflectBoolean(el,key,value) {
 		// html5: html5 property/attribute name
 		// aria: aria property name
-		if (typeof el[this.html5 || key] == "boolean") {
+		if (this.html5 !== false && typeof el[this.html5 || key] == "boolean") {
 			el[this.html5] = !!value;
 		} 
 		// Set aria prop or leave it to the attribute ?
-		if (typeof el[this.aria] == "boolean") {
+		if (this.aria && typeof el[this.aria] == "boolean") {
 			el[this.aria] = !!value;
 		} 
 
@@ -3854,10 +3854,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 	function readBoolean(el,key) {
 		// html5: html5 property/attribute name
 		// aria: aria property name
-		if (typeof el[this.html5 || key] == "boolean") {
+		if (this.html5 !== false && typeof el[this.html5 || key] == "boolean") {
 			if (el[this.html5]) return true;
 		} 
-		if (typeof el[this.aria] == "boolean") {
+		if (this.aria && typeof el[this.aria] == "boolean") {
 			if (el[this.aria]) return true;
 		} 
 
@@ -3885,27 +3885,25 @@ _ElementPlacement.prototype._computeIE = function(style)
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
 		hidden: { index: 2, reflect: reflectBoolean, read: readBoolean, aria:"ariaHidden", html5:"hidden" }, // Aria all elements
 		required: { index: 3, reflect: reflectBoolean, read: readBoolean, aria:"ariaRequired", html5:"required" },
-		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
-		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
-		selected: { index:6, reflect: reflectBoolean, read: readBoolean, "default":false, aria:"ariaSelected", html5:"selected" },
-		active: { index:7, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
+		invalid: { index: 4, reflect: reflectBoolean, read: readBoolean, aria:"ariaInvalid", html5:false },
+		expanded: { index: 5, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
+		checked: { index: 6, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
+		pressed: { index: 7, reflect: reflectBoolean, read: readBoolean, aria:"ariaPressed", html5:false },
+		selected: { index: 8, reflect: reflectBoolean, read: readBoolean, "default":false, aria:"ariaSelected", html5:"selected" },
+		active: { index: 9, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
 		//TODO draggable
 		//TODO contenteditable
 		//TODO tooltip
 		//TODO hover
-		//TODO down ariaPressed
-		//TODO ariaHidden
+		//TODO down 
 		//TODO ariaDisabled
-
-		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
-		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
 
 		/*TODO IE aria props
 			string:
-			ariaPressed ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
-			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
+			ariaPressed ariaSecret ariaRelevant ariaReadonly ariaLive
+			ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
 		*/
 
 		//TODO restricted/forbidden tie in with session specific permissions
