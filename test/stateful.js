@@ -62,13 +62,20 @@ test("Initial stateful element state",function() {
 		'<button role="tab">Tab</button>',
 		'<button role="tab" aria-selected="selected">Tab</button>',
 		'<button role="tab" aria-selected="true">Tab</button>',
+
+		'<input required="required">',
+		'<input aria-required="true">',
+		'<input>',
+		'<input hidden="hidden">',
+		'<input aria-hidden="true">',
+
 		'');
 	var statefulDiv = StatefulResolver(el,true);
 
 	equal(statefulDiv("state.disabled","undefined"),false);
 	equal(statefulDiv("state.readOnly","undefined"),false);
-	equal(statefulDiv("state.hidden","undefined"),undefined);
-	equal(statefulDiv("state.required","undefined"),undefined);
+	equal(statefulDiv("state.hidden","undefined"),false);
+	equal(statefulDiv("state.required","undefined"),false);
 	equal(statefulDiv("state.expanded","undefined"),undefined);
 	equal(statefulDiv("state.checked","undefined"),undefined);
 
@@ -95,9 +102,21 @@ test("Initial stateful element state",function() {
 	equal(el.childNodes[12].tagName,"BUTTON");
 	equal(StatefulResolver(el.childNodes[12],true)("state.selected","undefined"),true);
 	equal(el.childNodes[13].tagName,"BUTTON");
-	equal(StatefulResolver(el.childNodes[13],true)("state.selected","undefined"),true);
+	equal(StatefulResolver(el.childNodes[13],true)("state.selected","undefined"),true,"button with aria-selected=true");
 
-	//TODO hidden required
+	//TODO role: gridcell row tab
+
+	equal(el.childNodes[14].tagName,"INPUT");
+	equal(StatefulResolver(el.childNodes[14])("state.required","undefined"),true);
+	equal(StatefulResolver(el.childNodes[15])("state.required","undefined"),true);
+	equal(StatefulResolver(el.childNodes[16])("state.required","undefined"),false);
+	equal(StatefulResolver(el.childNodes[16])("state.hidden","undefined"),false);
+	//TODO combobox gridcell listbox radiogroup spinbutton textbox tree
+
+	equal(el.childNodes[17].tagName,"INPUT");
+	equal(StatefulResolver(el.childNodes[17])("state.hidden","undefined"),true);
+	equal(StatefulResolver(el.childNodes[18])("state.hidden","undefined"),true);
+
 })
 
 test("Stateful element state",function(){
@@ -149,6 +168,9 @@ test("Stateful element state",function(){
 	equal(el.getAttribute("aria-selected"),null);
 	// ok(!el.selected);
 	// equal(el.className,"");
+
+	//TODO role: option tab gridcell row
+
 
 	ok(! stateful("state.expanded","undefined"));
 	stateful.set("state.expanded",true);

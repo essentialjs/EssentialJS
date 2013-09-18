@@ -3799,6 +3799,27 @@ _ElementPlacement.prototype._computeIE = function(style)
 		el[this.property] = value;
 	}
 
+	function reflectBoolean(el,key,value) {
+		// html5: html5 property/attribute name
+		// aria: aria property name
+		if (typeof el[this.html5 || key] == "boolean") {
+			el[this.html5] = !!value;
+		} 
+		// Set aria prop or leave it to the attribute ?
+		if (typeof el[this.aria] == "boolean") {
+			el[this.aria] = !!value;
+		} 
+
+		if (value) {
+			el.setAttribute("aria-"+key,this["true"] || "true");
+			el.setAttribute(this.html5,this["true"] || "true");
+		} else {
+			el.removeAttribute("aria-"+key);
+			el.removeAttribute(this.html5);
+		}
+	}
+
+
 	function readPropertyAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
@@ -3830,6 +3851,25 @@ _ElementPlacement.prototype._computeIE = function(style)
 		return result;
 	}
 
+	function readBoolean(el,key) {
+		// html5: html5 property/attribute name
+		// aria: aria property name
+		if (typeof el[this.html5 || key] == "boolean") {
+			if (el[this.html5]) return true;
+		} 
+		if (typeof el[this.aria] == "boolean") {
+			if (el[this.aria]) return true;
+		} 
+
+		var value = el.getAttribute("aria-"+key), result;
+		if (value != null) result = value != "false" && value != ""; 
+
+		value = el.getAttribute(this.html5 || key);
+		if (value != null) result = value != "false" && value != ""; 
+
+		return !!result;
+	}
+
 	function readAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
@@ -3843,11 +3883,11 @@ _ElementPlacement.prototype._computeIE = function(style)
 	var state_treatment = {
 		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled", "true":"disabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
+		hidden: { index: 2, reflect: reflectBoolean, read: readBoolean, aria:"ariaHidden", html5:"hidden" }, // Aria all elements
+		required: { index: 3, reflect: reflectBoolean, read: readBoolean, aria:"ariaRequired", html5:"required" },
 		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
 		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
-		selected: { index:6, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"selected" },
+		selected: { index:6, reflect: reflectBoolean, read: readBoolean, "default":false, aria:"ariaSelected", html5:"selected" },
 		active: { index:7, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
