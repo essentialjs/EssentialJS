@@ -640,7 +640,7 @@
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
 				if (desc) {
 					if (context.list) context.list.push(desc);
-					// if (sizingElement) sizingElements[desc.uniqueId] = desc;
+					// if (sizingElement) sizingElements[desc.uniqueID] = desc;
 					desc.layouterParent = context.layouter;
 					if (desc.conf.layouter) {
 						context.layouter = desc;
@@ -1313,7 +1313,7 @@
 				e.permanent = true;
 			} catch(ex) {
 				//TODO handle text elements
-				// will probably have to be a managed list of permanent elements or uniqueId
+				// will probably have to be a managed list of permanent elements or uniqueID
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}

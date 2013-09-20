@@ -46,10 +46,17 @@ test('EnhancedDescriptor cross browser support',function(){
 
 	var div = HTMLElement("div",{ "abc":"abc" });
 	var desc = EnhancedDescriptor(div,null,{},false,ApplicationConfig());
-	equal(desc.uniqueId,div.uniqueId);
+	equal(desc.uniqueID,div.uniqueID);
 	equal(desc.getAttribute("abc"),"abc");
 
-	ok(true,"TODO uniqueId works across multiple documents");
+	ok(true,"TODO uniqueID works across multiple documents");
+});
+
+if (navigator.userAgent.indexOf(" MSIE ") >= 0) test('uniqueID',function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var div = HTMLElement("div",{ "abc":"abc" });
+	equal(typeof div.uniqueID,"string");	
 });
 
 test('addEventListeners catch',function() {
@@ -125,12 +132,12 @@ test('Enhance element early or delayed',function() {
 	var earlySpan = page.body.getElementsByTagName("span")[1];
 	ok(earlySpan);
 	ok(delayedSpan);
-	var earlyDesc = EnhancedDescriptor.all[earlySpan.uniqueId];
+	var earlyDesc = EnhancedDescriptor.all[earlySpan.uniqueID];
 	ok(earlyDesc);
 	equal(earlyDesc.role,"early");
 	equal(earlyDesc.instance,undefined);
 	ok(!earlyDesc.enhanced);
-	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	ok(delayedDesc);
 	equal(delayedDesc.role,"delayed");
 	equal(delayedDesc.instance,undefined);
@@ -142,7 +149,7 @@ test('Enhance element early or delayed',function() {
 
 	var sinonConfig = {}; //TODO config for the sinon elem
 
-	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	// ok(delayedDesc);
 
 	// early elements
@@ -175,7 +182,7 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.enhance.delayed.callCount,2);
 	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
 
-	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	ok(delayedDesc);
 	ok(! delayedDesc.layout.queued);
 	delayedSpan.stateful.set("state.expanded",true);
@@ -249,6 +256,7 @@ test('Enhance element with context',function() {
 
 		'</body></html>'
 		].join(""));
+
 	var masterDiv = page.body.getElementsByTagName("div")[0]
 	ok(masterDiv);
 	var slaveOneSpan = page.body.getElementsByTagName("span")[0];
@@ -257,28 +265,28 @@ test('Enhance element with context',function() {
 	ok(slaveTwoSpan);
 
 	// master desc and context
-	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueId];
+	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueID];
 	ok(masterDesc);
 	ok(masterDesc.context);
-	equal(masterDesc.context.id,undefined);
+	equal(masterDesc.context.uniqueID,undefined);
 	equal(masterDesc.context.el,undefined);
 	equal(masterDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
 
 	// slave1 desc and context
-	var slaveOneDesc = EnhancedDescriptor.all[slaveOneSpan.uniqueId];
+	var slaveOneDesc = EnhancedDescriptor.all[slaveOneSpan.uniqueID];
 	ok(slaveOneDesc);
 	ok(slaveOneDesc.context);
-	equal(slaveOneDesc.context.id,undefined);
+	equal(slaveOneDesc.context.uniqueID,masterDiv.uniqueID);
 	equal(slaveOneDesc.context.el,masterDiv);
 	equal(slaveOneDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
 
 	// slave2 desc and context
-	var slaveTwoDesc = EnhancedDescriptor.all[slaveTwoSpan.uniqueId];
+	var slaveTwoDesc = EnhancedDescriptor.all[slaveTwoSpan.uniqueID];
 	ok(slaveTwoDesc);
 	ok(slaveTwoDesc.context);
-	equal(slaveTwoDesc.context.id,undefined);
+	equal(slaveTwoDesc.context.uniqueID,masterDiv.uniqueID);
 	equal(slaveTwoDesc.context.el,masterDiv);
 	equal(slaveTwoDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
@@ -286,7 +294,7 @@ test('Enhance element with context',function() {
 	//TODO test nested with role has id el instance on context
 
 	// page.applyBody();
-	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	// ok(delayedDesc);
 
 });
@@ -357,18 +365,18 @@ test("Enhance layouter element",function() {
 	page.applyBody();
 
 	equal(typeof layouterSpan.layouter,"object");
-	var desc = page.resolver("descriptors")[layouterSpan.uniqueId];
+	var desc = page.resolver("descriptors")[layouterSpan.uniqueID];
 	// page.body.firstChild.nextSibling.layouter
 	ok(desc);
 	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
 	ok(desc.layout.queued);
 	
 	equal(_TestLayouter.prototype.sizingElement.callCount,1);
-	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueId];
-	ok(layouterSpan.firstChild.uniqueId);
-	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueId];
+	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueID];
+	ok(layouterSpan.firstChild.uniqueID);
+	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueID];
 	ok(emDesc);
-	equal(sizingElements[emDesc.uniqueId],emDesc);
+	equal(sizingElements[emDesc.uniqueID],emDesc);
 	equal(emDesc.layouterParent,desc);
 
 	EnhancedDescriptor.refreshAll();

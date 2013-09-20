@@ -465,7 +465,7 @@
 	// Templates
 
 	function Template(el,config) {
-		this.el = el; // TODO switch to uniqueId
+		this.el = el; // TODO switch to uniqueID
 		this.tagName = el.tagName;
 		this.dataRole = JSON2Attr(config,{id:true});
 

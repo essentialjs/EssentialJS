@@ -800,7 +800,7 @@
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
 
-			if (desc.conf.sizingElement) sizingElements[desc.uniqueId] = desc;
+			if (desc.conf.sizingElement) sizingElements[desc.uniqueID] = desc;
 		}
 
 		//TODO enhance additional descriptors created during this instead of double call on loading = false

@@ -267,7 +267,7 @@
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
 
-		var layouterDesc = EnhancedDescriptor.all[el.uniqueId];
+		var layouterDesc = EnhancedDescriptor.all[el.uniqueID];
 		var appConfig = Resolver("essential::ApplicationConfig::")();
 
 		for(var i=0,c; c = el.children[i]; ++i) {
@@ -277,7 +277,7 @@
 				// set { sizingElement:true } on conf?
 				var desc = EnhancedDescriptor(c,role,conf,false,appConfig);
 				desc.layouterParent = layouterDesc;
-				sizingElements[desc.uniqueId] = desc;
+				sizingElements[desc.uniqueID] = desc;
 			}
 		}
 	}
@@ -314,15 +314,15 @@
 	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
 
-	// map of uniqueId referenced (TODO array for performance/memory?)
+	// map of uniqueID referenced (TODO array for performance/memory?)
 	var enhancedElements = essential.declare("enhancedElements",{});
 
 	var unfinishedElements = essential.declare("unfinishedElements",{});
 
-	// map of uniqueId referenced
+	// map of uniqueID referenced
 	var sizingElements = essential.declare("sizingElements",{});
 
-	// map of uniqueId referenced
+	// map of uniqueID referenced
 	var maintainedElements = essential.declare("maintainedElements",{});
 
 	// open windows
@@ -338,7 +338,7 @@
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
 
-			if (desc.conf.sizingElement) sizingElements[desc.uniqueId] = desc;
+			if (desc.conf.sizingElement) sizingElements[desc.uniqueID] = desc;
 		}
 
 	}
@@ -361,7 +361,7 @@
 					var desc = EnhancedDescriptor(e,role,conf,false,ac);
 					if (desc) {
 						q.push(desc);
-						// if (sizingElement) sizingElements[desc.uniqueId] = desc;
+						// if (sizingElement) sizingElements[desc.uniqueID] = desc;
 						desc.layouterParent = context.layouter;
 						if (desc.conf.layouter) {
 							context.layouter = desc;
@@ -385,12 +385,12 @@
 	}
 	// EnhancedContext.prototype.??
 
-	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
+	function _EnhancedDescriptor(el,role,conf,page,uniqueID) {
 
 		var roles = role? role.split(" ") : [];
 
 		this.needEnhance = roles.length > 0;
-		this.uniqueId = uniqueId;
+		this.uniqueID = uniqueID;
 		this.roles = roles;
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.el = el;
@@ -421,11 +421,11 @@
 
 	_EnhancedDescriptor.prototype._updateContext = function() {
 		for(var el = this.el.parentNode; el; el = el.parentNode) {
-			if (el.uniqueId) {
-				var desc = enhancedElements[el.uniqueId];
+			if (el.uniqueID) {
+				var desc = enhancedElements[el.uniqueID];
 				if (desc) {
 					this.context.el = el;
-					this.context.uniqueId = el.uniqueId;
+					this.context.uniqueID = el.uniqueID;
 					this.context.instance = desc.instance;
 				}
 			}
@@ -496,10 +496,10 @@
 			var discardHandler = handlers.discard[this.role];
 			if (discardHandler) this.discardHandler = discardHandler;
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
-			if (this.sizingHandler) sizingElements[this.uniqueId] = this;
+			if (this.sizingHandler) sizingElements[this.uniqueID] = this;
 			if (this.layoutHandler) {
 				this.layout.enable = true;
-				maintainedElements[this.uniqueId] = this;
+				maintainedElements[this.uniqueID] = this;
 			}
 		} 
 	};
@@ -510,11 +510,11 @@
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
 				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
-				if (this.layouterParent) sizingElements[this.uniqueId] = this;
+				if (this.layouterParent) sizingElements[this.uniqueID] = this;
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
 	                this.layout.queued = true;
-	                maintainedElements[this.uniqueId] = this;
+	                maintainedElements[this.uniqueID] = this;
 				}
 			}
 		}
@@ -526,11 +526,11 @@
 			var varLaidout = Laidout.variants[this.conf.laidout];
 			if (varLaidout) {
 				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
-				sizingElements[this.uniqueId] = this;
+				sizingElements[this.uniqueID] = this;
 				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
 	                this.layout.queued = true;
-	                maintainedElements[this.uniqueId] = this;
+	                maintainedElements[this.uniqueID] = this;
 				}
 			}
 		}
@@ -594,10 +594,10 @@
 
 	_EnhancedDescriptor.prototype._unlist = function() {
 		this.discarded = true;					
-		if (this.layout.enable) delete maintainedElements[this.uniqueId];
-		if (sizingElements[this.uniqueId]) delete sizingElements[this.uniqueId];
-		if (unfinishedElements[this.uniqueId]) delete unfinishedElements[this.uniqueId];
-		delete enhancedElements[this.uniqueId];
+		if (this.layout.enable) delete maintainedElements[this.uniqueID];
+		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
+		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
+		delete enhancedElements[this.uniqueID];
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -638,21 +638,21 @@
 		}
 	};
 
-	// used to emulate IE uniqueId property
-	var lastUniqueId = 555;
+	// used to emulate IE uniqueID property
+	var lastUniqueID = 555;
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
 		if (!force && role==null && conf==null && arguments.length>=3) return null;
 
-		var uniqueId = el.uniqueId;
-		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
-		var desc = enhancedElements[uniqueId];
+		var uniqueID = el.uniqueID;
+		if (uniqueID == undefined) uniqueID = el.uniqueID = ++lastUniqueID;
+		var desc = enhancedElements[uniqueID];
 		if (desc && !force) return desc;
-		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueId);
-		enhancedElements[uniqueId] = desc;
+		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueID);
+		enhancedElements[uniqueID] = desc;
 		var descriptors = page.resolver("descriptors");
-		descriptors[uniqueId] = desc;
+		descriptors[uniqueID] = desc;
 		if (el._cleaners == undefined) el._cleaners = [];
 
 		return desc;
@@ -714,7 +714,7 @@
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
-				var desc = EnhancedDescriptor.all[e.uniqueId];
+				var desc = EnhancedDescriptor.all[e.uniqueID];
 				if (desc) descs.push(desc);
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
