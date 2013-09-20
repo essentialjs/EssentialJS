@@ -88,6 +88,70 @@ test("Application config using script and data-role",function(){
 	equal(config["enhanced"],true);
 });
 
+test("More complex data-role definitions",function() {
+
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var div = HTMLElement("div",{
+		role: "presenter",
+		"class": "criteria",
+		"aria-expanded": "false",
+		"data-role": "'laidout':'section','templateId':'etp.ws.search.searchpane.template',"+
+				"'presentationModel':'etp.ws.search.SearchPane','presentationClass':'mainContent','glue':'left'"
+	});
+	var config = ApplicationConfig().getConfig(div);
+	equal(div.getAttribute("role"),"presenter");
+	equal(div.getAttribute("class"),"criteria");
+	equal(div.getAttribute("aria-expanded"),"false");
+
+	deepEqual(config, {
+		"laidout":"section",
+		"templateId":"etp.ws.search.searchpane.template",
+		"presentationModel":"etp.ws.search.SearchPane",
+		"presentationClass":"mainContent",
+		"glue":"left"
+	});
+
+
+	var div = HTMLElement("div",{},
+		'<div role="presenter" class="criteria" aria-expanded="false"',
+		'data-role="',
+			"'laidout':'section','templateId':'etp.ws.search.searchpane.template',",
+			"'presentationModel':'etp.ws.search.SearchPane','presentationClass':'mainContent','glue':'left'",
+		'"></div>'
+	).firstChild;
+	var config = ApplicationConfig().getConfig(div);
+	equal(div.getAttribute("role"),"presenter");
+	equal(div.getAttribute("class"),"criteria");
+	equal(div.getAttribute("aria-expanded"),"false");
+
+	deepEqual(config, {
+		"laidout":"section",
+		"templateId":"etp.ws.search.searchpane.template",
+		"presentationModel":"etp.ws.search.SearchPane",
+		"presentationClass":"mainContent",
+		"glue":"left"
+	});
+	var div = HTMLElement("div",{},
+		'<div role="tabpanel" ',
+		'data-role="',
+		"'state':'parent','tabs':{'1':'Order Details','2':'Placed Orders','3':'Order History'},'activeTab':'1'",
+		'"></div>'
+	).firstChild;
+	var config = ApplicationConfig().getConfig(div);
+	equal(div.getAttribute("role"),"tabpanel");
+	deepEqual(config, {
+		"state":"parent",
+		"tabs":{
+			'1':'Order Details','2':'Placed Orders','3':'Order History'
+		},
+		"activeTab":"1"
+	});
+	            
+
+});
+
 test("Layout/laidout",function(){
 	ok(1,"TODO config for unmatched elements skipped");
 
