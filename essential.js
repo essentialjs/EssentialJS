@@ -6324,7 +6324,7 @@ function(scripts) {
 
 		if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
 		// if (ev.lastChild.)
-		el.lastChild.nodeValue = ev.value;
+		el.lastChild.nodeValue = text;
 	};
 
 

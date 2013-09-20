@@ -6328,11 +6328,21 @@ function(scripts) {
 		return el; 
 	};
 
+	HTMLElement.fn.setPrefix = function(el,text) {
+
+		if (el.firstChild == null) {
+			el.appendChild(el.ownerDocument.createTextNode(''));
+		} else if (el.firstChild.nodeType != 3/* TEXTNODE */) {
+			el.insertBefore(el.ownerDocument.createTextNode(''),el.firstChild);
+		}
+		el.firstChild.nodeValue = text;
+	};
+
 	HTMLElement.fn.setPostfix = function(el,text) {
 
 		if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
 		// if (ev.lastChild.)
-		el.lastChild.nodeValue = ev.value;
+		el.lastChild.nodeValue = text;
 	};
 
 

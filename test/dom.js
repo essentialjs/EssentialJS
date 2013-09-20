@@ -131,6 +131,52 @@ test("HTMLElement construction",function(){
 	equal(range.getAttribute("type"),"number");
 })
 
+test("HTMLElement core implementation set text",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var div = HTMLElement("div",{},"");
+	equal(div.innerHTML.toLowerCase(),"");
+	HTMLElement.fn.setPostfix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"abcd");
+
+	var div = HTMLElement("div",{},"xx");
+	equal(div.innerHTML.toLowerCase(),"xx");
+	HTMLElement.fn.setPostfix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"abcd");
+
+	var div = HTMLElement("div",{},"<span></span>");
+	equal(div.innerHTML.toLowerCase(),"<span></span>");
+	HTMLElement.fn.setPostfix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"<span></span>abcd");
+
+	var div = HTMLElement("div",{},"1<span></span>2");
+	equal(div.innerHTML.toLowerCase(),"1<span></span>2");
+	HTMLElement.fn.setPostfix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"1<span></span>abcd");
+
+
+	var div = HTMLElement("div",{},"");
+	equal(div.innerHTML.toLowerCase(),"");
+	HTMLElement.fn.setPrefix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"abcd");
+
+	var div = HTMLElement("div",{},"xx");
+	equal(div.innerHTML.toLowerCase(),"xx");
+	HTMLElement.fn.setPrefix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"abcd");
+
+	var div = HTMLElement("div",{},"<span></span>");
+	equal(div.innerHTML.toLowerCase(),"<span></span>");
+	HTMLElement.fn.setPrefix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"abcd<span></span>");
+
+	var div = HTMLElement("div",{},"1<span></span>2");
+	equal(div.innerHTML.toLowerCase(),"1<span></span>2");
+	HTMLElement.fn.setPrefix(div,"abcd");
+	equal(div.innerHTML.toLowerCase(),"abcd<span></span>2");
+});
+
 test("Native events",function() {
 	// ok(1); return;
 
