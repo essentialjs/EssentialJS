@@ -81,7 +81,7 @@ test('Enhance element early or delayed',function() {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var appConfig = ApplicationConfig();
 
-	var earlyInstance = {};
+	var earlyInstance = {}, delayedInstance = {};
 	var handlers = {
 		"init": {
 
@@ -162,12 +162,18 @@ test('Enhance element early or delayed',function() {
 	ok(true,"TODO additional handlers, enhance call after initial round")
 
 	handlers.enhance.additional = sinon.stub();
-	handlers.enhance.delayed.returns({});
+	handlers.enhance.delayed.returns(delayedInstance);
 	EnhancedDescriptor.enhanceUnfinished();
+
+	// early elements
 	equal(handlers.enhance.early.callCount,1,"enhance should be completed already");
-	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
+
+	// delayed elements
+	equal(delayedDesc.instance,delayedInstance);
+	equal(handlers.enhance.delayed.callCount,2);
+	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
 
 	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
 	ok(delayedDesc);
@@ -198,6 +204,92 @@ test('Enhance element early or delayed',function() {
 });
 
 //TODO layout and discard are optional handlers
+
+
+test('Enhance element with context',function() {
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var appConfig = ApplicationConfig();
+
+
+	var handlers = {
+		"init": {
+
+		},		
+		"enhance": {
+			"master": sinon.stub(),
+			"slave1": sinon.stub(),
+			"slave2": sinon.stub()
+		},
+		"sizing": {},
+		"layout": {
+			"master": sinon.stub(),
+			"slave1": sinon.stub()
+		},
+		"discard": {
+			"master": sinon.stub(),
+			"slave1": sinon.stub(),
+			"slave2": sinon.stub()
+		}
+	};
+
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page").set("enabledRoles",{"master":true,"slave1":true,"slave2":true});
+
+	var page = appConfig.page("/test/pages/with-context.html",{},[
+		'<html><head>', '', '</head><body>',
+		'<div role="master" data-role="',"'template':'#master-template'",'">',
+		'<span role="slave1" id="a" data-role="',"'model':'myModel'",'"></span>',
+		'<span role="slave2" id="b" data-role="',"'model':'slaveTwoModel'",'"></span>',
+		'</div>',
+
+		'</body></html>'
+		].join(""));
+	var masterDiv = page.body.getElementsByTagName("div")[0]
+	ok(masterDiv);
+	var slaveOneSpan = page.body.getElementsByTagName("span")[0];
+	ok(slaveOneSpan);
+	var slaveTwoSpan = page.body.getElementsByTagName("span")[1];
+	ok(slaveTwoSpan);
+
+	// master desc and context
+	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueId];
+	ok(masterDesc);
+	ok(masterDesc.context);
+	equal(masterDesc.context.id,undefined);
+	equal(masterDesc.context.el,undefined);
+	equal(masterDesc.context.instance,undefined);
+	// equal(typeof masterDesc.context.resolver,"function");
+
+	// slave1 desc and context
+	var slaveOneDesc = EnhancedDescriptor.all[slaveOneSpan.uniqueId];
+	ok(slaveOneDesc);
+	ok(slaveOneDesc.context);
+	equal(slaveOneDesc.context.id,undefined);
+	equal(slaveOneDesc.context.el,masterDiv);
+	equal(slaveOneDesc.context.instance,undefined);
+	// equal(typeof masterDesc.context.resolver,"function");
+
+	// slave2 desc and context
+	var slaveTwoDesc = EnhancedDescriptor.all[slaveTwoSpan.uniqueId];
+	ok(slaveTwoDesc);
+	ok(slaveTwoDesc.context);
+	equal(slaveTwoDesc.context.id,undefined);
+	equal(slaveTwoDesc.context.el,masterDiv);
+	equal(slaveTwoDesc.context.instance,undefined);
+	// equal(typeof masterDesc.context.resolver,"function");
+
+	//TODO test nested with role has id el instance on context
+
+	// page.applyBody();
+	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	// ok(delayedDesc);
+
+});
 
 function _TestLayouter(key,el,config) {
 	this.key = key;

@@ -162,7 +162,7 @@
 		dialog_top = initial_top, dialog_left = initial_left,
 		dialog_next_down = initial_top;
 
-	function enhance_dialog(el,role,config) {
+	function enhance_dialog(el,role,config,context) {
 		// TODO if (config['invalid-config']) console.log()
 
 		var configTemplate = config.template,
@@ -333,7 +333,7 @@
 		}
 	}
 
-	function enhance_toolbar(el,role,config) {
+	function enhance_toolbar(el,role,config,context) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -360,13 +360,13 @@
 	}
 	pageResolver.set("handlers.discard.toolbar",discard_toolbar);
 
-	function enhance_sheet(el,role,config) {
+	function enhance_sheet(el,role,config,context) {
 		
 		return {};
 	}
 	pageResolver.set("handlers.enhance.sheet",enhance_sheet);
 
-	function enhance_spinner(el,role,config) {
+	function enhance_spinner(el,role,config,context) {
 		if (window.Spinner == undefined) return false;
 
 		var opts = {
@@ -405,7 +405,7 @@
 		return constructor? Generator(constructor) : null;
 	}
 
-	function enhance_application(el,role,config) {
+	function enhance_application(el,role,config,context) {
 		// template around the content
 		if (config.template) {
 			var template = Resolver("page::templates","null")([config.template]);
@@ -421,7 +421,7 @@
 		if (config.generator) {
 			var g = _lookup_generator(config.generator,config.resolver);
 			if (g) {
-				var instance = g(el,role,config);
+				var instance = g(el,role,config,context);
 				return instance;
 			}
 			else return false; // not yet ready
@@ -525,7 +525,7 @@
 
 	//TODO TemplateContent.prototype.clone = function(config,model) {}
 
-	function enhance_template(el,role,config) {
+	function enhance_template(el,role,config,context) {
 		var id = config.id || el.id;
 		var template = new Template(el,config);
 
@@ -537,12 +537,12 @@
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
-	function init_template(el,role,config) {
+	function init_template(el,role,config,context) {
 		this.contentManaged = true; // template content skipped
 	}
 	pageResolver.set("handlers.init.template",init_template);
 
-	function init_templated(el,role,config) {
+	function init_templated(el,role,config,context) {
 		this.contentManaged = true; // templated content skipped
 	}
 	pageResolver.set("handlers.init.templated",init_templated);
@@ -1065,7 +1065,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
-	function enhance_scrolled(el,role,config) {
+	function enhance_scrolled(el,role,config,context) {
 
 		var contentTemplate = config.template;
 		if (contentTemplate) {

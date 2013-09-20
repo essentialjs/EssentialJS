@@ -1653,6 +1653,9 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.declare("DescriptorQuery",DescriptorQuery);
 	essential("HTMLElement").query = DescriptorQuery;
 
+	function EnhancedContext() {
+	}
+	// EnhancedContext.prototype.??
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
 
@@ -1664,6 +1667,7 @@ Generator.ObjectGenerator = Generator(Object);
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.el = el;
 		this.conf = conf || {};
+		this.context = new EnhancedContext();
 		this.instance = null;
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
@@ -1683,12 +1687,26 @@ Generator.ObjectGenerator = Generator(Object);
 		this.page = page;
 		this.handlers = page.resolver("handlers");
 		this.enabledRoles = page.resolver("enabledRoles");
+		this._updateContext();
 		this._init();
 	}
 
+	_EnhancedDescriptor.prototype._updateContext = function() {
+		for(var el = this.el.parentNode; el; el = el.parentNode) {
+			if (el.uniqueId) {
+				var desc = enhancedElements[el.uniqueId];
+				if (desc) {
+					this.context.el = el;
+					this.context.uniqueId = el.uniqueId;
+					this.context.instance = desc.instance;
+				}
+			}
+		}
+	};
+
 	_EnhancedDescriptor.prototype._init = function() {
 		if (this.role && this.handlers.init[this.role]) {
-			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
+			this.handlers.init[this.role].call(this,this.el,this.role,this.conf,this.context);
 		}
 	};
 
@@ -1737,7 +1755,9 @@ Generator.ObjectGenerator = Generator(Object);
 		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
 		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
-			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
+			this._updateContext();
+			//TODO allow parent to modify context
+			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
 			this.enhanced = this.instance === false? false:true;
 			this.needEnhance = !this.enhanced;
 		}
@@ -1838,6 +1858,7 @@ Generator.ObjectGenerator = Generator(Object);
 		if (this.discarded) return;
 
 		cleanRecursively(this.el);
+		this.context = undefined;
 		this.el = undefined;
 		this.discarded = true;					
 		this.layout.enable = false;					
@@ -6925,7 +6946,7 @@ function(scripts) {
 		dialog_top = initial_top, dialog_left = initial_left,
 		dialog_next_down = initial_top;
 
-	function enhance_dialog(el,role,config) {
+	function enhance_dialog(el,role,config,context) {
 		// TODO if (config['invalid-config']) console.log()
 
 		var configTemplate = config.template,
@@ -7096,7 +7117,7 @@ function(scripts) {
 		}
 	}
 
-	function enhance_toolbar(el,role,config) {
+	function enhance_toolbar(el,role,config,context) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -7123,13 +7144,13 @@ function(scripts) {
 	}
 	pageResolver.set("handlers.discard.toolbar",discard_toolbar);
 
-	function enhance_sheet(el,role,config) {
+	function enhance_sheet(el,role,config,context) {
 		
 		return {};
 	}
 	pageResolver.set("handlers.enhance.sheet",enhance_sheet);
 
-	function enhance_spinner(el,role,config) {
+	function enhance_spinner(el,role,config,context) {
 		if (window.Spinner == undefined) return false;
 
 		var opts = {
@@ -7168,7 +7189,7 @@ function(scripts) {
 		return constructor? Generator(constructor) : null;
 	}
 
-	function enhance_application(el,role,config) {
+	function enhance_application(el,role,config,context) {
 		// template around the content
 		if (config.template) {
 			var template = Resolver("page::templates","null")([config.template]);
@@ -7184,7 +7205,7 @@ function(scripts) {
 		if (config.generator) {
 			var g = _lookup_generator(config.generator,config.resolver);
 			if (g) {
-				var instance = g(el,role,config);
+				var instance = g(el,role,config,context);
 				return instance;
 			}
 			else return false; // not yet ready
@@ -7288,7 +7309,7 @@ function(scripts) {
 
 	//TODO TemplateContent.prototype.clone = function(config,model) {}
 
-	function enhance_template(el,role,config) {
+	function enhance_template(el,role,config,context) {
 		var id = config.id || el.id;
 		var template = new Template(el,config);
 
@@ -7300,12 +7321,12 @@ function(scripts) {
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
-	function init_template(el,role,config) {
+	function init_template(el,role,config,context) {
 		this.contentManaged = true; // template content skipped
 	}
 	pageResolver.set("handlers.init.template",init_template);
 
-	function init_templated(el,role,config) {
+	function init_templated(el,role,config,context) {
 		this.contentManaged = true; // templated content skipped
 	}
 	pageResolver.set("handlers.init.templated",init_templated);
@@ -7828,7 +7849,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
-	function enhance_scrolled(el,role,config) {
+	function enhance_scrolled(el,role,config,context) {
 
 		var contentTemplate = config.template;
 		if (contentTemplate) {

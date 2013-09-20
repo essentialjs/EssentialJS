@@ -381,6 +381,9 @@
 	essential.declare("DescriptorQuery",DescriptorQuery);
 	essential("HTMLElement").query = DescriptorQuery;
 
+	function EnhancedContext() {
+	}
+	// EnhancedContext.prototype.??
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
 
@@ -392,6 +395,7 @@
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.el = el;
 		this.conf = conf || {};
+		this.context = new EnhancedContext();
 		this.instance = null;
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
@@ -411,12 +415,26 @@
 		this.page = page;
 		this.handlers = page.resolver("handlers");
 		this.enabledRoles = page.resolver("enabledRoles");
+		this._updateContext();
 		this._init();
 	}
 
+	_EnhancedDescriptor.prototype._updateContext = function() {
+		for(var el = this.el.parentNode; el; el = el.parentNode) {
+			if (el.uniqueId) {
+				var desc = enhancedElements[el.uniqueId];
+				if (desc) {
+					this.context.el = el;
+					this.context.uniqueId = el.uniqueId;
+					this.context.instance = desc.instance;
+				}
+			}
+		}
+	};
+
 	_EnhancedDescriptor.prototype._init = function() {
 		if (this.role && this.handlers.init[this.role]) {
-			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
+			this.handlers.init[this.role].call(this,this.el,this.role,this.conf,this.context);
 		}
 	};
 
@@ -465,7 +483,9 @@
 		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
 		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
-			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
+			this._updateContext();
+			//TODO allow parent to modify context
+			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
 			this.enhanced = this.instance === false? false:true;
 			this.needEnhance = !this.enhanced;
 		}
@@ -566,6 +586,7 @@
 		if (this.discarded) return;
 
 		cleanRecursively(this.el);
+		this.context = undefined;
 		this.el = undefined;
 		this.discarded = true;					
 		this.layout.enable = false;					

@@ -27,7 +27,7 @@
 	}));
 	PresentationLoader.restrict({ singleton: true, lifecycle: "page" })
 
-	PresentationLoader.enhance_presentation = function(el,role,config) 
+	PresentationLoader.enhance_presentation = function(el,role,config,context) 
 	{
 		console.log("enhancing presentation");
 	};
@@ -92,7 +92,7 @@
 	});
 
 
-function enhance_templated(el,role,config) {
+function enhance_templated(el,role,config,context) {
 	if (config.template && templates[config.template]) {
 		var template = templates[config.template];
 		//TODO replace element with template.tagName, mixed attributes and template.html
@@ -286,7 +286,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 
 
-	function enhance_table(el,role,config)
+	function enhance_table(el,role,config,context)
 	{
 		return new EnhancedTable(el,role,config);
 
@@ -316,7 +316,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	Resolver("page").declare("handlers.discard.table", discard_table);
 
 
-	function enhance_adorned(el,role,config) 
+	function enhance_adorned(el,role,config,context) 
 	{
 		var wrapper = document.createElement("DIV");
 		wrapper.className = config.contentClass || config["content-class"] || "content";
@@ -385,7 +385,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	Resolver("page").declare("handlers.discard.adorned", discard_adorned);
 
 	// already defined
-	// function enhance_dialog(el,role,config) 
+	// function enhance_dialog(el,role,config,context) 
 	// {
 	// 	alert("role")
 	// }
