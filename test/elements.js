@@ -81,7 +81,7 @@ test('Enhance element early or delayed',function() {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var appConfig = ApplicationConfig();
 
-
+	var earlyInstance = {};
 	var handlers = {
 		"init": {
 
@@ -102,6 +102,8 @@ test('Enhance element early or delayed',function() {
 		}
 	};
 	handlers.enhance.delayed.returns(false);
+	handlers.enhance.early.returns(earlyInstance);
+	// handlers.enhance.early.
 
 	Resolver("page::handlers.init").mixin(handlers.init);
 	Resolver("page::handlers.enhance").mixin(handlers.enhance);
@@ -113,29 +115,48 @@ test('Enhance element early or delayed',function() {
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
 
-		'<span role="delayed" id="a"></span>',
-		'<span role="early" id="b"></span>',
+		'<span role="delayed" data-role="\'x\':\'y\'" id="a"></span>',
+		'<span role="early" data-role="\'abc\':\'def\'" id="b"></span>',
 		'<span role="other" id="c"></span>',
 
-		'</body>'
+		'</body></html>'
 		].join(""));
-	var delayedSpan = page.body.getElementsByTagName("span")[1];
+	var delayedSpan = page.body.getElementsByTagName("span")[0];
 	var earlySpan = page.body.getElementsByTagName("span")[1];
+	ok(earlySpan);
 	ok(delayedSpan);
+	var earlyDesc = EnhancedDescriptor.all[earlySpan.uniqueId];
+	ok(earlyDesc);
+	equal(earlyDesc.role,"early");
+	equal(earlyDesc.instance,undefined);
+	ok(!earlyDesc.enhanced);
 	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
 	ok(delayedDesc);
+	equal(delayedDesc.role,"delayed");
+	equal(delayedDesc.instance,undefined);
+	ok(!delayedDesc.enhanced);
+
+	// add html to body enhancing early elements
 	page.applyBody();
-	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
-	ok(delayedDesc);
+
 
 	var sinonConfig = {}; //TODO config for the sinon elem
 
+	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueId];
+	// ok(delayedDesc);
+
+	// early elements
+	equal(earlyDesc.instance,earlyInstance);
 	equal(handlers.enhance.early.callCount,1);
-	equal(handlers.enhance.delayed.callCount,1);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
+	ok(handlers.enhance.early.alwaysCalledWith(earlySpan,"early",{ 'abc':'def'}));
 
-	ok(handlers.enhance.early.alwaysCalledWith(earlySpan,"early"));
+	// delayed elements
+	equal(delayedDesc.instance,false);
+	equal(handlers.enhance.delayed.callCount,1);
+	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
+
 	//TODO equal(handlers.enhance.early.args[0][2],sinonConfig);
 
 	ok(true,"TODO additional handlers, enhance call after initial round")
@@ -750,6 +771,8 @@ test("impl copyAttributes",function() {
 	implementation.copyAttributes(named,dest,FEW_HTML_ATTRS);
 	equal(dest.id,"id1");
 	equal(dest.getAttribute("name"),"nm");
+
+	//TODO do not set class to blank, instead remove the attribute
 
 });
 
