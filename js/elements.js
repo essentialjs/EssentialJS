@@ -635,7 +635,7 @@
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement && ev.commandElement == ev.actionElement) {
+		if (ev.commandElement && (ev.commandElement == ev.actionElement || ev.actionElement == null)) {
 
 			//TODO action event filtering
 			//TODO disabled
@@ -667,8 +667,20 @@
 			//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 
 		} 
-		else switch(ev.commandName) {
+		else {
+			el = HTMLElement.getEnhancedParent(ev.commandElement);
+
+			switch(ev.commandName) {
 			//TODO other builtin commands
+			case "parent.toggle-expanded":
+			// if (el == null) el = ancestor enhanced
+				StatefulResolver(el.parentNode,true).toggle("state.expanded");
+				break;
+
+			case "toggle-expanded":
+				StatefulResolver(el,true).toggle("state.expanded");
+				break;
+
 			case "close":
 				//TODO close up shop
 				if (ev.submitElement) {
@@ -676,6 +688,7 @@
 					ev.submitElement.parentNode.removeChild(ev.submitElement);
 				}
 				break;
+			}
 		}
 	}
 	essential.declare("fireAction",fireAction);
@@ -791,11 +804,11 @@
 
 			desc.ensureStateful();
 
-			if (!desc.enhanced) { //TODO flag needEnhance
+			if (!desc.state.enhanced) { //TODO flag needEnhance
 				desc._tryEnhance(this.handlers);
 				++enhancedCount;	//TODO only increase if enhance handler?
 			} 
-			if (! desc.enhanced) incomplete = true;
+			if (! desc.state.enhanced) incomplete = true;
 
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?

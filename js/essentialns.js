@@ -379,8 +379,6 @@
 		return q;
 	}
 	essential.declare("DescriptorQuery",DescriptorQuery);
-	essential("HTMLElement").query = DescriptorQuery;
-
 	function EnhancedContext() {
 	}
 	// EnhancedContext.prototype.??
@@ -389,17 +387,19 @@
 
 		var roles = role? role.split(" ") : [];
 
-		this.needEnhance = roles.length > 0;
-		this.uniqueID = uniqueID;
-		this.roles = roles;
-		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.el = el;
-		this.conf = conf || {};
-		this.context = new EnhancedContext();
-		this.instance = null;
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
 		};
+		this.ensureStateful();
+		this.stateful.set("state.needEnhance", roles.length > 0);
+		this.uniqueID = uniqueID;
+		this.roles = roles;
+		this.role = roles[0]; //TODO document that the first role is the switch for enhance
+		this.conf = conf || {};
+		this.context = new EnhancedContext();
+		this.instance = null;
+
 		// sizingHandler
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
@@ -408,9 +408,9 @@
 			"throttle": null //TODO throttle by default?
 		};
 		// layoutHandler
-		this.enhanced = false;
-		this.discarded = false;
-		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
+		this.state.enhanced = false;
+		this.state.discarded = false;
+		this.state.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
 		this.page = page;
 		this.handlers = page.resolver("handlers");
@@ -445,9 +445,10 @@
 	_EnhancedDescriptor.prototype.ensureStateful = function() {
 		if (this.stateful) return;
 
-			var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
-			stateful.set("sizing",this.sizing);
-			stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
+		var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
+		this.state = stateful("state");
+		stateful.set("sizing",this.sizing);
+		stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
 	};	
 
 	_EnhancedDescriptor.prototype.onStateChange = function(ev) {
@@ -479,17 +480,17 @@
 	//TODO keep params on page
 
 	_EnhancedDescriptor.prototype._tryEnhance = function(handlers,enabledRoles) {
-		if (!this.needEnhance) return;
+		if (!this.state.needEnhance) return;
 		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
 		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
 			this._updateContext();
 			//TODO allow parent to modify context
 			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
-			this.enhanced = this.instance === false? false:true;
-			this.needEnhance = !this.enhanced;
+			this.state.enhanced = this.instance === false? false:true;
+			this.state.needEnhance = !this.state.enhanced;
 		}
-		if (this.enhanced) {
+		if (this.state.enhanced) {
 			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
@@ -573,7 +574,7 @@
 	};
 
 	_EnhancedDescriptor.prototype.liveCheck = function() {
-		if (!this.enhanced || this.discarded) return;
+		if (!this.state.enhanced || this.state.discarded) return;
 		var inDom = document.body==this.el || essential("contains")(document.body,this.el); //TODO reorg import
 		//TODO handle subpages
 		if (!inDom) {
@@ -583,17 +584,17 @@
 	};
 
 	_EnhancedDescriptor.prototype.discardNow = function() {
-		if (this.discarded) return;
+		if (this.state.discarded) return;
 
 		cleanRecursively(this.el);
 		this.context = undefined;
 		this.el = undefined;
-		this.discarded = true;					
+		this.state.discarded = true;					
 		this.layout.enable = false;					
 	};
 
 	_EnhancedDescriptor.prototype._unlist = function() {
-		this.discarded = true;					
+		this.state.discarded = true;					
 		if (this.layout.enable) delete maintainedElements[this.uniqueID];
 		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
 		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
@@ -687,7 +688,7 @@
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable && !desc.discarded) {
+			if (desc.layout.enable && !desc.state.discarded) {
 				desc.refresh();
 			}
 		}
@@ -705,7 +706,7 @@
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.discarded) desc._unlist();
+			if (desc.state.discarded) desc._unlist();
 		}
 	};
 
@@ -744,7 +745,7 @@
 	function discardRestricted()
 	{
 		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
-			var discarded = g.info.constructors[-1].discarded;
+			var discarded = g.info.constructors[-1].state.discarded;
 			for(var n in g.info.existing) {
 				var instance = g.info.existing[n];
 				if (discarded) {

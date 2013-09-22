@@ -1643,8 +1643,6 @@ Generator.ObjectGenerator = Generator(Object);
 		return q;
 	}
 	essential.declare("DescriptorQuery",DescriptorQuery);
-	essential("HTMLElement").query = DescriptorQuery;
-
 	function EnhancedContext() {
 	}
 	// EnhancedContext.prototype.??
@@ -1653,17 +1651,19 @@ Generator.ObjectGenerator = Generator(Object);
 
 		var roles = role? role.split(" ") : [];
 
-		this.needEnhance = roles.length > 0;
-		this.uniqueID = uniqueID;
-		this.roles = roles;
-		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.el = el;
-		this.conf = conf || {};
-		this.context = new EnhancedContext();
-		this.instance = null;
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
 		};
+		this.ensureStateful();
+		this.stateful.set("state.needEnhance", roles.length > 0);
+		this.uniqueID = uniqueID;
+		this.roles = roles;
+		this.role = roles[0]; //TODO document that the first role is the switch for enhance
+		this.conf = conf || {};
+		this.context = new EnhancedContext();
+		this.instance = null;
+
 		// sizingHandler
 		this.layout = {
 			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
@@ -1672,9 +1672,9 @@ Generator.ObjectGenerator = Generator(Object);
 			"throttle": null //TODO throttle by default?
 		};
 		// layoutHandler
-		this.enhanced = false;
-		this.discarded = false;
-		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
+		this.state.enhanced = false;
+		this.state.discarded = false;
+		this.state.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
 		this.page = page;
 		this.handlers = page.resolver("handlers");
@@ -1709,9 +1709,10 @@ Generator.ObjectGenerator = Generator(Object);
 	_EnhancedDescriptor.prototype.ensureStateful = function() {
 		if (this.stateful) return;
 
-			var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
-			stateful.set("sizing",this.sizing);
-			stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
+		var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
+		this.state = stateful("state");
+		stateful.set("sizing",this.sizing);
+		stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
 	};	
 
 	_EnhancedDescriptor.prototype.onStateChange = function(ev) {
@@ -1743,17 +1744,17 @@ Generator.ObjectGenerator = Generator(Object);
 	//TODO keep params on page
 
 	_EnhancedDescriptor.prototype._tryEnhance = function(handlers,enabledRoles) {
-		if (!this.needEnhance) return;
+		if (!this.state.needEnhance) return;
 		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
 		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
 			this._updateContext();
 			//TODO allow parent to modify context
 			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
-			this.enhanced = this.instance === false? false:true;
-			this.needEnhance = !this.enhanced;
+			this.state.enhanced = this.instance === false? false:true;
+			this.state.needEnhance = !this.state.enhanced;
 		}
-		if (this.enhanced) {
+		if (this.state.enhanced) {
 			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
@@ -1837,7 +1838,7 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 	_EnhancedDescriptor.prototype.liveCheck = function() {
-		if (!this.enhanced || this.discarded) return;
+		if (!this.state.enhanced || this.state.discarded) return;
 		var inDom = document.body==this.el || essential("contains")(document.body,this.el); //TODO reorg import
 		//TODO handle subpages
 		if (!inDom) {
@@ -1847,17 +1848,17 @@ Generator.ObjectGenerator = Generator(Object);
 	};
 
 	_EnhancedDescriptor.prototype.discardNow = function() {
-		if (this.discarded) return;
+		if (this.state.discarded) return;
 
 		cleanRecursively(this.el);
 		this.context = undefined;
 		this.el = undefined;
-		this.discarded = true;					
+		this.state.discarded = true;					
 		this.layout.enable = false;					
 	};
 
 	_EnhancedDescriptor.prototype._unlist = function() {
-		this.discarded = true;					
+		this.state.discarded = true;					
 		if (this.layout.enable) delete maintainedElements[this.uniqueID];
 		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
 		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
@@ -1951,7 +1952,7 @@ Generator.ObjectGenerator = Generator(Object);
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable && !desc.discarded) {
+			if (desc.layout.enable && !desc.state.discarded) {
 				desc.refresh();
 			}
 		}
@@ -1969,7 +1970,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.discarded) desc._unlist();
+			if (desc.state.discarded) desc._unlist();
 		}
 	};
 
@@ -2008,7 +2009,7 @@ Generator.ObjectGenerator = Generator(Object);
 	function discardRestricted()
 	{
 		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
-			var discarded = g.info.constructors[-1].discarded;
+			var discarded = g.info.constructors[-1].state.discarded;
 			for(var n in g.info.existing) {
 				var instance = g.info.existing[n];
 				if (discarded) {
@@ -2407,6 +2408,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
 
 	essential.declare("baseUrl",location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1));
@@ -3427,6 +3429,16 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("HTMLElement",HTMLElement);
 	
+	HTMLElement.query = essential("DescriptorQuery");
+
+	HTMLElement.getEnhancedParent = function(el) {
+		for(; el; el = el.parentNode) {
+			var desc = EnhancedDescriptor.all[el.uniqueID];
+			if (desc && (desc.state.enhanced || desc.state.needEnhance)) return el;
+		}
+		return null;
+	};
+
 	
 	//TODO element cleaner must remove .el references from listeners
 
@@ -4344,7 +4356,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 				} else {
 
 				}
-				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
+				if (desc==null || !desc.state.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
@@ -4835,11 +4847,11 @@ _ElementPlacement.prototype._computeIE = function(style)
 					desc._tryMakeLaidout(""); //TODO key?
 
 					if (desc.conf.sizingElement) sizingElements[n] = desc;
-					if (!desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+					if (!desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
 				} else {
 					// freeze in unapplied subpage
 					//TODO & reheat
-					// if (desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+					// if (desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
 				}
 			}
 		}
@@ -6486,7 +6498,7 @@ function(scripts) {
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement && ev.commandElement == ev.actionElement) {
+		if (ev.commandElement && (ev.commandElement == ev.actionElement || ev.actionElement == null)) {
 
 			//TODO action event filtering
 			//TODO disabled
@@ -6518,8 +6530,20 @@ function(scripts) {
 			//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 
 		} 
-		else switch(ev.commandName) {
+		else {
+			el = HTMLElement.getEnhancedParent(ev.commandElement);
+
+			switch(ev.commandName) {
 			//TODO other builtin commands
+			case "parent.toggle-expanded":
+			// if (el == null) el = ancestor enhanced
+				StatefulResolver(el.parentNode,true).toggle("state.expanded");
+				break;
+
+			case "toggle-expanded":
+				StatefulResolver(el,true).toggle("state.expanded");
+				break;
+
 			case "close":
 				//TODO close up shop
 				if (ev.submitElement) {
@@ -6527,6 +6551,7 @@ function(scripts) {
 					ev.submitElement.parentNode.removeChild(ev.submitElement);
 				}
 				break;
+			}
 		}
 	}
 	essential.declare("fireAction",fireAction);
@@ -6642,11 +6667,11 @@ function(scripts) {
 
 			desc.ensureStateful();
 
-			if (!desc.enhanced) { //TODO flag needEnhance
+			if (!desc.state.enhanced) { //TODO flag needEnhance
 				desc._tryEnhance(this.handlers);
 				++enhancedCount;	//TODO only increase if enhance handler?
 			} 
-			if (! desc.enhanced) incomplete = true;
+			if (! desc.state.enhanced) incomplete = true;
 
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
@@ -7314,12 +7339,12 @@ function(scripts) {
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
 	function init_template(el,role,config,context) {
-		this.contentManaged = true; // template content skipped
+		this.state.contentManaged = true; // template content skipped
 	}
 	pageResolver.set("handlers.init.template",init_template);
 
 	function init_templated(el,role,config,context) {
-		this.contentManaged = true; // templated content skipped
+		this.state.contentManaged = true; // templated content skipped
 	}
 	pageResolver.set("handlers.init.templated",init_templated);
 

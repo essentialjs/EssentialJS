@@ -648,7 +648,7 @@
 				} else {
 
 				}
-				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
+				if (desc==null || !desc.state.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
@@ -1139,11 +1139,11 @@
 					desc._tryMakeLaidout(""); //TODO key?
 
 					if (desc.conf.sizingElement) sizingElements[n] = desc;
-					if (!desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+					if (!desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
 				} else {
 					// freeze in unapplied subpage
 					//TODO & reheat
-					// if (desc.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+					// if (desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
 				}
 			}
 		}

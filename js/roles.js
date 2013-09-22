@@ -538,12 +538,12 @@
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
 	function init_template(el,role,config,context) {
-		this.contentManaged = true; // template content skipped
+		this.state.contentManaged = true; // template content skipped
 	}
 	pageResolver.set("handlers.init.template",init_template);
 
 	function init_templated(el,role,config,context) {
-		this.contentManaged = true; // templated content skipped
+		this.state.contentManaged = true; // templated content skipped
 	}
 	pageResolver.set("handlers.init.templated",init_templated);
 

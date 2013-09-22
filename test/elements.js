@@ -86,6 +86,7 @@ test('addEventListeners catch',function() {
 test('Enhance element early or delayed',function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 	var appConfig = ApplicationConfig();
 
 	var earlyInstance = {}, delayedInstance = {};
@@ -122,26 +123,36 @@ test('Enhance element early or delayed',function() {
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
 
-		'<span role="delayed" data-role="\'x\':\'y\'" id="a"></span>',
-		'<span role="early" data-role="\'abc\':\'def\'" id="b"></span>',
+		'<span role="delayed" data-role="\'x\':\'y\'" id="a"><b><pre></pre></b></span>',
+		'<span role="early" data-role="\'abc\':\'def\'" id="b"><code><em>EM</em></code></span>',
 		'<span role="other" id="c"></span>',
 
 		'</body></html>'
 		].join(""));
 	var delayedSpan = page.body.getElementsByTagName("span")[0];
 	var earlySpan = page.body.getElementsByTagName("span")[1];
-	ok(earlySpan);
-	ok(delayedSpan);
+	ok(earlySpan,"early span");
+	ok(delayedSpan,"delayed span");
 	var earlyDesc = EnhancedDescriptor.all[earlySpan.uniqueID];
 	ok(earlyDesc);
 	equal(earlyDesc.role,"early");
 	equal(earlyDesc.instance,undefined);
-	ok(!earlyDesc.enhanced);
+	ok(!earlyDesc.state.enhanced);
 	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	ok(delayedDesc);
 	equal(delayedDesc.role,"delayed");
 	equal(delayedDesc.instance,undefined);
-	ok(!delayedDesc.enhanced);
+	ok(!delayedDesc.state.enhanced);
+
+	var em = page.body.getElementsByTagName("em")[0],
+		code = page.body.getElementsByTagName("code")[0],
+		pre = page.body.getElementsByTagName("pre")[0],
+		b = page.body.getElementsByTagName("b")[0];
+
+	equal(HTMLElement.getEnhancedParent(em),earlySpan);
+	equal(HTMLElement.getEnhancedParent(code),earlySpan);
+	equal(HTMLElement.getEnhancedParent(pre),delayedSpan);
+	equal(HTMLElement.getEnhancedParent(b),delayedSpan);
 
 	// add html to body enhancing early elements
 	page.applyBody();
@@ -153,14 +164,14 @@ test('Enhance element early or delayed',function() {
 	// ok(delayedDesc);
 
 	// early elements
-	equal(earlyDesc.instance,earlyInstance);
+	equal(earlyDesc.instance,earlyInstance,"early instance");
 	equal(handlers.enhance.early.callCount,1);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 	ok(handlers.enhance.early.alwaysCalledWith(earlySpan,"early",{ 'abc':'def'}));
 
 	// delayed elements
-	equal(delayedDesc.instance,false);
+	equal(delayedDesc.instance,false,"delayed desc");
 	equal(handlers.enhance.delayed.callCount,1);
 	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
 
@@ -178,7 +189,7 @@ test('Enhance element early or delayed',function() {
 	equal(handlers.discard.early.callCount,0);
 
 	// delayed elements
-	equal(delayedDesc.instance,delayedInstance);
+	equal(delayedDesc.instance,delayedInstance,"delayed instance");
 	equal(handlers.enhance.delayed.callCount,2);
 	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
 
@@ -368,7 +379,7 @@ test("Enhance layouter element",function() {
 	var desc = page.resolver("descriptors")[layouterSpan.uniqueID];
 	// page.body.firstChild.nextSibling.layouter
 	ok(desc);
-	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
+	ok(desc.state.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
 	ok(desc.layout.queued);
 	
 	equal(_TestLayouter.prototype.sizingElement.callCount,1);
@@ -596,7 +607,7 @@ test('Discarding enhanced',function() {
 	// var desc = EnhancedDescriptor(document.body,"application",{},force,ApplicationConfig());
 	// desc.enhanced = true;
 	// desc.liveCheck();
-	// ok(!desc.discarded,"liveCheck on document.body doesn't discard");
+	// ok(!desc.state.discarded,"liveCheck on document.body doesn't discard");
 	// document.body.stateful = null;
 	// desc.discardNow();
 	// document.body.stateful = ApplicationConfig().resolver;

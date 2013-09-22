@@ -2,6 +2,7 @@
 
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
 
 	essential.declare("baseUrl",location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1));
@@ -1022,6 +1023,16 @@
 	}
 	essential.set("HTMLElement",HTMLElement);
 	
+	HTMLElement.query = essential("DescriptorQuery");
+
+	HTMLElement.getEnhancedParent = function(el) {
+		for(; el; el = el.parentNode) {
+			var desc = EnhancedDescriptor.all[el.uniqueID];
+			if (desc && (desc.state.enhanced || desc.state.needEnhance)) return el;
+		}
+		return null;
+	};
+
 	
 	//TODO element cleaner must remove .el references from listeners
 
