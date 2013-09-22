@@ -3440,7 +3440,7 @@ Generator.ObjectGenerator = Generator(Object);
 	HTMLElement.query = essential("DescriptorQuery");
 
 	HTMLElement.getEnhancedParent = function(el) {
-		for(; el; el = el.parentNode) {
+		for(el = el.parentNode; el; el = el.parentNode) {
 			var desc = EnhancedDescriptor.all[el.uniqueID];
 			if (desc && (desc.state.enhanced || desc.state.needEnhance)) return el;
 		}

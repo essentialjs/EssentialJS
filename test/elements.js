@@ -227,6 +227,7 @@ test('Enhance element early or delayed',function() {
 test('Enhance element with context',function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 	var appConfig = ApplicationConfig();
 
 
@@ -261,8 +262,8 @@ test('Enhance element with context',function() {
 	var page = appConfig.page("/test/pages/with-context.html",{},[
 		'<html><head>', '', '</head><body>',
 		'<div role="master" data-role="',"'template':'#master-template'",'">',
-		'<span role="slave1" id="a" data-role="',"'model':'myModel'",'"></span>',
-		'<span role="slave2" id="b" data-role="',"'model':'slaveTwoModel'",'"></span>',
+			'<span role="slave1" id="a" data-role="',"'model':'myModel'",'"></span>',
+			'<span role="slave2" id="b" data-role="',"'model':'slaveTwoModel'",'"></span>',
 		'</div>',
 
 		'</body></html>'
@@ -307,6 +308,9 @@ test('Enhance element with context',function() {
 	// page.applyBody();
 	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	// ok(delayedDesc);
+
+	equal(HTMLElement.getEnhancedParent(slaveOneSpan),masterDiv);
+	equal(HTMLElement.getEnhancedParent(slaveTwoSpan),masterDiv);
 
 });
 
