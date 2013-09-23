@@ -1922,6 +1922,11 @@ Generator.ObjectGenerator = Generator(Object);
 		if (uniqueID == undefined) uniqueID = el.uniqueID = ++lastUniqueID;
 		var desc = enhancedElements[uniqueID];
 		if (desc && !force) return desc;
+
+		if (page == undefined) {
+			var pageResolver = Resolver("page");
+			page = pageResolver(["pagesById",el.ownerDocument.uniqueID],"null");
+		}
 		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueID);
 		enhancedElements[uniqueID] = desc;
 		var descriptors = page.resolver("descriptors");
@@ -2076,6 +2081,8 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		Resolver("page").set("state.launched",false);
 		Resolver("page").set("state.livepage",false);
+		Resolver("page").set("pages",null);
+		Resolver("page").set("pagesById",null);
 	}
 
 	// iBooks HTML widget
@@ -2541,6 +2548,8 @@ Generator.ObjectGenerator = Generator(Object);
 		return markup;
 	}
 
+	var documentId = 444;
+
 	/**
 	 * (html) or (head,body) rename to importHTMLDocument ?
 
@@ -2569,6 +2578,7 @@ Generator.ObjectGenerator = Generator(Object);
 			ext.write(markup);
 			if (ext.head === undefined) ext.head = ext.body.previousSibling;
 
+			doc.uniqueID = ext.uniqueID;
 			doc.head = ext.head;
 			doc.body = _importNode(document,ext.body,true);
 
@@ -2577,6 +2587,7 @@ Generator.ObjectGenerator = Generator(Object);
 			// markup = markup.replace("<body",'<wasbody').replace("</body>","</wasbody>");
 			// markup = markup.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
@@ -2608,6 +2619,7 @@ Generator.ObjectGenerator = Generator(Object);
 				// var __body = _body.getElementsByTagName("wasbody");
 			}
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
@@ -4222,6 +4234,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
 	Resolver("page").declare("pages",{});
+	Resolver("page").declare("pagesById",{});
 	Resolver("page").declare("state.requiredPages",0);
 
 	function _Scripted() {
@@ -4493,6 +4506,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 		if (this.url) {
 			delete Resolver("page::pages::")[this.url];
 		}
+		if (this.uniqueID) {
+			delete Resolver("page::pagesById::")[this.uniqueID];
+		}
 	};
 
 	SubPage.prototype.page = function(url) {
@@ -4551,6 +4567,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
+		this.uniqueID = doc.uniqueID;
+		Resolver("page").set(["pagesById",this.uniqueID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -4575,6 +4593,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
+		this.uniqueID = doc.uniqueID;
+		Resolver("page").set(["pagesById",this.uniqueID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -4712,6 +4732,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+		this.uniqueID = document.uniqueID || "main";
+		Resolver("page").set(["pagesById",this.uniqueID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
@@ -5883,6 +5905,7 @@ function(scripts) {
 		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
 		callCleaners = essential("callCleaners"),
+		cleanRecursively = essential("cleanRecursively"),
 		addEventListeners = essential("addEventListeners"),
 		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
@@ -6555,7 +6578,7 @@ function(scripts) {
 			case "close":
 				//TODO close up shop
 				if (ev.submitElement) {
-					callCleaners(ev.submitElement);
+					cleanRecursively(ev.submitElement);
 					ev.submitElement.parentNode.removeChild(ev.submitElement);
 				}
 				break;
@@ -7020,7 +7043,10 @@ function(scripts) {
 				wrap.setAttribute("data-role",contentConfig);
 			}
 		} 
-		if (wrap) wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+		if (wrap) {
+			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+			essential("DescriptorQuery")(wrap).enhance();
+		}
 
 		// restrict height to body (TODO use layouter to restrict this on page resize)
 		if (el.offsetHeight > document.body.offsetHeight) {
@@ -7029,7 +7055,6 @@ function(scripts) {
 			if (footer) height -= footer.offsetHeight;
 			wrap.style.maxHeight = height + "px";
 		}
-		//("essential::DescriptorQuery::")(el).enhance();
 
 		// position the dialog
 		if (config.placement) { // explicit position

@@ -12,6 +12,7 @@
 		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
 		callCleaners = essential("callCleaners"),
+		cleanRecursively = essential("cleanRecursively"),
 		addEventListeners = essential("addEventListeners"),
 		maintainedElements = essential("maintainedElements"),
 		enhancedWindows = essential("enhancedWindows");
@@ -684,7 +685,7 @@
 			case "close":
 				//TODO close up shop
 				if (ev.submitElement) {
-					callCleaners(ev.submitElement);
+					cleanRecursively(ev.submitElement);
 					ev.submitElement.parentNode.removeChild(ev.submitElement);
 				}
 				break;

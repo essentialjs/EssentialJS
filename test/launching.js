@@ -33,6 +33,7 @@ test("ApplicationConfig",function(){
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var ac = ApplicationConfig();
 	// equal(document.body.stateful,Resolver.page);
+	equal( Resolver("page")(["pagesById",ac.uniqueID]), ac );
 
 	// application/config
 	equal(ac.config("launched.charset"),"utf-8","launched.charset");

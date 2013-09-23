@@ -3,6 +3,7 @@
 		pageResolver = Resolver("page"),
 		templates = pageResolver("templates"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
+		DescriptorQuery = essential("DescriptorQuery"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		console = essential("console");
@@ -29,18 +30,18 @@
 
 	PresentationLoader.enhance_presentation = function(el,role,config,context) 
 	{
-		console.log("enhancing presentation");
+		console.log("enhancing presentation",el.uniqueID);
 	};
 
 	PresentationLoader.layout_presentation = function(el,layout,instance) 
 	{
-		console.log("layout presentation");
+		console.log("layout presentation",el.uniqueID);
 	};
 	PresentationLoader.layout_presentation.throttle = 200;
 
 	PresentationLoader.discard_presentation = function(el,role,instance) 
 	{
-		console.log("discard presentation");
+		console.log("discard presentation",el.uniqueID);
 		if (instance) {
 			if (instance.onClose) {
 				instance.onClose();
@@ -226,7 +227,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		this.defaultRowHeight = (this.body.children[0].offsetHeight + this.body.children[1].offsetHeight)/2;
 		this.rowHeights = [];
 
-		var desc = EnhancedDescriptor(el.parentNode);
+		var desc = DescriptorQuery([ el.parentNode ])[0]; //EnhancedDescriptor(el.parentNode);
 		if (desc && desc.role == "scrolled") {
 			if (desc.conf.nativeScrollVert == false) {
 				this.scrolled = desc;
@@ -288,6 +289,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 	function enhance_table(el,role,config,context)
 	{
+		console.log("Enhancing table",el.uniqueID);
 		return new EnhancedTable(el,role,config);
 
 	}
@@ -307,7 +309,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 	function discard_table(el,role,instance)
 	{
-
+		console.log("Discarding table",el.uniqueID);
 	}
 
 	Resolver("page").declare("handlers.enhance.table", enhance_table);

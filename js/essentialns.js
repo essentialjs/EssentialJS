@@ -650,6 +650,11 @@
 		if (uniqueID == undefined) uniqueID = el.uniqueID = ++lastUniqueID;
 		var desc = enhancedElements[uniqueID];
 		if (desc && !force) return desc;
+
+		if (page == undefined) {
+			var pageResolver = Resolver("page");
+			page = pageResolver(["pagesById",el.ownerDocument.uniqueID],"null");
+		}
 		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueID);
 		enhancedElements[uniqueID] = desc;
 		var descriptors = page.resolver("descriptors");

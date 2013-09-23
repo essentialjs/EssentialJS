@@ -211,7 +211,10 @@
 				wrap.setAttribute("data-role",contentConfig);
 			}
 		} 
-		if (wrap) wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+		if (wrap) {
+			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+			essential("DescriptorQuery")(wrap).enhance();
+		}
 
 		// restrict height to body (TODO use layouter to restrict this on page resize)
 		if (el.offsetHeight > document.body.offsetHeight) {
@@ -220,7 +223,6 @@
 			if (footer) height -= footer.offsetHeight;
 			wrap.style.maxHeight = height + "px";
 		}
-		//("essential::DescriptorQuery::")(el).enhance();
 
 		// position the dialog
 		if (config.placement) { // explicit position
