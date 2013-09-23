@@ -506,6 +506,7 @@
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
 	Resolver("page").declare("pages",{});
+	Resolver("page").declare("pagesById",{});
 	Resolver("page").declare("state.requiredPages",0);
 
 	function _Scripted() {
@@ -777,6 +778,9 @@
 		if (this.url) {
 			delete Resolver("page::pages::")[this.url];
 		}
+		if (this.uniqueID) {
+			delete Resolver("page::pagesById::")[this.uniqueID];
+		}
 	};
 
 	SubPage.prototype.page = function(url) {
@@ -835,6 +839,8 @@
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
+		this.uniqueID = doc.uniqueID;
+		Resolver("page").set(["pagesById",this.uniqueID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -859,6 +865,8 @@
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
+		this.uniqueID = doc.uniqueID;
+		Resolver("page").set(["pagesById",this.uniqueID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -996,6 +1004,8 @@
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+		this.uniqueID = document.uniqueID || "main";
+		Resolver("page").set(["pagesById",this.uniqueID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;

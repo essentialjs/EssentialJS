@@ -21,6 +21,7 @@ test("Explicit subpage definitions",function() {
 		'</body></html>'
 		].join(""));
 
+	equal(Resolver("page")(["pagesById",page.uniqueID]), page);
 	ok(page.documentLoaded);
 	ok(page.head);
 	equal(page.head.id,"10");
@@ -40,12 +41,15 @@ test("Explicit subpage definitions",function() {
 
 	page.destroy();
 
+	equal(Resolver("page")(["pages","/test/pages/a2.html"],"undefined"),undefined);
+
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<span role="delayed" id="a"></span>',
 		'<span role="early" id="b"></span>',
 		''
 		].join(""));
 
+	equal(Resolver("page")(["pagesById",page.uniqueID]), page);
 	ok(page.documentLoaded);
 
 	//TODO alternate head + body call syntax
@@ -60,12 +64,15 @@ test("Apply/unapply body",function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
+	equal(Resolver("page")(["pages","/test/pages/a3.html"],"undefined"),undefined);
+
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<span role="delayed" id="a"></span>',
 		'<span role="early" id="b"></span>',
 		''
 		].join(""));
 
+	equal(Resolver("page")(["pagesById",page.uniqueID]), page);
 	ok(page.documentLoaded);
 
 	page.destroy(); return;//buggy

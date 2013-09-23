@@ -804,6 +804,8 @@
 		}
 		Resolver("page").set("state.launched",false);
 		Resolver("page").set("state.livepage",false);
+		Resolver("page").set("pages",null);
+		Resolver("page").set("pagesById",null);
 	}
 
 	// iBooks HTML widget

@@ -127,6 +127,8 @@
 		return markup;
 	}
 
+	var documentId = 444;
+
 	/**
 	 * (html) or (head,body) rename to importHTMLDocument ?
 
@@ -155,6 +157,7 @@
 			ext.write(markup);
 			if (ext.head === undefined) ext.head = ext.body.previousSibling;
 
+			doc.uniqueID = ext.uniqueID;
 			doc.head = ext.head;
 			doc.body = _importNode(document,ext.body,true);
 
@@ -163,6 +166,7 @@
 			// markup = markup.replace("<body",'<wasbody').replace("</body>","</wasbody>");
 			// markup = markup.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
@@ -194,6 +198,7 @@
 				// var __body = _body.getElementsByTagName("wasbody");
 			}
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}

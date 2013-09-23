@@ -118,11 +118,13 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		equal(config["b"],"b","body data-role attribute");
 		equal(config["c"],"c","body application/config");
 
-		var config = page.getConfig(page.head);
-		ok(config);
-		equal(config["1"],"1","head data-role attribute");
-		equal(config["2"],"2","head data-role attribute");
-		equal(config["3"],"3","head application/config");
+		// if (navigator.userAgent.indexOf(" MSIE ") == -1) {
+			var config = page.getConfig(page.head);
+			ok(config);
+			equal(config["1"],"1","head data-role attribute");
+			equal(config["2"],"2","head data-role attribute");
+			equal(config["3"],"3","head application/config");
+		// }
 
 		page.destroy();
 

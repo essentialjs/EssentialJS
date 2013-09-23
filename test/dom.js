@@ -4,6 +4,7 @@ test("Sub Document Creations",function() {
 	var importHTMLDocument = Resolver("essential::importHTMLDocument::");
 
 	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"><div id="first-id"></div></body></html>');
+	ok(doc.uniqueID);
 	equal(doc.head.id,"a1");
 	equal(doc.head.getAttribute("attr"),"a1");
 	if (! /MSIE 8/.test(navigator.userAgent)) equal(doc.head.firstChild.getAttribute("charset"),"utf-8");
@@ -15,6 +16,7 @@ test("Sub Document Creations",function() {
 
 	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head>'+
 			'<body id="a2" attr="a2"><header><h1></h1></header><article><section>section</section></article><footer>footer<q>q</q></footer></body></html>');
+	ok(doc.uniqueID);
 	equal(doc.body.childNodes[0].tagName.toLowerCase(),"header");	
 	equal(doc.body.childNodes[1].tagName.toLowerCase(),"article");	
 	equal(doc.body.childNodes[2].tagName.toLowerCase(),"footer");	
@@ -26,6 +28,7 @@ test("Document Creations",function() {
 	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
 
 	var doc = createHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
+	ok(doc.uniqueID);
 	equal(doc.head.id,"a1");
 	equal(doc.head.getAttribute("attr"),"a1");
 	if (! /MSIE 8/.test(navigator.userAgent)) equal(doc.head.firstChild.getAttribute("charset"),"utf-8");
@@ -52,6 +55,7 @@ test("Document Creations",function() {
 	equal(doc.body.getAttribute("attr"),"a2");
 
 	var doc = createHTMLDocument('<link rel="next" href="next.html">','<div id="a2" attr="a2"></div>');
+	ok(doc.uniqueID);
 	if (! /MSIE 8/.test(navigator.userAgent)) {
 		//TODO try to find a way to make link elements work
 		ok(doc.head.firstChild,"Head content");
@@ -64,6 +68,7 @@ test("Document Creations",function() {
 
 
 	var doc = createHTMLDocument("",'<body id="a2" attr="a2"></body>');
+	ok(doc.uniqueID);
 	equal(doc.body.id,"a2");
 	equal(doc.body.getAttribute("attr"),"a2");
 	//TODO test the construction in IE
