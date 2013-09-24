@@ -750,7 +750,7 @@
 	function discardRestricted()
 	{
 		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
-			var discarded = g.info.constructors[-1].state.discarded;
+			var discarded = g.info.constructors[-1].discarded;
 			for(var n in g.info.existing) {
 				var instance = g.info.existing[n];
 				if (discarded) {
