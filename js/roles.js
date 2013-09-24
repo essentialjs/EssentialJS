@@ -698,6 +698,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
+	//TODO support fixed position offsetTop/Bottom in IE, kinda crap negative offsets
+
+	//TODO support bottom/right positioning
+	
 	ElementMovement.prototype.start = function(el,event) {
 		var movement = this;
 		this.el = el;
