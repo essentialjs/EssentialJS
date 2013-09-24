@@ -6958,6 +6958,7 @@ function(scripts) {
 		if (ev.target.tagName == "BUTTON") return; // don't drag on close button
 		var dialog = this.parentNode;
 		Resolver("page").set("activeElement",dialog);
+		dialog.parentNode.appendChild(dialog);
 		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
 
 		if (ev.preventDefault) ev.preventDefault();
