@@ -149,6 +149,10 @@ textarea {
   overflow: auto;
   vertical-align: top;
 }
+html,
+body {
+  height: 100%;
+}
 p {
   margin: 0 0 9px;
 }
