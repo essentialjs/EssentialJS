@@ -1865,12 +1865,12 @@ Generator.ObjectGenerator = Generator(Object);
 		this.layout.enable = false;					
 	};
 
-	_EnhancedDescriptor.prototype._unlist = function() {
+	_EnhancedDescriptor.prototype._unlist = function(forget) {
 		this.state.discarded = true;					
 		if (this.layout.enable) delete maintainedElements[this.uniqueID];
 		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
 		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
-		delete enhancedElements[this.uniqueID];
+		if (forget) delete enhancedElements[this.uniqueID];
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -1947,7 +1947,7 @@ Generator.ObjectGenerator = Generator(Object);
 			var desc = enhancedElements[n];
 
 			desc.discardNow();
-			desc._unlist();
+			desc._unlist(true);
 			// delete enhancedElements[n];
 		}
 		enhancedElements = EnhancedDescriptor.all = essential.set("enhancedElements",{});
@@ -1983,7 +1983,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.state.discarded) desc._unlist();
+			if (desc.state.discarded) desc._unlist(); // leave it in .all
 		}
 	};
 
@@ -3457,6 +3457,21 @@ Generator.ObjectGenerator = Generator(Object);
 			if (desc && (desc.state.enhanced || desc.state.needEnhance)) return el;
 		}
 		return null;
+	};
+
+	/*
+		Discard the element call handlers & cleaners, unlist it if enhanced, remove from DOM
+	*/
+	HTMLElment.discard = function(el,leaveInDom) {
+
+		var desc = EnhancedDescriptor.maintained[el.uniqueID];
+		if (desc) {
+			desc.discardNow();
+			desc._unlist();
+		}
+		else cleanRecursively(el);
+
+		if (!leaveInDom) el.parentNode.removeChild(el);
 	};
 
 	
@@ -6577,10 +6592,7 @@ function(scripts) {
 
 			case "close":
 				//TODO close up shop
-				if (ev.submitElement) {
-					cleanRecursively(ev.submitElement);
-					ev.submitElement.parentNode.removeChild(ev.submitElement);
-				}
+				if (ev.submitElement) HTMLElement.discard(ev.submitElement);
 				break;
 			}
 		}
@@ -6957,9 +6969,9 @@ function(scripts) {
 		if (activeMovement != null) return;
 		if (ev.target.tagName == "BUTTON") return; // don't drag on close button
 		var dialog = this.parentNode;
+		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
 		Resolver("page").set("activeElement",dialog);
 		dialog.parentNode.appendChild(dialog);
-		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
 
 		if (ev.preventDefault) ev.preventDefault();
 

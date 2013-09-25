@@ -1038,6 +1038,21 @@
 		return null;
 	};
 
+	/*
+		Discard the element call handlers & cleaners, unlist it if enhanced, remove from DOM
+	*/
+	HTMLElement.discard = function(el,leaveInDom) {
+
+		var desc = EnhancedDescriptor.all[el.uniqueID];
+		if (desc) {
+			desc.discardNow();
+			desc._unlist();
+		}
+		else cleanRecursively(el);
+
+		if (!leaveInDom) el.parentNode.removeChild(el);
+	};
+
 	
 	//TODO element cleaner must remove .el references from listeners
 

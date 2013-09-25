@@ -684,10 +684,7 @@
 
 			case "close":
 				//TODO close up shop
-				if (ev.submitElement) {
-					cleanRecursively(ev.submitElement);
-					ev.submitElement.parentNode.removeChild(ev.submitElement);
-				}
+				if (ev.submitElement) HTMLElement.discard(ev.submitElement);
 				break;
 			}
 		}

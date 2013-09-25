@@ -593,12 +593,12 @@
 		this.layout.enable = false;					
 	};
 
-	_EnhancedDescriptor.prototype._unlist = function() {
+	_EnhancedDescriptor.prototype._unlist = function(forget) {
 		this.state.discarded = true;					
 		if (this.layout.enable) delete maintainedElements[this.uniqueID];
 		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
 		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
-		delete enhancedElements[this.uniqueID];
+		if (forget) delete enhancedElements[this.uniqueID];
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -675,7 +675,7 @@
 			var desc = enhancedElements[n];
 
 			desc.discardNow();
-			desc._unlist();
+			desc._unlist(true);
 			// delete enhancedElements[n];
 		}
 		enhancedElements = EnhancedDescriptor.all = essential.set("enhancedElements",{});
@@ -711,7 +711,7 @@
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.state.discarded) desc._unlist();
+			if (desc.state.discarded) desc._unlist(); // leave it in .all
 		}
 	};
 
