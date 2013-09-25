@@ -630,6 +630,7 @@
 		this.context["this"] = undefined;
 	};
 
+	//TODO move to DescriptorQuery, move when improving scroller
 	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;

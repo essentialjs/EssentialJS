@@ -379,6 +379,9 @@
 					} 
 				}
 			} else {
+				//TODO third param context ? integrate with desc.context
+				//TODO identify existing descriptors
+
 				//TODO if the el is a layouter, pass that in conf
 				ac._prep(el,context);
 				//TODO push those matched descriptors into q

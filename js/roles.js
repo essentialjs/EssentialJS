@@ -1068,6 +1068,7 @@
 			el.appendChild(content);
 			var context = { layouter: this.parentLayouter };
 			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
+			// essential("DescriptorQuery")(wrap).enhance();
 			ApplicationConfig()._prep(el,context); //TODO prepAncestors
 		}
 

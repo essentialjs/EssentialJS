@@ -1044,6 +1044,11 @@
 	HTMLElement.discard = function(el,leaveInDom) {
 
 		this.query(el).discard();
+		// var desc = EnhancedDescriptor.all[el.uniqueID];
+		// if (desc) {
+		// 	desc.discardNow();
+		// 	desc._unlist();
+		// }
 		essential("cleanRecursively")(el);
 
 		if (!leaveInDom) el.parentNode.removeChild(el);

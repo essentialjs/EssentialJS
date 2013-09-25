@@ -1643,6 +1643,9 @@ Generator.ObjectGenerator = Generator(Object);
 					} 
 				}
 			} else {
+				//TODO third param context ? integrate with desc.context
+				//TODO identify existing descriptors
+
 				//TODO if the el is a layouter, pass that in conf
 				ac._prep(el,context);
 				//TODO push those matched descriptors into q
@@ -3525,6 +3528,11 @@ Generator.ObjectGenerator = Generator(Object);
 	HTMLElement.discard = function(el,leaveInDom) {
 
 		this.query(el).discard();
+		// var desc = EnhancedDescriptor.all[el.uniqueID];
+		// if (desc) {
+		// 	desc.discardNow();
+		// 	desc._unlist();
+		// }
 		essential("cleanRecursively")(el);
 
 		if (!leaveInDom) el.parentNode.removeChild(el);
@@ -4429,6 +4437,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.context["this"] = undefined;
 	};
 
+	//TODO move to DescriptorQuery, move when improving scroller
 	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -7788,6 +7797,7 @@ function(scripts) {
 			el.appendChild(content);
 			var context = { layouter: this.parentLayouter };
 			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
+			// essential("DescriptorQuery")(wrap).enhance();
 			ApplicationConfig()._prep(el,context); //TODO prepAncestors
 		}
 
