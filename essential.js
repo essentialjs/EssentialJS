@@ -1979,6 +1979,56 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
+/* was _resize_descs
+	EnhancedDescriptor._resizeAll = function() {
+		//TODO migrate to desc.refresh
+		for(var n in maintainedElements) { //TODO maintainedElements
+			var desc = maintainedElements[n];
+
+			if (desc.layout.enable) {
+				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
+				if (desc.layout.width != ow || desc.layout.height != oh) {
+					desc.layout.width = ow;
+					desc.layout.height = oh;
+					var now = (new Date()).getTime();
+					var throttle = desc.layout.throttle;
+					if (desc.layout.delayed) {
+						// set dimensions and let delayed do it
+					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
+						// call now
+						desc.refresh();
+						desc.layout.lastDirectCall = now;
+						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
+					} else {
+						// call in a bit
+						var delay = now + throttle - desc.layout.lastDirectCall;
+						// console.log("resizing in",delay);
+						(function(desc){
+							desc.layout.delayed = true;
+							setTimeout(function(){
+								desc.refresh();
+								desc.layout.lastDirectCall = now;
+								desc.layout.delayed = false;
+								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
+							},delay);
+						})(desc);
+					}
+				}
+			}
+		}
+	};
+
+	// refreshAll
+	function _area_changed_descs() {
+		//TODO only active pages
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (desc.layout.enable) desc.refresh();
+		}
+	};
+*/
+
 	function branchDescs(el) {
 		var descs = [];
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -1992,14 +2042,19 @@ Generator.ObjectGenerator = Generator(Object);
 		return descs;
 	}
 
-	function discardEnhancedWindows() {
+	enhancedWindows.notifyAll = function() {
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
+	};
+	enhancedWindows.discardAll = function() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) {
 			if (w.window) w.window.close();
 		}
 		enhancedWindows = null;
-		essential.set("enhancedWindows",[]);
+		essential.set("enhancedWindows.length",0);
 		//TODO clearInterval(placement.broadcaster) ?
-	}
+	};
 
 	function instantiatePageSingletons()
 	{
@@ -2066,7 +2121,7 @@ Generator.ObjectGenerator = Generator(Object);
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
 		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
-		discardEnhancedWindows();
+		enhancedWindows.discardAll();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
@@ -3454,9 +3509,9 @@ Generator.ObjectGenerator = Generator(Object);
 	/*
 		Discard the element call handlers & cleaners, unlist it if enhanced, remove from DOM
 	*/
-	HTMLElment.discard = function(el,leaveInDom) {
+	HTMLElement.discard = function(el,leaveInDom) {
 
-		var desc = EnhancedDescriptor.maintained[el.uniqueID];
+		var desc = EnhancedDescriptor.all[el.uniqueID];
 		if (desc) {
 			desc.discardNow();
 			desc._unlist();
@@ -4895,30 +4950,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 	EnhancedDescriptor.enhanceUnfinished = enhanceUnhandledElements;
 
-	function old_enhanceUnhandledElements() {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-		//var handlers = DocumentRoles.presets("handlers");
-		//TODO listener to presets -> Doc Roles additional handlers
-		var dr = essential("DocumentRoles")()
-		var descs = statefuls.resolver("descriptors");
-		dr._enhance_descs(descs);
-		dr._enhance_descs(descs);
-		
-		//TODO pendingDescriptors and descriptors
-
-		//TODO time to default_enhance yet?
-
-		//TODO enhance active page
-		var pages = pageResolver("pages");
-		for(var n in pages) {
-			var page = pages[n];
-			if (page.applied) {
-				var descs = page.resolver("descriptors");
-				dr._enhance_descs(descs);
-			}
-		}
-	}
-
 	ApplicationConfig.prototype.onStateChange = function(ev) {
 		switch(ev.symbol) {
 			case "livepage":
@@ -5909,13 +5940,10 @@ function(scripts) {
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
 		pageResolver = Resolver("page"),
-		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
 		callCleaners = essential("callCleaners"),
 		cleanRecursively = essential("cleanRecursively"),
-		addEventListeners = essential("addEventListeners"),
-		maintainedElements = essential("maintainedElements"),
-		enhancedWindows = essential("enhancedWindows");
+		addEventListeners = essential("addEventListeners");
 
 
 
@@ -6523,14 +6551,6 @@ function(scripts) {
 	var DialogAction = essential.set("DialogAction",Generator(_DialogAction));
 
 
-	function resizeTriggersReflow(ev) {
-		// debugger;
-		DocumentRoles()._resize_descs();
-		for(var i=0,w; w = enhancedWindows[i]; ++i) {
-			w.notify(ev);
-		}
-	}
-
 	/*
 		action buttons not caught by enhanced dialogs/navigations
 	*/
@@ -6544,6 +6564,7 @@ function(scripts) {
 			if (ev.isDefaultPrevented()) return false;
 		}
 	}
+	essential.declare("defaultButtonClick",defaultButtonClick);
 
 	function fireAction(ev) 
 	{
@@ -6650,152 +6671,6 @@ function(scripts) {
 		}
 	}
 	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
-
-	function _DocumentRoles(handlers,page) {
-		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
-		this._on_event = [];
-		this.page = page || ApplicationConfig(); // Ensure that config is present
-		
-		//TODO configure reference as DI arg
-
-		if (window.addEventListener) {
-			window.addEventListener("resize",resizeTriggersReflow,false);
-			this.page.body.addEventListener("orientationchange",resizeTriggersReflow,false);
-			this.page.body.addEventListener("click",defaultButtonClick,false);
-		} else {
-			window.attachEvent("onresize",resizeTriggersReflow);
-			this.page.body.attachEvent("onclick",defaultButtonClick);
-		}
-	}
-	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
-	
-	_DocumentRoles.args = [
-		ObjectType({ name:"handlers" })
-	];
-
-/*
-	_DocumentRoles.prototype.enhanceBranch = function(el) {
-		var descs;
-		if (el.querySelectorAll) {
-			descs = this._role_descs(el.querySelectorAll("*[role]"));
-		} else {
-			descs = this._role_descs(el.getElementsByTagName("*"));
-		}
-		this._enhance_descs(descs);
-		//TODO reflow on resize etc
-	};
-
-	_DocumentRoles.prototype.discardBranch = function(el) {
-		//TODO
-	};
-*/
-
-	_DocumentRoles.prototype._enhance_descs = function(descs) 
-	{
-		var sizingElements = essential("sizingElements");
-		var incomplete = false, enhancedCount = 0;
-
-		for(var n in descs) {
-			var desc = descs[n];
-
-			//TODO speed up outstanding enhance check
-
-			desc.ensureStateful();
-
-			if (!desc.state.enhanced) { //TODO flag needEnhance
-				desc._tryEnhance(this.handlers);
-				++enhancedCount;	//TODO only increase if enhance handler?
-			} 
-			if (! desc.state.enhanced) incomplete = true;
-
-			desc._tryMakeLayouter(""); //TODO key?
-			desc._tryMakeLaidout(""); //TODO key?
-
-			if (desc.conf.sizingElement) sizingElements[desc.uniqueID] = desc;
-		}
-
-		//TODO enhance additional descriptors created during this instead of double call on loading = false
-
-
-		// notify enhanced listeners
-		if (! incomplete && enhancedCount > 0) {
-			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				if (oe.type == "enhanced") {
-					var descs2 = [];
-
-					// list of relevant descs
-					for(var n in descs) {
-						var desc = descs[n];
-						if (desc.role) if (oe.role== null || oe.role==desc.role) descs2.push(desc);
-					}
-
-					oe.func.call(this, this, descs2);
-				}
-			}
-		} 
-	};
-
-	_DocumentRoles.prototype._resize_descs = function() {
-		//TODO migrate to desc.refresh
-		for(var n in maintainedElements) { //TODO maintainedElements
-			var desc = maintainedElements[n];
-
-			if (desc.layout.enable) {
-				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
-				if (desc.layout.width != ow || desc.layout.height != oh) {
-					desc.layout.width = ow;
-					desc.layout.height = oh;
-					var now = (new Date()).getTime();
-					var throttle = desc.layout.throttle;
-					if (desc.layout.delayed) {
-						// set dimensions and let delayed do it
-					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
-						// call now
-						desc.refresh();
-						desc.layout.lastDirectCall = now;
-						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-					} else {
-						// call in a bit
-						var delay = now + throttle - desc.layout.lastDirectCall;
-						// console.log("resizing in",delay);
-						(function(desc){
-							desc.layout.delayed = true;
-							setTimeout(function(){
-								desc.refresh();
-								desc.layout.lastDirectCall = now;
-								desc.layout.delayed = false;
-								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-							},delay);
-						})(desc);
-					}
-				}
-			}
-		}
-	};
-
-	_DocumentRoles.prototype._area_changed_descs = function() {
-		//TODO only active pages
-		for(var n in maintainedElements) {
-			var desc = maintainedElements[n];
-
-			if (desc.layout.enable) {
-				desc.refresh();
-				// if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
-			}
-		}
-	};
-
-	_DocumentRoles.prototype.on = function(name,role,func) {
-		if (arguments.length == 2) func = role;
-		
-		//TODO
-		this._on_event.push({ "type":name,"func":func,"name":name,"role":role });
-	};
-	
-	// Element specific handlers
-	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
-
 
 	function useBuiltins(list) {
 		for(var i=0,r; r = list[i]; ++i) pageResolver.set(["enabledRoles",r],true);
@@ -7386,22 +7261,6 @@ function(scripts) {
 	}
 	pageResolver.set("handlers.init.templated",init_templated);
 
-/* TODO support on EnhancedDescriptor
-function enhance_templated(el,role,config) {
-	if (config.template && templates.getEntry(config.template)) {
-		var template = templates.getEntry(config.template);
-		//TODO replace element with template.tagName, mixed attributes and template.html
-		el.innerHTML = template.html; //TODO better
-		var context = { layouter: this.parentLayouter };
-		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-		ApplicationConfig()._prep(el,context); //TODO prepAncestors
-		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-		// DocumentRoles()._enhance_descs(descs);
-	}
-}
-
-pageResolver.set("handlers.enhance.templated",enhance_templated);
-*/
 
 	// Scrolled
 
@@ -7944,14 +7803,23 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 	
 }();
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
-Resolver("essential::DocumentRoles::").restrict({ singleton: true, lifecycle: "page" });
 
 //TODO clearInterval on unload
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		enhancedWindows = Resolver("essential::enhancedWindows::"),
 		placement = Resolver("essential::placement::"),
+		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
 		pageResolver = Resolver("page");
+
+	function resizeTriggersReflow(ev) {
+		EnhancedDescriptor.refreshAll();
+		enhancedWindows.notifyAll(ev);
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
+	}
 
 	if (ev.value) { // bring live
 		
@@ -7961,7 +7829,28 @@ Resolver("page::state.livepage").on("change",function(ev) {
 
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
+
+
+		if (window.addEventListener) {
+			window.addEventListener("resize",resizeTriggersReflow,false);
+			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			document.body.addEventListener("click",defaultButtonClick,false);
+		} else {
+			window.attachEvent("onresize",resizeTriggersReflow);
+			document.body.attachEvent("onclick",defaultButtonClick);
+		}
+
 	} else { // unload
+
+		if (window.removeEventListener) {
+			window.removeEventListener("resize",resizeTriggersReflow);
+			document.body.removeEventListener("orientationchange",resizeTriggersReflow);
+			document.body.removeEventListener("click",defaultButtonClick);
+		} else {
+			window.detachEvent("onresize",resizeTriggersReflow);
+			document.body.detachEvent("onclick",defaultButtonClick);
+		}
+
 		clearInterval(pageResolver.uosInterval);
 		pageResolver.uosInterval = null;
 		clearInterval(EnhancedDescriptor.maintainer);

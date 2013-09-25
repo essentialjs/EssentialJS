@@ -9,13 +9,10 @@
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
 		pageResolver = Resolver("page"),
-		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
 		callCleaners = essential("callCleaners"),
 		cleanRecursively = essential("cleanRecursively"),
-		addEventListeners = essential("addEventListeners"),
-		maintainedElements = essential("maintainedElements"),
-		enhancedWindows = essential("enhancedWindows");
+		addEventListeners = essential("addEventListeners");
 
 
 
@@ -623,14 +620,6 @@
 	var DialogAction = essential.set("DialogAction",Generator(_DialogAction));
 
 
-	function resizeTriggersReflow(ev) {
-		// debugger;
-		DocumentRoles()._resize_descs();
-		for(var i=0,w; w = enhancedWindows[i]; ++i) {
-			w.notify(ev);
-		}
-	}
-
 	/*
 		action buttons not caught by enhanced dialogs/navigations
 	*/
@@ -644,6 +633,7 @@
 			if (ev.isDefaultPrevented()) return false;
 		}
 	}
+	essential.declare("defaultButtonClick",defaultButtonClick);
 
 	function fireAction(ev) 
 	{
@@ -750,152 +740,6 @@
 		}
 	}
 	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
-
-	function _DocumentRoles(handlers,page) {
-		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
-		this._on_event = [];
-		this.page = page || ApplicationConfig(); // Ensure that config is present
-		
-		//TODO configure reference as DI arg
-
-		if (window.addEventListener) {
-			window.addEventListener("resize",resizeTriggersReflow,false);
-			this.page.body.addEventListener("orientationchange",resizeTriggersReflow,false);
-			this.page.body.addEventListener("click",defaultButtonClick,false);
-		} else {
-			window.attachEvent("onresize",resizeTriggersReflow);
-			this.page.body.attachEvent("onclick",defaultButtonClick);
-		}
-	}
-	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
-	
-	_DocumentRoles.args = [
-		ObjectType({ name:"handlers" })
-	];
-
-/*
-	_DocumentRoles.prototype.enhanceBranch = function(el) {
-		var descs;
-		if (el.querySelectorAll) {
-			descs = this._role_descs(el.querySelectorAll("*[role]"));
-		} else {
-			descs = this._role_descs(el.getElementsByTagName("*"));
-		}
-		this._enhance_descs(descs);
-		//TODO reflow on resize etc
-	};
-
-	_DocumentRoles.prototype.discardBranch = function(el) {
-		//TODO
-	};
-*/
-
-	_DocumentRoles.prototype._enhance_descs = function(descs) 
-	{
-		var sizingElements = essential("sizingElements");
-		var incomplete = false, enhancedCount = 0;
-
-		for(var n in descs) {
-			var desc = descs[n];
-
-			//TODO speed up outstanding enhance check
-
-			desc.ensureStateful();
-
-			if (!desc.state.enhanced) { //TODO flag needEnhance
-				desc._tryEnhance(this.handlers);
-				++enhancedCount;	//TODO only increase if enhance handler?
-			} 
-			if (! desc.state.enhanced) incomplete = true;
-
-			desc._tryMakeLayouter(""); //TODO key?
-			desc._tryMakeLaidout(""); //TODO key?
-
-			if (desc.conf.sizingElement) sizingElements[desc.uniqueID] = desc;
-		}
-
-		//TODO enhance additional descriptors created during this instead of double call on loading = false
-
-
-		// notify enhanced listeners
-		if (! incomplete && enhancedCount > 0) {
-			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				if (oe.type == "enhanced") {
-					var descs2 = [];
-
-					// list of relevant descs
-					for(var n in descs) {
-						var desc = descs[n];
-						if (desc.role) if (oe.role== null || oe.role==desc.role) descs2.push(desc);
-					}
-
-					oe.func.call(this, this, descs2);
-				}
-			}
-		} 
-	};
-
-	_DocumentRoles.prototype._resize_descs = function() {
-		//TODO migrate to desc.refresh
-		for(var n in maintainedElements) { //TODO maintainedElements
-			var desc = maintainedElements[n];
-
-			if (desc.layout.enable) {
-				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
-				if (desc.layout.width != ow || desc.layout.height != oh) {
-					desc.layout.width = ow;
-					desc.layout.height = oh;
-					var now = (new Date()).getTime();
-					var throttle = desc.layout.throttle;
-					if (desc.layout.delayed) {
-						// set dimensions and let delayed do it
-					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
-						// call now
-						desc.refresh();
-						desc.layout.lastDirectCall = now;
-						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-					} else {
-						// call in a bit
-						var delay = now + throttle - desc.layout.lastDirectCall;
-						// console.log("resizing in",delay);
-						(function(desc){
-							desc.layout.delayed = true;
-							setTimeout(function(){
-								desc.refresh();
-								desc.layout.lastDirectCall = now;
-								desc.layout.delayed = false;
-								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-							},delay);
-						})(desc);
-					}
-				}
-			}
-		}
-	};
-
-	_DocumentRoles.prototype._area_changed_descs = function() {
-		//TODO only active pages
-		for(var n in maintainedElements) {
-			var desc = maintainedElements[n];
-
-			if (desc.layout.enable) {
-				desc.refresh();
-				// if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
-			}
-		}
-	};
-
-	_DocumentRoles.prototype.on = function(name,role,func) {
-		if (arguments.length == 2) func = role;
-		
-		//TODO
-		this._on_event.push({ "type":name,"func":func,"name":name,"role":role });
-	};
-	
-	// Element specific handlers
-	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
-
 
 	function useBuiltins(list) {
 		for(var i=0,r; r = list[i]; ++i) pageResolver.set(["enabledRoles",r],true);

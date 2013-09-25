@@ -550,22 +550,6 @@
 	}
 	pageResolver.set("handlers.init.templated",init_templated);
 
-/* TODO support on EnhancedDescriptor
-function enhance_templated(el,role,config) {
-	if (config.template && templates.getEntry(config.template)) {
-		var template = templates.getEntry(config.template);
-		//TODO replace element with template.tagName, mixed attributes and template.html
-		el.innerHTML = template.html; //TODO better
-		var context = { layouter: this.parentLayouter };
-		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-		ApplicationConfig()._prep(el,context); //TODO prepAncestors
-		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-		// DocumentRoles()._enhance_descs(descs);
-	}
-}
-
-pageResolver.set("handlers.enhance.templated",enhance_templated);
-*/
 
 	// Scrolled
 

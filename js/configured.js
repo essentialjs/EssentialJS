@@ -1,12 +1,21 @@
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
-Resolver("essential::DocumentRoles::").restrict({ singleton: true, lifecycle: "page" });
 
 //TODO clearInterval on unload
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		enhancedWindows = Resolver("essential::enhancedWindows::"),
 		placement = Resolver("essential::placement::"),
+		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
 		pageResolver = Resolver("page");
+
+	function resizeTriggersReflow(ev) {
+		EnhancedDescriptor.refreshAll();
+		enhancedWindows.notifyAll(ev);
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
+	}
 
 	if (ev.value) { // bring live
 		
@@ -16,7 +25,28 @@ Resolver("page::state.livepage").on("change",function(ev) {
 
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
+
+
+		if (window.addEventListener) {
+			window.addEventListener("resize",resizeTriggersReflow,false);
+			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			document.body.addEventListener("click",defaultButtonClick,false);
+		} else {
+			window.attachEvent("onresize",resizeTriggersReflow);
+			document.body.attachEvent("onclick",defaultButtonClick);
+		}
+
 	} else { // unload
+
+		if (window.removeEventListener) {
+			window.removeEventListener("resize",resizeTriggersReflow);
+			document.body.removeEventListener("orientationchange",resizeTriggersReflow);
+			document.body.removeEventListener("click",defaultButtonClick);
+		} else {
+			window.detachEvent("onresize",resizeTriggersReflow);
+			document.body.detachEvent("onclick",defaultButtonClick);
+		}
+
 		clearInterval(pageResolver.uosInterval);
 		pageResolver.uosInterval = null;
 		clearInterval(EnhancedDescriptor.maintainer);

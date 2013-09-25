@@ -1,15 +1,14 @@
 (function(){
 	var essential = Resolver("essential"),
 		pageResolver = Resolver("page"),
+		pageState = pageResolver.reference("state"),
 		templates = pageResolver("templates"),
+		ApplicationConfig = essential("ApplicationConfig"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		DescriptorQuery = essential("DescriptorQuery"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		console = essential("console");
-
-	var DocumentRoles = essential("DocumentRoles"), ApplicationConfig = essential("ApplicationConfig");
-	var pageState = pageResolver.reference("state");
 
 	/*
 		Put your application code here
@@ -91,23 +90,6 @@
 			},100);
 		}
 	});
-
-
-function enhance_templated(el,role,config,context) {
-	if (config.template && templates[config.template]) {
-		var template = templates[config.template];
-		//TODO replace element with template.tagName, mixed attributes and template.html
-		el.innerHTML = template.html; //TODO better
-		var context = { layouter: this.parentLayouter };
-		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-		ApplicationConfig()._prep(el,context); //TODO prepAncestors
-		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-		// DocumentRoles()._enhance_descs(descs);
-	}
-}
-
-pageResolver.set("handlers.enhance.templated",enhance_templated);
-
 
 Layouter.variant("multisection",Generator(function(key,el,conf) {
 	this.el = el;

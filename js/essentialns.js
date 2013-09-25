@@ -715,6 +715,56 @@
 		}
 	};
 
+/* was _resize_descs
+	EnhancedDescriptor._resizeAll = function() {
+		//TODO migrate to desc.refresh
+		for(var n in maintainedElements) { //TODO maintainedElements
+			var desc = maintainedElements[n];
+
+			if (desc.layout.enable) {
+				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
+				if (desc.layout.width != ow || desc.layout.height != oh) {
+					desc.layout.width = ow;
+					desc.layout.height = oh;
+					var now = (new Date()).getTime();
+					var throttle = desc.layout.throttle;
+					if (desc.layout.delayed) {
+						// set dimensions and let delayed do it
+					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
+						// call now
+						desc.refresh();
+						desc.layout.lastDirectCall = now;
+						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
+					} else {
+						// call in a bit
+						var delay = now + throttle - desc.layout.lastDirectCall;
+						// console.log("resizing in",delay);
+						(function(desc){
+							desc.layout.delayed = true;
+							setTimeout(function(){
+								desc.refresh();
+								desc.layout.lastDirectCall = now;
+								desc.layout.delayed = false;
+								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
+							},delay);
+						})(desc);
+					}
+				}
+			}
+		}
+	};
+
+	// refreshAll
+	function _area_changed_descs() {
+		//TODO only active pages
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (desc.layout.enable) desc.refresh();
+		}
+	};
+*/
+
 	function branchDescs(el) {
 		var descs = [];
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -728,14 +778,19 @@
 		return descs;
 	}
 
-	function discardEnhancedWindows() {
+	enhancedWindows.notifyAll = function() {
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
+	};
+	enhancedWindows.discardAll = function() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) {
 			if (w.window) w.window.close();
 		}
 		enhancedWindows = null;
-		essential.set("enhancedWindows",[]);
+		essential.set("enhancedWindows.length",0);
 		//TODO clearInterval(placement.broadcaster) ?
-	}
+	};
 
 	function instantiatePageSingletons()
 	{
@@ -802,7 +857,7 @@
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
 		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
-		discardEnhancedWindows();
+		enhancedWindows.discardAll();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();

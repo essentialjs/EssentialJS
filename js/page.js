@@ -1160,30 +1160,6 @@
 	}
 	EnhancedDescriptor.enhanceUnfinished = enhanceUnhandledElements;
 
-	function old_enhanceUnhandledElements() {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-		//var handlers = DocumentRoles.presets("handlers");
-		//TODO listener to presets -> Doc Roles additional handlers
-		var dr = essential("DocumentRoles")()
-		var descs = statefuls.resolver("descriptors");
-		dr._enhance_descs(descs);
-		dr._enhance_descs(descs);
-		
-		//TODO pendingDescriptors and descriptors
-
-		//TODO time to default_enhance yet?
-
-		//TODO enhance active page
-		var pages = pageResolver("pages");
-		for(var n in pages) {
-			var page = pages[n];
-			if (page.applied) {
-				var descs = page.resolver("descriptors");
-				dr._enhance_descs(descs);
-			}
-		}
-	}
-
 	ApplicationConfig.prototype.onStateChange = function(ev) {
 		switch(ev.symbol) {
 			case "livepage":
