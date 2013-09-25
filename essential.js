@@ -1607,6 +1607,16 @@ Generator.ObjectGenerator = Generator(Object);
 
 	}
 
+	function discardQuery() {
+		for(var i=0,desc; desc = this[i]; ++i) {
+			if (desc) {
+				desc.discardNow();
+				desc._unlist();
+			}
+		}
+	}
+
+
 	function DescriptorQuery(sel,el) {
 		var q = [], context = { list:q };
 
@@ -1640,9 +1650,12 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 		q.el = el;
 		q.enhance = enhanceQuery;
+		q.discard = discardQuery;
 		return q;
 	}
 	essential.declare("DescriptorQuery",DescriptorQuery);
+
+
 	function EnhancedContext() {
 	}
 	// EnhancedContext.prototype.??
@@ -3511,12 +3524,8 @@ Generator.ObjectGenerator = Generator(Object);
 	*/
 	HTMLElement.discard = function(el,leaveInDom) {
 
-		var desc = EnhancedDescriptor.all[el.uniqueID];
-		if (desc) {
-			desc.discardNow();
-			desc._unlist();
-		}
-		else cleanRecursively(el);
+		this.query(el).discard();
+		essential("cleanRecursively")(el);
 
 		if (!leaveInDom) el.parentNode.removeChild(el);
 	};
