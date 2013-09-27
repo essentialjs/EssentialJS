@@ -1012,18 +1012,6 @@
 		this.body = this.document.body;
 		_Scripted.call(this);
 
-		updateOnlineStatus();
-		if (this.body.addEventListener) {
-			this.body.addEventListener("online",updateOnlineStatus);
-			this.body.addEventListener("offline",updateOnlineStatus);
-		
-			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
-		} else if (this.body.attachEvent) {
-			// IE8
-			this.body.attachEvent("online",updateOnlineStatus);
-			this.body.attachEvent("offline",updateOnlineStatus);
-		}
-
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);

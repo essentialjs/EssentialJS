@@ -7,7 +7,8 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		enhancedWindows = Resolver("essential::enhancedWindows::"),
 		placement = Resolver("essential::placement::"),
 		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
-		pageResolver = Resolver("page");
+		pageResolver = Resolver("page"),
+		updateOnlineStatus = pageResolver("updateOnlineStatus");
 
 	function resizeTriggersReflow(ev) {
 		EnhancedDescriptor.refreshAll();
@@ -16,6 +17,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 			w.notify(ev);
 		}
 	}
+
 
 	if (ev.value) { // bring live
 		
@@ -26,14 +28,24 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
 
+		updateOnlineStatus();
 
 		if (window.addEventListener) {
+			this.body.addEventListener("online",updateOnlineStatus);
+			this.body.addEventListener("offline",updateOnlineStatus);
+		
+			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
+
 			window.addEventListener("resize",resizeTriggersReflow,false);
 			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
 			document.body.addEventListener("click",defaultButtonClick,false);
 		} else {
+			// IE8
 			window.attachEvent("onresize",resizeTriggersReflow);
 			document.body.attachEvent("onclick",defaultButtonClick);
+
+			this.body.attachEvent("online",updateOnlineStatus);
+			this.body.attachEvent("offline",updateOnlineStatus);
 		}
 
 	} else { // unload

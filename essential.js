@@ -4832,18 +4832,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.body = this.document.body;
 		_Scripted.call(this);
 
-		updateOnlineStatus();
-		if (this.body.addEventListener) {
-			this.body.addEventListener("online",updateOnlineStatus);
-			this.body.addEventListener("offline",updateOnlineStatus);
-		
-			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
-		} else if (this.body.attachEvent) {
-			// IE8
-			this.body.attachEvent("online",updateOnlineStatus);
-			this.body.attachEvent("offline",updateOnlineStatus);
-		}
-
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
@@ -7843,7 +7831,8 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		enhancedWindows = Resolver("essential::enhancedWindows::"),
 		placement = Resolver("essential::placement::"),
 		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
-		pageResolver = Resolver("page");
+		pageResolver = Resolver("page"),
+		updateOnlineStatus = pageResolver("updateOnlineStatus");
 
 	function resizeTriggersReflow(ev) {
 		EnhancedDescriptor.refreshAll();
@@ -7862,14 +7851,24 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
 
+		updateOnlineStatus();
 
 		if (window.addEventListener) {
+			this.body.addEventListener("online",updateOnlineStatus);
+			this.body.addEventListener("offline",updateOnlineStatus);
+		
+			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
+
 			window.addEventListener("resize",resizeTriggersReflow,false);
 			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
 			document.body.addEventListener("click",defaultButtonClick,false);
 		} else {
+			// IE8
 			window.attachEvent("onresize",resizeTriggersReflow);
 			document.body.attachEvent("onclick",defaultButtonClick);
+
+			this.body.attachEvent("online",updateOnlineStatus);
+			this.body.attachEvent("offline",updateOnlineStatus);
 		}
 
 	} else { // unload
