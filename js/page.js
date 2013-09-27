@@ -907,11 +907,12 @@
 
 		this.doInitScripts();
 
+		//TODO put descriptors in reheating them
 		var descs = this.resolver("descriptors");
 		for(var n in descs) {
 			EnhancedDescriptor.unfinished[n] = descs[n];
 		}
-		enhanceUnhandledElements();
+		enhanceUnfinishedElements();
 	};
 
 	SubPage.prototype.unapplyBody = function() {
@@ -923,11 +924,12 @@
 		var applied = this.applied;
 		this.applied = null;
 
+		//TODO pull the descriptors out, freeze them
 		var descs = this.resolver("descriptors");
 		for(var n in descs) {
 			EnhancedDescriptor.unfinished[n] = descs[n];
 		}
-		enhanceUnhandledElements();
+		enhanceUnfinishedElements();
 		//TODO move descriptors out
 
 		// move out of main page body into subpage body
@@ -1121,7 +1123,7 @@
 		return page;
 	};
 
-	function enhanceUnhandledElements() {
+	function enhanceUnfinishedElements() {
 		var handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 
 		for(var n in EnhancedDescriptor.unfinished) {
@@ -1147,7 +1149,7 @@
 			}
 		}
 	}
-	EnhancedDescriptor.enhanceUnfinished = enhanceUnhandledElements;
+	EnhancedDescriptor.enhanceUnfinished = enhanceUnfinishedElements;
 
 	ApplicationConfig.prototype.onStateChange = function(ev) {
 		switch(ev.symbol) {
@@ -1188,14 +1190,14 @@
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();
 					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					enhanceUnfinishedElements();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
 					if (ev.base.configured == true && ev.base.authenticated == true 
 						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
 						if (document.body) essential("instantiatePageSingletons")();
-						enhanceUnhandledElements();
+						enhanceUnfinishedElements();
 					}
 				} 
 				break;
@@ -1212,7 +1214,7 @@
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
 					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					enhanceUnfinishedElements();
 				}
 				break;			
 			case "launching":
@@ -1220,7 +1222,7 @@
 				if (ev.value == true) {
 					if (document.body) essential("instantiatePageSingletons")();
 					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					enhanceUnfinishedElements();
 					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
 				}
 				break;
