@@ -357,6 +357,141 @@ test('Resolver reference',function(){
 // test trigger function handler(event,p1,p2) .trigger(event,[p1,p2])
 // test trigger function handler(event,p1) .trigger(event,p1)
 
+test('Resolver reflect listener',function() {
+
+	var resolver = Resolver({});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("change reflect",_onab);
+
+	ab.trigger("reflect");
+
+	equal(_onab.callCount,1);
+
+	resolver.set("a.b",{});
+
+	equal(_onab.callCount,2);
+
+	resolver.set("a.b.c","c");
+
+	equal(_onab.callCount,3);
+});
+
+test('Resolver true listener',function() {
+
+	var resolver = Resolver({});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("true",_onab);
+
+	var abc = resolver.reference("a.b.c");
+	var _onabc = sinon.spy();
+	abc.on("true",_onabc);
+
+	var abcVal = abc.set(function(){});
+	equal(typeof abc(),"function");
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set(false);
+	equal(abc(),false);
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	abc.set({});
+	abc.setEntry("d","dd");
+	equal(resolver("a.b.c.d"), "dd");
+	equal(_onabc.callCount,0);
+
+	var abcVal = abc.set(true);
+	equal(abc(),true);
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set("x");
+	equal(abc(),"x");
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+});
+
+test('Resolver false listener',function() {
+
+	var resolver = Resolver({});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("false",_onab);
+
+	var abc = resolver.reference("a.b.c");
+	var _onabc = sinon.spy();
+	abc.on("false",_onabc);
+
+	var abcVal = abc.set(function(){});
+	equal(typeof abc(),"function");
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set(true);
+	equal(abc(),true);
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	abc.set({});
+	abc.setEntry("d","dd");
+	equal(resolver("a.b.c.d"), "dd");
+	equal(_onabc.callCount,0);
+
+	var abcVal = abc.set(false);
+	equal(abc(),false);
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set("x");
+	equal(abc(),"x");
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+
+
+});
+
+
+
 /*
   Change listeners are notified of changes to the entry or members of it.
   Changes to members of members do not cause notifications.
@@ -393,7 +528,7 @@ test('Resolver change listener',function() {
 
 	resolver.set("d.e.f", 6);
 	equal(resolver("d.e.f"), 6);
-	equal(_ondef.callCount,1);
+	equal(_ondef.callCount,1,"d.e.f 6 first time");
 //	ok(_ondef.calledWith({value:6}));
 	resolver.set("d.e.f", 6);
 	equal(_ondef.callCount,1);

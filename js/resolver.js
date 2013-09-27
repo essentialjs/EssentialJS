@@ -221,6 +221,9 @@ function Resolver(name_andor_expr,ns,options)
     resolver.references = { };
 
     var VALID_LISTENERS = {
+        "true": true, // change to true value
+        "false": true, // change to false value
+        "reflect": true, // allows forcing reflection of current value
     	"get": true, // allows for switching in alternate lookups
     	"change": true, // allows reflecting changes elsewhere
     	"undefined": true // allow filling in unfound entries
@@ -433,8 +436,6 @@ function Resolver(name_andor_expr,ns,options)
             }
         }
 	    function on(type,data,callback) {
-	    	if (! type in VALID_LISTENERS) return;//fail
-
 	    	switch(arguments.length) {
 	    		case 2: this._addListener(type,name,null,arguments[1]); break;
 	    		case 3: this._addListener(type,name,data,callback); break;
@@ -447,7 +448,7 @@ function Resolver(name_andor_expr,ns,options)
 
 	    	this._callListener(type,baseNames,base,leafName,value);
 			var parentRef = resolver.references[baseRefName];
-			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
+			if (parentRef) parentRef._callListener(type,baseNames,_resolve(baseNames,null),leafName,value);
 	    }
 
         function read_session(ref) {
@@ -622,6 +623,16 @@ function Resolver(name_andor_expr,ns,options)
         get.listeners = listeners || _makeListeners();
 
 	    function _callListener(type,names,base,symbol,value) {
+            if (type == "change" && value === false) {
+                for(var i=0,event; event = this.listeners["false"][i]; ++i) {
+                    event.trigger(base,symbol,value);
+                }
+            }
+            if (type == "change" && value === true) {
+                for(var i=0,event; event = this.listeners["true"][i]; ++i) {
+                    event.trigger(base,symbol,value);
+                }
+            }
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
 	    		event.trigger(base,symbol,value);
 	    	}
@@ -639,17 +650,18 @@ function Resolver(name_andor_expr,ns,options)
 	    		a.b
 	    		a.b.c
 	    	*/
-            var ev = _makeResolverEvent(resolver,type,selector,data,callback);
-
             if (/^bind | bind | bind$|^bind$/.test(type)) {
-                type = type.replace(" bind ","").replace("bind ","").replace(" bind","");
-                this.listeners[type].push(ev);
+                type = type.replace(" bind "," ").replace("bind ","").replace(" bind","");
 
                 var baseNames = selector.split(".");
                 var leafName = baseNames.pop();
                 var base = _resolve(baseNames,null,"undefined");
+                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
                 ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
-            } else {
+            }
+            var types = type.split(" ");
+            for(var i=0,type; type = types[i]; ++i) {
+                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
                 this.listeners[type].push(ev);
             }
 	    }
@@ -663,16 +675,17 @@ function Resolver(name_andor_expr,ns,options)
 
     resolver.on = function(type,selector,data,callback) 
     {
-    	if (! type in VALID_LISTENERS) return;//fail
     	switch(arguments.length) {
     		case 2: break; //TODO
     		case 3: if (typeof arguments[1] == "string") {
+                    //TODO reference "undefined" ?
 			    	this.reference(selector).on(type,null,arguments[2]);
     			} else { // middle param is data
 			    	//TODO this.reference("*").on(type,arguments[1],arguments[2]);
     			}
     			break;
     		case 4:
+                    //TODO reference "undefined" ?
 		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
