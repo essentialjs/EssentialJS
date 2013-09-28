@@ -519,6 +519,25 @@ test('Resolver change listener',function() {
 	//ok(_onabc.calledWith({value:5}));
 	equal(_onab.callCount,1,"Change listener is only called if values have changed");
 
+	// ok(
+	// 	_onab.calledWith(sinon.match({
+	// 		type: "change",
+	// 		base: ab(),
+	// 		symbol: "c",
+	// 		selector: "a.b.c",
+	// 		value: abcVal
+	// 	})),"called with a.b event"
+	// 	);
+	ok(
+		_onabc.calledWith(sinon.match({
+			type: "change",
+			base: ab(),
+			symbol: "c",
+			selector: "a.b.c",
+			value: abcVal
+		})),"called with a.b.c event"
+		);
+
 	abc.setEntry("d","dd");
 	equal(resolver("a.b.c.d"), "dd");
 	equal(_onabc.callCount,2);
@@ -533,12 +552,36 @@ test('Resolver change listener',function() {
 	resolver.set("d.e.f", 6);
 	equal(_ondef.callCount,1);
 
+	ok(
+		_ondef.calledWith(sinon.match({
+			type: "change",
+			base: resolver("d.e"),
+			symbol: "f",
+			selector: "d.e.f",
+			value: 6
+		})),"called with d.e.f event"
+		);
+
 	var _onxyz = sinon.spy();
 	resolver.on("change","x.y.z",{},_onxyz);
 	resolver.set("x.y.z","xyz");
 	equal(_onxyz.callCount,1,"Change listener on resolver using string is triggered");
 	resolver.set(["x","y","z"],"xyz2");
 	equal(_onxyz.callCount,2,"Change listener on resolver using array name is triggered");
+
+	var _onmn = sinon.spy();
+	resolver.on("change","m.n",_onmn);
+	resolver.reference("m.n").mixin({ "m":"n"})
+
+	ok(
+		_onmn.calledWith(sinon.match({
+			type: "change",
+			base: resolver("m"),
+			symbol: null,
+			selector: null,
+			value: { "m":"n" }
+		})),"called with m.n event"
+		);
 
 	ok(1,"Removing change listener")
 	ok(1,"Resolver change listener with 3 params")
