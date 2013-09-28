@@ -22,6 +22,54 @@ test("Page Resolver",function(){
 
 })
 
+var INIT_PAGE_STATE	= {
+	"livepage": false,
+	"authenticated": true,
+	"authorised": true,
+	"connected": true,
+	"preloading": false,
+	"loading": true,
+	"loadingConfig": false,
+	"loadingScripts": false,
+	"configured": true,
+	"launching": false, 
+	"launched": false
+};
+
+test('roles are enhanced when no page state is preset',function() {
+
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
+		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
+		pageResolver = Resolver("page"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+	var appConfig = ApplicationConfig();
+
+	ok(! pageResolver("state.livepage"));
+	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
+	pageResolver.set("enabledRoles.test321",true);	
+	pageResolver.set("handlers.init.test321",function(el,role,config) {
+		el.setAttribute("test321","321");
+	});
+
+	var div = HTMLElement("div",{ "role":"test321" },'');
+	DescriptorQuery([div]).queue(); // queue for enhancement
+
+	pageResolver.set("state.livepage",true);
+
+	equal(div.getAttribute("test321"),"321");
+	//TODO ok(! pageResolver("state.loading"));
+	// ok(! pageResolver("state.launching"));
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+
+	pageResolver.set("handlers.init.test321",undefined);
+});
+
+
 // var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 // ApplicationConfig.restrict({ singleton:true });
 
