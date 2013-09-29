@@ -891,3 +891,31 @@ test("impl copyAttributes",function() {
 
 });
 
+test("Define a list of templates using DescriptorQuery([])",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var div = HTMLElement("div",{ role:"template",id:"template-1"},'');
+	var div2 = HTMLElement("div",{ role:"template","data-role":"'selector':'@template-2'"},'');
+
+	Resolver("page").set("enabledRoles.template",true);
+
+	var templates = DescriptorQuery([div,div2]);
+	equal(templates.length,2);
+	ok(templates[0].state.needEnhance);
+	ok(! templates[0].state.enhanced,"template-1 not enhanced");
+	ok(templates[1].state.needEnhance);
+	ok(! templates[1].state.enhanced,"template-2 not enhanced");
+
+	ok(templates[0].instance == null);
+	ok(templates[1].instance == null);
+	equal(Resolver("page::templates","null")("#template-1"),null);
+	equal(Resolver("page::templates","null")("@template-2"),null);
+
+	templates.enhance();
+	ok(templates[0].instance);
+	ok(templates[1].instance);
+	equal(Resolver("page::templates","null")("#template-1"),templates[0].instance);
+	equal(Resolver("page::templates","null")("@template-2"),templates[1].instance);
+
+})

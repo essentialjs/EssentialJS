@@ -472,6 +472,10 @@
 		this.tagName = el.tagName;
 		this.dataRole = JSON2Attr(config,{id:true});
 
+		this.id = config.id || el.id;
+		this.selector = config.selector || (this.id? ("#"+this.id) : null);
+		// TODO class support, looking up on main document by querySelector
+
 		// HTML5 template tag support
 		if ('content' in el) {
 			this.content = el.content;
@@ -529,12 +533,10 @@
 	//TODO TemplateContent.prototype.clone = function(config,model) {}
 
 	function enhance_template(el,role,config,context) {
-		var id = config.id || el.id;
 		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (id) pageResolver.set(["templates","#"+id],template);
-		// TODO class support, looking up on main document by querySelector
+		if (template.selector) pageResolver.set(["templates",template.selector],template);
 
 		return template;
 	}
