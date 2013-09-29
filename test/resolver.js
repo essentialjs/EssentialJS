@@ -766,6 +766,28 @@ test('namespace::expression in another resolver',function() {
 	var nstest = Resolver("nstest",{ initial:"initial"});
 	equal(Resolver("nstest::initial::"),"initial","Straight nstest get");
 	equal(priv("nstest::initial::"),"initial","Indirect nstest get");
+
+	var _oninitial = sinon.spy();
+	nstest.on("change","initial",_oninitial);
+
+	priv.set("nstest::initial","changed");
+	equal(Resolver("nstest::initial::"),"changed","Straight nstest get changed");
+	equal(priv("nstest::initial::"),"changed","Indirect nstest get changed");
+
+	deepEqual(_oninitial.lastCall.args[0],{
+		type: "change",
+		base: nstest.namespace,
+		symbol: "initial",
+		selector: "initial",
+		value: "changed",
+		oldValue: undefined,
+		data: null,
+		inTrigger: 0,
+		resolver: _oninitial.lastCall.args[0].resolver,
+		callback: _oninitial.lastCall.args[0].callback,
+		trigger: _oninitial.lastCall.args[0].trigger
+	});
+
 });
 
 
