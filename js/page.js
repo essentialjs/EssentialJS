@@ -1002,8 +1002,7 @@
 			pageResolver.set(["state","online"],online);	
 		}
 	}
-	pageResolver.updateOnlineStatus = updateOnlineStatus;
-
+	essential.set("updateOnlineStatus",updateOnlineStatus);
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;

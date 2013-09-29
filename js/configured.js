@@ -41,8 +41,8 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		updateOnlineStatus();
 
 		if (window.addEventListener) {
-			this.body.addEventListener("online",updateOnlineStatus);
-			this.body.addEventListener("offline",updateOnlineStatus);
+			document.body.addEventListener("online",updateOnlineStatus);
+			document.body.addEventListener("offline",updateOnlineStatus);
 		
 			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
 
@@ -54,9 +54,11 @@ Resolver("page::state.livepage").on("change",function(ev) {
 			window.attachEvent("onresize",resizeTriggersReflow);
 			document.body.attachEvent("onclick",defaultButtonClick);
 
-			this.body.attachEvent("online",updateOnlineStatus);
-			this.body.attachEvent("offline",updateOnlineStatus);
+			document.body.attachEvent("online",updateOnlineStatus);
+			document.body.attachEvent("offline",updateOnlineStatus);
 		}
+
+		Resolver("essential")("launchWindows")();
 
 	} else { // unload
 
