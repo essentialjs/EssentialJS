@@ -1140,6 +1140,7 @@
 				var ap = ev.data;
 				//if (ev.value == true) ap.reflectState();
 				ev.data.doInitScripts();
+				enhanceUnfinishedElements();
 				if (_activeAreaName) {
 					activateArea(_activeAreaName);
 				} else {
