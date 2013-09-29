@@ -4142,7 +4142,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		//TODO consider when to clean body element
 		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
 		if (useAsSource != false) readElementState(el,stateful("state"));
-		stateful.on("change","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
+		stateful.on("change reflect","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
 		if (!nativeClassList) {
 			el.classList = DOMTokenList();
 			DOMTokenList_mixin(el.classList,el.className);
@@ -4272,7 +4272,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		for(var n in stateful("map.class.state")) triggers[n] = true;
 		for(var n in stateful("map.class.notstate")) triggers[n] = true;
 		for(var n in triggers) {
-			stateful.reference("state."+n,"null").trigger("change");
+			stateful.reference("state."+n,"null").trigger("reflect");
 		}
 	};
 
