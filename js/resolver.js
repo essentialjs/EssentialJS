@@ -211,6 +211,12 @@ function Resolver(name_andor_expr,ns,options)
             return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
+            var parts = name.split("::");
+            if (parts.length > 1) {
+                // name = parts[1];
+                if (parts.length == 2) name += "::"; // return value by default not ref
+                return Resolver(name,onundefined);
+            }
             return _resolve(name.split("."),null,onundefined);
         }
     };

@@ -756,6 +756,19 @@ test("Resolver reference logging changes",function(){
 	ok(1,'ref.log("change","info")')
 });
 
+
+test('namespace::expression in another resolver',function() {
+
+	var priv = Resolver({});
+	equal(priv("document","undefined"),undefined);
+	equal(priv("window::document","undefined"),window.document);
+
+	var nstest = Resolver("nstest",{ initial:"initial"});
+	equal(Resolver("nstest::initial::"),"initial","Straight nstest get");
+	equal(priv("nstest::initial::"),"initial","Indirect nstest get");
+});
+
+
 //TODO test setEntry morphing "number", "boolean", "string" into builtin
 
 		// Resolver("abc")
