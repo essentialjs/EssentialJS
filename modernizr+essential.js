@@ -4321,11 +4321,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 	essential.set("getActiveArea",getActiveArea);
 
-	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-
-	function bringLive() {
-		// var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
-
+	function launchWindows() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
 			w.openNow();
 			delete w.openWhenReady;
@@ -4834,8 +4830,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			pageResolver.set(["state","online"],online);	
 		}
 	}
-	pageResolver.updateOnlineStatus = updateOnlineStatus;
-
+	essential.set("updateOnlineStatus",updateOnlineStatus);
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
@@ -7867,6 +7862,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		}
 	}
 
+
 	if (ev.value) { // bring live
 		
 		//TODO manage interval in configured.js, and space it out consistent results
@@ -7879,8 +7875,8 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		updateOnlineStatus();
 
 		if (window.addEventListener) {
-			this.body.addEventListener("online",updateOnlineStatus);
-			this.body.addEventListener("offline",updateOnlineStatus);
+			document.body.addEventListener("online",updateOnlineStatus);
+			document.body.addEventListener("offline",updateOnlineStatus);
 		
 			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
 
@@ -7892,9 +7888,11 @@ Resolver("page::state.livepage").on("change",function(ev) {
 			window.attachEvent("onresize",resizeTriggersReflow);
 			document.body.attachEvent("onclick",defaultButtonClick);
 
-			this.body.attachEvent("online",updateOnlineStatus);
-			this.body.attachEvent("offline",updateOnlineStatus);
+			document.body.attachEvent("online",updateOnlineStatus);
+			document.body.attachEvent("offline",updateOnlineStatus);
 		}
+
+		Resolver("essential")("launchWindows")();
 
 	} else { // unload
 

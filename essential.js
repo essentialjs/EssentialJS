@@ -4313,11 +4313,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 	essential.set("getActiveArea",getActiveArea);
 
-	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-
-	function bringLive() {
-		// var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
-
+	function launchWindows() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
 			w.openNow();
 			delete w.openWhenReady;
@@ -7857,6 +7853,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 			w.notify(ev);
 		}
 	}
+
 
 	if (ev.value) { // bring live
 		
