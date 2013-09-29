@@ -1041,8 +1041,6 @@
 
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) this._requiredPage(bodySrc);
-
-		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
 
 	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );

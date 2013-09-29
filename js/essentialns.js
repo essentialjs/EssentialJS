@@ -852,6 +852,15 @@
 		if (_readyFired) return;
 		_readyFired = true;
 
+		var liveTimeout = Resolver("page::liveTimeout","null");
+		if (liveTimeout) {
+			// Allow the browser to render the page, preventing initial transitions
+			setTimeout(function() {
+				Resolver("page").set("state.livepage",true);
+			},liveTimeout);
+		}
+		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
+
 		//TODO derive state.lang and locale from html.lang
 		
 		Resolver.loadReadStored();

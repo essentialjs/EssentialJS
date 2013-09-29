@@ -2137,6 +2137,15 @@ Generator.ObjectGenerator = Generator(Object);
 		if (_readyFired) return;
 		_readyFired = true;
 
+		var liveTimeout = Resolver("page::liveTimeout","null");
+		if (liveTimeout) {
+			// Allow the browser to render the page, preventing initial transitions
+			setTimeout(function() {
+				Resolver("page").set("state.livepage",true);
+			},liveTimeout);
+		}
+		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
+
 		//TODO derive state.lang and locale from html.lang
 		
 		Resolver.loadReadStored();
@@ -4878,8 +4887,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) this._requiredPage(bodySrc);
-
-		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
 
 	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );
@@ -7845,7 +7852,17 @@ function(scripts) {
 }();
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
 
+Resolver("page").set("liveTimeout",60);
 //TODO clearInterval on unload
+
+!function() {
+	function onPageLoad(ev) {
+		Resolver("page").set("state.livepage",true);
+	}
+	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
+	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+}();
+
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
@@ -7853,7 +7870,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		placement = Resolver("essential::placement::"),
 		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
 		pageResolver = Resolver("page"),
-		updateOnlineStatus = pageResolver("updateOnlineStatus");
+		updateOnlineStatus = Resolver("essential::updateOnlineStatus::");
 
 	function resizeTriggersReflow(ev) {
 		EnhancedDescriptor.refreshAll();

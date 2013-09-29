@@ -1,6 +1,16 @@
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
 
+Resolver("page").set("liveTimeout",60);
 //TODO clearInterval on unload
+
+!function() {
+	function onPageLoad(ev) {
+		Resolver("page").set("state.livepage",true);
+	}
+	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
+	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+}();
+
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
@@ -8,7 +18,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		placement = Resolver("essential::placement::"),
 		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
 		pageResolver = Resolver("page"),
-		updateOnlineStatus = pageResolver("updateOnlineStatus");
+		updateOnlineStatus = Resolver("essential::updateOnlineStatus::");
 
 	function resizeTriggersReflow(ev) {
 		EnhancedDescriptor.refreshAll();
