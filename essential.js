@@ -1629,6 +1629,14 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 
+	function queueQuery() {
+		for(var i=0,desc; desc = this[i]; ++i) {
+			if (desc) {
+				EnhancedDescriptor.unfinished[desc.uniqueID] = desc;
+			}
+		}
+	}
+
 
 	function DescriptorQuery(sel,el) {
 		var q = [], context = { list:q };
@@ -1665,6 +1673,7 @@ Generator.ObjectGenerator = Generator(Object);
 			}
 		}
 		q.el = el;
+		q.queue = queueQuery;
 		q.enhance = enhanceQuery;
 		q.discard = discardQuery;
 		return q;
