@@ -207,12 +207,13 @@ function Resolver(name_andor_expr,ns,options)
     	e.callback = callback;
         e.inTrigger = 0;
 
-    	function trigger(base,symbol,value) {
+    	function trigger(base,symbol,value,oldValue) {
             if (this.inTrigger) return;
             ++this.inTrigger;
             this.base = base;
     		this.symbol = symbol;
     		this.value = value;
+            this.oldValue = oldValue;
     		this.callback.call(resolver,this);
             --this.inTrigger;
     	}
@@ -297,23 +298,26 @@ function Resolver(name_andor_expr,ns,options)
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
-                value = !arguments[1]; //TODO configurable toggle
+                var oldValue = arguments[1];
+                value = !oldValue; //TODO configurable toggle
 
                 if (_setValue(value,combined,base,symbol)) {
                     var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                     var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                 }
             } else {
-                var base = _resolve(baseNames,null,onundefinedSet);
+                var base = _resolve(baseNames,null,onundefinedSet),
+                    oldValue = arguments[0];
+                value = !oldValue; //TODO configurable toggle
 
                 if (_setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value);
+                    this._callListener("change",baseNames,base,leafName,value,oldValue);
                     //TODO test for triggering specific listeners
                     if (baseRefName) {
                         var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
                     }
                 }
             }
@@ -328,22 +332,24 @@ function Resolver(name_andor_expr,ns,options)
                 var parentName = combined.join(".");
                 subnames.push(symbol);
 	        	value = arguments[1];
+                var oldValue = base[symbol];
 
                 if (_setValue(value,combined,base,symbol)) {
                     var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                     var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                 }
         	} else {
 				var base = _resolve(baseNames,null,onundefinedSet);
+                var oldValue = base[symbol];
 
                 if (_setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value);
+                    this._callListener("change",baseNames,base,leafName,value,oldValue);
                     //TODO test for triggering specific listeners
                     if (baseRefName) {
                         var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
                     }
                 }
         	}
@@ -358,26 +364,28 @@ function Resolver(name_andor_expr,ns,options)
                 var parentName = combined.join(".");
                 subnames.push(symbol);
                 value = arguments[1];
+                var oldValue = base[symbol];
 
                 if (base[symbol] === undefined) {
                     if (_setValue(value,combined,base,symbol)) {
                         var childRef = resolver.references[parentName + "." + symbol];
-                        if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                        if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                         var parentRef = resolver.references[parentName];
-                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                     }
                 }
                 return base[symbol];
         	} else {
                 var base = _resolve(baseNames,null,onundefinedSet);
+                var oldValue = base[symbol];
 
                 if (base[leafName] === undefined) {
                     if (_setValue(value,baseNames,base,leafName)) {
-                        this._callListener("change",baseNames,base,leafName,value);
+                        this._callListener("change",baseNames,base,leafName,value,oldValue);
                         //TODO test for triggering specific listeners
                         if (baseRefName) {
                             var parentRef = resolver.references[baseRefName];
-                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
                         }
                     }
                 }
@@ -392,13 +400,14 @@ function Resolver(name_andor_expr,ns,options)
         function declareEntry(key,value) {
             var symbol = names.pop();
         	var base = _resolve(names,null,onundefined);
+            var oldValue = base[symbol];
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
         	if (base[symbol][key] === undefined) {
         		names.push(key);
         		if (_setValue(value,names,base[symbol],key)) {
-			    	this._callListener("change",names,base,key,value);
+			    	this._callListener("change",names,base,key,value,oldValue);
 	    	//TODO parent listeners
         		}
 	    		names.pop(); // return names to unchanged
@@ -407,12 +416,13 @@ function Resolver(name_andor_expr,ns,options)
         function setEntry(key,value) {
             var symbol = names.pop();
         	var base = _resolve(names,null,onundefined);
+            var oldValue = base[symbol];
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
     		names.push(key);
     		if (_setValue(value,names,base[symbol],key)) {
-		    	this._callListener("change",names,base,key,value);
+		    	this._callListener("change",names,base,key,value,oldValue);
 	    	//TODO parent listeners
     		}
     		names.pop(); // return names to unchanged
@@ -646,19 +656,19 @@ function Resolver(name_andor_expr,ns,options)
 
         get.listeners = listeners || _makeListeners();
 
-	    function _callListener(type,names,base,symbol,value) {
+	    function _callListener(type,names,base,symbol,value,oldValue) {
             if (type == "change" && value === false) {
                 for(var i=0,event; event = this.listeners["false"][i]; ++i) {
-                    event.trigger(base,symbol,value);
+                    event.trigger(base,symbol,value,oldValue);
                 }
             }
             if (type == "change" && value === true) {
                 for(var i=0,event; event = this.listeners["true"][i]; ++i) {
-                    event.trigger(base,symbol,value);
+                    event.trigger(base,symbol,value,oldValue);
                 }
             }
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
-	    		event.trigger(base,symbol,value);
+	    		event.trigger(base,symbol,value,oldValue);
 	    	}
             if (this.storechanges && type == "change") {
                 for(var n in this.storechanges) this.storechanges[n].call(this);

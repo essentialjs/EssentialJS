@@ -528,15 +528,19 @@ test('Resolver change listener',function() {
 	// 		value: abcVal
 	// 	})),"called with a.b event"
 	// 	);
-	ok(
-		_onabc.calledWith(sinon.match({
-			type: "change",
-			base: ab(),
-			symbol: "c",
-			selector: "a.b.c",
-			value: abcVal
-		})),"called with a.b.c event"
-		);
+	deepEqual(_onabc.lastCall.args[0],{
+		type: "change",
+		base: ab(),
+		symbol: "c",
+		selector: "a.b.c",
+		oldValue: undefined,
+		value: abcVal,
+		data: null,
+		inTrigger: 0,
+		resolver: _onabc.lastCall.args[0].resolver,
+		callback: _onabc.lastCall.args[0].callback,
+		trigger: _onabc.lastCall.args[0].trigger
+	},"called with a.b.c event");
 
 	abc.setEntry("d","dd");
 	equal(resolver("a.b.c.d"), "dd");
@@ -552,15 +556,19 @@ test('Resolver change listener',function() {
 	resolver.set("d.e.f", 6);
 	equal(_ondef.callCount,1);
 
-	ok(
-		_ondef.calledWith(sinon.match({
-			type: "change",
-			base: resolver("d.e"),
-			symbol: "f",
-			selector: "d.e.f",
-			value: 6
-		})),"called with d.e.f event"
-		);
+	deepEqual(_ondef.lastCall.args[0],{
+		type: "change",
+		base: resolver("d.e"),
+		symbol: "f",
+		selector: "d.e.f",
+		oldValue: undefined,
+		value: 6,
+		data: null,
+		inTrigger: 0,
+		resolver: _ondef.lastCall.args[0].resolver,
+		callback: _ondef.lastCall.args[0].callback,
+		trigger: _ondef.lastCall.args[0].trigger
+	},"called with d.e.f event");
 
 	var _onxyz = sinon.spy();
 	resolver.on("change","x.y.z",{},_onxyz);
@@ -584,17 +592,18 @@ test('Resolver change listener',function() {
 	// 	})),"called with m.n event"
 	// 	);
 	deepEqual(_onmn.lastCall.args[0],{
-			type: "change",
-			base: resolver("m.n"),
-			symbol: null,
-			selector: "m.n",
-			value: { "key":"val" },
-			data: null,
-			inTrigger: 0,
-			resolver: _onmn.lastCall.args[0].resolver,
-			callback: _onmn.lastCall.args[0].callback,
-			trigger: _onmn.lastCall.args[0].trigger
-		});
+		type: "change",
+		base: resolver("m.n"),
+		symbol: null,
+		selector: "m.n",
+		value: { "key":"val" },
+		oldValue: undefined,
+		data: null,
+		inTrigger: 0,
+		resolver: _onmn.lastCall.args[0].resolver,
+		callback: _onmn.lastCall.args[0].callback,
+		trigger: _onmn.lastCall.args[0].trigger
+	});
 
 	ok(1,"Removing change listener")
 	ok(1,"Resolver change listener with 3 params")
