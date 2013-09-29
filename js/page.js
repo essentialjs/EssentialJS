@@ -452,10 +452,10 @@
 	/*
 		Area Activation
 	*/
-	var _activeAreaName,_liveAreas=false;
+	var _activeAreaName;
 
 	function activateArea(areaName) {
-		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
+		if (! pageResolver("state.livepage")) { //TODO switch to pageResolver("livepage")
 			_activeAreaName = areaName;
 			return;
 		}
@@ -487,22 +487,8 @@
 		EnhancedWindow.prototype.open = EnhancedWindow.prototype.openNow;
 
 		//TODO if waiting for initial page src postpone this
-
-		// Allow the browser to render the page, preventing initial transitions
-		_liveAreas = true;
-		pageResolver.set("state.livepage",true);
-
 	}
-
-	function onPageLoad(ev) {
-		_liveAreas = true;
-		pageResolver.set("state.livepage",true);
-	}
-
-	if (!_essentialTesting) {
-		if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-		else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
-	}
+	essential.set("launchWindows",launchWindows);
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
 	Resolver("page").declare("pages",{});
