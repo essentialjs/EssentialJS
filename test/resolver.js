@@ -571,17 +571,30 @@ test('Resolver change listener',function() {
 
 	var _onmn = sinon.spy();
 	resolver.on("change","m.n",_onmn);
-	resolver.reference("m.n").mixin({ "m":"n"})
+	// debugger;
+	resolver.reference("m.n").mixin({ "key":"val"})
 
-	ok(
-		_onmn.calledWith(sinon.match({
+	// ok(
+	// 	_onmn.calledWith(sinon.match({
+	// 		type: "change",
+	// 		base: resolver("m"),
+	// 		symbol: null,
+	// 		selector: null,
+	// 		value: { "key":"val" }
+	// 	})),"called with m.n event"
+	// 	);
+	deepEqual(_onmn.lastCall.args[0],{
 			type: "change",
-			base: resolver("m"),
+			base: resolver("m.n"),
 			symbol: null,
-			selector: null,
-			value: { "m":"n" }
-		})),"called with m.n event"
-		);
+			selector: "m.n",
+			value: { "key":"val" },
+			data: null,
+			inTrigger: 0,
+			resolver: _onmn.lastCall.args[0].resolver,
+			callback: _onmn.lastCall.args[0].callback,
+			trigger: _onmn.lastCall.args[0].trigger
+		});
 
 	ok(1,"Removing change listener")
 	ok(1,"Resolver change listener with 3 params")
