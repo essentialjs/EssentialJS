@@ -43,7 +43,7 @@ test('roles are enhanced when no page state is preset',function() {
 		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
 		pageResolver = Resolver("page"),
 		HTMLElement = Resolver("essential::HTMLElement::");
-	var appConfig = ApplicationConfig();
+	// var appConfig = ApplicationConfig();
 
 	ok(! pageResolver("state.livepage"));
 	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
@@ -58,15 +58,16 @@ test('roles are enhanced when no page state is preset',function() {
 	pageResolver.set("state.livepage",true);
 
 	equal(div.getAttribute("test321"),"321");
-	//TODO ok(! pageResolver("state.loading"));
-	// ok(! pageResolver("state.launching"));
-	// ok(pageResolver("state.livepage"));
+	ok(! pageResolver("state.loading"), "loading is done on livepage by default");
+	ok(pageResolver("state.launching"), "after loading launching is automatically entered");
+	ok(! pageResolver("state.launched"), "it is up to the application to flag launching complete");
 	// ok(pageResolver("state.livepage"));
 	// ok(pageResolver("state.livepage"));
 	// ok(pageResolver("state.livepage"));
 	// ok(pageResolver("state.livepage"));
 
 	pageResolver.set("handlers.init.test321",undefined);
+	pageResolver.set("state.livepage",false);
 });
 
 
@@ -78,7 +79,12 @@ test("ApplicationConfig",function(){
 
 	var configRequired = Resolver("essential::configRequired::");
 	var configLoaded = Resolver("essential::configLoaded::");
-	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::"),
+		pageResolver = Resolver("page");
+
+	ok(! pageResolver("state.livepage"));
+	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
+
 	var ac = ApplicationConfig();
 	// equal(document.body.stateful,Resolver.page);
 	equal( Resolver("page")(["pagesById",ac.uniqueID]), ac );

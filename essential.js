@@ -779,12 +779,13 @@ function Resolver(name_andor_expr,ns,options)
         }
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
+        var oldValue = base[symbol];
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
-			if (ref) ref._callListener("change",names,base,symbol,value);
+			if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
 			var parentName = names.join(".");
 			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+			if (parentRef) parentRef._callListener("change",names,base,symbol,value,oldValue);
 		}
 		return value;
     };
@@ -807,10 +808,10 @@ function Resolver(name_andor_expr,ns,options)
         var value = ! base[symbol]; //TODO configurable toggle
         if (_setValue(value,names,base,symbol)) {
             var ref = resolver.references[name];
-            if (ref) ref._callListener("change",names,base,symbol,value);
+            if (ref) ref._callListener("change",names,base,symbol,value,!value);
             var parentName = names.join(".");
             var parentRef = resolver.references[parentName];
-            if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+            if (parentRef) parentRef._callListener("change",names,base,symbol,value,!value);
         }
         return value;
     };
@@ -4874,7 +4875,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		document.documentElement.lang = this.state("lang");
-		state.on("change",this,this.onStateChange);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
@@ -5004,18 +5004,28 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 	EnhancedDescriptor.enhanceUnfinished = enhanceUnfinishedElements;
 
-	ApplicationConfig.prototype.onStateChange = function(ev) {
+	pageResolver.on("change","state", onStateChange);
+
+	function onStateChange(ev) {
+		var ap = ApplicationConfig();
+
 		switch(ev.symbol) {
-			case "livepage":
-				var ap = ev.data;
-				//if (ev.value == true) ap.reflectState();
-				ev.data.doInitScripts();
-				enhanceUnfinishedElements();
-				if (_activeAreaName) {
-					activateArea(_activeAreaName);
-				} else {
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
+			case "livepage": 
+				if (ev.value) {
+					if (!ev.base.loadingScripts && !ev.base.loadingConfig) {
+						--ev.inTrigger;
+						this.set("state.loading",false);
+						++ev.inTrigger;
+					} else {
+						ap.doInitScripts();
+						enhanceUnfinishedElements();
+					}
+					if (_activeAreaName) {
+						activateArea(_activeAreaName);
+					} else {
+						if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+						else activateArea(ap.getIntroductionArea());
+					}
 				}
 				break;
 			case "loadingScripts":
@@ -5043,7 +5053,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			case "loading":
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
+					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
 					if (ev.base.configured == true && ev.base.authenticated == true 
@@ -5056,7 +5066,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 				} 
 				break;
 			case "authenticated":
-				var ap = ev.data;
 				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
 				else activateArea(ap.getIntroductionArea());
 				// no break
@@ -5067,7 +5076,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 					this.set("state.launching",true);
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
+					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 				}
 				break;			
@@ -5075,7 +5084,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			case "launched":
 				if (ev.value == true) {
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
+					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
 				}

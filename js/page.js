@@ -1000,7 +1000,6 @@
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		document.documentElement.lang = this.state("lang");
-		state.on("change",this,this.onStateChange);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
@@ -1130,18 +1129,28 @@
 	}
 	EnhancedDescriptor.enhanceUnfinished = enhanceUnfinishedElements;
 
-	ApplicationConfig.prototype.onStateChange = function(ev) {
+	pageResolver.on("change","state", onStateChange);
+
+	function onStateChange(ev) {
+		var ap = ApplicationConfig();
+
 		switch(ev.symbol) {
-			case "livepage":
-				var ap = ev.data;
-				//if (ev.value == true) ap.reflectState();
-				ev.data.doInitScripts();
-				enhanceUnfinishedElements();
-				if (_activeAreaName) {
-					activateArea(_activeAreaName);
-				} else {
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
+			case "livepage": 
+				if (ev.value) {
+					if (!ev.base.loadingScripts && !ev.base.loadingConfig) {
+						--ev.inTrigger;
+						this.set("state.loading",false);
+						++ev.inTrigger;
+					} else {
+						ap.doInitScripts();
+						enhanceUnfinishedElements();
+					}
+					if (_activeAreaName) {
+						activateArea(_activeAreaName);
+					} else {
+						if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+						else activateArea(ap.getIntroductionArea());
+					}
 				}
 				break;
 			case "loadingScripts":
@@ -1169,7 +1178,7 @@
 			case "loading":
 				if (ev.value == false) {
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
+					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
 					if (ev.base.configured == true && ev.base.authenticated == true 
@@ -1182,7 +1191,6 @@
 				} 
 				break;
 			case "authenticated":
-				var ap = ev.data;
 				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
 				else activateArea(ap.getIntroductionArea());
 				// no break
@@ -1193,7 +1201,7 @@
 					this.set("state.launching",true);
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
+					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 				}
 				break;			
@@ -1201,7 +1209,7 @@
 			case "launched":
 				if (ev.value == true) {
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
+					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
 				}
