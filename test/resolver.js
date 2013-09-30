@@ -780,7 +780,7 @@ test('namespace::expression in another resolver',function() {
 		symbol: "initial",
 		selector: "initial",
 		value: "changed",
-		oldValue: undefined,
+		oldValue: "initial",
 		data: null,
 		inTrigger: 0,
 		resolver: _oninitial.lastCall.args[0].resolver,

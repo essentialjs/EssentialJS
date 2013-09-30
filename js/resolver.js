@@ -755,12 +755,13 @@ function Resolver(name_andor_expr,ns,options)
         }
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
+        var oldValue = base[symbol];
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
-			if (ref) ref._callListener("change",names,base,symbol,value);
+			if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
 			var parentName = names.join(".");
 			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+			if (parentRef) parentRef._callListener("change",names,base,symbol,value,oldValue);
 		}
 		return value;
     };
@@ -783,10 +784,10 @@ function Resolver(name_andor_expr,ns,options)
         var value = ! base[symbol]; //TODO configurable toggle
         if (_setValue(value,names,base,symbol)) {
             var ref = resolver.references[name];
-            if (ref) ref._callListener("change",names,base,symbol,value);
+            if (ref) ref._callListener("change",names,base,symbol,value,!value);
             var parentName = names.join(".");
             var parentRef = resolver.references[parentName];
-            if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+            if (parentRef) parentRef._callListener("change",names,base,symbol,value,!value);
         }
         return value;
     };
