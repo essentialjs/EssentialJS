@@ -719,7 +719,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).declare(names,value,onundefined);
+                return Resolver(names.shift()).declare(names[0],value,onundefined);
             }
             names = name.split(".");
         }
@@ -749,7 +749,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).set(names,value,onundefined);
+                return Resolver(names.shift()).set(names[0],value,onundefined);
             }
             names = name.split(".");
         }
@@ -775,7 +775,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).toggle(names,value,onundefined);
+                return Resolver(names.shift()).toggle(names[0],value,onundefined);
             }
             names = name.split(".");
         }

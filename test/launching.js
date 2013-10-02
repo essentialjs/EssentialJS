@@ -70,6 +70,24 @@ test('roles are enhanced when no page state is preset',function() {
 	pageResolver.set("state.livepage",false);
 });
 
+test('Some states can be changed without instantiating ApplicationConfig',function() {
+
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
+		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
+		pageResolver = Resolver("page"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+
+	ok(! pageResolver("state.livepage"));
+	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
+
+	pageResolver.set("state.authenticated",false);
+	pageResolver.set("state.authorised",false);
+
+	equal(ApplicationConfig.info.existing[0],undefined);
+	pageResolver.set("state.authenticated",true);
+	// pageResolver.set("state.authorised",true);
+})
 
 // var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 // ApplicationConfig.restrict({ singleton:true });

@@ -743,7 +743,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).declare(names,value,onundefined);
+                return Resolver(names.shift()).declare(names[0],value,onundefined);
             }
             names = name.split(".");
         }
@@ -773,7 +773,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).set(names,value,onundefined);
+                return Resolver(names.shift()).set(names[0],value,onundefined);
             }
             names = name.split(".");
         }
@@ -799,7 +799,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).toggle(names,value,onundefined);
+                return Resolver(names.shift()).toggle(names[0],value,onundefined);
             }
             names = name.split(".");
         }
@@ -5007,11 +5007,11 @@ _ElementPlacement.prototype._computeIE = function(style)
 	pageResolver.on("change","state", onStateChange);
 
 	function onStateChange(ev) {
-		var ap = ApplicationConfig();
-
 		switch(ev.symbol) {
 			case "livepage": 
 				if (ev.value) {
+					var ap = ApplicationConfig();
+
 					if (!ev.base.loadingScripts && !ev.base.loadingConfig) {
 						--ev.inTrigger;
 						this.set("state.loading",false);
@@ -5052,6 +5052,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 			case "loading":
 				if (ev.value == false) {
+					var ap = ApplicationConfig();
+
 					if (document.body) essential("instantiatePageSingletons")();
 					ap.doInitScripts();	
 					enhanceUnfinishedElements();
@@ -5066,14 +5068,21 @@ _ElementPlacement.prototype._computeIE = function(style)
 				} 
 				break;
 			case "authenticated":
-				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-				else activateArea(ap.getIntroductionArea());
+				if (ev.base.livepage) {
+					var ap = ApplicationConfig();
+
+					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
+				}
 				// no break
 			case "authorised":
 			case "configured":
 				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
 					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
 					this.set("state.launching",true);
+
+					var ap = ApplicationConfig();
+
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
 					ap.doInitScripts();	
@@ -5083,6 +5092,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 			case "launching":
 			case "launched":
 				if (ev.value == true) {
+					var ap = ApplicationConfig();
+
 					if (document.body) essential("instantiatePageSingletons")();
 					ap.doInitScripts();	
 					enhanceUnfinishedElements();
