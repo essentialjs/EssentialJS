@@ -33,7 +33,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		
 		//TODO manage interval in configured.js, and space it out consistent results
 		// for browsers that don't support events
-		pageResolver.uosInterval = setInterval(pageResolver.updateOnlineStatus,5000);
+		pageResolver.uosInterval = setInterval(Resolver("essential::updateOnlineStatus::"),5000);
 
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
 		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
