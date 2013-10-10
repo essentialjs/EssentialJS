@@ -1767,13 +1767,19 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 
 	_EnhancedDescriptor.prototype._updateContext = function() {
+		this.context.el = null;
+		this.context.controller = null;
 		for(var el = this.el.parentNode; el; el = el.parentNode) {
 			if (el.uniqueID) {
 				var desc = enhancedElements[el.uniqueID];
-				if (desc) {
+				if (desc && this.context.el == null) {
 					this.context.el = el;
 					this.context.uniqueID = el.uniqueID;
 					this.context.instance = desc.instance;
+				}
+				if (desc && this.context.controller == null && desc.conf.controller) {
+					// make controller ? looking up generator/function
+					this.context.controller = desc.instance;
 				}
 			}
 		}
@@ -1819,6 +1825,10 @@ Generator.ObjectGenerator = Generator(Object);
 		return function() {
 			//TODO destroy
 			//TODO discard/destroy for layouter and laidout
+
+			var controller = desc.getController();
+			if (controller && controller.destoyed) controller.destoyed(desc.el);
+
 			// if (desc.discardHandler) 
 			return desc.discardHandler(desc.el,desc.role,desc.instance);
 		};
@@ -1838,6 +1848,9 @@ Generator.ObjectGenerator = Generator(Object);
 			this.state.needEnhance = !this.state.enhanced;
 		}
 		if (this.state.enhanced) {
+			var controller = this.getController();
+			if (controller && controller.enhanced) controller.enhanced(this.el);
+
 			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
@@ -1984,6 +1997,12 @@ Generator.ObjectGenerator = Generator(Object);
 		if (this.layout.queued) {
 			if (this.layouterParent) this.layouterParent.layout.queued = true;
 		}
+	};
+
+	_EnhancedDescriptor.prototype.getController = function() {
+		// _updateContext
+
+		return this.context.controller;
 	};
 
 	// used to emulate IE uniqueID property

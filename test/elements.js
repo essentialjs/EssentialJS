@@ -312,6 +312,8 @@ test('Enhance element with context',function() {
 	equal(HTMLElement.getEnhancedParent(slaveOneSpan),masterDiv);
 	equal(HTMLElement.getEnhancedParent(slaveTwoSpan),masterDiv);
 
+	//TODO context.el is of parent, not topmost enhanced
+
 });
 
 function _TestLayouter(key,el,config) {
