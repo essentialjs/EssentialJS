@@ -1983,7 +1983,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
-		if (this.layouterParent) this.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
+		if (this.layouterParent && this.layouterParent.layouter) this.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
 
 		this._queueLayout();
 		if (this.layout.queued) {
