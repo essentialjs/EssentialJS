@@ -2625,7 +2625,8 @@ Generator.ObjectGenerator = Generator(Object);
 		_body.innerHTML = str;
 
 		var src = _body.firstChild;
-		for(var i=0,a; !!(a = src.attributes[0]); ++i) if (a.name != "was") _body.appendChild(a);
+		//TODO attributes[0] changed to attributes[i], check that it fixes stuff
+		for(var i=0,a; !!(a = src.attributes[i]); ++i) if (a.name != "was") _body.appendChild(a);
 		_body.innerHTML = src.innerHTML;
 
 	}
