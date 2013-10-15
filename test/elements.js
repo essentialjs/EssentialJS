@@ -627,6 +627,12 @@ test('Discarding enhanced',function() {
 	EnhancedDescriptor.discardAll();
 })
 
+test('Cleaning enhanced',function() {
+
+	ok(1,"TODO enhanced element is unlisted as part of cleanup immediately");
+	// no longer in sizingElements
+});
+
 test("impl",function(){
 	var HTMLElement = Resolver("essential::HTMLElement::","null");
 	equal(typeof HTMLElement.impl("span"),"object");

@@ -508,7 +508,9 @@
 			if (controller && controller.destoyed) controller.destoyed(desc.el);
 
 			// if (desc.discardHandler) 
-			return desc.discardHandler(desc.el,desc.role,desc.instance);
+			var r = desc.discardHandler(desc.el,desc.role,desc.instance);
+			desc._unlist(); // make sure that sizing stops
+			return r;
 		};
 	};
 
