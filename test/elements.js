@@ -930,3 +930,30 @@ test("Define list of elements using DescriptorQuery(NodeList)",function() {
 	var h1s = DescriptorQuery(document.body.getElementsByTagName("H1"));
 	equal(h1s.length, 0); // no role on the H1 elements
 });
+
+test("Basic enhanced dialog",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	// debugger;
+	var template4 = HTMLElement("div",{ role:"template",id:"template-4","enhanced element":true },
+		'<div role="content">',
+		'</div>');
+	debugger;
+	ok(HTMLElement.allEnhanced[template4.uniqueID]);
+	equal(HTMLElement.allEnhanced[template4.uniqueID].el, template4);
+
+	var dialog = HTMLElement("div",{
+		"role":"dialog",
+		"content-class":"abcd",
+
+		// Queue it for enhancing
+		"enhanced element":true
+	});
+	ok(HTMLElement.allEnhanced[dialog.uniqueID]);
+	equal(HTMLElement.allEnhanced[dialog.uniqueID].el, dialog);
+	// ok(dialog.stateful);
+
+	//TODO discard both
+});

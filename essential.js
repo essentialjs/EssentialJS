@@ -3559,8 +3559,14 @@ Generator.ObjectGenerator = Generator(Object);
 					if (_from[n]) e.impl = HTMLElement.impl(e);
 					break;
 
-				case "enhanced":
+				case "append to":
+					appendTo = _from[n];
+					break;
+				case "enhanced element":
 					enhanced = _from[n];
+					break;
+				case "enhance element":
+					enhance = _from[n];
 					break;
 
 				// "type" IE9 el.type is readonly:
@@ -3592,14 +3598,17 @@ Generator.ObjectGenerator = Generator(Object);
 		} 
 		
 		//TODO .appendTo function
-		
-		if (enhanced) HTMLElement.query([e]); //TODO call enhance?
+
+		if (appendTo) appendTo.appendChild(e);
+		if (enhanced) HTMLElement.query([e]).queue();
+		if (enhance) HTMLElement.query([e]).enhance();
 		
 		return e;
 	}
 	essential.set("HTMLElement",HTMLElement);
 	
 	HTMLElement.query = essential("DescriptorQuery");
+	HTMLElement.allEnhanced = essential("enhancedElements");
 
 	HTMLElement.getEnhancedParent = function(el) {
 		for(el = el.parentNode; el; el = el.parentNode) {
