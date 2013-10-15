@@ -88,9 +88,9 @@ test("Initial stateful element state",function() {
 	// equal(StatefulResolver(el.childNodes[2],true)("state.checked"),true); TODO should aria transfer to checked state
 	equal(StatefulResolver(el.childNodes[3],true)("state.checked","undefined"),true);
 
-	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false,"expanded");
-	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true);
-	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true);
+	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false,"aria-expanded = false");
+	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true,"aria-expanded = true");
+	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true,"aria-expanded = expanded");
 
 	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true,"disabled");
 	equal(StatefulResolver(el.childNodes[8],true)("state.disabled","undefined"),false);
