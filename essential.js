@@ -3520,7 +3520,7 @@ Generator.ObjectGenerator = Generator(Object);
 			_from = __from;
 		}
 		
-		var e = _doc.createElement(_tagName), enhanced = false;
+		var e = _doc.createElement(_tagName), enhanced = false, enhance = false, appendTo;
 		for(var n in _from) {
 			switch(n) {
 				case "tagName": break; // already used
