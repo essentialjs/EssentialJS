@@ -921,3 +921,12 @@ test("Define a list of templates using DescriptorQuery([])",function() {
 	equal(Resolver("page::templates","null")("@template-2"),templates[1].instance);
 
 })
+
+test("Define list of elements using DescriptorQuery(NodeList)",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	var h1s = DescriptorQuery(document.body.getElementsByTagName("H1"));
+	equal(h1s.length, 0); // no role on the H1 elements
+});

@@ -1694,7 +1694,7 @@ Generator.ObjectGenerator = Generator(Object);
 		} else {
 			var ac = essential("ApplicationConfig")();
 			el=sel; sel=undefined;
-			if (el instanceof Array) {
+			if (typeof el.length == "number") {
 				for(var i=0,e; e = el[i]; ++i) {
 
 					var conf = ac.getConfig(e), role = e.getAttribute("role");
