@@ -897,6 +897,14 @@ test("impl copyAttributes",function() {
 
 	//TODO do not set class to blank, instead remove the attribute
 
+	var various = HTMLElement('span',{},'<span name="nm" id="id1" role="r" data-role="dr" data-state="ds"></span>').firstChild;
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(various,dest);
+	equal(dest.id,"id1");
+	equal(dest.getAttribute("name"),"nm");
+	equal(dest.getAttribute("role"),"r");
+	equal(dest.getAttribute("data-role"),"dr");
+	equal(dest.getAttribute("data-state"),"ds");
 });
 
 test("Define a list of templates using DescriptorQuery([])",function() {

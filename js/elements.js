@@ -192,19 +192,27 @@
 	 */
 	HTMLElement.fn.copyAttributes = function(src,dst,attrs)
 	{
-		if (!attrs) attrs = this.CLONED_ATTRIBUTES;
-
-		if (attrs["class"] !== undefined) {
+		if (!attrs || attrs["class"] !== undefined) {
 		 	dst.className = dst.className? dst.className + " " + src.className : src.className;
 		}
-		if (attrs["style"] !== undefined && src.style.cssText != "") {
+		if (!attrs || attrs["style"] !== undefined && src.style.cssText != "") {
 			dst.style.cssText = src.style.cssText;
 		}
-		for(var n in attrs) {
-			if (n == "class" || n == "style") continue;
-			var value = src.getAttribute(n);
-			if (value != null && value !== attrs[n]) {
-				dst.setAttribute(n,value);
+		if (!attrs) {
+			for(var i=0,a; a = src.attributes[i]; ++i) {
+				var n = a.name;
+				if (n == "class" || n == "style") continue;
+				var value = src.getAttribute(n);
+				if (value != null) dst.setAttribute(n,value);
+				else dst.removeAttribute(n);	
+			}
+		} else {
+			for(var n in attrs) {
+				if (n == "class" || n == "style") continue;
+				var value = src.getAttribute(n);
+				if (value != null && value !== attrs[n]) {
+					dst.setAttribute(n,value);
+				}
 			}
 		}
 	};
@@ -217,6 +225,7 @@
 		"rows": 0,
 		// not supported properly by IE, "type": true,
 		"role": "",
+		"data-role":"",
 		"name": "",
 		"id": "",
 		"title": "",
@@ -560,7 +569,7 @@
 	            } 
 	        }
 	    }
-	    this.copyAttributes(stream.root,top,this.CLONED_ATTRIBUTES);
+	    this.copyAttributes(stream.root,top);
 	    (top.impl || this).enhance(top);
 	};
 
