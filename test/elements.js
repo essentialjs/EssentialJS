@@ -936,17 +936,24 @@ test("Basic enhanced dialog",function() {
 	var HTMLElement = Resolver("essential::HTMLElement::"),
 		DescriptorQuery = Resolver("essential::DescriptorQuery::");
 
-	// debugger;
+	Resolver("page").set("enabledRoles.template",true);
+	Resolver("page").set("enabledRoles.dialog",true);
+
 	var template4 = HTMLElement("div",{ role:"template",id:"template-4","enhanced element":true },
-		'<div role="content">',
+		'<div role="content" class="dialog-stuff">',
 		'</div>');
-	debugger;
 	ok(HTMLElement.allEnhanced[template4.uniqueID]);
 	equal(HTMLElement.allEnhanced[template4.uniqueID].el, template4);
 
+	DescriptorQuery([template4]).enhance();
+
+
 	var dialog = HTMLElement("div",{
 		"role":"dialog",
-		"content-class":"abcd",
+		"data-role": [
+			"'content-class':'abcd'",
+			"'template':'#template-4'"
+		].join(","),
 
 		// Queue it for enhancing
 		"enhanced element":true
@@ -954,6 +961,10 @@ test("Basic enhanced dialog",function() {
 	ok(HTMLElement.allEnhanced[dialog.uniqueID]);
 	equal(HTMLElement.allEnhanced[dialog.uniqueID].el, dialog);
 	// ok(dialog.stateful);
+
+	DescriptorQuery([dialog]).enhance();
+	ok(dialog.stateful);
+	equal(dialog.firstChild.className,"dialog-stuff abcd");
 
 	//TODO discard both
 });
