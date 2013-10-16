@@ -105,7 +105,7 @@ test("ApplicationConfig",function(){
 
 	var ac = ApplicationConfig();
 	// equal(document.body.stateful,Resolver.page);
-	equal( Resolver("page")(["pagesById",ac.uniqueID]), ac );
+	equal( Resolver("page")(["pagesById",ac.uniquePageID]), ac );
 
 	// application/config
 	equal(ac.config("launched.charset"),"utf-8","launched.charset");

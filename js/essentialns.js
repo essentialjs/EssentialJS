@@ -699,7 +699,8 @@
 
 		if (page == undefined) {
 			var pageResolver = Resolver("page");
-			page = pageResolver(["pagesById",el.ownerDocument.uniqueID],"null");
+			page = pageResolver(["pagesById",(el.ownerDocument || document).uniquePageID || "main"],"null");
+			if (page == null) page = Resolver("essential::ApplicationConfig::")();
 		}
 		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueID);
 		enhancedElements[uniqueID] = desc;

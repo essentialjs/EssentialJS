@@ -428,6 +428,15 @@
 		authenticated: "login"
 	});
 
+    var NEXT_PAGE_ID = 1;
+    function getUniquePageID(doc) {
+    	if (doc.uniquePageID==undefined) {
+    		doc.uniquePageID = NEXT_PAGE_ID++;
+    	}
+    	return doc.uniquePageID;
+    }
+    getUniquePageID(document);
+
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
 		for(var n in state_treatment) triggers[n] = true;
@@ -761,8 +770,8 @@
 		if (this.url) {
 			delete Resolver("page::pages::")[this.url];
 		}
-		if (this.uniqueID) {
-			delete Resolver("page::pagesById::")[this.uniqueID];
+		if (this.uniquePageID) {
+			delete Resolver("page::pagesById::")[this.uniquePageID];
 		}
 	};
 
@@ -822,8 +831,8 @@
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
-		this.uniqueID = doc.uniqueID;
-		Resolver("page").set(["pagesById",this.uniqueID],this);
+		this.uniquePageID = getUniquePageID(doc);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -848,8 +857,8 @@
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
-		this.uniqueID = doc.uniqueID;
-		Resolver("page").set(["pagesById",this.uniqueID],this);
+		this.uniquePageID = getUniquePageID(doc);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -988,8 +997,9 @@
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
-		this.uniqueID = document.uniqueID || "main";
-		Resolver("page").set(["pagesById",this.uniqueID],this);
+		//TODO kill it on document, it's a generator not a fixed number, pagesByName
+		this.uniquePageID = getUniquePageID(document);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
@@ -1003,7 +1013,7 @@
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
-		this.pages = this.resolver.reference("pages",{ generator:SubPage});
+		this.pages = this.resolver.reference("pages",{ generator:SubPage });
 		SubPage.prototype.appConfig = this;
 
 		pageResolver.reflectStateOn(document.body,false);

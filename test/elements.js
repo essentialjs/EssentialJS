@@ -45,7 +45,7 @@ test('EnhancedDescriptor cross browser support',function(){
 	var sizingElements = Resolver("essential::sizingElements::");
 
 	var div = HTMLElement("div",{ "abc":"abc" });
-	var desc = EnhancedDescriptor(div,null,{},false,ApplicationConfig());
+	var desc = EnhancedDescriptor(div,null,{});
 	equal(desc.uniqueID,div.uniqueID);
 	equal(desc.getAttribute("abc"),"abc");
 
@@ -740,11 +740,10 @@ test('Template cloneNode',function() {
 	// document.body.removeChild(tpl2);
 
 	// Cloning template loaded in page
-	var conf = ApplicationConfig();
 	var tpl3 = document.getElementById("abcd");
 	ok(tpl3);
 	ok(tpl3.innerHTML.length>0,"template isn't empty")
-	var desc3 = EnhancedDescriptor(tpl3,"template",{},false,conf); // make sure it is enhanced
+	var desc3 = EnhancedDescriptor(tpl3,"template",{}); // make sure it is enhanced
 
 	enhance_template(tpl3,"template",{}); //TODO call on descriptor
 

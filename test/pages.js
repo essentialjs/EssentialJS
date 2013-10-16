@@ -21,7 +21,7 @@ test("Explicit subpage definitions",function() {
 		'</body></html>'
 		].join(""));
 
-	equal(Resolver("page")(["pagesById",page.uniqueID]), page);
+	equal(Resolver("page")(["pagesById",page.uniquePageID]), page);
 	ok(page.documentLoaded);
 	ok(page.head);
 	equal(page.head.id,"10");
@@ -49,7 +49,7 @@ test("Explicit subpage definitions",function() {
 		''
 		].join(""));
 
-	equal(Resolver("page")(["pagesById",page.uniqueID]), page);
+	equal(Resolver("page")(["pagesById",page.uniquePageID]), page);
 	ok(page.documentLoaded);
 
 	//TODO alternate head + body call syntax
@@ -72,7 +72,7 @@ test("Apply/unapply body",function() {
 		''
 		].join(""));
 
-	equal(Resolver("page")(["pagesById",page.uniqueID]), page);
+	equal(Resolver("page")(["pagesById",page.uniquePageID]), page);
 	ok(page.documentLoaded);
 
 	page.destroy(); return;//buggy
