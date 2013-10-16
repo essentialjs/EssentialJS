@@ -848,20 +848,7 @@
 	}
 	essential.set("instantiatePageSingletons",instantiatePageSingletons);
 
-	function discardRestricted()
-	{
-		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
-			var discarded = g.info.constructors[-1].discarded;
-			for(var n in g.info.existing) {
-				var instance = g.info.existing[n];
-				if (discarded) {
-					discarded.call(g,instance);
-				}
-			}
-			g.info.constructors[-1].__generator__ = undefined;
-			g.__generator__ = undefined;
-		}
-	}
+
 
 	essential.set("_queueDelayedAssets",function(){});
 
@@ -906,7 +893,7 @@
 
 		Resolver.unloadWriteStored();
 
-		discardRestricted();
+		Generator.discardRestricted();
 
 		//TODO move to configured
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);

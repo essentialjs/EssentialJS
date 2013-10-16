@@ -1300,6 +1300,24 @@ function Generator(mainConstr,options)
 	}
 	generator.restrict = restrict;
 
+	function destroy() {
+
+	}
+	generator.destroy = destroy;
+	
+	function discard() {
+		var discarded = this.info.constructors[-1].discarded;
+		for(var n in this.info.existing) {
+			var instance = this.info.existing[n];
+			if (discarded) discarded.call(this,instance);
+			if (this.discarded) this.discarded.call(this,instance);
+			if (this.info.options.discarded) this.info.options.discarded.call(this,instance);
+		}
+
+		this.info.existing = {};
+	}
+	generator.discard = discard; //TODO { destroy and then discard existing }
+
 	// Future calls will return this generator
 	mainConstr.__generator__ = generator;
 		
@@ -1310,6 +1328,15 @@ function Generator(mainConstr,options)
 Generator.restricted = [];
 Generator.ObjectGenerator = Generator(Object);
 
+Generator.discardRestricted = function()
+{
+	for(var i=Generator.restricted.length-1,g; g = Generator.restricted[i]; --i) g.destroy();
+	for(var i=Generator.restricted.length-1,g; g = Generator.restricted[i]; --i) {
+		g.discard();
+		g.info.constructors[-1].__generator__ = undefined;
+		g.__generator__ = undefined;
+	}
+};
 
 
 /*jslint white: true */
@@ -2162,20 +2189,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("instantiatePageSingletons",instantiatePageSingletons);
 
-	function discardRestricted()
-	{
-		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
-			var discarded = g.info.constructors[-1].discarded;
-			for(var n in g.info.existing) {
-				var instance = g.info.existing[n];
-				if (discarded) {
-					discarded.call(g,instance);
-				}
-			}
-			g.info.constructors[-1].__generator__ = undefined;
-			g.__generator__ = undefined;
-		}
-	}
+
 
 	essential.set("_queueDelayedAssets",function(){});
 
@@ -2220,7 +2234,7 @@ Generator.ObjectGenerator = Generator(Object);
 
 		Resolver.unloadWriteStored();
 
-		discardRestricted();
+		Generator.discardRestricted();
 
 		//TODO move to configured
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
