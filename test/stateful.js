@@ -80,7 +80,7 @@ test("Initial stateful element state",function() {
 	equal(statefulDiv("state.readOnly","undefined"),false);
 	equal(statefulDiv("state.hidden","undefined"),false);
 	equal(statefulDiv("state.required","undefined"),false);
-	equal(statefulDiv("state.expanded","undefined"),undefined);
+	equal(statefulDiv("state.expanded","undefined"),false);
 	equal(statefulDiv("state.checked","undefined"),undefined);
 
 	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false,"checked");
@@ -196,11 +196,9 @@ test("Stateful element state",function(){
 	stateful.set("state.pressed",false);
 	equal(el.getAttribute("aria-pressed"),null);
 
-
-
 	ok(! stateful("state.expanded","undefined"));
 	stateful.set("state.expanded",true);
-	ok(el.expanded || (el.getAttribute("expanded") == "true"));
+	ok(el.expanded || (el.getAttribute("aria-expanded") == "true"));
 	equal(el.getAttribute("aria-expanded"),"true");
 	equal(el.className,"state-expanded");
 	stateful.set("state.expanded",false);

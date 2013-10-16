@@ -128,10 +128,10 @@
 		} 
 
 		if (value) {
-			el.setAttribute("aria-"+key,this["true"] || "true");
+			if (this.aria) el.setAttribute("aria-"+key,this["true"] || "true");
 			el.setAttribute(this.html5,this["true"] || "true");
 		} else {
-			el.removeAttribute("aria-"+key);
+			if (this.aria) el.removeAttribute("aria-"+key);
 			el.removeAttribute(this.html5);
 		}
 	}
