@@ -226,10 +226,11 @@ test('Enhance element early or delayed',function() {
 
 test('Enhance element with context',function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
-	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
 	var HTMLElement = Resolver("essential::HTMLElement::");
 	var appConfig = ApplicationConfig();
-
+	var masterInstance = { "this is":"an instance"};
 
 	var handlers = {
 		"init": {
@@ -251,6 +252,7 @@ test('Enhance element with context',function() {
 			"slave2": sinon.stub()
 		}
 	};
+	handlers.enhance.master.returns(masterInstance);
 
 	Resolver("page::handlers.init").mixin(handlers.init);
 	Resolver("page::handlers.enhance").mixin(handlers.enhance);
@@ -261,7 +263,7 @@ test('Enhance element with context',function() {
 
 	var page = appConfig.page("/test/pages/with-context.html",{},[
 		'<html><head>', '', '</head><body>',
-		'<div role="master" data-role="',"'template':'#master-template'",'">',
+		'<div role="master" data-role="',"'template':'#master-template','controller':true",'">',
 			'<span role="slave1" id="a" data-role="',"'model':'myModel'",'"></span>',
 			'<span role="slave2" id="b" data-role="',"'model':'slaveTwoModel'",'"></span>',
 		'</div>',
@@ -279,28 +281,48 @@ test('Enhance element with context',function() {
 	// master desc and context
 	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueID];
 	ok(masterDesc);
+	equal(masterDesc.instance,null);
 	ok(masterDesc.context);
 	equal(masterDesc.context.uniqueID,undefined);
 	equal(masterDesc.context.el,undefined);
 	equal(masterDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
 
+	DescriptorQuery([masterDiv]).enhance();
+	equal(masterDesc.instance,masterInstance);
+
 	// slave1 desc and context
 	var slaveOneDesc = EnhancedDescriptor.all[slaveOneSpan.uniqueID];
-	ok(slaveOneDesc);
+	ok(slaveOneDesc,"slave one");
 	ok(slaveOneDesc.context);
 	equal(slaveOneDesc.context.uniqueID,masterDiv.uniqueID);
 	equal(slaveOneDesc.context.el,masterDiv);
 	equal(slaveOneDesc.context.instance,undefined);
+
+	ok(slaveOneDesc.state.needEnhance);
+	ok(! slaveOneDesc.state.enhanced);
+	DescriptorQuery([slaveOneDesc.el]).enhance();
+	ok(slaveOneDesc.state.enhanced);
+	equal(slaveOneDesc.context.controllerID,masterDiv.uniqueID);
+	equal(slaveOneDesc.context.controller,masterDesc.instance);
+	equal(slaveOneDesc.context.controllerStateful,masterDiv.stateful);
 	// equal(typeof masterDesc.context.resolver,"function");
 
 	// slave2 desc and context
 	var slaveTwoDesc = EnhancedDescriptor.all[slaveTwoSpan.uniqueID];
-	ok(slaveTwoDesc);
+	ok(slaveTwoDesc,"slave two");
 	ok(slaveTwoDesc.context);
 	equal(slaveTwoDesc.context.uniqueID,masterDiv.uniqueID);
 	equal(slaveTwoDesc.context.el,masterDiv);
 	equal(slaveTwoDesc.context.instance,undefined);
+
+	ok(slaveTwoDesc.state.needEnhance);
+	ok(! slaveTwoDesc.state.enhanced);
+	DescriptorQuery([slaveTwoDesc.el]).enhance();
+	ok(slaveTwoDesc.state.enhanced);
+	equal(slaveTwoDesc.context.controllerID,masterDiv.uniqueID);
+	equal(slaveTwoDesc.context.controller,masterDesc.instance);
+	equal(slaveTwoDesc.context.controllerStateful,masterDiv.stateful);
 	// equal(typeof masterDesc.context.resolver,"function");
 
 	//TODO test nested with role has id el instance on context

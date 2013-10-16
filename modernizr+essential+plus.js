@@ -1773,6 +1773,7 @@ Generator.discardRestricted = function()
 		this.conf = conf || {};
 		this.context = new EnhancedContext();
 		this.instance = null;
+		this.controller = null; // Enhanced Controller can be separate from instance
 
 		// sizingHandler
 		this.layout = {
@@ -1803,10 +1804,13 @@ Generator.discardRestricted = function()
 					this.context.el = el;
 					this.context.uniqueID = el.uniqueID;
 					this.context.instance = desc.instance;
+					this.context.stateful = desc.stateful;
 				}
 				if (desc && this.context.controller == null && desc.conf.controller) {
 					// make controller ? looking up generator/function
-					this.context.controller = desc.instance;
+					this.context.controllerID = desc.uniqueID;
+					this.context.controller = desc.controller || desc.instance;
+					this.context.controllerStateful = desc.stateful;
 				}
 			}
 		}
