@@ -1674,7 +1674,7 @@ Generator.discardRestricted = function()
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 		for(var i=0,desc; desc = this[i]; ++i) {
 
-			desc.ensureStateful();
+			//already done: desc.ensureStateful();
 			desc._tryEnhance(handlers,enabledRoles);
 			desc._tryMakeLayouter(""); //TODO key?
 			desc._tryMakeLaidout(""); //TODO key?
