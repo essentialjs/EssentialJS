@@ -3625,7 +3625,6 @@ Generator.discardRestricted = function()
 	essential.set("HTMLElement",HTMLElement);
 	
 	HTMLElement.query = essential("DescriptorQuery");
-	HTMLElement.allEnhanced = essential("enhancedElements");
 
 	HTMLElement.getEnhancedParent = function(el) {
 		for(el = el.parentNode; el; el = el.parentNode) {

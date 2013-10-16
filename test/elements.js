@@ -956,8 +956,9 @@ test("Basic enhanced dialog",function() {
 	var template4 = HTMLElement("div",{ role:"template",id:"template-4","enhanced element":true },
 		'<div role="content" class="dialog-stuff">',
 		'</div>');
-	ok(HTMLElement.allEnhanced[template4.uniqueID]);
-	equal(HTMLElement.allEnhanced[template4.uniqueID].el, template4);
+	var q4 = HTMLElement.query([template4]);
+	ok(q4.length);
+	equal(q4[0].el, template4);
 
 	DescriptorQuery([template4]).enhance();
 
@@ -972,8 +973,9 @@ test("Basic enhanced dialog",function() {
 		// Queue it for enhancing
 		"enhanced element":true
 	});
-	ok(HTMLElement.allEnhanced[dialog.uniqueID]);
-	equal(HTMLElement.allEnhanced[dialog.uniqueID].el, dialog);
+	var qd = HTMLElement.query([dialog]);
+	ok(qd.length);
+	equal(qd[0].el, dialog);
 	// ok(dialog.stateful);
 
 	DescriptorQuery([dialog]).enhance();
