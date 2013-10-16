@@ -1033,7 +1033,24 @@
 		if (bodySrc) this._requiredPage(bodySrc);
 	}
 
-	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );
+	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{
+		"prototype": _Scripted.prototype,
+		"discarded": function(ac) {
+
+			delete Resolver("page::pagesById::")[ac.uniquePageID];
+
+			//TODO blank member vars config on generator
+			ac.document = null;
+			ac.head = null;
+			ac.body = null;
+			ac.resolver = null;
+			ac.config = null;
+			ac.resources = null;
+			ac.inits = null;
+			// ac.pages = null;
+			// ac.state = null;
+		}
+	}) );
 	
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });

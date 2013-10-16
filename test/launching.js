@@ -1,4 +1,10 @@
-module('launching page');
+module('launching page', {
+	"teardown": function() {
+		Generator.discardRestricted();
+		Resolver("essential::EnhancedDescriptor::").discardAll();
+		
+	}
+});
 
 test("Page Resolver",function(){
 	ok(Resolver.page,"Page resolver present")
@@ -78,13 +84,15 @@ test('Some states can be changed without instantiating ApplicationConfig',functi
 		pageResolver = Resolver("page"),
 		HTMLElement = Resolver("essential::HTMLElement::");
 
+	equal(ApplicationConfig.info.existing[0],undefined,"ApplicationConfig not already there when testing");
+
 	ok(! pageResolver("state.livepage"));
 	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
 
 	pageResolver.set("state.authenticated",false);
 	pageResolver.set("state.authorised",false);
 
-	equal(ApplicationConfig.info.existing[0],undefined);
+	equal(ApplicationConfig.info.existing[0],undefined,"Existing ApplicationConfig");
 	pageResolver.set("state.authenticated",true);
 	// pageResolver.set("state.authorised",true);
 })
