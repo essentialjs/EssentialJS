@@ -7603,6 +7603,7 @@ function(scripts) {
 
 	// Current active Movement activity
 	var activeMovement = null;
+	Resolver("page").set("activeMovement",null);
 
 	/*
 		The user operation of moving an element within the existing parent element.
@@ -7670,6 +7671,7 @@ function(scripts) {
 		addEventListeners(this.target,this.drag_events);
 
 		activeMovement = this;
+		Resolver("page").set("activeMovement",this);
 
 		return this;
 	};
@@ -7683,6 +7685,7 @@ function(scripts) {
 		delete document.onselectstart ;
 
 		activeMovement = null;
+		Resolver("page").set("activeMovement",null);
 
 		return this;
 	};
