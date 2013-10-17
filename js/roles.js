@@ -214,7 +214,7 @@
 		} 
 		if (wrap) {
 			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
-			essential("DescriptorQuery")(wrap).enhance();
+			essential("DescriptorQuery")(wrap).withBranch().enhance();
 		}
 
 		// restrict height to body (TODO use layouter to restrict this on page resize)

@@ -62,8 +62,7 @@
 					}
 				});
 				document.body.appendChild( dialog );
-				// DescriptorQuery(dialog).enhance();
-				DescriptorQuery([dialog]).enhance();
+				DescriptorQuery(dialog).enhance();
 			},
 			"new-html5":function(el,ev) {
 				var dialog = HTMLElement("div",{
@@ -75,8 +74,7 @@
 					}
 				});
 				document.body.appendChild( dialog );
-				// DescriptorQuery(dialog).enhance();
-				DescriptorQuery([dialog]).enhance();
+				DescriptorQuery(dialog).enhance();
 			}
 		}
 	}))

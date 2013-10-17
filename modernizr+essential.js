@@ -1685,6 +1685,7 @@ Generator.discardRestricted = function()
 	function enhanceQuery() {
 		var pageResolver = Resolver("page"),
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
+
 		for(var i=0,desc; desc = this[i]; ++i) {
 
 			//already done: desc.ensureStateful();
@@ -1714,7 +1715,50 @@ Generator.discardRestricted = function()
 		}
 	}
 
+	function findChildrenToEnhance(el,context) {
 
+		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
+		while(e) {
+			if (e.attributes) {
+				var conf = essential("ApplicationConfig")().getConfig(e), role = e.getAttribute("role");
+				// var sizingElement = false;
+				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
+				var desc = EnhancedDescriptor(e,role,conf);
+				if (desc) {
+					if (context.list) context.list.push(desc);
+					// if (sizingElement) sizingElements[desc.uniqueID] = desc;
+					desc.layouterParent = context.layouter;
+					if (desc.conf.layouter) {
+						context.layouter = desc;
+					}
+				} else {
+
+				}
+				if (desc==null || !desc.state.contentManaged) findChildrenToEnhance(e,{layouter:context.layouter,list:context.list});
+			}
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
+		}
+	};
+
+	function queueOnlyBranch() {
+		if (this.el == undefined) throw new Error('Branch of undefined element'); // not sure what to do
+		var context = { list:this };
+		this.length = 0;
+		//TODO if the el is a layouter, pass that in conf
+		findChildrenToEnhance(this.el,context);
+		//TODO push those matched descriptors into q
+		return this;
+	}
+
+	function queueWithBranch() {
+		this.onlyBranch();
+
+		var conf = essential("ApplicationConfig")().getConfig(this.el), role = this.el.getAttribute("role");
+		var desc = EnhancedDescriptor(this.el,role,conf);
+		if (desc) this.shift(desc);
+		return this;
+	}
+ 
 	function DescriptorQuery(sel,el) {
 		var q = [], context = { list:q };
 
@@ -1744,12 +1788,14 @@ Generator.discardRestricted = function()
 				//TODO third param context ? integrate with desc.context
 				//TODO identify existing descriptors
 
-				//TODO if the el is a layouter, pass that in conf
-				ac._prep(el,context);
-				//TODO push those matched descriptors into q
+				var conf = essential("ApplicationConfig")().getConfig(el), role = el.getAttribute("role");
+				var desc = EnhancedDescriptor(el,role,conf);
+				if (desc) q.push(desc);
 			}
 		}
 		q.el = el;
+		q.onlyBranch = queueOnlyBranch;
+		q.withBranch = queueWithBranch;
 		q.queue = queueQuery;
 		q.enhance = enhanceQuery;
 		q.discard = discardQuery;
@@ -7098,7 +7144,7 @@ function(scripts) {
 		} 
 		if (wrap) {
 			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
-			essential("DescriptorQuery")(wrap).enhance();
+			essential("DescriptorQuery")(wrap).withBranch().enhance();
 		}
 
 		// restrict height to body (TODO use layouter to restrict this on page resize)

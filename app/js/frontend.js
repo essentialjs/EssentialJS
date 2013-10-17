@@ -209,7 +209,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		this.defaultRowHeight = (this.body.children[0].offsetHeight + this.body.children[1].offsetHeight)/2;
 		this.rowHeights = [];
 
-		var desc = DescriptorQuery([ el.parentNode ])[0]; //EnhancedDescriptor(el.parentNode);
+		var desc = DescriptorQuery(el.parentNode)[0]; //EnhancedDescriptor(el.parentNode);
 		if (desc && desc.role == "scrolled") {
 			if (desc.conf.nativeScrollVert == false) {
 				this.scrolled = desc;

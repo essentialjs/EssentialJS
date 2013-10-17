@@ -288,7 +288,7 @@ test('Enhance element with context',function() {
 	equal(masterDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
 
-	DescriptorQuery([masterDiv]).enhance();
+	DescriptorQuery(masterDiv).enhance();
 	equal(masterDesc.instance,masterInstance);
 
 	// slave1 desc and context
@@ -301,7 +301,7 @@ test('Enhance element with context',function() {
 
 	ok(slaveOneDesc.state.needEnhance);
 	ok(! slaveOneDesc.state.enhanced);
-	DescriptorQuery([slaveOneDesc.el]).enhance();
+	DescriptorQuery(slaveOneDesc.el).enhance();
 	ok(slaveOneDesc.state.enhanced);
 	equal(slaveOneDesc.context.controllerID,masterDiv.uniqueID);
 	equal(slaveOneDesc.context.controller,masterDesc.instance);
@@ -318,7 +318,7 @@ test('Enhance element with context',function() {
 
 	ok(slaveTwoDesc.state.needEnhance);
 	ok(! slaveTwoDesc.state.enhanced);
-	DescriptorQuery([slaveTwoDesc.el]).enhance();
+	DescriptorQuery(slaveTwoDesc.el).enhance();
 	ok(slaveTwoDesc.state.enhanced);
 	equal(slaveTwoDesc.context.controllerID,masterDiv.uniqueID);
 	equal(slaveTwoDesc.context.controller,masterDesc.instance);
@@ -981,7 +981,7 @@ test("Basic enhanced dialog",function() {
 	ok(q4.length);
 	equal(q4[0].el, template4);
 
-	DescriptorQuery([template4]).enhance();
+	DescriptorQuery(template4).enhance();
 
 
 	var dialog = HTMLElement("div",{
@@ -999,7 +999,7 @@ test("Basic enhanced dialog",function() {
 	equal(qd[0].el, dialog);
 	// ok(dialog.stateful);
 
-	DescriptorQuery([dialog]).enhance();
+	DescriptorQuery(dialog).enhance();
 	ok(dialog.stateful);
 	equal(dialog.firstChild.className,"dialog-stuff abcd");
 

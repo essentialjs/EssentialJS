@@ -59,7 +59,7 @@ test('roles are enhanced when no page state is preset',function() {
 	});
 
 	var div = HTMLElement("div",{ "role":"test321" },'');
-	DescriptorQuery([div]).queue(); // queue for enhancement
+	DescriptorQuery(div).queue(); // queue for enhancement
 
 	pageResolver.set("state.livepage",true);
 
@@ -79,7 +79,7 @@ test('roles are enhanced when no page state is preset',function() {
 test('Some states can be changed without instantiating ApplicationConfig',function() {
 
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
-		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
+		// DescriptorQuery = Resolver("essential::DescriptorQuery::"),
 		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
 		pageResolver = Resolver("page"),
 		HTMLElement = Resolver("essential::HTMLElement::");
