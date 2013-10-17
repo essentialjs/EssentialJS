@@ -1538,13 +1538,18 @@ Generator.discardRestricted = function()
 		}
 	};
 
+	function fixClass(cls) {
+		cls = cls.replace(/   /g," ").replace(/  /g," ").replace(/ $/,'').replace(/^ /,'');
+		return cls;
+	}
+
 	DOMTokenList.mixin = function(dtl,mix) {
 		if (mix.split) { // string
-			var toset = mix.split(" ");
+			var toset = fixClass(mix).split(" ");
 			for(var i=0,entry; entry = toset[i]; ++i) dtl.add(entry);
 			return;
 		}
-		if (mix.length) {
+		if (typeof mix.length == "number") {
 			for(var i=0,entry; entry = mix[i]; ++i) dtl.add(entry);
 			return;
 		}
