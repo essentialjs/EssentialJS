@@ -2468,12 +2468,6 @@ Generator.discardRestricted = function()
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
 
-	translations.on("change","locale",function(ev) {
-		var s = ev.value.split("-");
-		if (s.length == 1) s = ev.value.split("_");
-		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
-	});
-
 	/*
 		locales.de = { chain:"en" }
 	*/
@@ -4364,6 +4358,14 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+
+	Resolver("translations").on("change bind","locale",function(ev) {
+		var s = ev.value.split("-");
+		if (s.length == 1) s = ev.value.split("_");
+		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+	});
+
+
 	pageResolver.reference("connection").mixin({
 		"loadingProgress": "",
 		"status": "connected",

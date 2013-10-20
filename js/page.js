@@ -381,6 +381,14 @@
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+
+	Resolver("translations").on("change bind","locale",function(ev) {
+		var s = ev.value.split("-");
+		if (s.length == 1) s = ev.value.split("_");
+		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+	});
+
+
 	pageResolver.reference("connection").mixin({
 		"loadingProgress": "",
 		"status": "connected",
