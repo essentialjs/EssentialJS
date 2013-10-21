@@ -288,6 +288,8 @@
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
+	_Layouter.prototype.init = function(el,conf,sizing,layout) {};
+
 	/*
 		Called for descendants of the layouter to allow forcing sizing, return true to force
 	*/
@@ -315,6 +317,7 @@
 	}
 	var Laidout = essential.declare("Laidout",Generator(_Laidout));
 
+	_Laidout.prototype.init = function(el,conf,sizing,layout) {};
 	_Laidout.prototype.layout = function(el,layout) {};
 	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
@@ -336,6 +339,8 @@
 	function enhanceQuery() {
 		var pageResolver = Resolver("page"),
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
+
+		for(var i=0,desc; desc = this[i]; ++i) if (!desc.state.initDone) desc._init();
 
 		for(var i=0,desc; desc = this[i]; ++i) {
 
@@ -472,7 +477,8 @@
 			"enable": false,
 			"throttle": null //TODO throttle by default?
 		};
-		// layoutHandler
+		// layoutHandler / maintained
+		this.state.initDone = false; // might change to reconfigured=true
 		this.state.enhanced = false;
 		this.state.discarded = false;
 		this.state.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
@@ -481,7 +487,6 @@
 		this.handlers = page.resolver("handlers");
 		this.enabledRoles = page.resolver("enabledRoles");
 		this._updateContext();
-		this._init();
 	}
 
 	_EnhancedDescriptor.prototype._updateContext = function() {
@@ -516,9 +521,14 @@
 	};
 
 	_EnhancedDescriptor.prototype._init = function() {
+		this._updateContext();
+
 		if (this.role && this.handlers.init[this.role]) {
 			this.handlers.init[this.role].call(this,this.el,this.role,this.conf,this.context);
 		}
+		if (this.layouter) this.layouter.init(this.el,this.conf,this.sizing,this.layout);
+		if (this.laidout) this.laidout.init(this.el,this.conf,this.sizing,this.layout);
+		this.stateful.set("state.initDone",true);
 	};
 
 	_EnhancedDescriptor.prototype.discardHandler = function() {
@@ -786,6 +796,14 @@
 
 	EnhancedDescriptor.refreshAll = function() {
 		if (document.body == undefined) return;
+
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (!desc.state.initDone) {
+				desc._init();
+			}
+		}
 
 		for(var n in sizingElements) {
 			var desc = sizingElements[n];

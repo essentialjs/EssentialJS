@@ -1144,6 +1144,11 @@
 
 		for(var n in EnhancedDescriptor.unfinished) {
 			var desc = EnhancedDescriptor.unfinished[n];
+			if (desc && !desc.state.initDone) desc._init();
+		}
+
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
 
 			//TODO speed up outstanding enhance check
 			if (desc) {

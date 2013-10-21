@@ -61,6 +61,7 @@ test('roles are enhanced when no page state is preset',function() {
 	var div = HTMLElement("div",{ "role":"test321" },'');
 	DescriptorQuery(div).queue(); // queue for enhancement
 
+	// DescriptorQuery(div)[0]._init();
 	pageResolver.set("state.livepage",true);
 
 	equal(div.getAttribute("test321"),"321");
