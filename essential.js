@@ -1901,11 +1901,14 @@ Generator.discardRestricted = function()
 			//TODO discard/destroy for layouter and laidout
 
 			var controller = desc.getController();
-			if (controller && controller.destoyed) controller.destoyed(desc.el);
+			if (controller && controller.destoyed) controller.destoyed(desc.el,desc.instance);
 
 			// if (desc.discardHandler) 
 			var r = desc.discardHandler(desc.el,desc.role,desc.instance);
 			desc._unlist(); // make sure that sizing stops
+
+			if (controller && controller.discarded) controller.discarded(desc.el,desc.instance);
+
 			return r;
 		};
 	};
@@ -1925,7 +1928,7 @@ Generator.discardRestricted = function()
 		}
 		if (this.state.enhanced) {
 			var controller = this.getController();
-			if (controller && controller.enhanced) controller.enhanced(this.el);
+			if (controller && controller.enhanced) controller.enhanced(this.el,this.instance);
 
 			this.sizingHandler = handlers.sizing[this.role];
 			this.layoutHandler = handlers.layout[this.role];
