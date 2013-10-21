@@ -560,7 +560,7 @@
 			//TODO discard/destroy for layouter and laidout
 
 			var controller = desc.getController();
-			if (controller && controller.destoyed) controller.destoyed(desc.el,desc.instance);
+			if (controller && controller.destroyed) controller.destroyed(desc.el,desc.instance);
 
 			// if (desc.discardHandler) 
 			var r = desc.discardHandler(desc.el,desc.role,desc.instance);
