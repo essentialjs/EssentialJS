@@ -1622,7 +1622,7 @@ Generator.discardRestricted = function()
 			if (se) {
 				// set { sizingElement:true } on conf?
 				var desc = EnhancedDescriptor(c,role,conf,false,appConfig);
-				desc.layouterParent = layouterDesc;
+				desc.context.layouterParent = layouterDesc;
 				sizingElements[desc.uniqueID] = desc;
 			}
 		}
@@ -1718,11 +1718,6 @@ Generator.discardRestricted = function()
 				var desc = EnhancedDescriptor(e,role,conf);
 				if (desc) {
 					if (context.list) context.list.push(desc);
-					// if (sizingElement) sizingElements[desc.uniqueID] = desc;
-					desc.layouterParent = context.layouter;
-					if (desc.conf.layouter) {
-						context.layouter = desc;
-					}
 				} else {
 
 				}
@@ -1767,14 +1762,7 @@ Generator.discardRestricted = function()
 
 					var conf = ac.getConfig(e), role = e.getAttribute("role");
 					var desc = EnhancedDescriptor(e,role,conf,false,ac);
-					if (desc) {
-						q.push(desc);
-						// if (sizingElement) sizingElements[desc.uniqueID] = desc;
-						desc.layouterParent = context.layouter;
-						if (desc.conf.layouter) {
-							context.layouter = desc;
-						}
-					} 
+					if (desc) q.push(desc);
 				}
 			} else {
 				//TODO third param context ? integrate with desc.context
@@ -1843,17 +1831,26 @@ Generator.discardRestricted = function()
 		for(var el = this.el.parentNode; el; el = el.parentNode) {
 			if (el.uniqueID) {
 				var desc = enhancedElements[el.uniqueID];
-				if (desc && this.context.el == null) {
-					this.context.el = el;
-					this.context.uniqueID = el.uniqueID;
-					this.context.instance = desc.instance;
-					this.context.stateful = desc.stateful;
-				}
-				if (desc && this.context.controller == null && desc.conf.controller) {
-					// make controller ? looking up generator/function
-					this.context.controllerID = desc.uniqueID;
-					this.context.controller = desc.controller || desc.instance;
-					this.context.controllerStateful = desc.stateful;
+				if (desc) {
+
+					// in case it wasn't set by the layouter constructor
+					if (this.context.layouterParent == null && desc.layouter) {
+						this.context.layouterParent = desc.layouter;
+						this.context.layouterEl = desc.el;
+					}
+					if (this.context.el == null) {
+						this.context.el = el;
+						this.context.uniqueID = el.uniqueID;
+						this.context.instance = desc.instance;
+						this.context.stateful = desc.stateful;
+					}
+					if (this.context.controller == null && desc.conf.controller) {
+						// make controller ? looking up generator/function
+						this.context.controllerID = desc.uniqueID;
+						this.context.controller = desc.controller || desc.instance;
+						this.context.controllerStateful = desc.stateful;
+					}
+
 				}
 			}
 		}
@@ -1949,8 +1946,8 @@ Generator.discardRestricted = function()
 		if (this.conf.layouter && this.layouter==undefined) {
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
-				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
-				if (this.layouterParent) sizingElements[this.uniqueID] = this;
+				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent);
+				if (this.context.layouterParent) sizingElements[this.uniqueID] = this;
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
 	                this.layout.queued = true;
@@ -1965,7 +1962,7 @@ Generator.discardRestricted = function()
 		if (this.conf.laidout && this.laidout==undefined) {
 			var varLaidout = Laidout.variants[this.conf.laidout];
 			if (varLaidout) {
-				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
+				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.context.layouterParent);
 				sizingElements[this.uniqueID] = this;
 				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
@@ -2003,7 +2000,7 @@ Generator.discardRestricted = function()
 		var laidouts = []; // laidouts and layouter
         for(var n in sizingElements) {
             var desc = sizingElements[n];
-            if (desc.layouterParent == this) laidouts.push(desc.el);
+            if (desc.context.layouterParent == this) laidouts.push(desc.el);
         }        
 		// for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
 		// 				c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
@@ -2070,11 +2067,11 @@ Generator.discardRestricted = function()
 
 		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
-		if (this.layouterParent && this.layouterParent.layouter) this.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
+		if (this.context.layouterParent && this.context.layouterParent.layouter) this.context.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
 
 		this._queueLayout();
 		if (this.layout.queued) {
-			if (this.layouterParent) this.layouterParent.layout.queued = true;
+			if (this.context.layouterParent) this.context.layouterParent.layout.queued = true;
 		}
 	};
 

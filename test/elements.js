@@ -416,7 +416,7 @@ test("Enhance layouter element",function() {
 	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueID];
 	ok(emDesc);
 	equal(sizingElements[emDesc.uniqueID],emDesc);
-	equal(emDesc.layouterParent,desc);
+	equal(emDesc.context.layouterParent,desc);
 
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
