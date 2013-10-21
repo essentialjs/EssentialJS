@@ -36,7 +36,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		pageResolver.uosInterval = setInterval(Resolver("essential::updateOnlineStatus::"),5000);
 
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
-		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
+		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 6 per sec
 
 		updateOnlineStatus();
 

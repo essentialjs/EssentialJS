@@ -1954,10 +1954,11 @@ Generator.discardRestricted = function()
 	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
 
 		if (this.conf.layouter && this.layouter==undefined) {
+			//TODO update layouterParent ? _updateContext2() ?
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
 				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent);
-				if (this.context.layouterParent) sizingElements[this.uniqueID] = this;
+				if (this.context.layouterParent) sizingElements[this.uniqueID] = this; //TODO not sure this is needed, adds overhead
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
 	                this.layout.queued = true;
@@ -2079,6 +2080,10 @@ Generator.discardRestricted = function()
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
 		if (this.context.layouterParent && this.context.layouterParent.layouter) this.context.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
 
+		if (this.sizing.forceLayout) {
+			this.sizing.forceLayout = false;
+			this.sizing.queued = true;
+		}
 		this._queueLayout();
 		if (this.layout.queued) {
 			if (this.context.layouterParent) this.context.layouterParent.layout.queued = true;
@@ -8085,7 +8090,7 @@ Resolver("page::state.livepage").on("change",function(ev) {
 		pageResolver.uosInterval = setInterval(Resolver("essential::updateOnlineStatus::"),5000);
 
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
-		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
+		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 6 per sec
 
 		updateOnlineStatus();
 

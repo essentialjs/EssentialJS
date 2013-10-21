@@ -613,10 +613,11 @@
 	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
 
 		if (this.conf.layouter && this.layouter==undefined) {
+			//TODO update layouterParent ? _updateContext2() ?
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
 				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent);
-				if (this.context.layouterParent) sizingElements[this.uniqueID] = this;
+				if (this.context.layouterParent) sizingElements[this.uniqueID] = this; //TODO not sure this is needed, adds overhead
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
 	                this.layout.queued = true;
@@ -738,6 +739,10 @@
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
 		if (this.context.layouterParent && this.context.layouterParent.layouter) this.context.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
 
+		if (this.sizing.forceLayout) {
+			this.sizing.forceLayout = false;
+			this.sizing.queued = true;
+		}
 		this._queueLayout();
 		if (this.layout.queued) {
 			if (this.context.layouterParent) this.context.layouterParent.layout.queued = true;
