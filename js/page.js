@@ -345,7 +345,10 @@
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.reflectStateOn = Stateful_reflectStateOn;
 
-		if (el) stateful.reflectStateOn(el);
+		if (el) {
+			stateful.reflectStateOn(el);
+			stateful.uniqueID = el.uniqueID;
+		}
 		
 		return stateful;
 	}

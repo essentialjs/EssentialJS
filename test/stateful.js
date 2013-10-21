@@ -8,8 +8,10 @@ test ("Creating StatefulResolver",function(){
 	ok(stateful);
 
 	var el = document.createElement("div");
+	if (el.uniqueID == undefined) el.uniqueID = 12345;
 	var stateful = StatefulResolver(el);
 	equal(el.stateful,stateful);
+	equal(el.stateful.uniqueID,el.uniqueID);
 })
 
 test("Destroying StatefulResolver",function(){
