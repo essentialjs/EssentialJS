@@ -396,7 +396,9 @@ test("Enhance layouter element",function() {
 		'<html><head>', '', '</head><body>',
 
 		'<span role="delayed"></span>',
-		'<span data-role="',"'layouter':'test-group'",'"><em>abc</em></span>',
+		'<span data-role="',"'layouter':'test-group'",
+
+			'"><em>abc</em></span>',
 
 		'</body>'
 		].join(""));
@@ -408,15 +410,17 @@ test("Enhance layouter element",function() {
 	// page.body.firstChild.nextSibling.layouter
 	ok(desc);
 	ok(desc.state.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
-	ok(desc.layout.queued);
+	// ok(desc.layout.queued);
 	
 	equal(_TestLayouter.prototype.sizingElement.callCount,1);
 	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueID];
 	ok(layouterSpan.firstChild.uniqueID);
 	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueID];
 	ok(emDesc);
+	equal(emDesc.el.tagName,"EM");
 	equal(sizingElements[emDesc.uniqueID],emDesc);
-	equal(emDesc.context.layouterParent,desc);
+	equal(emDesc.context.layouterParent,desc.layouter);
+	equal(emDesc.context.layouterEl,desc.el);
 
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);

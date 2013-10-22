@@ -1622,7 +1622,7 @@ Generator.discardRestricted = function()
 			if (se) {
 				// set { sizingElement:true } on conf?
 				var desc = EnhancedDescriptor(c,role,conf,false,appConfig);
-				desc.context.layouterParent = layouterDesc;
+				desc.context.layouterParent = layouterDesc.layouter;
 				sizingElements[desc.uniqueID] = desc;
 			}
 		}
@@ -1818,6 +1818,8 @@ Generator.discardRestricted = function()
 			"enable": false,
 			"throttle": null //TODO throttle by default?
 		};
+		this.stateful.set("layout",this.layout);
+
 		// layoutHandler / maintained
 		this.state.initDone = false; // might change to reconfigured=true
 		this.state.enhanced = false;
@@ -1843,7 +1845,7 @@ Generator.discardRestricted = function()
 						this.context.layouterParent = desc.layouter;
 						this.context.layouterEl = desc.el;
 					}
-					if (this.context.el == null) {
+					if (this.context.el == null && (this.state.enhanced || this.state.needEnhance)) { // skip non-enhanced
 						this.context.el = el;
 						this.context.uniqueID = el.uniqueID;
 						this.context.instance = desc.instance;
@@ -1856,6 +1858,24 @@ Generator.discardRestricted = function()
 						this.context.controllerStateful = desc.stateful;
 					}
 
+				}
+			}
+		}
+	};
+
+	_EnhancedDescriptor.prototype._updateLayouterContext = function() {
+		this.context.el = null;
+		this.context.controller = null;
+		for(var el = this.el.parentNode; el; el = el.parentNode) {
+			if (el.uniqueID) {
+				var desc = enhancedElements[el.uniqueID];
+				if (desc) {
+
+					// in case it wasn't set by the layouter constructor
+					if (this.context.layouterParent == null && desc.layouter) {
+						this.context.layouterParent = desc.layouter;
+						this.context.layouterEl = desc.el;
+					}
 				}
 			}
 		}
@@ -1954,14 +1974,14 @@ Generator.discardRestricted = function()
 	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
 
 		if (this.conf.layouter && this.layouter==undefined) {
-			//TODO update layouterParent ? _updateContext2() ?
+			this._updateLayouterContext();
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
 				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent);
 				if (this.context.layouterParent) sizingElements[this.uniqueID] = this; //TODO not sure this is needed, adds overhead
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
-	                this.layout.queued = true;
+	                // this.layout.queued = true; laidout will queue it
 	                maintainedElements[this.uniqueID] = this;
 				}
 			}
@@ -1971,6 +1991,7 @@ Generator.discardRestricted = function()
 	_EnhancedDescriptor.prototype._tryMakeLaidout = function(key) {
 
 		if (this.conf.laidout && this.laidout==undefined) {
+			this._updateLayouterContext();
 			var varLaidout = Laidout.variants[this.conf.laidout];
 			if (varLaidout) {
 				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.context.layouterParent);
@@ -2001,7 +2022,10 @@ Generator.discardRestricted = function()
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
-			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
+			if (laidout) {
+				laidout.layout(this.el,this.layout); //TODO pass instance
+				if (this.context.layouterEl) this.context.layouterEl.stateful.set("layout.queue",true);
+			}
 
             this.layout.queued = false;
 		}	
@@ -2011,7 +2035,7 @@ Generator.discardRestricted = function()
 		var laidouts = []; // laidouts and layouter
         for(var n in sizingElements) {
             var desc = sizingElements[n];
-            if (desc.context.layouterParent == this) laidouts.push(desc.el);
+            if (desc.context.layouterParent == this.layouter && desc.laidout) laidouts.push(desc.el);
         }        
 		// for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
 		// 				c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
@@ -2078,16 +2102,16 @@ Generator.discardRestricted = function()
 
 		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
 		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
-		if (this.context.layouterParent && this.context.layouterParent.layouter) this.context.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
+		if (this.context.layouterParent) this.context.layouterParent.calcSizing(this.el,this.sizing,this.laidout);
 
 		if (this.sizing.forceLayout) {
 			this.sizing.forceLayout = false;
 			this.sizing.queued = true;
 		}
 		this._queueLayout();
-		if (this.layout.queued) {
-			if (this.context.layouterParent) this.context.layouterParent.layout.queued = true;
-		}
+		// if (this.layout.queued) {
+		// 	if (this.context.layouterEl) this.context.layouterEl.stateful.set("layout.queued",true);
+		// }
 	};
 
 	_EnhancedDescriptor.prototype.getController = function() {
