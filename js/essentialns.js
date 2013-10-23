@@ -772,6 +772,12 @@
 		// }
 	};
 
+    _EnhancedDescriptor.prototype.applyStyle = function() {
+        for(var n in this.layout.style) {
+            this.el.style[n] = this.layout.style[n];
+        }
+    };
+ 
 	_EnhancedDescriptor.prototype.getController = function() {
 		// _updateContext
 
@@ -838,15 +844,26 @@
 			desc.checkSizing();
 		}
 
+        for(var n in maintainedElements) {
+            var desc = maintainedElements[n];
+ 
+            if (desc.laidout && desc.layout.enable && !desc.state.discarded) {
+                desc.refresh();
+            }
+        }
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable && !desc.state.discarded) {
+			if (!desc.laidout && desc.layout.enable && !desc.state.discarded) {
 				desc.refresh();
 			}
 		}
 		for(var n in sizingElements) {
 			var desc = sizingElements[n];
+            if (desc.layout.style) {
+                desc.applyStyle();
+                desc.layout.style = undefined;
+            }
 			desc.layout.queued = false;
 		}
 	};

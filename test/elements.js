@@ -367,6 +367,8 @@ test("Enhance layouter element",function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
 
+	_TestLayouter.prototype.layout.callCount = 0;
+
 	equal(typeof Resolver("essential::Layouter.variants.test-group.generator::","undefined"),"function");
 
 	var handlers = {
@@ -398,7 +400,7 @@ test("Enhance layouter element",function() {
 		'<span role="delayed"></span>',
 		'<span data-role="',"'layouter':'test-group'",
 
-			'"><em>abc</em></span>',
+			'"><em data-role="'+"'laidout':'lo'"+'">abc</em></span>',
 
 		'</body>'
 		].join(""));
@@ -422,6 +424,12 @@ test("Enhance layouter element",function() {
 	equal(emDesc.context.layouterParent,desc.layouter);
 	equal(emDesc.context.layouterEl,desc.el);
 
+	// Layouter not called until laidout is or explicitly queued
+	EnhancedDescriptor.refreshAll();
+	equal(_TestLayouter.prototype.layout.callCount,0);
+
+	// explicit queue
+	desc.layout.queued = true;
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
 	//TODO test no queued layout.queued

@@ -1806,8 +1806,15 @@ Generator.discardRestricted = function()
 		var roles = role? role.split(" ") : [];
 
 		this.el = el;
+		// sizingHandler
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0
+		};
+		this.layout = {
+			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
+			"lastDirectCall": 0,
+			"enable": false,
+			"throttle": null //TODO throttle by default?
 		};
 		this.ensureStateful();
 		this.stateful.set("state.needEnhance", roles.length > 0);
@@ -1818,15 +1825,6 @@ Generator.discardRestricted = function()
 		this.context = new EnhancedContext();
 		this.instance = null;
 		this.controller = null; // Enhanced Controller can be separate from instance
-
-		// sizingHandler
-		this.layout = {
-			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
-			"lastDirectCall": 0,
-			"enable": false,
-			"throttle": null //TODO throttle by default?
-		};
-		this.stateful.set("layout",this.layout);
 
 		// layoutHandler / maintained
 		this.state.initDone = false; // might change to reconfigured=true
@@ -1910,6 +1908,7 @@ Generator.discardRestricted = function()
 		var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
 		this.state = stateful("state");
 		stateful.set("sizing",this.sizing);
+		stateful.set("layout",this.layout);
 		stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
 	};	
 
@@ -2032,7 +2031,7 @@ Generator.discardRestricted = function()
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
 			if (laidout) {
 				laidout.layout(this.el,this.layout); //TODO pass instance
-				if (this.context.layouterEl) this.context.layouterEl.stateful.set("layout.queue",true);
+				if (this.context.layouterEl) this.context.layouterEl.stateful.set("layout.queued",true);
 			}
 
             this.layout.queued = false;
@@ -2122,6 +2121,12 @@ Generator.discardRestricted = function()
 		// }
 	};
 
+    _EnhancedDescriptor.prototype.applyStyle = function() {
+        for(var n in this.layout.style) {
+            this.el.style[n] = this.layout.style[n];
+        }
+    };
+ 
 	_EnhancedDescriptor.prototype.getController = function() {
 		// _updateContext
 
@@ -2188,15 +2193,26 @@ Generator.discardRestricted = function()
 			desc.checkSizing();
 		}
 
+        for(var n in maintainedElements) {
+            var desc = maintainedElements[n];
+ 
+            if (desc.laidout && desc.layout.enable && !desc.state.discarded) {
+                desc.refresh();
+            }
+        }
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable && !desc.state.discarded) {
+			if (!desc.laidout && desc.layout.enable && !desc.state.discarded) {
 				desc.refresh();
 			}
 		}
 		for(var n in sizingElements) {
 			var desc = sizingElements[n];
+            if (desc.layout.style) {
+                desc.applyStyle();
+                desc.layout.style = undefined;
+            }
 			desc.layout.queued = false;
 		}
 	};
