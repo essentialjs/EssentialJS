@@ -1835,8 +1835,30 @@ Generator.discardRestricted = function()
 		this.page = page;
 		this.handlers = page.resolver("handlers");
 		this.enabledRoles = page.resolver("enabledRoles");
+		this.inits = [];
+
+		if (this.role) this.inits.push(this._roleInit);
+
 		this._updateContext();
 	}
+
+	_EnhancedDescriptor.prototype._init = function() {
+		this._updateContext();
+		for(var i=0,c; c = this.inits[i]; ++i) c.call(this);
+		this.inits.length = 0;
+	};
+
+	_EnhancedDescriptor.prototype._roleInit = function() {
+		if (this.handlers.init[this.role]) {
+			this.handlers.init[this.role].call(this,this.el,this.role,this.conf,this.context);
+		}
+	};
+	_EnhancedDescriptor.prototype._layouterInit = function() {
+		if (this.layouter) this.layouter.init(this.el,this.conf,this.sizing,this.layout);
+	};
+	_EnhancedDescriptor.prototype._laidoutInit = function() {
+		if (this.laidout) this.laidout.init(this.el,this.conf,this.sizing,this.layout);
+	};
 
 	_EnhancedDescriptor.prototype._updateContext = function() {
 		this.context.el = null;
@@ -1885,17 +1907,6 @@ Generator.discardRestricted = function()
 				}
 			}
 		}
-	};
-
-	_EnhancedDescriptor.prototype._init = function() {
-		this._updateContext();
-
-		if (this.role && this.handlers.init[this.role]) {
-			this.handlers.init[this.role].call(this,this.el,this.role,this.conf,this.context);
-		}
-		if (this.layouter) this.layouter.init(this.el,this.conf,this.sizing,this.layout);
-		if (this.laidout) this.laidout.init(this.el,this.conf,this.sizing,this.layout);
-		this.stateful.set("state.initDone",true);
 	};
 
 	_EnhancedDescriptor.prototype.discardHandler = function() {
@@ -1991,6 +2002,7 @@ Generator.discardRestricted = function()
 	                // this.layout.queued = true; laidout will queue it
 	                maintainedElements[this.uniqueID] = this;
 				}
+				this.inits.push(this._layouterInit);
 			}
 		}
 	};
@@ -2008,6 +2020,7 @@ Generator.discardRestricted = function()
 	                this.layout.queued = true;
 	                maintainedElements[this.uniqueID] = this;
 				}
+				this.inits.push(this._laidoutInit);
 			}
 		}
 
@@ -2183,9 +2196,7 @@ Generator.discardRestricted = function()
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (!desc.state.initDone) {
-				desc._init();
-			}
+			if (desc.inits.length>0) desc._init();
 		}
 
 		for(var n in sizingElements) {
