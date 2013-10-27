@@ -308,6 +308,7 @@ asyncTest("Element Placement",function() {
 	ok(nil,"nil placement doesn't blow up");
 
 	var div = HTMLElement("div",{"append to":document.body});
+	var pageBr = HTMLElement("br",{"class":"page","append to":document.body});
 
 	setTimeout(function(){
 		nil.compute(div);
@@ -323,11 +324,12 @@ asyncTest("Element Placement",function() {
 		// equal(typeof noBounds.style.breakBefore,"string");
 		// equal(typeof noBounds.style.breakAfter,"string");
 
-		div.style["break-before"] = "column";
-		debugger;
+		div.setAttribute("style",'page-break-before:always;'); //TODO "column"
 		noBounds.compute();
-		equal(noBounds.style.breakBefore,"column","get the inline break style");
+		equal(noBounds.style.breakBefore,"always","get the inline break style");
 
+		var brPlacement = ElementPlacement(pageBr,["breakBefore","breakAfter"],false);
+		equal(brPlacement.style.breakAfter,"always","br.page breaks page after");
 
 		var placement = ElementPlacement(div);
 		equal(placement.style.visibility.replace("inherit","visible"),"visible");
@@ -346,6 +348,7 @@ asyncTest("Element Placement",function() {
 		*/
 
 	    document.body.removeChild(div);
+	    document.body.removeChild(pageBr);
 	    start();
 	},50);
 

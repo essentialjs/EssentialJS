@@ -1097,31 +1097,48 @@
 		this.track = track || ["display","visibility","marginLeft","marginRight","marginTop","marginBottom"];
 		this.calcBounds = calcBounds;
 
+		this.compute(el || null);
+	}
+	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
+
+	_ElementPlacement.prototype.setElement = function(newEl) {
+		this.el = newEl;
+		this.computes = [];
+
 		//TODO dedicated compute functions
-		if (el && el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
+		if (this.el && this.el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
+			this._setComputed = this._setComputedIE;
 			this._compute = this._computeIE;
 		}
 		if (document.body.getBoundingClientRect().width == undefined) {
 			this._bounds = this._boundsIE;
 		}
 
-		this.compute(el);
-	}
-	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
-
-	_ElementPlacement.prototype.setElement = function(newEl) {
-		this.el = newEl;
 		if (this.calcBounds === false) this._bounds = function() {};
+
+		this.doCompute = !(this.el == null || this.el.nodeType !== 1);
+
+		for(var i=0,s; this.doCompute && !!(s = this.track[i]); ++i) {
+			switch(s) {
+				case "breakBefore":
+				case "breakAfter":
+					this.computes.push(this._compute_break);
+					break;
+				default:
+					this.computes.push(this._compute);
+					break;
+			}
+		}
 	};
 
 	_ElementPlacement.prototype.compute = function(newEl) {
-		if (newEl) this.setElement(newEl);
+		if (newEl !== undefined) this.setElement(newEl);
 
-		if (this.el == null || this.el.nodeType !== 1) return;
+		if (this.doCompute && this.calcBounds !== false) this._bounds();
+		if (this.doCompute) this._setComputed();
 
-		this._bounds();
-		for(var i=0,s; !!(s = this.track[i]); ++i) {
-			this.style[s] = this._compute(s);
+		for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
+			this.style[this.track[i]] = fn.call(this,this.track[i]);
 		}
 	};
 
@@ -1271,6 +1288,8 @@
 
 		'break-before': 'breakBefore',
 		'break-after': 'breakAfter',
+		'alt breakBefore': 'pageBreakBefore',
+		'alt breakAfter': 'pageBreakAfter',
 		
 		'font-size':'fontSize',
 		'line-height':'lineHeight',
@@ -1291,8 +1310,8 @@ function _makeToPixelsIE(sProp)
 	var sPixelProp = "pixel" + sProp.substring(0,1).toUpperCase() + sProp.substring(1);
 
 	return function(eElement,sValue) {
-		var sInlineStyle = eElement.style[sProp];
-		var sRuntimeStyle = eElement.runtimeStyle[sProp];
+		var inlineStyle = eElement.style[sProp];
+		var runtimeStyle = eElement.runtimeStyle[sProp];
 		try
 		{
 			eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
@@ -1303,8 +1322,8 @@ function _makeToPixelsIE(sProp)
 		{
 			
 		}
-		eElement.style[sProp] = sInlineStyle;
-		eElement.runtimeStyle[sProp] = sRuntimeStyle;
+		eElement.style[sProp] = inlineStyle;
+		eElement.runtimeStyle[sProp] = runtimeStyle;
 
 		return sValue;
 	};
@@ -1317,16 +1336,37 @@ _ElementPlacement.prototype.TO_PIXELS_IE = {
 	"size": _makeToPixelsIE("left")
 };
 
-//TODO move this out of loop
+_ElementPlacement.prototype._compute_break = function(style) {
+	var altName = this.JS_NAME["alt "+style],
+		inlineStyle = this.el.style[style] || this.el.style[altName];
+	if (inlineStyle) return inlineStyle;
+
+	if (this.el.currentStyle) {
+		return this.el.currentStyle[style];
+	} else {
+		var css = this._computed[style];
+		return css || this._computed[altName]
+	}
+};
+
+_ElementPlacement.prototype._setComputed = function()
+{
+	this._computed = document.defaultView.getComputedStyle(this.el, null);
+};
+
 _ElementPlacement.prototype._compute = function(style)
 {
-	var value = document.defaultView.getComputedStyle(this.el, null)[style];
+	var value = this._computed[style];
 	//TODO do this test at load to see if needed
 	if (typeof value == "string" && value.indexOf("%")>-1) {
 		value = this.el[this.OFFSET_NAME[style]] + "px";
 	}
 		
 	return value;
+};
+
+_ElementPlacement.prototype._setComputedIE = function()
+{
 };
 
 _ElementPlacement.prototype._computeIE = function(style)
