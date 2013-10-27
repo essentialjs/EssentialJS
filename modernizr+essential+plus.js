@@ -1689,7 +1689,7 @@ Generator.discardRestricted = function()
 		var pageResolver = Resolver("page"),
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 
-		for(var i=0,desc; desc = this[i]; ++i) if (!desc.state.initDone) desc._init();
+		for(var i=0,desc; desc = this[i]; ++i) if (desc.inits.length>0) desc._init();
 
 		for(var i=0,desc; desc = this[i]; ++i) {
 
