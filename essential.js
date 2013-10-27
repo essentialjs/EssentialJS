@@ -2074,6 +2074,7 @@ Generator.discardRestricted = function()
 		this.el = undefined;
 		this.state.discarded = true;					
 		this.layout.enable = false;					
+		this._updateContext = function() {}; //TODO why is this called after discard, fix that
 	};
 
 	_EnhancedDescriptor.prototype._unlist = function(forget) {
@@ -3803,28 +3804,33 @@ Generator.discardRestricted = function()
 
 
 	function _ElementPlacement(el,track,calcBounds) {
-		this.el = el;
 		this.bounds = {};
 		this.style = {};
-		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
-		if (calcBounds === false) this._bounds = function() {};
+		this.track = track || ["display","visibility","marginLeft","marginRight","marginTop","marginBottom"];
+		this.calcBounds = calcBounds;
 
 		//TODO dedicated compute functions
-		if (el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
+		if (el && el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
 			this._compute = this._computeIE;
 		}
 		if (document.body.getBoundingClientRect().width == undefined) {
 			this._bounds = this._boundsIE;
 		}
 
-		this.compute();
+		this.compute(el);
 	}
 	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
 
+	_ElementPlacement.prototype.setElement = function(newEl) {
+		this.el = newEl;
+		if (this.calcBounds === false) this._bounds = function() {};
+	};
 
 	_ElementPlacement.prototype.compute = function(newEl) {
-		if (newEl) this.el = newEl;
-		
+		if (newEl) this.setElement(newEl);
+
+		if (this.el == null || this.el.nodeType !== 1) return;
+
 		this._bounds();
 		for(var i=0,s; !!(s = this.track[i]); ++i) {
 			this.style[s] = this._compute(s);
@@ -4023,7 +4029,7 @@ _ElementPlacement.prototype.TO_PIXELS_IE = {
 	"size": _makeToPixelsIE("left")
 };
 
-
+//TODO move this out of loop
 _ElementPlacement.prototype._compute = function(style)
 {
 	var value = document.defaultView.getComputedStyle(this.el, null)[style];

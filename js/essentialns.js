@@ -733,6 +733,7 @@
 		this.el = undefined;
 		this.state.discarded = true;					
 		this.layout.enable = false;					
+		this._updateContext = function() {}; //TODO why is this called after discard, fix that
 	};
 
 	_EnhancedDescriptor.prototype._unlist = function(forget) {

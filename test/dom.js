@@ -304,10 +304,31 @@ asyncTest("Element Placement",function() {
 	var HTMLElement = Resolver("essential::HTMLElement::");
 	var ElementPlacement = Resolver("essential::ElementPlacement::");
 
-	var div = HTMLElement("div");
-	document.body.appendChild(div);
+	var nil = ElementPlacement();
+	ok(nil,"nil placement doesn't blow up");
+
+	var div = HTMLElement("div",{"append to":document.body});
 
 	setTimeout(function(){
+		nil.compute(div);
+		equal(nil.style.display,"block","measuring of custom element");
+
+		var noBounds = ElementPlacement(div,["breakBefore","breakAfter"],false);
+		equal(noBounds.bounds.top,undefined);
+		equal(noBounds.bounds.bottom,undefined);
+		equal(noBounds.style.marginLeft,undefined);
+		equal(noBounds.style.marginRight,undefined);
+
+		//TODO support
+		// equal(typeof noBounds.style.breakBefore,"string");
+		// equal(typeof noBounds.style.breakAfter,"string");
+
+		div.style["break-before"] = "column";
+		debugger;
+		noBounds.compute();
+		equal(noBounds.style.breakBefore,"column","get the inline break style");
+
+
 		var placement = ElementPlacement(div);
 		equal(placement.style.visibility.replace("inherit","visible"),"visible");
 		equal(placement.style.marginLeft,"0px");
