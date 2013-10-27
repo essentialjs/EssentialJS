@@ -1091,12 +1091,14 @@
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
 
-	function _ElementPlacement(el,track) {
+	function _ElementPlacement(el,track,calcBounds) {
 		this.el = el;
 		this.bounds = {};
 		this.style = {};
 		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
+		if (calcBounds === false) this._bounds = function() {};
 
+		//TODO dedicated compute functions
 		if (el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
 			this._compute = this._computeIE;
 		}
@@ -1108,7 +1110,10 @@
 	}
 	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
 
-	_ElementPlacement.prototype.compute = function() {
+
+	_ElementPlacement.prototype.compute = function(newEl) {
+		if (newEl) this.el = newEl;
+		
 		this._bounds();
 		for(var i=0,s; !!(s = this.track[i]); ++i) {
 			this.style[s] = this._compute(s);
@@ -1172,7 +1177,7 @@
 		'lineHeight': 'top', 
 		'text-indent': 'size',
 		'textIndent': 'size',
-		
+
 		'width': 'size',
 		'height': 'top',
 		'max-width': 'size',
@@ -1196,6 +1201,7 @@
 		"height":"offsetHeight"
 	};
 
+	//TODO generate based on currentStyle
 	_ElementPlacement.prototype.CSS_NAME = {
 		'backgroundColor':'background-color',
 		'backgroundImage':'background-image',
@@ -1221,6 +1227,9 @@
 		'marginRight': 'margin-right',
 		'marginTop': 'margin-top',
 		'marginBottom': 'margin-bottom',
+
+		'breakBefore': 'break-before',
+		'breakAfter': 'break-after',
 		
 		'fontSize': 'font-size',
 		'lineHeight': 'line-height',
@@ -1228,6 +1237,7 @@
 		
 	};
 
+	//TODO inverted CSS_NAME
 	_ElementPlacement.prototype.JS_NAME = {
 		'background-color':'backgroundColor',
 		'background-image':'backgroundImage',
@@ -1253,6 +1263,9 @@
 		'margin-right':'marginRight',
 		'margin-top':'marginTop',
 		'margin-bottom':'marginBottom',
+
+		'break-before': 'breakBefore',
+		'break-after': 'breakAfter',
 		
 		'font-size':'fontSize',
 		'line-height':'lineHeight',
@@ -1315,6 +1328,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 {
 	var value;
 	
+	//TODO prepare this when setting track
 	style = this.JS_NAME[style] || style;
 
 	var v = this.el.currentStyle[style];
