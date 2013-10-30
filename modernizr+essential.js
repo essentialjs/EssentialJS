@@ -3840,9 +3840,12 @@ Generator.discardRestricted = function()
 
 		for(var i=0,s; this.doCompute && !!(s = this.track[i]); ++i) {
 			switch(s) {
+				case "display":
+				case "visibility":
+				// case "z-index":
 				case "breakBefore":
 				case "breakAfter":
-					this.computes.push(this._compute_break);
+					this.computes.push(this._compute_simple);
 					break;
 				default:
 					this.computes.push(this._compute);
@@ -4056,16 +4059,15 @@ _ElementPlacement.prototype.TO_PIXELS_IE = {
 	"size": _makeToPixelsIE("left")
 };
 
-_ElementPlacement.prototype._compute_break = function(style) {
-	var altName = this.JS_NAME["alt "+style],
-		inlineStyle = this.el.style[style] || this.el.style[altName];
+_ElementPlacement.prototype._compute_simple = function(name) {
+	var altName = this.JS_NAME["alt "+name],
+		inlineStyle = this.el.style[name] || this.el.style[altName];
 	if (inlineStyle) return inlineStyle;
 
 	if (this.el.currentStyle) {
-		return this.el.currentStyle[style];
+		return this.el.currentStyle[name] || this.el.currentStyle[altName];
 	} else {
-		var css = this._computed[style];
-		return css || this._computed[altName]
+		return this._computed[name] || this._computed[altName]
 	}
 };
 
@@ -4074,12 +4076,12 @@ _ElementPlacement.prototype._setComputed = function()
 	this._computed = document.defaultView.getComputedStyle(this.el, null);
 };
 
-_ElementPlacement.prototype._compute = function(style)
+_ElementPlacement.prototype._compute = function(name)
 {
-	var value = this._computed[style];
+	var value = this._computed[name];
 	//TODO do this test at load to see if needed
 	if (typeof value == "string" && value.indexOf("%")>-1) {
-		value = this.el[this.OFFSET_NAME[style]] + "px";
+		value = this.el[this.OFFSET_NAME[name]] + "px";
 	}
 		
 	return value;
