@@ -2118,21 +2118,27 @@ Generator.discardRestricted = function()
 		var ow = this.sizing.width = this.el.offsetWidth;
 		var oh = this.sizing.height = this.el.offsetHeight;
 		this.sizing.displayed = !(ow == 0 && oh == 0);
-		this.sizing.contentWidth = this.el.scrollWidth;
-		this.sizing.contentHeight = this.el.scrollHeight;
 
-		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
-		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
-		if (this.context.layouterParent) this.context.layouterParent.calcSizing(this.el,this.sizing,this.laidout);
+		// seems to be displayed
+		if (this.sizing.displayed) {
+			this.sizing.contentWidth = this.el.scrollWidth;
+			this.sizing.contentHeight = this.el.scrollHeight;
 
-		if (this.sizing.forceLayout) {
-			this.sizing.forceLayout = false;
-			this.sizing.queued = true;
+			if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
+			if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
+			if (this.context.layouterParent) this.context.layouterParent.calcSizing(this.el,this.sizing,this.laidout);
+
+			if (this.sizing.forceLayout) {
+				this.sizing.forceLayout = false;
+				this.sizing.queued = true;
+			}
+			this._queueLayout();
+
+		// not displayed, and was last time			
+		} else if (this.layout.displayed) {
+			this.layout.displayed = false;
+			this.layout.queued = true;
 		}
-		this._queueLayout();
-		// if (this.layout.queued) {
-		// 	if (this.context.layouterEl) this.context.layouterEl.stateful.set("layout.queued",true);
-		// }
 	};
 
     _EnhancedDescriptor.prototype.applyStyle = function() {
