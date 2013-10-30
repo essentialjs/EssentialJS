@@ -3842,7 +3842,7 @@ Generator.discardRestricted = function()
 			switch(s) {
 				case "display":
 				case "visibility":
-				// case "z-index":
+				// case "zIndex":
 				case "breakBefore":
 				case "breakAfter":
 					this.computes.push(this._compute_simple);
@@ -3876,8 +3876,6 @@ Generator.discardRestricted = function()
 			left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom
 		};
 	};
-
-	_ElementPlacement.prototype.PIXEL = /^\d+(px)?$/i;
 
 	_ElementPlacement.prototype.KEYWORDS = {
 		'medium':"2px"	
@@ -4100,8 +4098,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	var v = this.el.currentStyle[style];
 	var sPrecalc = this.KEYWORDS[v];
-	if (sPrecalc !== undefined) return sPrecalc; 
-	if (this.PIXEL.test(v)) return v;
+	if (sPrecalc !== undefined) return sPrecalc;
+	if (v == "0" || (v.substring(v.length-2) == "px")) return v; 
 
 	var fToPixels = this.TO_PIXELS_IE[this.CSS_TYPES[style]];
 		value = fToPixels? fToPixels(this.el, v) : v;
