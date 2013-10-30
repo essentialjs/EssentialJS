@@ -589,7 +589,7 @@ function Resolver(name_andor_expr,ns,options)
                 //TODO swap script with the id. If cachebuster param update timestamp
                 var script = document.getElementById(this.options.touchScript);
                 if (script) {
-                    var newScript = Resolver("essential::HTMLScriptElement")(script);
+                    var newScript = Resolver("essential::HTMLScriptElement::")(script);
                     try {
                         //TODO if (! state.unloading)
                     script.parentNode.replaceChild(newScript,script);
