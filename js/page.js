@@ -1175,12 +1175,13 @@
 	pageResolver.on("change","state", onStateChange);
 
 	function onStateChange(ev) {
+		var b = ev.base;
 		switch(ev.symbol) {
 			case "livepage": 
 				if (ev.value) {
 					var ap = ApplicationConfig();
 
-					if (!ev.base.loadingScripts && !ev.base.loadingConfig) {
+					if (!b.loadingScripts && !b.loadingConfig) {
 						--ev.inTrigger;
 						this.set("state.loading",false);
 						++ev.inTrigger;
@@ -1200,14 +1201,14 @@
 			case "loadingConfig":
 				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
 				--ev.inTrigger;
-				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
+				this.set("state.loading",b.loadingScripts || b.loadingConfig);
 				++ev.inTrigger;
 				break;
 
 			case "preloading":
 				if (! ev.value) {
-					for(var n in ev.base.loadingScriptsUrl) {
-						var link = ev.base.loadingScriptsUrl[n];
+					for(var n in b.loadingScriptsUrl) {
+						var link = b.loadingScriptsUrl[n];
 						if (link.rel == "pastload" && !link.added) {
 							var langOk = true;
 							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
@@ -1226,8 +1227,8 @@
 					ap.doInitScripts();	
 					enhanceUnfinishedElements();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
-					if (ev.base.configured == true && ev.base.authenticated == true 
-						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+					if (b.configured && b.authenticated 
+						&& b.authorised && b.connected && !b.launched) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
 						if (document.body) essential("instantiatePageSingletons")();
@@ -1239,14 +1240,14 @@
 				if (ev.base.livepage) {
 					var ap = ApplicationConfig();
 
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+					if (b.authenticated) activateArea(ap.getAuthenticatedArea());
 					else activateArea(ap.getIntroductionArea());
 				}
 				// no break
 			case "authorised":
 			case "configured":
-				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
-					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+				if ( !b.loading && b.configured && b.authenticated 
+					&& b.authorised && b.connected && !b.launched) {
 					this.set("state.launching",true);
 
 					var ap = ApplicationConfig();
@@ -1265,11 +1266,11 @@
 					if (document.body) essential("instantiatePageSingletons")();
 					ap.doInitScripts();	
 					enhanceUnfinishedElements();
-					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
+					if (ev.symbol == "launched" && b.requiredPages == 0) this.set("state.launching",false);
 				}
 				break;
 			case "requiredPages":
-				if (ev.value == 0 && !ev.base.launching) {
+				if (ev.value == 0 && !b.launching) {
 					this.set("state.launching",false);
 				}
 				break
@@ -1278,10 +1279,15 @@
 				break;
 			
 			default:
-				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
+				if (b.loading==false && b.launching==false && b.launched==false) {
 					if (document.body) essential("instantiatePageSingletons")();
 				}
 		}
+
+		// should this be configurable in the future?
+        if (b.launched && (!b.authorised || !b.authenticated) && b.autoUnlaunch !== false) {
+            this.set("state.launched",false);
+        }
 	};
 
 	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
