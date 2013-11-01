@@ -1165,17 +1165,17 @@
 		if (window.console.debug == undefined) {
 			// IE8
 			proxyConsole["log"] = function(m) { 
-				window.console.log(m); };
+				window.console.log(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["trace"] = function(m) { 
 				window.console.trace(); };
 			proxyConsole["debug"] = function(m) { 
-				window.console.log(m); };
+				window.console.log(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["info"] = function(m) { 
-				window.console.info(m); };
+				window.console.info(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["warn"] = function(m) { 
-				window.console.warn(m); };
+				window.console.warn(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["error"] = function(m) { 
-				window.console.error(m); };
+				window.console.error(Array.prototype.join.call(arguments," ")); };
 		}
 	}
 	essential.declare("setWindowConsole",setWindowConsole);
