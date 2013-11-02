@@ -3837,20 +3837,27 @@ Generator.discardRestricted = function()
 
 		this.doCompute = !(this.el == null || this.el.nodeType !== 1);
 
-		for(var i=0,s; this.doCompute && !!(s = this.track[i]); ++i) {
+		this.computes = this._getComputes(this.track);
+	};
+
+	_ElementPlacement.prototype._getComputes = function(names) {
+
+		var computes = [];
+		for(var i=0,s; this.doCompute && !!(s = names[i]); ++i) {
 			switch(s) {
 				case "display":
 				case "visibility":
 				// case "zIndex":
 				case "breakBefore":
 				case "breakAfter":
-					this.computes.push(this._compute_simple);
+					computes.push(this._compute_simple);
 					break;
 				default:
-					this.computes.push(this._compute);
+					computes.push(this._compute);
 					break;
 			}
 		}
+		return computes;
 	};
 
 	_ElementPlacement.prototype.compute = function(newEl) {
@@ -3861,6 +3868,14 @@ Generator.discardRestricted = function()
 
 		for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
 			this.style[this.track[i]] = fn.call(this,this.track[i]);
+		}
+	};
+
+	_ElementPlacement.prototype.manually = function(names) {
+		var computes = this._getComputes(names);
+		this._setComputed();
+		for(var i=0,fn; fn = computes[i]; ++i) {
+			this.style[names[i]] = fn.call(this,names[i]);
 		}
 	};
 
