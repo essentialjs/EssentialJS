@@ -670,6 +670,7 @@ nav[action="navigation/application"] {
   position: absolute;
   left: 240px;
   right: 240px;
+  width: auto;
   top: 140px;
   text-align: center;
   -webkit-transition: top 0.4s ease-in-out;
