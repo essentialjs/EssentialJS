@@ -417,6 +417,17 @@
 			//TODO
 			if (el) {
 
+			} else {
+				// "[role=dialog]"
+				if (sel.substring(0,6) == "[role=") {
+					var role = sel.substring(6,sel.length-1);
+					for(var id in enhancedElements) {
+						var desc = enhancedElements[id];
+						if (desc.role == role) {
+							q.push(desc);
+						}
+					}
+				}
 			}
 		} else {
 			var ac = essential("ApplicationConfig")();

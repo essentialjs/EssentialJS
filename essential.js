@@ -1758,6 +1758,17 @@ Generator.discardRestricted = function()
 			//TODO
 			if (el) {
 
+			} else {
+				// "[role=dialog]"
+				if (sel.substring(0,6) == "[role=") {
+					var role = sel.substring(6,sel.length-1);
+					for(var id in enhancedElements) {
+						var desc = enhancedElements[id];
+						if (desc.role == role) {
+							q.push(desc);
+						}
+					}
+				}
 			}
 		} else {
 			var ac = essential("ApplicationConfig")();
@@ -7414,11 +7425,29 @@ function(scripts) {
 	}
 	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
-	function layout_dialog(el,layout,instance) {		
+	function layout_dialog(el,layout,instance) {
+
+		//TODO sizing if bodyHeight changed
+		var top = el.offsetTop, 
+			height = el.offsetHeight,
+			newTop = Math.max(0, Math.min(top,document.body.offsetHeight - height - 12)); 
+		if (top != newTop) {
+			el.style.top = newTop + "px";
+		}
+
 	}
 	pageResolver.set("handlers.layout.dialog",layout_dialog);
 
 	function discard_dialog(el,role,instance) {
+		var existing = 0, dialogs = essential("DescriptorQuery")("[role=dialog]");
+		for(var i=0,d; d = dialogs[i]; ++i) {
+			if (d.state.enhanced && !d.state.discarded) ++existing;
+		}
+
+		if (existing == 1) {
+			dialog_top = initial_top;
+			dialog_left = initial_left;
+		} 
 	}
 	pageResolver.set("handlers.discard.dialog",discard_dialog);
 

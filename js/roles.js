@@ -303,11 +303,29 @@
 	}
 	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
-	function layout_dialog(el,layout,instance) {		
+	function layout_dialog(el,layout,instance) {
+
+		//TODO sizing if bodyHeight changed
+		var top = el.offsetTop, 
+			height = el.offsetHeight,
+			newTop = Math.max(0, Math.min(top,document.body.offsetHeight - height - 12)); 
+		if (top != newTop) {
+			el.style.top = newTop + "px";
+		}
+
 	}
 	pageResolver.set("handlers.layout.dialog",layout_dialog);
 
 	function discard_dialog(el,role,instance) {
+		var existing = 0, dialogs = essential("DescriptorQuery")("[role=dialog]");
+		for(var i=0,d; d = dialogs[i]; ++i) {
+			if (d.state.enhanced && !d.state.discarded) ++existing;
+		}
+
+		if (existing == 1) {
+			dialog_top = initial_top;
+			dialog_left = initial_left;
+		} 
 	}
 	pageResolver.set("handlers.discard.dialog",discard_dialog);
 

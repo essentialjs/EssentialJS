@@ -978,6 +978,10 @@ test("Define list of elements using DescriptorQuery(NodeList)",function() {
 	equal(h1s.length, 0); // no role on the H1 elements
 });
 
+test("Define list of elements using DescriptorQuery('[role=dialog]')",function() {
+	ok(1,"TODO");
+});
+
 test("Basic enhanced dialog",function() {
 
 	var HTMLElement = Resolver("essential::HTMLElement::"),
