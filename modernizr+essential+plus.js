@@ -3899,12 +3899,17 @@ Generator.discardRestricted = function()
 	_ElementPlacement.prototype.compute = function(newEl) {
 		if (newEl !== undefined) this.setElement(newEl);
 
-		if (this.doCompute && this.calcBounds !== false) this._bounds();
-		if (this.doCompute) this._setComputed();
+		if (contains(document.body,newEl)) {
 
-		for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
-			this.style[this.track[i]] = fn.call(this,this.track[i]);
-		}
+			if (this.doCompute && this.calcBounds !== false) this._bounds();
+			if (this.doCompute) this._setComputed();
+
+			for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
+				this.style[this.track[i]] = fn.call(this,this.track[i]);
+			}
+			
+		} 
+		// else ignore (could queue for compute)
 	};
 
 	_ElementPlacement.prototype.manually = function(names) {
@@ -7724,7 +7729,7 @@ function(scripts) {
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
 				sp.stateful.set("over",false);
-				if (sp.stateful("dragging") != true) {
+				if (sp.stateful("state.dragging") != true) {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
@@ -7855,7 +7860,7 @@ function(scripts) {
 		//TODO capture in IE
 		//movement.track(event,0,0);
 
-		if (el.stateful) el.stateful.set("dragging",true);
+		if (el.stateful) el.stateful.set("state.dragging",true);
 		this.target = document.body;
 		if (document.body.setCapture) {
 			this.target = this.el;

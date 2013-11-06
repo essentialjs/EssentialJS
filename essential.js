@@ -3891,12 +3891,17 @@ Generator.discardRestricted = function()
 	_ElementPlacement.prototype.compute = function(newEl) {
 		if (newEl !== undefined) this.setElement(newEl);
 
-		if (this.doCompute && this.calcBounds !== false) this._bounds();
-		if (this.doCompute) this._setComputed();
+		if (contains(document.body,newEl)) {
 
-		for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
-			this.style[this.track[i]] = fn.call(this,this.track[i]);
-		}
+			if (this.doCompute && this.calcBounds !== false) this._bounds();
+			if (this.doCompute) this._setComputed();
+
+			for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
+				this.style[this.track[i]] = fn.call(this,this.track[i]);
+			}
+			
+		} 
+		// else ignore (could queue for compute)
 	};
 
 	_ElementPlacement.prototype.manually = function(names) {
