@@ -967,6 +967,12 @@ test("Define a list of templates using DescriptorQuery([])",function() {
 	equal(Resolver("page::templates","null")("#template-1"),templates[0].instance);
 	equal(Resolver("page::templates","null")("@template-2"),templates[1].instance);
 
+	var templates = DescriptorQuery("[role=template]");
+	equal(templates.length,2,"two templates defined");
+	for(var i=0,desc; desc = templates[i]; ++i) {
+		equal(desc.role,"template");
+	}
+
 })
 
 test("Define list of elements using DescriptorQuery(NodeList)",function() {
@@ -979,7 +985,17 @@ test("Define list of elements using DescriptorQuery(NodeList)",function() {
 });
 
 test("Define list of elements using DescriptorQuery('[role=dialog]')",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
 	ok(1,"TODO");
+
+	var dialogs = DescriptorQuery("[role=dialog]");
+	// ok(dialogs.length);
+	for(var i=0,desc; desc = dialogs[i]; ++i) {
+		equal(desc.role,"dialog");
+	}
 });
 
 test("Basic enhanced dialog",function() {
