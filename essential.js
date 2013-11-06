@@ -7721,7 +7721,7 @@ function(scripts) {
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
 				sp.stateful.set("over",false);
-				if (sp.stateful("dragging") != true) {
+				if (sp.stateful("state.dragging") != true) {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
@@ -7852,7 +7852,7 @@ function(scripts) {
 		//TODO capture in IE
 		//movement.track(event,0,0);
 
-		if (el.stateful) el.stateful.set("dragging",true);
+		if (el.stateful) el.stateful.set("state.dragging",true);
 		this.target = document.body;
 		if (document.body.setCapture) {
 			this.target = this.el;
@@ -7892,7 +7892,7 @@ function(scripts) {
 	};
 
 	ElementMovement.prototype.end = function() {
-		if (this.el.stateful) this.el.stateful.set("dragging",false);
+		if (this.el.stateful) this.el.stateful.set("state.dragging",false);
 		removeEventListeners(this.target,this.drag_events);
 		if (this.target.releaseCapture) this.target.releaseCapture();
 		this.target = null;
@@ -8127,7 +8127,7 @@ function(scripts) {
 		if (!es.vert.shown) {
 			es.vert.show();
 			es.horz.show();
-			if (!ev.resolver("over") && !ev.resolver("dragging")) {
+			if (!ev.resolver("over") && !ev.resolver("state.dragging")) {
 				es.vert.delayedHide();
 				es.horz.delayedHide();
 			}
@@ -8144,7 +8144,7 @@ function(scripts) {
 		if (!es.vert.shown) {
 			es.vert.show();
 			es.horz.show();
-			if (!el.stateful("over") && !el.stateful("dragging")) {
+			if (!el.stateful("over") && !el.stateful("state.dragging")) {
 				es.vert.delayedHide();
 				es.horz.delayedHide();
 			}
@@ -8182,7 +8182,7 @@ function(scripts) {
 		if (!this.vert.shown) {
 			this.vert.show();
 			this.horz.show();
-			if (!el.stateful("over") && !el.stateful("dragging")) {
+			if (!el.stateful("over") && !el.stateful("state.dragging")) {
 				this.vert.delayedHide(750);
 				this.horz.delayedHide(750);
 			}
