@@ -8,7 +8,7 @@
   <meta content="Henrik Vendelbo" name="author">
 
   <meta name="text selection" content="input textarea">
-	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled">
+	<meta name="enhanced roles" content="template templated dialog toolbar menubar menu navigation spinner application scrolled">
   <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
   <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
@@ -16,8 +16,8 @@
 	<link rel="stylesheet" href="css/basic.css" media="screen">
   <link rel="stylesheet" href="css/enhanced.css" media="screen">
 
-	<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
-	<script type="text/javascript" src="../js/modernizr.js"></script>
+	<script type="text/javascript" src="../../js/modernizr-prefix.js"></script>
+	<script type="text/javascript" src="../../js/modernizr.min.js"></script>
 	<script type="text/javascript" src="../js/json2.js"></script>
 	<script type="text/javascript" src="../js/resolver.js"></script>
   <script type="text/javascript" src="../js/generator.js"></script>
@@ -36,13 +36,13 @@
 
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
 
-  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
-  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
-  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
+  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations.js">
+  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations.js">
+  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations.js">
 
 </head>
 <body class="loading">
-  <div role="template" data-role="'id':'table1'">
+  <div role="template" data-role="'id':'table1'" id="table1">
         <table role="table">
           <thead>
             <tr><th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>A</th><th>B</th><th>C</th><th>D</th> <th>X</th></tr>
@@ -106,7 +106,7 @@
 
         <div style="position:absolute; top:0; left:0; right:50%;margin-right: 15px; bottom:50%; margin-bottom: 15px; overflow:visible;">
           <div>
-            <div role="scrolled" data-role='"obscured":true,"template":"table1"'>
+            <div role="scrolled" data-role='"obscured":true,"template":"#table1"'>
             </div>
           </div>
         </div>
@@ -124,14 +124,14 @@
 
         <div class="tweaked" style="position:absolute; top:50%; left:0; right:50%;margin-right: 15px; bottom:0%; margin-bottom: 15px; overflow:visible;">
           <div>
-            <div role="scrolled" data-role='"obscured":true,"nativeScrollVert":false,"trackScrollVert":false,"template":"table1"'>
+            <div role="scrolled" data-role='"obscured":true,"nativeScrollVert":false,"trackScrollVert":false,"template":"#table1"'>
             </div>
           </div>
         </div>
 
         <div style="position:absolute; top:0; right:0; left:50%;bottom:85%;margin-right: 15px; margin-bottom: 15px; overflow:visible;">
           <div>
-            <div role="scrolled" data-role='"obscured":true,"template":"table1"'>
+            <div role="scrolled" data-role='"obscured":true,"template":"#table1"'>
             </div>
           </div>
         </div>
@@ -141,7 +141,7 @@
           <div>
             <div role="scrolled" data-role='"obscured":true,"nativeScrollVert":false,"trackScrollVert":false'>
               <header>Extra header information</header>
-              <div role="templated" data-role="'template':'table1'"></div>
+              <div role="templated" data-role="'template':'#table1'"></div>
               <footer>Extra footer information</footer>
             </div>
           </div>
