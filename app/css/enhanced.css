@@ -1031,16 +1031,16 @@ section.sheet {
 }
 .aSide .vert-scroller.shown nav,
 .aSide .horz-scroller.shown nav {
-  opacity: 1;
-  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
-  filter: alpha(opacity=100);
+  opacity: .5;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+  filter: alpha(opacity=50);
 }
 .aSide .vert-scroller.shown nav header,
 .aSide .horz-scroller.shown nav header,
 .aSide .vert-scroller.shown nav footer,
 .aSide .horz-scroller.shown nav footer {
-  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
-  filter: alpha(opacity=100);
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+  filter: alpha(opacity=50);
 }
 .aSide .vert-scroller {
   display: block;
@@ -1213,13 +1213,23 @@ section.sheet {
 }
 .aSide .vert-scroller nav,
 .aSide .horz-scroller nav {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: #000000;
 }
 .aSide .vert-scroller nav > header,
 .aSide .horz-scroller nav > header,
 .aSide .vert-scroller nav > footer,
 .aSide .horz-scroller nav > footer {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: #000000;
+}
+.aSide .vert-scroller nav,
+.aSide .horz-scroller nav {
+  background-color: #000000;
+}
+.aSide .vert-scroller nav > header,
+.aSide .horz-scroller nav > header,
+.aSide .vert-scroller nav > footer,
+.aSide .horz-scroller nav > footer {
+  background-color: #000000;
 }
 .aSide .horz-scroller,
 .aSide .vert-scroller {
