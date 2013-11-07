@@ -3732,7 +3732,7 @@ Generator.discardRestricted = function()
 					if (_from[n] !== undefined) e[n] = _from[n]; 
 					break;
 
-				case "impl":
+				case "set impl":
 					if (_from[n]) e.impl = HTMLElement.impl(e);
 					break;
 

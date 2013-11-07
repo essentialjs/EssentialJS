@@ -667,7 +667,7 @@ test('Cleaning enhanced',function() {
 	// no longer in sizingElements
 });
 
-test("impl",function(){
+test("HTMLElement impl",function(){
 	var HTMLElement = Resolver("essential::HTMLElement::","null");
 	equal(typeof HTMLElement.impl("span"),"object");
 	equal(typeof HTMLElement.impl("b"),"object");
@@ -715,9 +715,12 @@ test('Render Stream',function() {
 		"<b>you</b>",
 		" STOP!",
 		"</span>");
+	equal(typeof root,"object");
+	equal(root.tagName,"DIV","Created Root DIV");
 	var stream = HTMLElement.describeStream(root,policy);
+	ok(stream,"Stream described");
 
-	var wrapper = HTMLElement("div",{"impl":true});
+	var wrapper = HTMLElement("div",{"set impl":true});
 	wrapper.impl.renderStream(wrapper,stream);
 	equal(wrapper.innerHTML,root.innerHTML);
 
@@ -728,7 +731,7 @@ test('Render Stream',function() {
 		"</output>");
 	var stream = HTMLElement.describeStream(root,policy);
 	equal(stream[0].original.className,"abc");
-	var wrapper = HTMLElement("div",{"impl":true});
+	var wrapper = HTMLElement("div",{"set impl":true});
 	wrapper.impl.renderStream(wrapper,stream);
 	equal(wrapper.innerHTML,root.innerHTML);
 
