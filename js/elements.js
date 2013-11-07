@@ -238,8 +238,12 @@
 
 	HTMLElement.fn.IGNORE_ATTRIBUTES = {
 		"class": true,
+		"classList": true,
 		"style": true,
+		"layouter": true,
+		"laidout": true,
 		"impl": true,
+		"stateful": true,
 		"_cleaners": true
 	};
 
