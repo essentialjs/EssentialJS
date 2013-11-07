@@ -1997,7 +1997,8 @@ Generator.discardRestricted = function()
 			var discardHandler = handlers.discard[this.role];
 			if (discardHandler) this.discardHandler = discardHandler;
 			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
-			if (this.sizingHandler) sizingElements[this.uniqueID] = this;
+			// if (this.sizingHandler), enhanced will update layout even if no sizingHandler
+			 sizingElements[this.uniqueID] = this;
 			if (this.layoutHandler) {
 				this.layout.enable = true;
 				maintainedElements[this.uniqueID] = this;
