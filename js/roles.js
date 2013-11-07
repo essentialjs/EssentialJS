@@ -584,7 +584,7 @@
 
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = null;
-			this.stateful.set("over",true);
+			this.stateful.set("state.over",true);
 			enhanced.vert.show();
 			enhanced.horz.show();
 		},
@@ -594,7 +594,7 @@
 			
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
-				sp.stateful.set("over",false);
+				sp.stateful.set("state.over",false);
 				if (sp.stateful("state.dragging") != true) {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
@@ -1001,7 +1001,7 @@
 		if (!es.vert.shown) {
 			es.vert.show();
 			es.horz.show();
-			if (!ev.resolver("over") && !ev.resolver("state.dragging")) {
+			if (!ev.resolver("state.over") && !ev.resolver("state.dragging")) {
 				es.vert.delayedHide();
 				es.horz.delayedHide();
 			}
@@ -1018,7 +1018,7 @@
 		if (!es.vert.shown) {
 			es.vert.show();
 			es.horz.show();
-			if (!el.stateful("over") && !el.stateful("state.dragging")) {
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				es.vert.delayedHide();
 				es.horz.delayedHide();
 			}
@@ -1056,7 +1056,7 @@
 		if (!this.vert.shown) {
 			this.vert.show();
 			this.horz.show();
-			if (!el.stateful("over") && !el.stateful("state.dragging")) {
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.vert.delayedHide(750);
 				this.horz.delayedHide(750);
 			}
