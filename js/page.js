@@ -603,7 +603,13 @@
 		if (element.id) {
 			return this._getElementRoleConfig(element,element.id);
 		}
-		var name = element.getAttribute("name");
+		var name;
+		try {
+			name = element.getAttribute("name");
+		}
+		catch(ex) { // access denied
+			return null;
+		}
 		if (name) {
 			var p = element.parentNode;
 			while(p && p.tagName) {
