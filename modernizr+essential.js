@@ -1788,7 +1788,7 @@ Generator.discardRestricted = function()
 					var desc = EnhancedDescriptor(e,role,conf,false,ac);
 					if (desc) q.push(desc);
 				}
-			} else {
+			} else if (el.nodeType == 1) {
 				//TODO third param context ? integrate with desc.context
 				//TODO identify existing descriptors
 
