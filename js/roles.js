@@ -12,6 +12,7 @@
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
+		DescriptorQuery = essential("DescriptorQuery"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
@@ -214,7 +215,7 @@
 		} 
 		if (wrap) {
 			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
-			essential("DescriptorQuery")(wrap).withBranch().enhance();
+			DescriptorQuery(wrap).withBranch().enhance();
 		}
 
 		// restrict height to body (TODO use layouter to restrict this on page resize)
@@ -317,7 +318,7 @@
 	pageResolver.set("handlers.layout.dialog",layout_dialog);
 
 	function discard_dialog(el,role,instance) {
-		var existing = 0, dialogs = essential("DescriptorQuery")("[role=dialog]");
+		var existing = 0, dialogs = DescriptorQuery("[role=dialog]");
 		for(var i=0,d; d = dialogs[i]; ++i) {
 			if (d.state.enhanced && !d.state.discarded) ++existing;
 		}
@@ -1089,13 +1090,10 @@
 			var content = template.content.cloneNode(true);
 
 			el.appendChild(content);
-			var context = { layouter: this.parentLayouter };
-			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-			// essential("DescriptorQuery")(wrap).enhance();
-			ApplicationConfig()._prep(el,context); //TODO prepAncestors
+			DescriptorQuery(el).onlyBranch().enhance();
 		}
 
-		StatefulResolver(el,true);
+		// StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
 
