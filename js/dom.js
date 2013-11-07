@@ -1142,17 +1142,18 @@
 	};
 
 	_ElementPlacement.prototype.compute = function(newEl) {
-		if (newEl !== undefined) this.setElement(newEl);
+		if (newEl != undefined) this.setElement(newEl);
 
-		if (contains(document.body,newEl)) {
+		if (newEl == undefined || contains(document.body,newEl)) {
 
-			if (this.doCompute && this.calcBounds !== false) this._bounds();
-			if (this.doCompute) this._setComputed();
+			if (this.doCompute) {
+				if (this.calcBounds !== false) this._bounds();
+				this._setComputed();
 
-			for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
-				this.style[this.track[i]] = fn.call(this,this.track[i]);
+				for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
+					this.style[this.track[i]] = fn.call(this,this.track[i]);
+				}
 			}
-			
 		} 
 		// else ignore (could queue for compute)
 	};
