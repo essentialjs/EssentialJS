@@ -721,8 +721,10 @@ test('Render Stream',function() {
 	ok(stream,"Stream described");
 
 	var wrapper = HTMLElement("div",{"set impl":true});
+	equal(typeof wrapper,"object")
+	equal(root.tagName,"DIV","Created Wrapper DIV");
 	wrapper.impl.renderStream(wrapper,stream);
-	equal(wrapper.innerHTML,root.innerHTML);
+	equal(wrapper.innerHTML,root.innerHTML,"wrapper = root");
 
 	var root = HTMLElement("div",{},'<output class="abc">',
 		"hello ",

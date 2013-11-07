@@ -201,7 +201,7 @@
 		if (!attrs) {
 			for(var i=0,a; a = src.attributes[i]; ++i) {
 				var n = a.name;
-				if (n == "class" || n == "style") continue;
+				if (this.IGNORE_ATTRIBUTES[n]) continue;
 				var value = src.getAttribute(n);
 				if (value != null) dst.setAttribute(n,value);
 				else dst.removeAttribute(n);	
@@ -234,6 +234,13 @@
 		"language": "",
 		"accesskey": "",
 		"tabindex": 0
+	};
+
+	HTMLElement.fn.IGNORE_ATTRIBUTES = {
+		"class": true,
+		"style": true,
+		"impl": true,
+		"_cleaners": true
 	};
 
 	// stream.cloneNode that can be copied to .content
