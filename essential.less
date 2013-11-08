@@ -1,9 +1,7 @@
-/*
-	Global variables and mixins for common Essential Elements
+//	Global variables and mixins for common Essential Elements
 
-	Import this at the beginning of your stylesheets and override global variables with 
-	values specific to the application.
-*/
+//	Import this at the beginning of your stylesheets and override global variables with 
+//	values specific to the application.
 
 @z-scroll-bar: 10;
 
@@ -36,21 +34,31 @@
 			-moz-transition: linear 300ms opacity;
 			-o-transition: linear 300ms opacity;
 			transition: linear 300ms opacity;
-
-			header,footer {
-			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
-			filter: alpha(opacity=0);
-			}
 		}
 		&.shown nav {
 			opacity:.5;
 			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 			filter: alpha(opacity=50);
+		}
+	}
+
+	.ie8 & .vert-scroller,
+	.ie8 & .horz-scroller {
+		nav {
+
+			header,footer {
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+			filter: alpha(opacity=0);
+			}
+
+		}		
+		&.shown nav {
 
 			header,footer {
 			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 			filter: alpha(opacity=50);
 			}
+
 		}
 	}
 
