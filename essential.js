@@ -8125,6 +8125,9 @@ function(scripts) {
 		el.stateful.declare("pos.scrollTop",0);
 		el.stateful.declare("pos.scrollLeft",0);
 
+		//TODO sizing.track = {} width,height,content,scroll
+		el.stateful.set("sizing.track.sizeBy","client");
+
 		this.x = false !== config.x;
 		this.y = false !== config.y;
 		this.vert = new EnhancedScrollbar(el,container,config,{
@@ -8162,10 +8165,8 @@ function(scripts) {
 		// if not shown, show and if not entered and not dragging, hide after 1500 ms
 		if (!es.vert.shown) {
 			es.vert.show();
-			es.horz.show();
 			if (!ev.resolver("state.over") && !ev.resolver("state.dragging")) {
 				es.vert.delayedHide();
-				es.horz.delayedHide();
 			}
 		}
 
@@ -8177,11 +8178,9 @@ function(scripts) {
 		var el = ev.data.el, es = ev.data.es;
 
 		// if not shown, show and if not entered and not dragging, hide after 1500 ms
-		if (!es.vert.shown) {
-			es.vert.show();
+		if (!es.horz.shown) {
 			es.horz.show();
 			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
-				es.vert.delayedHide();
 				es.horz.delayedHide();
 			}
 		}
@@ -8206,6 +8205,8 @@ function(scripts) {
 	};
 
 	EnhancedScrolled.prototype.refresh = function(el) {
+
+		//TODO get the information via layout call
 		this.vert.trackScrolled(el);
 		this.vert.update(el);
 		this.horz.trackScrolled(el);
@@ -8214,12 +8215,16 @@ function(scripts) {
 
 	EnhancedScrolled.prototype.layout = function(el,layout) {
 
-		//TODO show scrollbars only if changed && in play
-		if (!this.vert.shown) {
+		if (layout.contentHeight != layout.oldContentHeight && !this.vert.shown) {
 			this.vert.show();
-			this.horz.show();
 			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.vert.delayedHide(750);
+			}
+		}
+
+		if (layout.contentWidth != layout.oldContentWidth && !this.horz.shown) {
+			this.horz.show();
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.horz.delayedHide(750);
 			}
 		}
