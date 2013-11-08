@@ -1,9 +1,3 @@
-/*
-	Global variables and mixins for common Essential Elements
-
-	Import this at the beginning of your stylesheets and override global variables with 
-	values specific to the application.
-*/
 article,
 aside,
 details,
@@ -1022,23 +1016,23 @@ section.sheet {
   -o-transition: linear 300ms opacity;
   transition: linear 300ms opacity;
 }
-.aSide .vert-scroller nav header,
-.aSide .horz-scroller nav header,
-.aSide .vert-scroller nav footer,
-.aSide .horz-scroller nav footer {
-  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
-  filter: alpha(opacity=0);
-}
 .aSide .vert-scroller.shown nav,
 .aSide .horz-scroller.shown nav {
   opacity: .5;
   -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
   filter: alpha(opacity=50);
 }
-.aSide .vert-scroller.shown nav header,
-.aSide .horz-scroller.shown nav header,
-.aSide .vert-scroller.shown nav footer,
-.aSide .horz-scroller.shown nav footer {
+.ie8 .aSide .vert-scroller nav header,
+.ie8 .aSide .horz-scroller nav header,
+.ie8 .aSide .vert-scroller nav footer,
+.ie8 .aSide .horz-scroller nav footer {
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+  filter: alpha(opacity=0);
+}
+.ie8 .aSide .vert-scroller.shown nav header,
+.ie8 .aSide .horz-scroller.shown nav header,
+.ie8 .aSide .vert-scroller.shown nav footer,
+.ie8 .aSide .horz-scroller.shown nav footer {
   -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
   filter: alpha(opacity=50);
 }
@@ -1135,7 +1129,7 @@ section.sheet {
   display: block;
   position: absolute;
   bottom: 0;
-  width: 9px;
+  width: 15px;
   height: 100%;
 }
 .aSide .horz-scroller > header {
@@ -1231,16 +1225,6 @@ section.sheet {
 .aSide .horz-scroller nav > footer {
   background-color: #000000;
 }
-.aSide .horz-scroller,
-.aSide .vert-scroller {
-  background-color: lightblue;
-}
-.aSide .horz-scroller > header,
-.aSide .vert-scroller > header,
-.aSide .horz-scroller > footer,
-.aSide .vert-scroller > footer {
-  background-color: lightblue;
-}
 .leftSide {
   left: 0;
   right: 65%;
@@ -1260,6 +1244,16 @@ section.sheet {
 .rightSide {
   right: 0;
   width: 55%;
+}
+.rightSide .horz-scroller,
+.rightSide .vert-scroller {
+  background-color: lightblue;
+}
+.rightSide .horz-scroller > header,
+.rightSide .vert-scroller > header,
+.rightSide .horz-scroller > footer,
+.rightSide .vert-scroller > footer {
+  background-color: lightblue;
 }
 [role=scrolled]::-webkit-scrollbar {
   -webkit-appearance: none;

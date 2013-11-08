@@ -885,7 +885,7 @@
 				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
 			}
 		}
-		if (config.obscured) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
+		if (config.overhang) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
         else this.el.style[opts.thicknessName] = sbsc + "px";
 	}
 
@@ -953,6 +953,8 @@
 
 	function EnhancedScrolled(el,config) {
 
+		if (config.overhang !== undefined) config.overhang = !!config.obscured;
+		config.obscured = config.obscured !== false;
 		//? this.el = el
 		var container = this._getContainer(el,config);
 
