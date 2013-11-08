@@ -1811,7 +1811,15 @@ Generator.discardRestricted = function()
 		this.el = el;
 		// sizingHandler
 		this.sizing = {
-			"contentWidth":0,"contentHeight":0
+			"contentWidth":0,"contentHeight":0,
+
+			track: {
+				sizeBy: "offset",
+				contentBy: "scroll",
+				width:true, height:true,
+				contentWidth: true, contentHeight: true,
+				scrollLeft:false, scrollTop: false
+			}
 		};
 		this.placement = essential("ElementPlacement")(el,[]);
 		this.placement.manually(["overflow"]);
@@ -2113,11 +2121,15 @@ Generator.discardRestricted = function()
 		}
 
 		if (this.layout.width != this.sizing.width || this.layout.height != this.sizing.height) {
+			this.layout.oldWidth = this.layout.width;
+			this.layout.oldHeight = this.layout.height;
 			this.layout.width = this.sizing.width;
 			this.layout.height = this.sizing.height;
 			this.layout.queued = true;
 		}
 		if (this.layout.contentWidth != this.sizing.contentWidth || this.layout.contentHeight != this.sizing.contentHeight) {
+			this.layout.oldContentWidth = this.layout.contentWidth;
+			this.layout.oldContentHeight = this.layout.contentHeight;
 			this.layout.contentWidth = this.sizing.contentWidth;
 			this.layout.contentHeight = this.sizing.contentHeight;
 			this.layout.queued = true;
@@ -2136,15 +2148,19 @@ Generator.discardRestricted = function()
 
 	_EnhancedDescriptor.prototype.checkSizing = function() {
 
+		var track = this.sizing.track;
+
 		// update sizing with element state
-		this.sizing.width = this.el.offsetWidth;
-		this.sizing.height = this.el.offsetHeight;
+		this.sizing.width = this.el[track.sizeBy+"Width"];
+		this.sizing.height = this.el[track.sizeBy+"Height"];
 		this._updateDisplayed();
 
 		// seems to be displayed
 		if (this.sizing.displayed) {
-			this.sizing.contentWidth = this.el.scrollWidth;
-			this.sizing.contentHeight = this.el.scrollHeight;
+			if (track.contentWidth) this.sizing.contentWidth = this.el[track.contentBy+"Width"];
+			if (track.contentHeight) this.sizing.contentHeight = this.el[track.contentBy+"Height"];
+			if (track.scrollTop) this.sizing.scrollTop = this.el.scrollTop;
+			if (track.scrollLeft) this.sizing.scrollLeft = this.el.scrollLeft;
 
 			if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
 			if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
