@@ -866,13 +866,16 @@
 		var className = config.obscured? lc+"-scroller obscured" : lc+"-scroller";
 		this.el = HTMLElement("div", { "class":className }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		container.appendChild(this.el);
-		this.sizeName = opts.sizeName; this.posName = opts.posName;
-		this.sizeStyle = opts.sizeName.toLowerCase();
+		this.contentName = "content"+ opts.sizeName;
+		this.scrollName = "scroll"+ opts.sizeName; 
+		this.sizeName = this.sizeStyle = opts.sizeName.toLowerCase();
+		this.posName = opts.posName;
 		this.posStyle = opts.posName.toLowerCase();
 		this.autoHide = opts.autoHide;
 		this.trackScroll = opts.trackScroll == false? false : true;;
 
-		this.trackScrolled(el);
+		this.sizing = el.stateful("sizing");
+		// this.trackScrolled(el);
 
 		addEventListeners(el,ENHANCED_SCROLLED_EVENTS);
 		addEventListeners(this.el,{ "mousedown": mousedownEvent });
@@ -889,19 +892,18 @@
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
 		if (this.trackScroll) {
 			this.scrolledTo = el["scroll"+this.posName];
-			this.scrolledContentSize = el["scroll"+this.sizeName];
+			this.scrolledContentSize = this.sizing[this.contentName]; //TODO remove intermediate variable
 		}
 		else {
 			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName,"0");
-			this.scrolledContentSize = this.scrolled.stateful("pos.scroll"+this.sizeName,"0");
+			this.scrolledContentSize = this.scrolled.stateful("pos."+this.scrollName,"0");
 		}
-		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
 	};
 
 	EnhancedScrollbar.prototype.update = function(scrolled) {
 		if (this.scrolledContentSize) {
 			this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
-			this.el.lastChild.style[this.sizeStyle] = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+			this.el.lastChild.style[this.sizeStyle] = (100 * this.sizing[this.sizeName] / this.scrolledContentSize) + "%";
 		} else {
 			this.el.lastChild.style[this.posStyle] = "0%";
 			this.el.lastChild.style[this.sizeStyle] = "0%";
@@ -909,7 +911,7 @@
 	};
 
 	EnhancedScrollbar.prototype.show = function() {
-		if (this.scrolledContentSize <= this.scrolledSize) return false;
+		if (this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
 
 		if (!this.shown) {
 			this.update(this.scrolled);
@@ -991,7 +993,7 @@
 		addEventListeners(container,ENHANCED_SCROLLED_PARENT_EVENTS);
 		container.scrollContainer = "top";
 
-		this.refresh(el);
+		// this.refresh(el);
 
 		el.stateful.on("change","pos.scrollTop",{el:el,es:this},this.scrollTopChanged);
 		el.stateful.on("change","pos.scrollLeft",{el:el,es:this},this.scrollLeftChanged);
