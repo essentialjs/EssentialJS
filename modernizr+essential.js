@@ -8030,10 +8030,12 @@ function(scripts) {
 
 	function EnhancedScrollbar(el,container,config,opts,mousedownEvent) {
         var sbsc = scrollbarSize();
-		var lc = opts.horzvert.toLowerCase();
+		var lc = opts.horzvert.toLowerCase(), cn = lc+"-scroller";
+		if (config.obscured) cn += " obscured";
+		if (config.overhang) cn += " overhang";
 
 		this.scrolled = el;
-		var className = config.obscured? lc+"-scroller obscured" : lc+"-scroller";
+		var className = cn;
 		this.el = HTMLElement("div", { "class":className }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		container.appendChild(this.el);
 		this.contentName = "content"+ opts.sizeName;
@@ -8123,7 +8125,7 @@ function(scripts) {
 
 	function EnhancedScrolled(el,config) {
 
-		if (config.overhang !== undefined) config.overhang = !!config.obscured;
+		if (config.overhang == undefined) config.overhang = !!config.obscured;
 		config.obscured = config.obscured !== false;
 		//? this.el = el
 		var container = this._getContainer(el,config);

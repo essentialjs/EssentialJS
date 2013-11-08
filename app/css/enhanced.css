@@ -1098,20 +1098,20 @@ section.sheet {
   -webkit-border-bottom-right-radius: 7px;
   -moz-border-bottom-right-radius: 7px;
 }
-.aSide .vert-scroller.obscured {
+.aSide .vert-scroller.overhang {
   width: 11px;
   top: 9px;
   bottom: 18px;
 }
-.aSide .vert-scroller.obscured > header {
+.aSide .vert-scroller.overhang > header {
   height: 9px;
   top: -9px;
 }
-.aSide .vert-scroller.obscured > footer {
+.aSide .vert-scroller.overhang > footer {
   height: 18px;
   bottom: -18px;
 }
-.aSide .vert-scroller.obscured nav {
+.aSide .vert-scroller.overhang nav {
   left: 1px;
   right: initial;
 }
@@ -1177,20 +1177,20 @@ section.sheet {
   -webkit-border-bottom-right-radius: 7px;
   -moz-border-bottom-right-radius: 7px;
 }
-.aSide .horz-scroller.obscured {
+.aSide .horz-scroller.overhang {
   height: 11px;
   left: 11px;
   right: 22px;
 }
-.aSide .horz-scroller.obscured > header {
+.aSide .horz-scroller.overhang > header {
   width: 11px;
   left: -11px;
 }
-.aSide .horz-scroller.obscured > footer {
+.aSide .horz-scroller.overhang > footer {
   width: 22px;
   right: -22px;
 }
-.aSide .horz-scroller.obscured nav {
+.aSide .horz-scroller.overhang nav {
   top: 1px;
   bottom: initial;
 }
