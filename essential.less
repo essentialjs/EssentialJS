@@ -17,6 +17,13 @@
 .scrollbarLayout(@size: @scroll-bar-size, @size-native: @scroll-bar-size-native, @border-width: @scroll-bar-border-width, @min-size: 0) {
     @bg-size: @size + 2px;
 
+	@vert-overhang-footer: @bg-size;
+	@horz-overhang-footer: @bg-size;
+	@vert-header: @size + 2*@border-width;
+	@vert-footer: 2*@size - 4px;
+	@horz-header: @size + 2*@border-width;
+	@horz-footer: 2*@size - 4px;
+
 	.vert-scroller, .horz-scroller {
 		box-sizing: border-box;
 		z-index: @z-scroll-bar;
@@ -64,7 +71,7 @@
 
 	.vert-scroller {
 		display: block; position: absolute; right: 0;
-		top:@size-native; bottom: 2*@size-native;
+		top:@vert-header; bottom: @vert-footer;
 
 		overflow: visible;
 		width: @size-native;
@@ -73,27 +80,27 @@
 			display: block; position:absolute; 
 			right: 0;
 			width: 100%;
-			height: @size-native;
 		}
 		> header {
-			top: -@size-native;
+			top: -@vert-header;
+			height: @vert-header;
 		}
 		> footer {
-			height: 2*@size-native;
-			bottom: -2*@size-native;
+			height: @vert-footer;
+			bottom: -@vert-footer;
 		}
 
 		nav {
 			right: @border-width;
 			top:0; height:100%; min-height: @min-size;
 			overflow: visible;
-			width: @scroll-bar-size - 2*@border-width;
+			width: @size - 2*@border-width;
 
 			header {
 				display: block; position:absolute; top:-@size;
 				right: 0;
 				overflow: visible;
-				width: @scroll-bar-size - 2*@border-width; height: @size;
+				width: @size - 2*@border-width; height: @size;
 
                 border-top-left-radius: @size - 2*@border-width;
                 -webkit-border-top-left-radius: @size - 2*@border-width;
@@ -119,15 +126,15 @@
 	}
 
     .vert-scroller.overhang {
-        width: @bg-size;
-		top:@size; bottom: 2*@size;
+        width: @bg-size; right: -@bg-size;
+		top:@size; bottom: @vert-overhang-footer;
 		> header {
 			height: @size;
 			top: -@size;
 		}
 		> footer {
-			height: 2*@size;
-			bottom: -2*@size;
+			height: @vert-overhang-footer;
+			bottom: -@vert-overhang-footer;
 		}
 		nav {
 	        left: @border-width; right: initial;
@@ -137,7 +144,7 @@
 
 	.horz-scroller {
 		display: block; position: absolute; bottom: 0;
-		left:@size-native; right:2*@size-native;
+		left:@size-native; right:@horz-footer;
 		
 		overflow: visible;
 		height: @size-native;
@@ -145,22 +152,22 @@
 		> header, > footer {
 			display: block; position:absolute; 
 			bottom: 0;
-			width: @size-native;
 			height: 100%;
 		}
 		> header {
-			left: -@size-native;
+			left: -@horz-header;
+			height: @horz-header;
 		}
 		> footer {
-			right: -2*@size-native;
-			width: 2*@size-native;
+			right: -@horz-footer;
+			width: @horz-footer;
 		}
 
 		nav {
 			bottom: @border-width;
 			left:0; width:100%; min-width: @min-size;
 			overflow: visible;
-			height: @scroll-bar-size - 2*@border-width;
+			height: @size - 2*@border-width;
 
             header {
                 display: block; position:absolute; left:-@size;
@@ -191,15 +198,15 @@
 	}
 
     .horz-scroller.overhang {
-        height: @bg-size;
-		left:@bg-size; right: 2*@bg-size;
+        height: @bg-size; bottom: -@bg-size;
+		left:@bg-size; right: @horz-overhang-footer;
 		> header {
 			width: @bg-size;
 			left: -@bg-size;
 		}
 		> footer {
-			width: 2*@bg-size;
-			right: -2*@bg-size;
+			width: @horz-overhang-footer;
+			right: -@horz-overhang-footer;
 		}
 		nav {
 	        top: @border-width; bottom: initial;
@@ -227,6 +234,12 @@
 			> header, > footer { background-color: @slider-color;}
 		}
 	}
+
+	.vert-scroller.obscured, .horz-scroller.obscured {
+		background-color: transparent; 
+		> header, > footer { background-color: transparent; }
+	}
+
 }
 
 .scrolledAppearance() {

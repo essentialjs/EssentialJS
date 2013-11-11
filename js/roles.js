@@ -887,8 +887,8 @@
 				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
 			}
 		}
-		if (config.overhang) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
-        else this.el.style[opts.thicknessName] = sbsc + "px";
+		// if (config.overhang) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
+  //       else this.el.style[opts.thicknessName] = sbsc + "px";
 	}
 
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
