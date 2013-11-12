@@ -7144,7 +7144,10 @@ function(scripts) {
 		addEventListeners(document.body, {
 			"selectstart": function(ev) {
 				ev = MutableEvent(ev);
-				var allow = pass[ev.target.tagName || ""] || false;
+				var allow = false;
+				for(var el = ev.target; el; el = el.parentNode) {
+					if (pass[el.tagName || ""]) allow = true;
+				} 
 				if (!allow) ev.preventDefault();
 				return allow;
 			}
