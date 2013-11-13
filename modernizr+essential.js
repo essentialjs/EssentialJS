@@ -8032,6 +8032,7 @@ function(scripts) {
 
 
 	function EnhancedScrollbar(el,container,config,opts,mousedownEvent) {
+		this.enable = opts.enable !== false;
         var sbsc = scrollbarSize();
 		var lc = opts.horzvert.toLowerCase(), cn = lc+"-scroller";
 		if (config.obscured) cn += " obscured";
@@ -8086,7 +8087,7 @@ function(scripts) {
 	};
 
 	EnhancedScrollbar.prototype.show = function() {
-		if (this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
+		if (!this.enable || this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
 
 		if (!this.shown) {
 			this.update(this.scrolled);
@@ -8133,7 +8134,6 @@ function(scripts) {
 		//? this.el = el
 		var container = this._getContainer(el,config);
 
-
 		var trackScrollVert = !(config.trackScrollVert==false || config.trackScroll == false),
 			trackScrollHorz = !(config.trackScrollHorz==false || config.trackScroll == false);
 
@@ -8148,6 +8148,7 @@ function(scripts) {
 		this.x = false !== config.x;
 		this.y = false !== config.y;
 		this.vert = new EnhancedScrollbar(el,container,config,{
+			enable: config.vert,
 			horzvert: "Vert", 
 			trackScroll: trackScrollVert,
 			sizeName: "Height", 
@@ -8156,7 +8157,8 @@ function(scripts) {
 			edgeName: "right" 
 			},trackScrollVert? mousedownVert : mousedownStatefulVert);
 
-		this.horz = new EnhancedScrollbar(el,container,config,{ 
+		this.horz = new EnhancedScrollbar(el,container,config,{
+			enable: config.horz, 
 			horzvert: "Horz",
 			trackScroll: trackScrollHorz,
 			sizeName: "Width", 
@@ -8205,6 +8207,10 @@ function(scripts) {
 		es.horz.update(el);
 	};
 
+	// Define on browser type
+	var bGecko  = !!window.controllers;
+	var bIE     = window.document.all && !window.opera;
+
 	EnhancedScrolled.prototype._getContainer = function(el,config) {
 
         var sbsc = scrollbarSize();
@@ -8214,8 +8220,12 @@ function(scripts) {
 			if (! config.unstyledParent) el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
 			el.style.right = "-" + sbsc + "px";
 			el.style.bottom = "-" + sbsc + "px";
-			el.style.paddingRight = sbsc + "px";
-			el.style.paddingBottom = sbsc + "px";
+
+			if (!bGecko && !bIE) {
+				// fix incorrect width for children
+				el.style.paddingRight = sbsc + "px";
+				el.style.paddingBottom = sbsc + "px";
+			}
 			container = container.parentNode;
 		}
 		return container;
