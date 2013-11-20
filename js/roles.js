@@ -566,6 +566,8 @@
 	}
 	pageResolver.set("handlers.init.template",init_template);
 
+	pageResolver.set("handlers.sizing.template",false);
+
 	function init_templated(el,role,config,context) {
 		this.state.contentManaged = true; // templated content skipped
 	}

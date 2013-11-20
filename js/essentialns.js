@@ -238,8 +238,16 @@
 		}
 	}
 	
+	function ensureCleaner(el,cleaner) {
+
+		if (el._cleaners == undefined) el._cleaners = [];
+		if (!arrayContains(el._cleaners,cleaner)) el._cleaners.push(cleaner); 
+	}
+	essential.declare("ensureCleaner",ensureCleaner);
+
 	/**
 	 * Cleans up registered event listeners and other references
+	 * LIFO call order
 	 * 
 	 * @param {Element} el
 	 */
@@ -492,6 +500,7 @@
 		};
 		this._updateDisplayed();
 		this.ensureStateful();
+		ensureCleaner(this.el,_roleEnhancedCleaner); //TODO either enhanced, layouter, or laidout
 		this.stateful.set("state.needEnhance", roles.length > 0);
 		this.uniqueID = uniqueID;
 		this.roles = roles;
@@ -615,8 +624,10 @@
 	};
 
 
-	function _roleEnhancedCleaner(desc) {
-		return function() {
+	function _roleEnhancedCleaner() {
+		if (this.uniqueID == null) return; // just in case, shouldn't happen
+		var desc = enhancedElements[this.uniqueID];
+		if (desc) {
 			//TODO destroy
 			//TODO discard/destroy for layouter and laidout
 
@@ -625,13 +636,14 @@
 
 			// if (desc.discardHandler) 
 			var r = desc.discardHandler(desc.el,desc.role,desc.instance);
-			desc._unlist(); // make sure that sizing stops
+			// desc._domCheck();
+			desc._unlist(true); // make sure that sizing stops
 
 			if (controller && controller.discarded) controller.discarded(desc.el,desc.instance);
 
 			return r;
-		};
-	};
+		}
+	}
 
 	//TODO keep params on page
 
@@ -655,9 +667,9 @@
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
 			var discardHandler = handlers.discard[this.role];
 			if (discardHandler) this.discardHandler = discardHandler;
-			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
+
 			// if (this.sizingHandler), enhanced will update layout even if no sizingHandler
-			 sizingElements[this.uniqueID] = this;
+			if (this.sizingHandler !== false) sizingElements[this.uniqueID] = this;
 			if (this.layoutHandler) {
 				this.layout.enable = true;
 				maintainedElements[this.uniqueID] = this;
@@ -743,14 +755,19 @@
 		return laidouts;
 	};
 
-	_EnhancedDescriptor.prototype.liveCheck = function() {
-		if (!this.state.enhanced || this.state.discarded) return;
+	_EnhancedDescriptor.prototype._domCheck = function() {
+
 		var inDom = document.body==this.el || essential("contains")(document.body,this.el); //TODO reorg import
 		//TODO handle subpages
 		if (!inDom) {
 			//TODO destroy and queue discard
 			this.discardNow();
 		}
+	};
+
+	_EnhancedDescriptor.prototype.liveCheck = function() {
+		if (!this.state.enhanced || this.state.discarded) return;
+		this._domCheck();
 	};
 
 	_EnhancedDescriptor.prototype.discardNow = function() {
@@ -765,7 +782,7 @@
 	};
 
 	_EnhancedDescriptor.prototype._unlist = function(forget) {
-		this.state.discarded = true;					
+		this.state.discarded = true;	//TODO is this correct??? prevents discardNow				
 		if (this.layout.enable) delete maintainedElements[this.uniqueID];
 		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
 		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
@@ -871,7 +888,6 @@
 		enhancedElements[uniqueID] = desc;
 		var descriptors = page.resolver("descriptors");
 		descriptors[uniqueID] = desc;
-		if (el._cleaners == undefined) el._cleaners = [];
 
 		return desc;
 	}

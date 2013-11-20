@@ -8,7 +8,7 @@
 		console = essential("console"),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
-		arrayContains = essential("arrayContains"),
+		ensureCleaner = essential("ensureCleaner"),
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
 		serverUrl = location.protocol + "//" + location.host,
@@ -300,9 +300,8 @@
 
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
-		if (el._cleaners == undefined) el._cleaners = [];
 		//TODO consider when to clean body element
-		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+		ensureCleaner(el,statefulCleaner);
 		if (useAsSource != false) readElementState(el,stateful("state"));
 		stateful.on("change reflect","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
 		if (!nativeClassList) {
