@@ -2128,15 +2128,24 @@ Generator.discardRestricted = function()
 		this._domCheck();
 	};
 
+	_EnhancedDescriptor.prototype._null = function() {
+
+		this.sizingHandler = undefined;
+		this.layoutHandler = undefined;
+		this.layouter = undefined;
+		this.laidout = undefined;
+		this.layout.enable = false;					
+		this.context = undefined;
+		this._updateContext = function() {}; //TODO why is this called after discard, fix that
+	};
+
 	_EnhancedDescriptor.prototype.discardNow = function() {
 		if (this.state.discarded) return;
 
 		cleanRecursively(this.el);
-		this.context = undefined;
+		this._null();
 		this.el = undefined;
 		this.state.discarded = true;					
-		this.layout.enable = false;					
-		this._updateContext = function() {}; //TODO why is this called after discard, fix that
 	};
 
 	_EnhancedDescriptor.prototype._unlist = function(forget) {
@@ -2145,6 +2154,7 @@ Generator.discardRestricted = function()
 		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
 		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
 		if (forget) delete enhancedElements[this.uniqueID];
+		this._null();
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -2314,7 +2324,10 @@ Generator.discardRestricted = function()
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.state.discarded) desc._unlist(); // leave it in .all
+			if (desc.state.discarded) {
+				if (desc.el) cleanRecursively(desc.el);
+				desc._unlist(); // leave it in .all}
+			}
 		}
 	};
 
