@@ -1649,6 +1649,7 @@ Generator.discardRestricted = function()
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
 
 	_Layouter.prototype.init = function(el,conf,sizing,layout) {};
+	_Layouter.prototype.destroy = function(el) {};
 
 	/*
 		Called for descendants of the layouter to allow forcing sizing, return true to force
@@ -1678,6 +1679,7 @@ Generator.discardRestricted = function()
 	var Laidout = essential.declare("Laidout",Generator(_Laidout));
 
 	_Laidout.prototype.init = function(el,conf,sizing,layout) {};
+	_Laidout.prototype.destroy = function(el) {};
 	_Laidout.prototype.layout = function(el,layout) {};
 	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
@@ -1980,6 +1982,8 @@ Generator.discardRestricted = function()
 		if (this.uniqueID == null) return; // just in case, shouldn't happen
 		var desc = enhancedElements[this.uniqueID];
 		if (desc) {
+			if (desc.laidout) desc.laidout.destroy(desc.el);
+			if (desc.layouter) desc.layouter.destroy(desc.el);
 			//TODO destroy
 			//TODO discard/destroy for layouter and laidout
 
@@ -1992,6 +1996,8 @@ Generator.discardRestricted = function()
 			desc._unlist(true); // make sure that sizing stops
 
 			if (controller && controller.discarded) controller.discarded(desc.el,desc.instance);
+
+			//TODO discard queue for generator instances
 
 			return r;
 		}
