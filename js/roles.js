@@ -932,7 +932,7 @@
 	};
 
 	EnhancedScrollbar.prototype.hide = function() {
-		if (this.autoHide !== false && this.shown) {
+		if (this.autoHide !== false && this.shown && this.enable) {
 			this.el.className = this.el.className.replace(" shown","");
 			if (this.hiding) {
 				clearTimeout(this.hiding);
@@ -953,6 +953,7 @@
 			if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
 			callCleaners(this.el);
 			this.el = undefined;
+			this.shown = this.enable = false;
 		}
 	};
 
