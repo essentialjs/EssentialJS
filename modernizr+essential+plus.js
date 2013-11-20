@@ -1605,6 +1605,7 @@ Generator.discardRestricted = function()
 		if (typeof el == "object" && el) {
 			var _cleaners = el._cleaners, c;
 			if (_cleaners != undefined) {
+				_cleaners._incall = true;
 				do {
 					c = _cleaners.pop();
 					if (c) c.call(el);
@@ -1617,6 +1618,8 @@ Generator.discardRestricted = function()
 
 	//TODO recursive clean of element and children?
 	function cleanRecursively(el) {
+		if (el._cleaners && el._cleaners._incall) return; // if in the middle of cleaning leave branch alone
+
 		callCleaners(el);
 		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
 			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
