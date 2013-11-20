@@ -8243,14 +8243,14 @@ function(scripts) {
 	EnhancedScrolled.prototype.layout = function(el,layout) {
 
 		if (layout.contentHeight != layout.oldContentHeight && !this.vert.shown) {
-			this.vert.show();
+			if (this.vert.show() === false) this.vert.hide(); // if content less/eq to space hide right now
 			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.vert.delayedHide(750);
 			}
 		}
 
 		if (layout.contentWidth != layout.oldContentWidth && !this.horz.shown) {
-			this.horz.show();
+			if (this.horz.show() === false) this.horz.hide(); // if content less/eq to space hide right now
 			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.horz.delayedHide(750);
 			}
