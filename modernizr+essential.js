@@ -8134,10 +8134,11 @@ function(scripts) {
 			this.el.lastChild.style[this.posStyle] = "0%";
 			this.el.lastChild.style[this.sizeStyle] = "0%";
 		}
+		if (!this.enable || !this.scrolledContentSize || this.scrolledContentSize <= this.sizing[this.sizeName]) this.hide();
 	};
 
 	EnhancedScrollbar.prototype.show = function() {
-		if (!this.enable || this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
+		if (!this.enable || !this.scrolledContentSize || this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
 
 		if (!this.shown) {
 			this.update(this.scrolled);

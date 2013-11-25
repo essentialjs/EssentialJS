@@ -264,18 +264,29 @@
 				_cleaners = undefined;
 			}
 		} 
-	};
+	}
 	essential.declare("callCleaners",callCleaners);
 
-	//TODO recursive clean of element and children?
-	function cleanRecursively(el) {
-		if (el._cleaners && el._cleaners._incall) return; // if in the middle of cleaning leave branch alone
+	/*
+	 * Cleans up registered event listeners and other references
+	 * Children first.
+	 */
+	function cleanRecursively(el,unwind,nested) {
+		unwind = unwind || 0;
+		var cleaners = el._cleaners = el._cleaners || [];
+		var incall = cleaners._incall || 0;
+		var cleanMe = !nested && !cleaners._inrecurse;
 
-		callCleaners(el);
+		if (incall > unwind) return; // if in the middle of cleaning leave branch alone
+
+		cleaners._inrecurse = (cleaners._inrecurse || 0) + 1;
+
 		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
 			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
 			cleanRecursively(child);
 		}
+
+		if (cleanMe) callCleaners(el,unwind,true);
 	}
 	essential.declare("cleanRecursively",cleanRecursively);
 
