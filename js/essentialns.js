@@ -256,7 +256,7 @@
 		if (typeof el == "object" && el) {
 			var _cleaners = el._cleaners, c;
 			if (_cleaners != undefined) {
-				_cleaners._incall = true;
+				_cleaners._incall = (_cleaners._incall || 0) + 1;
 				do {
 					c = _cleaners.pop();
 					if (c) c.call(el);
