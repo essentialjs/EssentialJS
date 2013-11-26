@@ -1610,7 +1610,7 @@ Generator.discardRestricted = function()
 					c = _cleaners.pop();
 					if (c) c.call(el);
 				} while(c);
-				_cleaners = undefined;
+				el._cleaners = undefined;
 			}
 		} 
 	}
@@ -1636,6 +1636,7 @@ Generator.discardRestricted = function()
 		}
 
 		if (cleanMe) callCleaners(el);
+		--cleaners._inrecurse;
 	}
 	essential.declare("cleanRecursively",cleanRecursively);
 
@@ -3874,12 +3875,6 @@ Generator.discardRestricted = function()
 	HTMLElement.discard = function(el,leaveInDom) {
 
 		this.query(el).discard();
-		// var desc = EnhancedDescriptor.all[el.uniqueID];
-		// if (desc) {
-		// 	desc.discardNow();
-		// 	desc._unlist();
-		// }
-		essential("cleanRecursively")(el);
 
 		if (!leaveInDom) el.parentNode.removeChild(el);
 	};

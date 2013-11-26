@@ -261,7 +261,7 @@
 					c = _cleaners.pop();
 					if (c) c.call(el);
 				} while(c);
-				_cleaners = undefined;
+				el._cleaners = undefined;
 			}
 		} 
 	}
@@ -287,6 +287,7 @@
 		}
 
 		if (cleanMe) callCleaners(el);
+		--cleaners._inrecurse;
 	}
 	essential.declare("cleanRecursively",cleanRecursively);
 
