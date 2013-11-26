@@ -283,7 +283,7 @@
 
 		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
 			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
-			cleanRecursively(child);
+			if (child.nodeType == 1) cleanRecursively(child); //TODO perhaps run through .children instead
 		}
 
 		if (cleanMe) callCleaners(el,unwind,true);
