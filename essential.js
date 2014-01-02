@@ -1,34 +1,26 @@
 /*!
-    Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011-2013 by Henrik Vendelbo
+    Essential JavaScript - v0.3.0 ❀ http://essentialjs.com
+    Copyright (c) 2011-2014 Henrik Vendelbo
 
     This program is free software: you can redistribute it and/or modify it under the terms of
     the GNU Affero General Public License version 3 as published by the Free Software Foundation.
 
     Additionally,
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
-    and associated documentation files (the "Software"), to deal in the Software without restriction, 
-    including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-    and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+    and associated documentation files (the 'Software'), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
     subject to the following conditions:
 
     The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
+    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
     BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
-    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-/**
- *
- * options.name
- * options.generator
- * options.mixinto
- */
-function Resolver(name_andor_expr,ns,options)
+*/function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
@@ -928,14 +920,6 @@ Resolver.exists = function(name) {
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
 
-/**
- * Generator(constr) - get cached or new generator
- * Generator(constr,base1,base2) - define with bases
- * Generator(constr,base,options) - define with options 
- *
- * options { singleton: false, pool: undefined, allocate: true } 
- *
- */
 function Generator(mainConstr,options)
 {
 	//"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -1339,7 +1323,6 @@ Generator.discardRestricted = function()
 };
 
 
-/*jslint white: true */
 // types for describing generator arguments and generated properties
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -4218,7 +4201,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 
 }();
-/*jslint white: true */
 /*
 	StatefulResolver and ApplicationConfig
 */
@@ -5858,7 +5840,7 @@ function(scripts) {
 }
 );
 
-/**
+/*!
 * XMLHttpRequest.js Copyright (C) 2011 Sergey Ilinsky (http://www.ilinsky.com)
 *
 * This work is free software; you can redistribute it and/or modify
@@ -6403,7 +6385,6 @@ function(scripts) {
 	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
 }();
-/*jslint white: true */
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
@@ -7206,7 +7187,6 @@ function(scripts) {
 }();
 
 
-/*jshint forin:true, eqnull:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, indent:4, maxerr:50, newcap:false, white:false, devel:true */
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
