@@ -8,7 +8,7 @@ module.exports = function(grunt) {
     banner: '/*!\n    <%= pkg.title || pkg.name %> - v<%= pkg.version %>' +
       '<%= pkg.homepage ? " ❀ " + pkg.homepage + "\\n    " : "* " %>' +
       'Copyright (c) 2011-<%= grunt.template.today("yyyy") %> <%= pkg.author_name %>\n' +
-      '<%= pkg.license_text.join("\\n") %>\n*/',
+      '<%= pkg.license_text.join("\\n") %>*/\n',
       //' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */\n',
 
     // --- FULL JS ---
