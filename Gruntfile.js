@@ -33,20 +33,36 @@ module.exports = function(grunt) {
         dest: 'essential.js'
       },
 
-
-
       essential2: {
         src: [
+          'js/modernizr-prefix.js',
           'js/modernizr-custom.js',
-          'js/essential.js'
+          'js/resolver.js',
+          'js/generator.js',
+          'js/essentialns.js',
+          'js/dom.js',
+          'js/page.js',
+          'js/xhr.js',
+          'js/elements.js',
+          'js/roles.js',
+          'js/configured.js'
         ],
         dest: 'modernizr+essential.js'
       },
 
       plus: {
         src: [
+          'js/modernizr-prefix.js',
           'js/modernizr-custom.js',
-          'js/essential.js',
+          'js/resolver.js',
+          'js/generator.js',
+          'js/essentialns.js',
+          'js/dom.js',
+          'js/page.js',
+          'js/xhr.js',
+          'js/elements.js',
+          'js/roles.js',
+          'js/configured.js',
           'app/js/raphael.min.js',
           'app/js/spin.min.js'
         ],
@@ -208,6 +224,7 @@ module.exports = function(grunt) {
 
     concurrent: {
       tasks: [
+        // 'modernizr', requires network so disabled
         // 'jshint',
         'concat:essential','concat:essential2','concat:plus',
         'watch:less',/*'watch:sass',*/ 'watch:scripts'],//TODO host root as web
