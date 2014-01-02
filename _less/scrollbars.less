@@ -254,33 +254,283 @@
 
 }
 
+
 .supportLang(en) {
-	html[lang=en] body {
-		*[lang=not-en], 
-		.not-lang-en { display:none !important; }
+    html[lang=en] body { 
+        *[lang=not-en], 
+        .not-lang-en { display:none !important; }
 
-		*[lang=de] { display:none !important; }
-		*[lang=fr] { display:none !important; }
-	}
+        // [lang=en],
+        [lang=fr],
+        [lang=de],
+        [lang=es],
+        [lang=pt],
+        [lang=it],
+        [lang=pl],
+        [lang=cs], // Czech
+        [lang=ch],
+        [lang=jp],
+        [lang=ru],
+        [lang=ar]
+         {
+            display:none !important; 
+        }
+    }
 }
-.supportLang(de) {
-	html[lang=de] body { 
-		*[lang=not-de], 
-		.not-lang-de { display:none !important; }
 
-		*[lang=en] { display:none !important; }
-		*[lang=fr] { display:none !important; }
-	}
-}
 .supportLang(fr) {
 	html[lang=fr] body { 
 		*[lang=not-fr], 
 		.not-lang-fr { display:none !important; }
 
-		*[lang=de] { display:none !important; }
-		*[lang=en] { display:none !important; }
+
+	    [lang=en],
+	    // [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
 	}
 }
+
+.supportLang(de) {
+	html[lang=de] body { 
+		*[lang=not-de], 
+		.not-lang-de { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    // [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(es) {
+	html[lang=es] body { 
+		*[lang=not-es], 
+		.not-lang-es { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    // [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(pt) {
+	html[lang=pt] body { 
+		*[lang=not-pt], 
+		.not-lang-pt { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    // [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(it) {
+	html[lang=it] body { 
+		*[lang=not-it], 
+		.not-lang-it { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    // [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(pl) {
+	html[lang=pl] body { 
+		*[lang=not-pl], 
+		.not-lang-pl { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    // [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(cs) {
+	html[lang=cs] body { 
+		*[lang=not-cs], 
+		.not-lang-cs { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    // [lang=cs], // Czech
+	    [lang=ch],
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(ch) {
+	html[lang=ch] body { 
+		*[lang=not-ch], 
+		.not-lang-ch { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=jp],
+        [lang=ru],
+        [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(jp) {
+	[lang=jp] { 
+		*[lang=not-jp], 
+		.not-lang-jp { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+        [lang=ru],
+        [lang=ar]
+	    // [lang=jp]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(ru) {
+	[lang=ru] { 
+		*[lang=not-ru], 
+		.not-lang-ru { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=ch],
+        [lang=jp],
+        [lang=ar]
+	    // [lang=ru]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
+.supportLang(ar) {
+	[lang=ar] { 
+		*[lang=not-ar], 
+		.not-lang-ar { display:none !important; }
+
+	    [lang=en],
+	    [lang=fr],
+	    [lang=de],
+	    [lang=es],
+	    [lang=pt],
+	    [lang=it],
+	    [lang=pl],
+	    [lang=cs], // Czech
+	    [lang=jp],
+        [lang=ru],
+        [lang=ch]
+	    // [lang=ar]
+	     {
+	        display:none !important; 
+	    }
+	}
+}
+
 
 .no-user-selection() {
 	-webkit-touch-callout: none;
