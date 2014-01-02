@@ -18,6 +18,17 @@ module.exports = function(grunt) {
         stripBanners: true
       },
 
+      less: {
+        options: {
+          banner: ''
+        },
+
+        src: [
+          '_less/scrollbars.less'
+        ],
+        dest: 'essential.less'
+      },
+
       essential: {
         src: [
           'js/resolver.js',
@@ -112,8 +123,8 @@ module.exports = function(grunt) {
           yuicompress: true
         },
         files: {
-          './css/mobile.min.css': './css/mobile.less',
-          './css/enhanced.min.css': './css/enhanced.less'
+          './app/css/mobile.min.css': './app/css/mobile.less',
+          './app/css/enhanced.min.css': './app/css/enhanced.less'
         }
       },
 
@@ -123,8 +134,8 @@ module.exports = function(grunt) {
           yuicompress: true
         },
         files: {
-          'css/mobile.min.css': 'css/mobile.less',
-          'css/enhanced.min.css': 'css/enhanced.less'
+          'app/css/mobile.min.css': 'app/css/mobile.less',
+          'app/css/enhanced.min.css': 'app/css/enhanced.less'
         }
       }
     },
@@ -136,8 +147,8 @@ module.exports = function(grunt) {
       },
 
       less: {
-        files: ['_less/*.less','assets/less/**/*.less',"./css/*.less"],
-        tasks: 'less:dev'
+        files: ['_less/*.less','assets/less/**/*.less',"./app/css/*.less"],
+        tasks: ['less:dev','concat:less']
       },
       sass: {
         files: ['assets/sass/partials/**/*.scss', 'assets/sass/modules/**/*.scss',"./css/*.scss"],
@@ -226,6 +237,7 @@ module.exports = function(grunt) {
       tasks: [
         // 'modernizr', requires network so disabled
         // 'jshint',
+        'concat:less',
         'concat:essential','concat:essential2','concat:plus',
         'watch:less',/*'watch:sass',*/ 'watch:scripts'],//TODO host root as web
       options: {

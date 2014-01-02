@@ -1,0 +1,333 @@
+//	Global variables and mixins for common Essential Elements
+
+//	Import this at the beginning of your stylesheets and override global variables with 
+//	values specific to the application.
+
+@z-scroll-bar: 10;
+
+@scroll-bar-size: 9px;
+@scroll-bar-size-native: 15px;
+@scroll-bar-border-width: 1px;
+@scroll-background-color: white;
+@scroll-slider-color: black;//rgba(0,0,0,0.5);
+@scroll-slider-border-color: transparent;
+@scroll-slider-color-rgb: black; //#888;
+@scroll-slider-border-color-rgb: transparent;
+
+.scrollbarLayout(@size: @scroll-bar-size, @size-native: @scroll-bar-size-native, @border-width: @scroll-bar-border-width, @min-size: 0) {
+    @bg-size: @size + 2px;
+
+	@vert-overhang-footer: @bg-size;
+	@horz-overhang-footer: @bg-size;
+	@vert-header: @size + 2*@border-width;
+	@vert-footer: 2*@size - 4px;
+	@horz-header: @size + 2*@border-width;
+	@horz-footer: 2*@size - 4px;
+
+	.vert-scroller, .horz-scroller {
+		box-sizing: border-box;
+		z-index: @z-scroll-bar;
+
+		header,footer {		
+			box-sizing: border-box; 
+		}
+		nav {
+			box-sizing: border-box;
+			display: block; position: absolute;
+			opacity:0;
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+			filter: alpha(opacity=0);
+			-webkit-transition: linear 300ms opacity;
+			-moz-transition: linear 300ms opacity;
+			-o-transition: linear 300ms opacity;
+			transition: linear 300ms opacity;
+		}
+		&.shown nav {
+			opacity:.5;
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+			filter: alpha(opacity=50);
+		}
+	}
+
+	.ie8 & .vert-scroller,
+	.ie8 & .horz-scroller {
+		nav {
+
+			header,footer {
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+			filter: alpha(opacity=0);
+			}
+
+		}		
+		&.shown nav {
+
+			header,footer {
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+			filter: alpha(opacity=50);
+			}
+
+		}
+	}
+
+	.vert-scroller {
+		display: block; position: absolute; right: 0;
+		top:@vert-header; bottom: @vert-footer;
+
+		overflow: visible;
+		width: @size-native;
+
+		> header, > footer {
+			display: block; position:absolute; 
+			right: 0;
+			width: 100%;
+		}
+		> header {
+			top: -@vert-header;
+			height: @vert-header;
+		}
+		> footer {
+			height: @vert-footer;
+			bottom: -@vert-footer;
+		}
+
+		nav {
+			right: @border-width;
+			top:0; height:100%; min-height: @min-size;
+			overflow: visible;
+			width: @size - 2*@border-width;
+
+			header {
+				display: block; position:absolute; top:-@size;
+				right: 0;
+				overflow: visible;
+				width: @size - 2*@border-width; height: @size;
+
+                border-top-left-radius: @size - 2*@border-width;
+                -webkit-border-top-left-radius: @size - 2*@border-width;
+                -moz-border-top-left-radius: @size - 2*@border-width;
+                border-top-right-radius: @size - 2*@border-width;
+                -webkit-border-top-right-radius: @size - 2*@border-width;
+                -moz-border-top-right-radius: @size - 2*@border-width;
+			}
+			footer {
+				display: block; position:absolute; bottom:-@size;
+				right: 0;
+				overflow: visible;
+				width: @size - 2*@border-width; height: @size;
+
+                border-bottom-left-radius: @size - 2*@border-width;
+                -webkit-border-bottom-left-radius: @size - 2*@border-width;
+                -moz-border-bottom-left-radius: @size - 2*@border-width;
+                border-bottom-right-radius: @size - 2*@border-width;
+                -webkit-border-bottom-right-radius: @size - 2*@border-width;
+                -moz-border-bottom-right-radius: @size - 2*@border-width;
+			}
+		}
+	}
+
+    .vert-scroller.overhang {
+        width: @bg-size; right: -@bg-size;
+		top:@size; bottom: @vert-overhang-footer;
+		> header {
+			height: @size;
+			top: -@size;
+		}
+		> footer {
+			height: @vert-overhang-footer;
+			bottom: -@vert-overhang-footer;
+		}
+		nav {
+	        left: @border-width; right: initial;
+	        // header,footer { left:0; right: initial;}
+		}
+    }
+
+	.horz-scroller {
+		display: block; position: absolute; bottom: 0;
+		left:@size-native; right:@horz-footer;
+		
+		overflow: visible;
+		height: @size-native;
+
+		> header, > footer {
+			display: block; position:absolute; 
+			bottom: 0;
+			height: 100%;
+		}
+		> header {
+			left: -@horz-header;
+			height: @horz-header;
+		}
+		> footer {
+			right: -@horz-footer;
+			width: @horz-footer;
+		}
+
+		nav {
+			bottom: @border-width;
+			left:0; width:100%; min-width: @min-size;
+			overflow: visible;
+			height: @size - 2*@border-width;
+
+            header {
+                display: block; position:absolute; left:-@size;
+                bottom: 0;
+                overflow: visible;
+                width: @size; height: @size - 2*@border-width;
+                border-top-left-radius: @size - 2*@border-width;
+                -webkit-border-top-left-radius: @size - 2*@border-width;
+                -moz-border-top-left-radius: @size - 2*@border-width;
+                border-bottom-left-radius: @size - 2*@border-width;
+                -webkit-border-bottom-left-radius: @size - 2*@border-width;
+                -moz-border-bottom-left-radius: @size - 2*@border-width;
+            }
+            footer {
+                display: block; position:absolute; right:-@size;
+                bottom: 0;
+                overflow: visible;
+                width: @size; height: @size - 2*@border-width;
+                border-top-right-radius: @size - 2*@border-width;
+                -webkit-border-top-right-radius: @size - 2*@border-width;
+                -moz-border-top-right-radius: @size - 2*@border-width;
+                border-bottom-right-radius: @size - 2*@border-width;
+                -webkit-border-bottom-right-radius: @size - 2*@border-width;
+                -moz-border-bottom-right-radius: @size - 2*@border-width;
+            }
+		}
+		
+	}
+
+    .horz-scroller.overhang {
+        height: @bg-size; bottom: -@bg-size;
+		left:@bg-size; right: @horz-overhang-footer;
+		> header {
+			width: @bg-size;
+			left: -@bg-size;
+		}
+		> footer {
+			width: @horz-overhang-footer;
+			right: -@horz-overhang-footer;
+		}
+		nav {
+	        top: @border-width; bottom: initial;
+		}
+    }
+
+}
+
+.scrollbarColor(@scrollbar-color: @scroll-background-color, 
+	@slider-color: @scroll-slider-color, @slider-color-rgb: @scroll-slider-color-rgb, 
+	@slider-border-color: @scroll-slider-border-color, @slider-border-color-rgb: @scroll-slider-border-color-rgb) {
+
+	.vert-scroller, .horz-scroller { 
+		background-color: @scrollbar-color; 
+		border-color: @slider-border-color;
+		> header, > footer { background-color: @scrollbar-color; }
+
+		nav {
+			background-color: @slider-color-rgb;
+			> header, > footer { background-color: @slider-color-rgb;}
+		}
+
+		nav {
+			background-color: @slider-color;
+			> header, > footer { background-color: @slider-color;}
+		}
+	}
+
+	.vert-scroller.obscured, .horz-scroller.obscured {
+		background-color: transparent; 
+		> header, > footer { background-color: transparent; }
+	}
+
+}
+
+.scrolledAppearance() {
+
+	&::-webkit-scrollbar {
+		-webkit-appearance: none;
+		width:0; height:0;
+	}
+	&::scrollbar {
+		width:0; height:0;
+	}
+
+}
+
+.supportLang(en) {
+	html[lang=en] body {
+		*[lang=not-en], 
+		.not-lang-en { display:none !important; }
+
+		*[lang=de] { display:none !important; }
+		*[lang=fr] { display:none !important; }
+	}
+}
+.supportLang(de) {
+	html[lang=de] body { 
+		*[lang=not-de], 
+		.not-lang-de { display:none !important; }
+
+		*[lang=en] { display:none !important; }
+		*[lang=fr] { display:none !important; }
+	}
+}
+.supportLang(fr) {
+	html[lang=fr] body { 
+		*[lang=not-fr], 
+		.not-lang-fr { display:none !important; }
+
+		*[lang=de] { display:none !important; }
+		*[lang=en] { display:none !important; }
+	}
+}
+
+.no-user-selection() {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.user-selection() {
+	-webkit-touch-callout: text;
+	-webkit-user-select: text;
+	-khtml-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+}
+
+.border-radius-withPie(@radius: 5px)
+{
+	.border-radius(@radius);
+	behavior: url(/PIE.htc);
+}
+
+// Transformations
+.rotateY(@degrees) {
+  -webkit-transform: rotateY(@degrees);
+     -moz-transform: rotateY(@degrees);
+      -ms-transform: rotateY(@degrees);
+       -o-transform: rotateY(@degrees);
+          transform: rotateY(@degrees);
+}
+
+// Some magic to get the input boxes to automatically adjust their size based
+// on the width of their parent.
+// See http://stackoverflow.com/questions/1030793/input-with-displayblock-is-not-a-block-why-not
+.input-width-auto(@width: 100%) {
+	width: @width;
+	.box-sizing(border-box);
+}
+
+.opacity(@opacity: 50) {
+	-moz-opacity: @opacity/100; 
+	-khtml-opacity: @opacity/100; 
+	-webkit-opacity: @opacity/100; 
+	opacity: @opacity/100; 
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=@{opacity})";
+	filter: ~"alpha(opacity=@{opacity})";
+}
