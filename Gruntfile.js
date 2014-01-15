@@ -233,6 +233,26 @@ module.exports = function(grunt) {
         "customTests" : []
     },
 
+    connect: {
+      all: {
+        options: {
+          debug: true,
+          keepalive: false,
+          livereload: true,  // use with watch
+          protocol: 'http',
+          hostname: 'localhost',
+          port: 9000,
+          open: true
+        } 
+      }
+    },
+
+    open: {
+      all: {
+        path: 'http://localhost:<%= connect.all.options.port%>'
+      }
+    },
+
     concurrent: {
       tasks: [
         // 'modernizr', requires network so disabled
@@ -262,12 +282,14 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-modernizr');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-open');
+  grunt.loadNpmTasks('grunt-contrib-connect');
 
   grunt.loadNpmTasks('grunt-concurrent');
   grunt.loadNpmTasks('grunt-exec');
 
   // Default Task
-  grunt.registerTask('default', ['concurrent']);
+  grunt.registerTask('default', ['connect','open','concurrent']);
   grunt.registerTask('install', ['exec:bowerinstall','modernizr','copy:mediaelement']);
   grunt.registerTask('build', ['modernizr','jshint','copy:mediaelement',
     'qunit','concat','uglify']);

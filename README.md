@@ -30,11 +30,18 @@ or the [Website](http://essentialjs.com)
 
 ## Building Essential and Essentials
 
-Make sure that you have NodeJS/npm installed and install the build tools `npm install jake uglify-js`.
+First prepare for development
 
-    ./node_modules/.bin/jake
+    npm install
+
+Once you have the needed modules the source can be built with
+
+    grunt build
 
 This will build plain and minified versions.
+
+The default grunt target will host a development web server.
+
 
 ## Building demo apps
 
