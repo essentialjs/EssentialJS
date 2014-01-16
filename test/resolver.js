@@ -182,6 +182,20 @@ test('Resolver set/declare value',function(){
 	var opq = resolver.declare(["o",null,"q"],"opq");
 	equal(resolver(["o",null,"q"]),"opq")
 
+	resolver.set("a.b",false);
+	strictEqual(resolver("a.b"),false);
+	throws(function() {
+		resolver("a.b.c");
+	});
+	throws(function() {
+		resolver.set("a.b.c",false);
+	});
+
+	resolver.set("a.b.c",false,"force");
+	strictEqual(typeof resolver("a.b"),"object");
+	strictEqual(resolver("a.b.c"),false);
+
+
 	//TODO try string like objects for get/set/declare
 	//TODO try array like objects for get/set/declare
 })

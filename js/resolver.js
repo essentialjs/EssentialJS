@@ -99,6 +99,7 @@ function Resolver(name_andor_expr,ns,options)
             if (top == undefined) { // catching null as well (not sure if it's desirable)
                 switch(onundefined) {
                 case undefined:
+                case "force":
                 case "generate":
                 	if (top === undefined) {
 	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
@@ -757,6 +758,12 @@ function Resolver(name_andor_expr,ns,options)
         }
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
+        if (onundefined=="force" && (typeof base != "object" || typeof base != "function")) {
+            var leaf = names.pop();
+            _resolve(names,null,onundefined)[leaf] = {};
+            names.push(leaf);
+            base = _resolve(names,null,onundefined);
+        }
         var oldValue = base[symbol];
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
