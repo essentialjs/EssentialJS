@@ -673,7 +673,9 @@ function Resolver(name_andor_expr,ns,options)
                 var leafName = baseNames.pop();
                 var base = _resolve(baseNames,null,"undefined");
                 var ev = _makeResolverEvent(resolver,type,selector,data,callback);
+                ev.binding = true;
                 ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
+                ev.binding = false;
             }
             var types = type.split(" ");
             for(var i=0,type; type = types[i]; ++i) {

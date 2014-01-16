@@ -619,9 +619,13 @@ test('Resolver bind + change listener',function() {
 	var resolver = Resolver({ "b":{ "c": "bc" }});
 
 	var ab = resolver.reference("a.b");
-	var _onab = sinon.spy();
+	var bindingCount = 0;
+	var _onab = sinon.spy(function(ev) {
+		if (ev.binding) ++bindingCount;
+	});
 
 	ab.on("bind change",_onab);
+	equal(bindingCount,1,"binding not triggered in listener");
 	// ok(_onab.calledWith(sinon.match({
 	// 	"base": undefined,
 	// 	"symbol": "b",
