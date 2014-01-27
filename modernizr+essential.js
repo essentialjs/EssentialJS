@@ -3810,6 +3810,9 @@ Generator.discardRestricted = function()
 				case "enhance element":
 					enhance = _from[n];
 					break;
+				case "make stateful":
+					essential("StatefulResolver")(e,_from[n]);
+					break;
 
 				// "type" IE9 el.type is readonly:
 

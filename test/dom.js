@@ -182,6 +182,36 @@ test("HTMLElement core implementation set text",function() {
 	equal(div.innerHTML.toLowerCase(),"abcd<span></span>2");
 });
 
+test("HTMLElement smarts",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var div = HTMLElement("div",{
+		"make stateful":true		
+	},"");
+
+	ok(div.stateful,"make stateful flag adds resolver to new element");
+	ok(div.stateful("map.class","null"),"class mapping");
+
+	var div = HTMLElement("div",{
+		"make stateful":false		
+	},"");
+
+	ok(div.stateful,"make stateful flag adds resolver to new element");
+	ok(! div.stateful("map.class","null"),"no class mapping");
+
+
+	var child = HTMLElement("div",{
+		"append to": div
+	});
+	equal(child.parentNode,div,"append to appends the new element")
+
+	var div = HTMLElement("div",{
+		"enhanced element":true		
+	},"");
+
+});
+
 test("Native events",function() {
 	// ok(1); return;
 
