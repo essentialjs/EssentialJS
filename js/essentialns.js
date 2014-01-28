@@ -493,9 +493,14 @@
 		var roles = role? role.split(" ") : [];
 
 		this.el = el;
+		this.placement = essential("ElementPlacement")(el,[]);
+		this.placement.manually(["overflow"]);
+		if (this.placement.style.overflow == "visible") this._updateDisplayed = this._updateDisplayedNotNone;
+
 		// sizingHandler
 		this.sizing = {
 			"contentWidth":0,"contentHeight":0,
+			"currentStyle": this.placement.style,
 
 			track: {
 				sizeBy: "offset",
@@ -505,9 +510,6 @@
 				scrollLeft:false, scrollTop: false
 			}
 		};
-		this.placement = essential("ElementPlacement")(el,[]);
-		this.placement.manually(["overflow"]);
-		if (this.placement.style.overflow == "visible") this._updateDisplayed = this._updateDisplayedNotNone;
 
 		this.layout = {
 			// "displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),

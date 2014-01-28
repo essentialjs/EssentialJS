@@ -279,6 +279,7 @@ test("Enhance element with layout",function() {
 	equal(masterDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
 	equal(typeof masterDesc.context.placement,"object");
+	equal(typeof masterDesc.sizing.currentStyle,"object");
 	equal(typeof masterDesc.layout.currentStyle,"object");
 
 	masterDesc.context.placement.setTrack(["paddingLeft","paddingRight"]);
