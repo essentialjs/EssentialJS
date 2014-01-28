@@ -223,6 +223,73 @@ test('Enhance element early or delayed',function() {
 
 //TODO layout and discard are optional handlers
 
+test("Enhance element with layout",function() {
+
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var appConfig = ApplicationConfig();
+	var masterInstance = { "this is":"an instance"};
+
+	var handlers = {
+		"init": {
+
+		},		
+		"enhance": {
+			"master": sinon.stub()
+		},
+		"sizing": {},
+		"layout": {
+			"master": sinon.stub()
+		},
+		"discard": {
+			"master": sinon.stub()
+		}
+	};
+	handlers.enhance.master.returns(masterInstance);
+
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page").set("enabledRoles",{"master":true});
+
+	// alternative HTMLElement("div",{ "enhance element":true, "role":"master", "data-role":{"controller":true,"template":"#master-template"} });
+
+	var page = appConfig.page("/test/pages/plain.html",{},[
+		'<html><head>', '', '</head><body>',
+		'<div role="master" data-role="',"'template':'#master-template','controller':true",'">',
+		'</div>',
+
+		'</body></html>'
+		].join(""));
+
+	var masterDiv = page.body.getElementsByTagName("div")[0]
+	ok(masterDiv,"Master Element");
+
+	// master desc and context
+	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueID];
+	ok(masterDesc,"Master Descriptor found");
+	equal(masterDesc.instance,null,"No instance before enhance");
+	ok(masterDesc.context);
+	equal(masterDesc.context.uniqueID,undefined);
+	equal(masterDesc.context.el,undefined);
+	equal(masterDesc.context.instance,undefined);
+	// equal(typeof masterDesc.context.resolver,"function");
+	equal(typeof masterDesc.context.placement,"object");
+	equal(typeof masterDesc.layout.currentStyle,"object");
+
+	masterDesc.context.placement.setTrack(["paddingLeft","paddingRight"]);
+	masterDesc.context.placement.compute();
+	equal(masterDesc.layout.currentStyle.paddingLeft,"","padding left");
+	equal(masterDesc.layout.currentStyle.paddingRight,"","padding right");
+
+	DescriptorQuery(masterDiv).enhance();
+	equal(masterDesc.instance,masterInstance);
+
+});
 
 test('Enhance element with context',function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
@@ -287,6 +354,7 @@ test('Enhance element with context',function() {
 	equal(masterDesc.context.el,undefined);
 	equal(masterDesc.context.instance,undefined);
 	// equal(typeof masterDesc.context.resolver,"function");
+	equal(typeof masterDesc.context.placement,"object");
 
 	DescriptorQuery(masterDiv).enhance();
 	equal(masterDesc.instance,masterInstance);

@@ -511,6 +511,7 @@
 
 		this.layout = {
 			// "displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
+			"currentStyle": this.placement.style,
 			"lastDirectCall": 0,
 			"enable": false,
 			"throttle": null //TODO throttle by default?
@@ -524,6 +525,7 @@
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.conf = conf || {};
 		this.context = new EnhancedContext();
+		this.context.placement = this.placement;
 		this.instance = null;
 		this.controller = null; // Enhanced Controller can be separate from instance
 
@@ -864,6 +866,7 @@
 
 		// seems to be displayed
 		if (this.sizing.displayed) {
+			this.placement.compute();
 			if (track.contentWidth) this.sizing.contentWidth = this.el[track.contentBy+"Width"];
 			if (track.contentHeight) this.sizing.contentHeight = this.el[track.contentBy+"Height"];
 			if (track.scrollTop) this.sizing.scrollTop = this.el.scrollTop;

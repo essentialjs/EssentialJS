@@ -1850,6 +1850,7 @@ Generator.discardRestricted = function()
 
 		this.layout = {
 			// "displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
+			"currentStyle": this.placement.style,
 			"lastDirectCall": 0,
 			"enable": false,
 			"throttle": null //TODO throttle by default?
@@ -1863,6 +1864,7 @@ Generator.discardRestricted = function()
 		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.conf = conf || {};
 		this.context = new EnhancedContext();
+		this.context.placement = this.placement;
 		this.instance = null;
 		this.controller = null; // Enhanced Controller can be separate from instance
 
@@ -2203,6 +2205,7 @@ Generator.discardRestricted = function()
 
 		// seems to be displayed
 		if (this.sizing.displayed) {
+			this.placement.compute();
 			if (track.contentWidth) this.sizing.contentWidth = this.el[track.contentBy+"Width"];
 			if (track.contentHeight) this.sizing.contentHeight = this.el[track.contentBy+"Height"];
 			if (track.scrollTop) this.sizing.scrollTop = this.el.scrollTop;
@@ -3927,6 +3930,11 @@ Generator.discardRestricted = function()
 
 		this.doCompute = !(this.el == null || this.el.nodeType !== 1);
 
+		this.computes = this._getComputes(this.track);
+	};
+
+	_ElementPlacement.prototype.setTrack = function(track) {
+		this.track = track;
 		this.computes = this._getComputes(this.track);
 	};
 

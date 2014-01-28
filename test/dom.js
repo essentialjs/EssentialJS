@@ -367,6 +367,8 @@ asyncTest("Element Placement",function() {
 		equal(placement.style.marginRight,"0px");
 		equal(placement.style.marginTop,"0px");
 		equal(placement.style.marginBottom,"0px");
+		equal(placement.style.paddingLeft,undefined);
+		equal(placement.style.paddingRight,undefined);
 
 		//TODO 
 		equal(placement.bounds.top,placement.bounds.bottom);
@@ -377,12 +379,44 @@ asyncTest("Element Placement",function() {
 			applies if value has %
 		*/
 
+		placement.setTrack(["paddingLeft","paddingRight"]);
+		equal(placement.track.length,2);
+		placement.compute();
+		equal(placement.style.paddingLeft,"0px");
+		equal(placement.style.paddingRight,"0px");
+
+
 	    document.body.removeChild(div);
 	    document.body.removeChild(pageBr);
 	    start();
 	},50);
 
-})
+});
+
+/*
+
+asyncTest("Element Placement change tracked styles",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var ElementPlacement = Resolver("essential::ElementPlacement::");
+
+	var nil = ElementPlacement();
+	ok(nil,"nil placement doesn't blow up");
+
+	var div = HTMLElement("div",{"append to":document.body});
+	var pageBr = HTMLElement("br",{"class":"page","append to":document.body});
+
+	setTimeout(function(){
+		nil.compute(div);
+		equal(nil.style.display,"block","measuring of custom element");
+
+	    document.body.removeChild(div);
+	    document.body.removeChild(pageBr);
+	    start();
+	},50);
+});
+
+*/
 
 test("JSON2Attr data-role construction",function() {
 	var JSON2Attr = Resolver("essential::JSON2Attr::");

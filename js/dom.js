@@ -1118,6 +1118,11 @@
 		this.computes = this._getComputes(this.track);
 	};
 
+	_ElementPlacement.prototype.setTrack = function(track) {
+		this.track = track;
+		this.computes = this._getComputes(this.track);
+	};
+
 	_ElementPlacement.prototype._getComputes = function(names) {
 
 		var computes = [];
