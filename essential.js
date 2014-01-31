@@ -2349,6 +2349,15 @@ Generator.discardRestricted = function()
 		}
 	};
 
+	EnhancedDescriptor.get = function(unique) {
+		if (typeof unique == "object") {
+			if (unique.uniqueID) return this.all[unique.uniqueID];
+			return null;
+		}
+
+		return this.all[unique];
+	};
+
 /* was _resize_descs
 	EnhancedDescriptor._resizeAll = function() {
 		//TODO migrate to desc.refresh

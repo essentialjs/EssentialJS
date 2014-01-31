@@ -172,6 +172,7 @@ test('Enhance element early or delayed',function() {
 	ok(delayedSpan,"delayed span");
 	var earlyDesc = EnhancedDescriptor.all[earlySpan.uniqueID];
 	ok(earlyDesc);
+	equal(EnhancedDescriptor.get(earlySpan.uniqueID),earlyDesc);
 	equal(earlyDesc.role,"early");
 	equal(earlyDesc.instance,undefined);
 	ok(!earlyDesc.state.enhanced);
