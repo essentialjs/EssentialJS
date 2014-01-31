@@ -83,6 +83,43 @@ test('addEventListeners catch',function() {
 	equal(events.click.callCount,1);
 });
 
+test('Shoehorning enhanced elements',function() {
+
+	// var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	// var appConfig = ApplicationConfig();
+	var myInstance = {}, otherInstance = {};
+
+	Resolver("page::handlers.init").mixin({"my":null});
+	Resolver("page::handlers.enhance").mixin({"my":sinon.stub().returns(myInstance)});
+	Resolver("page::handlers.sizing").mixin({"my":null});
+	Resolver("page::handlers.layout").mixin({"my":null});
+	Resolver("page::handlers.discard").mixin({"my":null});
+	Resolver("page").set("enabledRoles.my",true);
+
+	var myDiv = HTMLElement("div",{
+		"role":"my",
+		"enhanced element":true,
+		"append to": document.body
+	});
+	ok(myDiv.uniqueID);
+	var myDesc = EnhancedDescriptor.get(myDiv);
+	ok(myDesc);
+	equal(myDesc.role,"my");
+	ok(! myDesc.instance);
+	ok(myDesc.state.needEnhance);
+	ok(! myDesc.state.enhanced);
+	myDesc.setInstance(otherInstance);
+	equal(myDesc.instance,otherInstance);
+
+	DescriptorQuery(myDiv).enhance();
+	equal(myDesc.instance,otherInstance);
+
+	myDiv.parentNode.removeChild(myDiv);
+});
+
 test('Enhance element early or delayed',function() {
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");

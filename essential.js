@@ -1899,7 +1899,17 @@ Generator.discardRestricted = function()
 		if (this.laidout) this.laidout.init(this.el,this.conf,this.sizing,this.layout);
 	};
 
+	// try during construction, before init and enhance
+
 	_EnhancedDescriptor.prototype._updateContext = function() {
+		if (this.conf.controllerID != undefined) {
+			var desc = EnhancedDescriptor.all[this.conf.controllerID];
+			this.context.controllerID = desc.uniqueID;
+			this.context.controller = desc.controller || desc.instance;
+			this.context.controllerStateful = this.context.controller.stateful || desc.stateful;
+			return;
+		}
+
 		this.context.el = null;
 		this.context.controller = null;
 		for(var el = this.el.parentNode; el; el = el.parentNode) {
@@ -2004,6 +2014,30 @@ Generator.discardRestricted = function()
 		}
 	}
 
+	_EnhancedDescriptor.prototype.setInstance = function(instance) {
+		this.instance = instance;
+		this.state.enhanced = this.instance === false? false:true;
+		this.state.needEnhance = !this.state.enhanced;
+
+		if (this.state.enhanced) {
+			var controller = this.getController();
+			if (controller && controller.enhanced) controller.enhanced(this.el,this.instance);
+
+			this.sizingHandler = this.handlers.sizing[this.role];
+			this.layoutHandler = this.handlers.layout[this.role];
+			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
+			var discardHandler = this.handlers.discard[this.role];
+			if (discardHandler) this.discardHandler = discardHandler;
+
+			// if (this.sizingHandler), enhanced will update layout even if no sizingHandler
+			if (this.sizingHandler !== false) sizingElements[this.uniqueID] = this;
+			if (this.layoutHandler) {
+				this.layout.enable = true;
+				maintainedElements[this.uniqueID] = this;
+			}
+		} 
+	};
+
 	//TODO keep params on page
 
 	_EnhancedDescriptor.prototype._tryEnhance = function(handlers,enabledRoles) {
@@ -2014,26 +2048,8 @@ Generator.discardRestricted = function()
 			this._updateContext();
 			//TODO allow parent to modify context
 			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
-			this.state.enhanced = this.instance === false? false:true;
-			this.state.needEnhance = !this.state.enhanced;
 		}
-		if (this.state.enhanced) {
-			var controller = this.getController();
-			if (controller && controller.enhanced) controller.enhanced(this.el,this.instance);
-
-			this.sizingHandler = handlers.sizing[this.role];
-			this.layoutHandler = handlers.layout[this.role];
-			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
-			var discardHandler = handlers.discard[this.role];
-			if (discardHandler) this.discardHandler = discardHandler;
-
-			// if (this.sizingHandler), enhanced will update layout even if no sizingHandler
-			if (this.sizingHandler !== false) sizingElements[this.uniqueID] = this;
-			if (this.layoutHandler) {
-				this.layout.enable = true;
-				maintainedElements[this.uniqueID] = this;
-			}
-		} 
+		this.setInstance(this.instance);
 	};
 
 	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
