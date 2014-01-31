@@ -1922,7 +1922,7 @@ Generator.discardRestricted = function()
 						// make controller ? looking up generator/function
 						this.context.controllerID = desc.uniqueID;
 						this.context.controller = desc.controller || desc.instance;
-						this.context.controllerStateful = desc.stateful;
+						this.context.controllerStateful = this.context.controller? this.context.controller.stateful || desc.stateful : null;
 					}
 
 				}
