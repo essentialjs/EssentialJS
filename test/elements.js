@@ -1110,6 +1110,27 @@ test("Define list of elements using DescriptorQuery('[role=dialog]')",function()
 	}
 });
 
+test("Query descriptor subset in EnhancedDescriptor",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	var bucket = HTMLElement("div",{});
+	EnhancedDescriptor(bucket,null,{},true);
+	bucket.appendChild(HTMLElement("div",{"role":"dialog","enhanced element":true}));
+	bucket.appendChild(HTMLElement("div",{"role":"dialog","enhanced element":true}));
+
+	var q = DescriptorQuery(bucket);
+	ok(q);
+	var bucketDesc = q[0];
+
+	var dialogs = bucketDesc.query("[role=dialog]");
+	equal(dialogs.length,2);
+
+	equal(DescriptorQuery("[role=dialog]",bucket).length,2);
+});
+
 test("Basic enhanced dialog",function() {
 
 	var HTMLElement = Resolver("essential::HTMLElement::"),

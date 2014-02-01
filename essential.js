@@ -1730,7 +1730,7 @@ Generator.discardRestricted = function()
 		}
 	}
 
-	function findChildrenToEnhance(el,context) {
+	function findChildrenToEnhance(el,context,fn) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
@@ -1739,7 +1739,9 @@ Generator.discardRestricted = function()
 				// var sizingElement = false;
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf);
-				if (desc) {
+				var add = true;
+				if (fn) add = fn(e,desc,conf);
+				if (desc && add) {
 					if (context.list) context.list.push(desc);
 				} else {
 
@@ -1748,7 +1750,26 @@ Generator.discardRestricted = function()
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
-	};
+	}
+
+	function selectorStrainer(sel) {
+		var attrEq = {};
+		if (sel.charAt(0) == "[" && sel.charAt(sel.length-1) == "]") {
+			var attrs = sel.substring(1,sel.length-1).split(",");
+			for(var i=0,a; a = attrs[i]; ++i) {
+				var attr = a.split("=");
+				attrEq[attr[0]] = attr[1];
+			}
+		}
+
+		return function(el,desc,conf) {
+			for(var n in attrEq) {
+				var v = el.getAttribute(n);
+				if (v != attrEq[n]) return false;
+			}
+			return true;
+		};
+	}
 
 	function queueOnlyBranch() {
 		if (this.el == undefined) throw new Error('Branch of undefined element'); // not sure what to do
@@ -1773,21 +1794,17 @@ Generator.discardRestricted = function()
 		var q = [], context = { list:q };
 
 		if (typeof sel == "string") {
-			//TODO
+			var strainer = selectorStrainer(sel);
 			if (el) {
-
+				var context = { list:q };
+				findChildrenToEnhance(el || document.body,context,strainer);
 			} else {
-				// "[role=dialog]"
-				if (sel.substring(0,6) == "[role=") {
-					var role = sel.substring(6,sel.length-1);
-					for(var id in enhancedElements) {
-						var desc = enhancedElements[id];
-						if (desc.role == role) {
-							q.push(desc);
-						}
-					}
+				for(var id in enhancedElements) {
+					var desc = enhancedElements[id];
+					if (strainer(desc.el,desc)) q.push(desc);
 				}
 			}
+
 		} else {
 			var ac = essential("ApplicationConfig")();
 			el=sel; sel=undefined;
@@ -2250,20 +2267,24 @@ Generator.discardRestricted = function()
 	_EnhancedDescriptor.prototype.getController = function() {
 		// _updateContext
 
-		return this.context.controller;
+		return this.context? this.context.controller : null;
 	};
+
+	_EnhancedDescriptor.prototype.query = function(selector) {
+		var q = DescriptorQuery(selector,this.el);
+		return q;
+	}
 
 	// used to emulate IE uniqueID property
 	var lastUniqueID = 555;
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
-		if (!force && role==null && conf==null && arguments.length>=3) return null;
-
 		var uniqueID = el.uniqueID;
 		if (uniqueID == undefined) uniqueID = el.uniqueID = ++lastUniqueID;
 		var desc = enhancedElements[uniqueID];
 		if (desc && !force) return desc;
+		if (!force && role==null && conf==null && arguments.length>=3) return null;
 
 		if (page == undefined) {
 			var pageResolver = Resolver("page");
