@@ -569,6 +569,8 @@ test('Resolver change listener',function() {
 //	ok(_ondef.calledWith({value:6}));
 	resolver.set("d.e.f", 6);
 	equal(_ondef.callCount,1);
+	resolver.set("d.e.f", 6);
+	equal(_ondef.callCount,1);
 
 	deepEqual(_ondef.lastCall.args[0],{
 		type: "change",
