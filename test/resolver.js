@@ -217,6 +217,13 @@ test('Resolver remove value',function(){
 	r.remove();
 	equal(r(),undefined);
 
+	var rde = resolver.reference("d.e","undefined");
+	rde.set({});
+	deepEqual(rde(),{},"Blank object to begin");
+	rde.set("f","def 3");
+	deepEqual(rde(),{f:"def 3"},"Blank object to begin");
+	rde.remove("f");
+	deepEqual(rde(),{},"Blank object to begin");
 	//TODO change handlers
 	//TODO reference("d.e").remove("f")
 });
@@ -255,6 +262,9 @@ test('Resolver reference set/declare value',function(){
 	var def_value = def.declare("def");
 	strictEqual(def_value,"def","returned value from declare");
 	equal(def(), "def");	
+	def_value = def.set("def 2");
+	strictEqual(def_value,"def 2","returned value from declare");
+	equal(def(), "def 2");	
 
 	// sub-values
 	var ghi = resolver.reference("g.h.i");
