@@ -323,6 +323,43 @@ function Resolver(name_andor_expr,ns,options)
             }
             return value;
         }
+
+        function remove() {
+            if (arguments.length > 0) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+
+                //TODO if typeof base != object 
+                var oldValue = base[symbol];
+                if (oldValue === undefined) return;
+                delete base[symbol];
+
+                var childRef = resolver.references[parentName + "." + symbol];
+                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
+                var parentRef = resolver.references[parentName];
+                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
+
+            } else {
+                var symbol = names[names.length - 1];
+                var base = _resolve(baseNames,null,onundefinedSet);
+                var oldValue = base[symbol];
+                if (oldValue === undefined) return;
+                delete base[symbol];
+
+                this._callListener("change",baseNames,base,leafName,undefined,oldValue);
+                //TODO test for triggering specific listeners
+                if (baseRefName) {
+                    var parentRef = resolver.references[baseRefName];
+                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,undefined,oldValue);
+                }
+            }
+            return oldValue;
+        }
+
         function set(value) {
         	if (arguments.length > 1) {
         		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
@@ -640,6 +677,7 @@ function Resolver(name_andor_expr,ns,options)
             }
         }    
 
+        get.remove = remove;
         get.set = set;
         get.toggle = toggle;
         get.get = get;
@@ -725,6 +763,32 @@ function Resolver(name_andor_expr,ns,options)
 		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
+    };
+
+    resolver.remove = function(name,onundefined)
+    {
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else {
+            names = name.split("::");
+            if (names.length > 1) {
+                return Resolver(names.shift()).declare(names[0],value,onundefined);
+            }
+            names = name.split(".");
+        }
+        var symbol = names.pop();
+        var base = _resolve(names,null,onundefined), oldValue = base[symbol];
+        if (oldValue === undefined) return;
+        delete base[symbol];
+
+        var ref = resolver.references[name];
+        if (ref) ref._callListener("change",names,base,symbol,value);
+        var parentName = names.join(".");
+        var parentRef = resolver.references[parentName];
+        if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+        return oldValue;
     };
     
     /*

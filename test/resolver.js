@@ -200,6 +200,27 @@ test('Resolver set/declare value',function(){
 	//TODO try array like objects for get/set/declare
 })
 
+test('Resolver remove value',function(){
+	var resolver = Resolver({});
+
+	resolver.set("a.b.c","abc");
+	equal(resolver("a.b.c"), "abc");	
+	var abc_value = resolver.remove("a.b.c");
+	strictEqual(abc_value,"abc","returned value from remove");
+	equal(resolver("a.b.c","undefined"), undefined);	
+
+	var def_value = resolver.declare("d.e.f","def");
+	strictEqual(def_value,"def","returned value from declare");
+	equal(resolver("d.e.f"), "def");	
+	var r = resolver.reference("d.e.f","undefined");
+	equal(r(),"def");
+	r.remove();
+	equal(r(),undefined);
+
+	//TODO change handlers
+	//TODO reference("d.e").remove("f")
+});
+
 test('Resolver toggle value',function(){
 	var resolver = Resolver({});
 
