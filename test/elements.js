@@ -1129,6 +1129,8 @@ test("Query descriptor subset in EnhancedDescriptor",function() {
 	equal(dialogs.length,2);
 
 	equal(DescriptorQuery("[role=dialog]",bucket).length,2);
+
+	//TODO test nested matching recursing down.
 });
 
 test("Basic enhanced dialog",function() {
