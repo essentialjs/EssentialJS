@@ -209,7 +209,7 @@ test("HTMLElement smarts",function() {
 	var div = HTMLElement("div",{
 		"enhanced element":true		
 	},"");
-
+	//TODO a way to force it as enhanced element
 });
 
 test("Native events",function() {

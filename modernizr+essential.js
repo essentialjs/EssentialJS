@@ -1764,7 +1764,50 @@ Generator.discardRestricted = function()
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
-	function enhanceQuery() {
+	function DescriptorQuery(sel,el) {
+		var q = [], context = { list:q };
+
+		if (typeof sel == "string") {
+			var strainer = selectorStrainer(sel);
+			if (el) {
+				var context = { list:q };
+				findChildrenToEnhance(el || document.body,context,strainer);
+			} else {
+				for(var id in enhancedElements) {
+					var desc = enhancedElements[id];
+					if (strainer(desc.el,desc)) q.push(desc);
+				}
+			}
+
+		} else {
+			var ac = essential("ApplicationConfig")();
+			el=sel; sel=undefined;
+			if (typeof el.length == "number") {
+				for(var i=0,e; e = el[i]; ++i) {
+
+					var conf = ac.getConfig(e), role = e.getAttribute("role");
+					var desc = EnhancedDescriptor(e,role,conf,false,ac);
+					if (desc) q.push(desc);
+				}
+			} else if (el.nodeType == 1) {
+				//TODO third param context ? integrate with desc.context
+				//TODO identify existing descriptors
+
+				var conf = essential("ApplicationConfig")().getConfig(el), role = el.getAttribute("role");
+				var desc = EnhancedDescriptor(el,role,conf);
+				if (desc) q.push(desc);
+			}
+		}
+		q.el = el;
+		for(var n in DescriptorQuery.fn) q[n] = DescriptorQuery.fn[n];
+
+		return q;
+	}
+	essential.declare("DescriptorQuery",DescriptorQuery);
+
+	DescriptorQuery.fn = {};
+
+	DescriptorQuery.fn.enhance = function() {
 		var pageResolver = Resolver("page"),
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 
@@ -1780,24 +1823,29 @@ Generator.discardRestricted = function()
 			if (desc.conf.sizingElement) sizingElements[desc.uniqueID] = desc;
 		}
 
-	}
+	};
 
-	function discardQuery() {
+	DescriptorQuery.fn.discard = function() {
 		for(var i=0,desc; desc = this[i]; ++i) {
 			if (desc) {
 				desc.discardNow();
 				desc._unlist();
 			}
 		}
-	}
+	};
 
-	function queueQuery() {
+	DescriptorQuery.fn.queue = function() {
 		for(var i=0,desc; desc = this[i]; ++i) {
 			if (desc) {
 				EnhancedDescriptor.unfinished[desc.uniqueID] = desc;
 			}
 		}
-	}
+	};
+
+	DescriptorQuery.fn.getInstance = function() {
+		if (this.length) return this[0].instance;
+		return null;
+	};
 
 	function findChildrenToEnhance(el,context,fn) {
 
@@ -1840,7 +1888,7 @@ Generator.discardRestricted = function()
 		};
 	}
 
-	function queueOnlyBranch() {
+	DescriptorQuery.fn.onlyBranch = function() {
 		if (this.el == undefined) throw new Error('Branch of undefined element'); // not sure what to do
 		var context = { list:this };
 		this.length = 0;
@@ -1848,60 +1896,17 @@ Generator.discardRestricted = function()
 		findChildrenToEnhance(this.el,context);
 		//TODO push those matched descriptors into q
 		return this;
-	}
+	};
 
-	function queueWithBranch() {
+	DescriptorQuery.fn.withBranch = function() {
 		this.onlyBranch();
 
 		var conf = essential("ApplicationConfig")().getConfig(this.el), role = this.el.getAttribute("role");
 		var desc = EnhancedDescriptor(this.el,role,conf);
 		if (desc) this.shift(desc);
 		return this;
-	}
+	};
  
-	function DescriptorQuery(sel,el) {
-		var q = [], context = { list:q };
-
-		if (typeof sel == "string") {
-			var strainer = selectorStrainer(sel);
-			if (el) {
-				var context = { list:q };
-				findChildrenToEnhance(el || document.body,context,strainer);
-			} else {
-				for(var id in enhancedElements) {
-					var desc = enhancedElements[id];
-					if (strainer(desc.el,desc)) q.push(desc);
-				}
-			}
-
-		} else {
-			var ac = essential("ApplicationConfig")();
-			el=sel; sel=undefined;
-			if (typeof el.length == "number") {
-				for(var i=0,e; e = el[i]; ++i) {
-
-					var conf = ac.getConfig(e), role = e.getAttribute("role");
-					var desc = EnhancedDescriptor(e,role,conf,false,ac);
-					if (desc) q.push(desc);
-				}
-			} else if (el.nodeType == 1) {
-				//TODO third param context ? integrate with desc.context
-				//TODO identify existing descriptors
-
-				var conf = essential("ApplicationConfig")().getConfig(el), role = el.getAttribute("role");
-				var desc = EnhancedDescriptor(el,role,conf);
-				if (desc) q.push(desc);
-			}
-		}
-		q.el = el;
-		q.onlyBranch = queueOnlyBranch;
-		q.withBranch = queueWithBranch;
-		q.queue = queueQuery;
-		q.enhance = enhanceQuery;
-		q.discard = discardQuery;
-		return q;
-	}
-	essential.declare("DescriptorQuery",DescriptorQuery);
 
 
 	function EnhancedContext() {
