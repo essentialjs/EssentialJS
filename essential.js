@@ -1906,6 +1906,20 @@ Generator.discardRestricted = function()
 
 	function EnhancedContext() {
 	}
+	EnhancedContext.prototype.clear = function() {
+		this.instance = null;
+		this.placement = null;
+
+		// this.uniqueID
+		this.el = null;
+		this.stateful = null;
+
+		this.controller = null;
+		this.controllerID = null;
+		this.controllerStateful = null;
+		this.layouterParent = null;
+		this.layouterEl = null;
+	};
 	// EnhancedContext.prototype.??
 
 	function _EnhancedDescriptor(el,role,conf,page,uniqueID) {
@@ -2079,12 +2093,13 @@ Generator.discardRestricted = function()
 		if (this.uniqueID == null) return; // just in case, shouldn't happen
 		var desc = enhancedElements[this.uniqueID];
 		if (desc) {
+			var enhanced = desc.state.enhanced;
 			if (desc.laidout) desc.laidout.destroy(desc.el);
 			if (desc.layouter) desc.layouter.destroy(desc.el);
 			//TODO destroy
 			//TODO discard/destroy for layouter and laidout
 
-			var controller = desc.getController();
+			var controller = desc.controller || desc.getController();
 			if (controller && controller.destroyed) controller.destroyed(desc.el,desc.instance);
 
 			// if (desc.discardHandler) 
@@ -2096,18 +2111,43 @@ Generator.discardRestricted = function()
 
 			//TODO discard queue for generator instances
 
+			if (controller && enhanced) {
+				--controller.__enhanced;
+				if (controller.__enhanced == 0 && controller.destroy) {
+					controller.destroy(desc.el);
+					controller.__init_called = false;
+				}	
+			}
+
 			return r;
 		}
 	}
 
 	_EnhancedDescriptor.prototype.setInstance = function(instance) {
+		this._initController();
 		this.instance = instance;
+		this._setInstance();
+	};
+
+	_EnhancedDescriptor.prototype._initController = function() {
+		this._updateContext();
+		var controller = this.getController();
+		if (controller && ! controller.__init_called && controller.init) {
+			controller.init(this.el,this.config,this.context);
+			controller.__init_called = true;
+		}
+	};
+
+	_EnhancedDescriptor.prototype._setInstance = function() {
 		this.state.enhanced = this.instance === false? false:true;
 		this.state.needEnhance = !this.state.enhanced;
 
 		if (this.state.enhanced) {
 			var controller = this.getController();
-			if (controller && controller.enhanced) controller.enhanced(this.el,this.instance);
+			if (controller) {
+				if (controller.enhanced) controller.enhanced(this.el,this.instance,this.config,this.context);
+				controller.__enhanced = controller.__enhanced? controller.__enhanced+1 : 1;
+			}
 
 			this.sizingHandler = this.handlers.sizing[this.role];
 			this.layoutHandler = this.handlers.layout[this.role];
@@ -2131,11 +2171,11 @@ Generator.discardRestricted = function()
 		if (handlers.enhance == undefined) debugger;
 		// desc.callCount = 1;
 		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
-			this._updateContext();
+			this._initController();
 			//TODO allow parent to modify context
 			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
+			this._setInstance();
 		}
-		this.setInstance(this.instance);
 	};
 
 	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
@@ -2232,12 +2272,16 @@ Generator.discardRestricted = function()
 	};
 
 	_EnhancedDescriptor.prototype._null = function() {
-
+		this.instance = null;
+		this.controller = null;
 		this.sizingHandler = undefined;
 		this.layoutHandler = undefined;
 		this.layouter = undefined;
 		this.laidout = undefined;
+		this.sizing.currentStyle = null;
+		this.layout.currentStyle = null;
 		this.layout.enable = false;					
+		if (this.context) this.context.clear();
 		this.context = undefined;
 		this._updateContext = function() {}; //TODO why is this called after discard, fix that
 	};
@@ -2248,6 +2292,7 @@ Generator.discardRestricted = function()
 		cleanRecursively(this.el);
 		this._null();
 		this.el = undefined;
+		this.state.enhanced = false;
 		this.state.discarded = true;					
 	};
 
