@@ -1,14 +1,14 @@
 (function(){
 	var essential = Resolver("essential"),
 		pageResolver = Resolver("page"),
+		pageState = pageResolver.reference("state"),
 		templates = pageResolver("templates"),
+		ApplicationConfig = essential("ApplicationConfig"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
+		DescriptorQuery = essential("DescriptorQuery"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		console = essential("console");
-
-	var DocumentRoles = essential("DocumentRoles"), ApplicationConfig = essential("ApplicationConfig");
-	var pageState = pageResolver.reference("state");
 
 	/*
 		Put your application code here
@@ -27,20 +27,20 @@
 	}));
 	PresentationLoader.restrict({ singleton: true, lifecycle: "page" })
 
-	PresentationLoader.enhance_presentation = function(el,role,config) 
+	PresentationLoader.enhance_presentation = function(el,role,config,context) 
 	{
-		console.log("enhancing presentation");
+		console.log("enhancing presentation",el.uniqueID);
 	};
 
 	PresentationLoader.layout_presentation = function(el,layout,instance) 
 	{
-		console.log("layout presentation");
+		console.log("layout presentation",el.uniqueID);
 	};
 	PresentationLoader.layout_presentation.throttle = 200;
 
 	PresentationLoader.discard_presentation = function(el,role,instance) 
 	{
-		console.log("discard presentation");
+		console.log("discard presentation",el.uniqueID);
 		if (instance) {
 			if (instance.onClose) {
 				instance.onClose();
@@ -52,9 +52,9 @@
 		} catch(ex) {}
 	};
 
-	DocumentRoles.presets.declare("handlers.enhance.presentation", PresentationLoader.enhance_presentation);
-	DocumentRoles.presets.declare("handlers.layout.presentation", PresentationLoader.layout_presentation);
-	DocumentRoles.presets.declare("handlers.discard.presentation", PresentationLoader.discard_presentation);
+	Resolver("page").declare("handlers.enhance.presentation", PresentationLoader.enhance_presentation);
+	Resolver("page").declare("handlers.layout.presentation", PresentationLoader.layout_presentation);
+	Resolver("page").declare("handlers.discard.presentation", PresentationLoader.discard_presentation);
 
 	//TODO role that requires permissions
 
@@ -90,23 +90,6 @@
 			},100);
 		}
 	});
-
-
-function enhance_templated(el,role,config) {
-	if (config.template && templates[config.template]) {
-		var template = templates[config.template];
-		//TODO replace element with template.tagName, mixed attributes and template.html
-		el.innerHTML = template.html; //TODO better
-		var context = { layouter: this.parentLayouter };
-		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-		ApplicationConfig()._prep(el,context); //TODO prepAncestors
-		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-		// DocumentRoles()._enhance_descs(descs);
-	}
-}
-
-pageResolver.set("handlers.enhance.templated",enhance_templated);
-
 
 Layouter.variant("multisection",Generator(function(key,el,conf) {
 	this.el = el;
@@ -226,7 +209,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		this.defaultRowHeight = (this.body.children[0].offsetHeight + this.body.children[1].offsetHeight)/2;
 		this.rowHeights = [];
 
-		var desc = EnhancedDescriptor(el.parentNode);
+		var desc = DescriptorQuery(el.parentNode)[0]; //EnhancedDescriptor(el.parentNode);
 		if (desc && desc.role == "scrolled") {
 			if (desc.conf.nativeScrollVert == false) {
 				this.scrolled = desc;
@@ -286,8 +269,9 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 
 
-	function enhance_table(el,role,config)
+	function enhance_table(el,role,config,context)
 	{
+		console.log("Enhancing table",el.uniqueID);
 		return new EnhancedTable(el,role,config);
 
 	}
@@ -307,16 +291,16 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 	function discard_table(el,role,instance)
 	{
-
+		console.log("Discarding table",el.uniqueID);
 	}
 
-	DocumentRoles.presets.declare("handlers.enhance.table", enhance_table);
-	DocumentRoles.presets.declare("handlers.sizing.table", sizing_table);
-	DocumentRoles.presets.declare("handlers.layout.table", layout_table);
-	DocumentRoles.presets.declare("handlers.discard.table", discard_table);
+	Resolver("page").declare("handlers.enhance.table", enhance_table);
+	Resolver("page").declare("handlers.sizing.table", sizing_table);
+	Resolver("page").declare("handlers.layout.table", layout_table);
+	Resolver("page").declare("handlers.discard.table", discard_table);
 
 
-	function enhance_adorned(el,role,config) 
+	function enhance_adorned(el,role,config,context) 
 	{
 		var wrapper = document.createElement("DIV");
 		wrapper.className = config.contentClass || config["content-class"] || "content";
@@ -379,12 +363,37 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 		} catch(ex) {}
 	}
 
-	DocumentRoles.presets.declare("handlers.enhance.adorned", enhance_adorned);
-	DocumentRoles.presets.declare("handlers.sizing.adorned", sizing_adorned);
-	DocumentRoles.presets.declare("handlers.layout.adorned", layout_adorned);
-	DocumentRoles.presets.declare("handlers.discard.adorned", discard_adorned);
+	Resolver("page").declare("handlers.enhance.adorned", enhance_adorned);
+	Resolver("page").declare("handlers.sizing.adorned", sizing_adorned);
+	Resolver("page").declare("handlers.layout.adorned", layout_adorned);
+	Resolver("page").declare("handlers.discard.adorned", discard_adorned);
+
+	// already defined
+	// function enhance_dialog(el,role,config,context) 
+	// {
+	// 	alert("role")
+	// }
+
+	// function sizing_dialog(el,sizing,instance)
+	// {
+
+	// }
+
+	// function layout_dialog(el,layout,instance) 
+	// {
+
+	// }
+
+	// function discard_dialog(el,role,instance) 
+	// {
+
+	// }
 
 
+	// Resolver("page").declare("handlers.enhance.dialog", enhance_dialog);
+	// Resolver("page").declare("handlers.sizing.dialog", sizing_dialog);
+	// Resolver("page").declare("handlers.layout.dialog", layout_dialog);
+	// Resolver("page").declare("handlers.discard.dialog", discard_dialog);
 
 	console.log("frontend.js finished load execution");
 

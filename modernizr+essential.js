@@ -1,1161 +1,31 @@
-
-window.iepp = {
-	html5elements: 'template|message|property|properties|renderer|value|abbr|article|aside|audio|canvas|datalist|details|figcaption|figure|footer|header|hgroup|mark|meter|nav|output|progress|section|summary|time|video'
-};
-	
 /*!
- * Modernizr v2.0.6
- * http://www.modernizr.com
- *
- * Copyright (c) 2009-2011 Faruk Ates, Paul Irish, Alex Sexton
- * Dual-licensed under the BSD or MIT licenses: www.modernizr.com/license/
- */
-
-/*
- * Modernizr tests which native CSS3 and HTML5 features are available in
- * the current UA and makes the results available to you in two ways:
- * as properties on a global Modernizr object, and as classes on the
- * <html> element. This information allows you to progressively enhance
- * your pages with a granular level of control over the experience.
- *
- * Modernizr has an optional (not included) conditional resource loader
- * called Modernizr.load(), based on Yepnope.js (yepnopejs.com).
- * To get a build that includes Modernizr.load(), as well as choosing
- * which tests to include, go to www.modernizr.com/download/
- *
- * Authors        Faruk Ates, Paul Irish, Alex Sexton, 
- * Contributors   Ryan Seddon, Ben Alman
- */
-
-window.Modernizr = (function( window, document, undefined ) {
-
-    var version = '2.0.6',
-
-    Modernizr = {},
-    
-    // option for enabling the HTML classes to be added
-    enableClasses = true,
-
-    docElement = document.documentElement,
-    docHead = document.head || document.getElementsByTagName('head')[0],
-
-    /**
-     * Create our "modernizr" element that we do most feature tests on.
-     */
-    mod = 'modernizr',
-    modElem = document.createElement(mod),
-    mStyle = modElem.style,
-
-    /**
-     * Create the input element for various Web Forms feature tests.
-     */
-    inputElem = document.createElement('input'),
-
-    smile = ':)',
-
-    toString = Object.prototype.toString,
-
-    // List of property values to set for css tests. See ticket #21
-    prefixes = ' -webkit- -moz- -o- -ms- -khtml- '.split(' '),
-
-    // Following spec is to expose vendor-specific style properties as:
-    //   elem.style.WebkitBorderRadius
-    // and the following would be incorrect:
-    //   elem.style.webkitBorderRadius
-
-    // Webkit ghosts their properties in lowercase but Opera & Moz do not.
-    // Microsoft foregoes prefixes entirely <= IE8, but appears to
-    //   use a lowercase `ms` instead of the correct `Ms` in IE9
-
-    // More here: http://github.com/Modernizr/Modernizr/issues/issue/21
-    domPrefixes = 'Webkit Moz O ms Khtml'.split(' '),
-
-    ns = {'svg': 'http://www.w3.org/2000/svg'},
-
-    tests = {},
-    inputs = {},
-    attrs = {},
-
-    classes = [],
-
-    featureName, // used in testing loop
-
-
-    // Inject element with style element and some CSS rules
-    injectElementWithStyles = function( rule, callback, nodes, testnames ) {
-
-      var style, ret, node,
-          div = document.createElement('div');
-
-      if ( parseInt(nodes, 10) ) {
-          // In order not to give false positives we create a node for each test
-          // This also allows the method to scale for unspecified uses
-          while ( nodes-- ) {
-              node = document.createElement('div');
-              node.id = testnames ? testnames[nodes] : mod + (nodes + 1);
-              div.appendChild(node);
-          }
-      }
-
-      // <style> elements in IE6-9 are considered 'NoScope' elements and therefore will be removed
-      // when injected with innerHTML. To get around this you need to prepend the 'NoScope' element
-      // with a 'scoped' element, in our case the soft-hyphen entity as it won't mess with our measurements.
-      // http://msdn.microsoft.com/en-us/library/ms533897%28VS.85%29.aspx
-      style = ['&shy;', '<style>', rule, '</style>'].join('');
-      div.id = mod;
-      div.innerHTML += style;
-      docElement.appendChild(div);
-
-      ret = callback(div, rule);
-      div.parentNode.removeChild(div);
-
-      return !!ret;
-
-    },
-
-
-    // adapted from matchMedia polyfill
-    // by Scott Jehl and Paul Irish
-    // gist.github.com/786768
-    testMediaQuery = function( mq ) {
-
-      if ( window.matchMedia ) {
-        return matchMedia(mq).matches;
-      }
-
-      var bool;
-
-      injectElementWithStyles('@media ' + mq + ' { #' + mod + ' { position: absolute; } }', function( node ) {
-        bool = (window.getComputedStyle ?
-                  getComputedStyle(node, null) :
-                  node.currentStyle)['position'] == 'absolute';
-      });
-
-      return bool;
-
-     },
-
-
-    /**
-      * isEventSupported determines if a given element supports the given event
-      * function from http://yura.thinkweb2.com/isEventSupported/
-      */
-    isEventSupported = (function() {
-
-      var TAGNAMES = {
-        'select': 'input', 'change': 'input',
-        'submit': 'form', 'reset': 'form',
-        'error': 'img', 'load': 'img', 'abort': 'img'
-      };
-
-      function isEventSupported( eventName, element ) {
-
-        element = element || document.createElement(TAGNAMES[eventName] || 'div');
-        eventName = 'on' + eventName;
-
-        // When using `setAttribute`, IE skips "unload", WebKit skips "unload" and "resize", whereas `in` "catches" those
-        var isSupported = eventName in element;
-
-        if ( !isSupported ) {
-          // If it has no `setAttribute` (i.e. doesn't implement Node interface), try generic element
-          if ( !element.setAttribute ) {
-            element = document.createElement('div');
-          }
-          if ( element.setAttribute && element.removeAttribute ) {
-            element.setAttribute(eventName, '');
-            isSupported = is(element[eventName], 'function');
-
-            // If property was created, "remove it" (by setting value to `undefined`)
-            if ( !is(element[eventName], undefined) ) {
-              element[eventName] = undefined;
-            }
-            element.removeAttribute(eventName);
-          }
-        }
-
-        element = null;
-        return isSupported;
-      }
-      return isEventSupported;
-    })();
-
-    // hasOwnProperty shim by kangax needed for Safari 2.0 support
-    var _hasOwnProperty = ({}).hasOwnProperty, hasOwnProperty;
-    if ( !is(_hasOwnProperty, undefined) && !is(_hasOwnProperty.call, undefined) ) {
-      hasOwnProperty = function (object, property) {
-        return _hasOwnProperty.call(object, property);
-      };
-    }
-    else {
-      hasOwnProperty = function (object, property) { /* yes, this can give false positives/negatives, but most of the time we don't care about those */
-        return ((property in object) && is(object.constructor.prototype[property], undefined));
-      };
-    }
-
-    /**
-     * setCss applies given styles to the Modernizr DOM node.
-     */
-    function setCss( str ) {
-        mStyle.cssText = str;
-    }
-
-    /**
-     * setCssAll extrapolates all vendor-specific css strings.
-     */
-    function setCssAll( str1, str2 ) {
-        return setCss(prefixes.join(str1 + ';') + ( str2 || '' ));
-    }
-
-    /**
-     * is returns a boolean for if typeof obj is exactly type.
-     */
-    function is( obj, type ) {
-        return typeof obj === type;
-    }
-
-    /**
-     * contains returns a boolean for if substr is found within str.
-     */
-    function contains( str, substr ) {
-        return !!~('' + str).indexOf(substr);
-    }
-
-    /**
-     * testProps is a generic CSS / DOM property test; if a browser supports
-     *   a certain property, it won't return undefined for it.
-     *   A supported CSS property returns empty string when its not yet set.
-     */
-    function testProps( props, prefixed ) {
-        for ( var i in props ) {
-            if ( mStyle[ props[i] ] !== undefined ) {
-                return prefixed == 'pfx' ? props[i] : true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * testPropsAll tests a list of DOM properties we want to check against.
-     *   We specify literally ALL possible (known and/or likely) properties on
-     *   the element including the non-vendor prefixed one, for forward-
-     *   compatibility.
-     */
-    function testPropsAll( prop, prefixed ) {
-
-        var ucProp  = prop.charAt(0).toUpperCase() + prop.substr(1),
-            props   = (prop + ' ' + domPrefixes.join(ucProp + ' ') + ucProp).split(' ');
-
-        return testProps(props, prefixed);
-    }
-
-    /**
-     * testBundle tests a list of CSS features that require element and style injection.
-     *   By bundling them together we can reduce the need to touch the DOM multiple times.
-     */
-    /*>>testBundle*/
-    var testBundle = (function( styles, tests ) {
-        var style = styles.join(''),
-            len = tests.length;
-
-        injectElementWithStyles(style, function( node, rule ) {
-            var style = document.styleSheets[document.styleSheets.length - 1],
-                // IE8 will bork if you create a custom build that excludes both fontface and generatedcontent tests.
-                // So we check for cssRules and that there is a rule available
-                // More here: https://github.com/Modernizr/Modernizr/issues/288 & https://github.com/Modernizr/Modernizr/issues/293
-                cssText = style.cssRules && style.cssRules[0] ? style.cssRules[0].cssText : style.cssText || "",
-                children = node.childNodes, hash = {};
-
-            while ( len-- ) {
-                hash[children[len].id] = children[len];
-            }
-
-            /*>>touch*/           Modernizr['touch'] = ('ontouchstart' in window) || hash['touch'].offsetTop === 9; /*>>touch*/
-            /*>>csstransforms3d*/ Modernizr['csstransforms3d'] = hash['csstransforms3d'].offsetLeft === 9;          /*>>csstransforms3d*/
-            /*>>generatedcontent*/Modernizr['generatedcontent'] = hash['generatedcontent'].offsetHeight >= 1;       /*>>generatedcontent*/
-            /*>>fontface*/        Modernizr['fontface'] = /src/i.test(cssText) &&
-                                                                  cssText.indexOf(rule.split(' ')[0]) === 0;        /*>>fontface*/
-        }, len, tests);
-
-    })([
-        // Pass in styles to be injected into document
-        /*>>fontface*/        '@font-face {font-family:"font";src:url("https://")}'         /*>>fontface*/
-        
-        /*>>touch*/           ,['@media (',prefixes.join('touch-enabled),('),mod,')',
-                                '{#touch{top:9px;position:absolute}}'].join('')           /*>>touch*/
-                                
-        /*>>csstransforms3d*/ ,['@media (',prefixes.join('transform-3d),('),mod,')',
-                                '{#csstransforms3d{left:9px;position:absolute}}'].join('')/*>>csstransforms3d*/
-                                
-        /*>>generatedcontent*/,['#generatedcontent:after{content:"',smile,'";visibility:hidden}'].join('')  /*>>generatedcontent*/
-    ],
-      [
-        /*>>fontface*/        'fontface'          /*>>fontface*/
-        /*>>touch*/           ,'touch'            /*>>touch*/
-        /*>>csstransforms3d*/ ,'csstransforms3d'  /*>>csstransforms3d*/
-        /*>>generatedcontent*/,'generatedcontent' /*>>generatedcontent*/
-        
-    ]);/*>>testBundle*/
-
-
-    /**
-     * Tests
-     * -----
-     */
-
-    tests['flexbox'] = function() {
-        /**
-         * setPrefixedValueCSS sets the property of a specified element
-         * adding vendor prefixes to the VALUE of the property.
-         * @param {Element} element
-         * @param {string} property The property name. This will not be prefixed.
-         * @param {string} value The value of the property. This WILL be prefixed.
-         * @param {string=} extra Additional CSS to append unmodified to the end of
-         * the CSS string.
-         */
-        function setPrefixedValueCSS( element, property, value, extra ) {
-            property += ':';
-            element.style.cssText = (property + prefixes.join(value + ';' + property)).slice(0, -property.length) + (extra || '');
-        }
-
-        /**
-         * setPrefixedPropertyCSS sets the property of a specified element
-         * adding vendor prefixes to the NAME of the property.
-         * @param {Element} element
-         * @param {string} property The property name. This WILL be prefixed.
-         * @param {string} value The value of the property. This will not be prefixed.
-         * @param {string=} extra Additional CSS to append unmodified to the end of
-         * the CSS string.
-         */
-        function setPrefixedPropertyCSS( element, property, value, extra ) {
-            element.style.cssText = prefixes.join(property + ':' + value + ';') + (extra || '');
-        }
-
-        var c = document.createElement('div'),
-            elem = document.createElement('div');
-
-        setPrefixedValueCSS(c, 'display', 'box', 'width:42px;padding:0;');
-        setPrefixedPropertyCSS(elem, 'box-flex', '1', 'width:10px;');
-
-        c.appendChild(elem);
-        docElement.appendChild(c);
-
-        var ret = elem.offsetWidth === 42;
-
-        c.removeChild(elem);
-        docElement.removeChild(c);
-
-        return ret;
-    };
-
-    // On the S60 and BB Storm, getContext exists, but always returns undefined
-    // http://github.com/Modernizr/Modernizr/issues/issue/97/
-
-    tests['canvas'] = function() {
-        var elem = document.createElement('canvas');
-        return !!(elem.getContext && elem.getContext('2d'));
-    };
-
-    tests['canvastext'] = function() {
-        return !!(Modernizr['canvas'] && is(document.createElement('canvas').getContext('2d').fillText, 'function'));
-    };
-
-    // This WebGL test may false positive. 
-    // But really it's quite impossible to know whether webgl will succeed until after you create the context. 
-    // You might have hardware that can support a 100x100 webgl canvas, but will not support a 1000x1000 webgl 
-    // canvas. So this feature inference is weak, but intentionally so.
-    
-    // It is known to false positive in FF4 with certain hardware and the iPad 2.
-    
-    tests['webgl'] = function() {
-        return !!window.WebGLRenderingContext;
-    };
-
-    /*
-     * The Modernizr.touch test only indicates if the browser supports
-     *    touch events, which does not necessarily reflect a touchscreen
-     *    device, as evidenced by tablets running Windows 7 or, alas,
-     *    the Palm Pre / WebOS (touch) phones.
-     *
-     * Additionally, Chrome (desktop) used to lie about its support on this,
-     *    but that has since been rectified: http://crbug.com/36415
-     *
-     * We also test for Firefox 4 Multitouch Support.
-     *
-     * For more info, see: http://modernizr.github.com/Modernizr/touch.html
-     */
-
-    tests['touch'] = function() {
-        return Modernizr['touch'];
-    };
-
-    /**
-     * geolocation tests for the new Geolocation API specification.
-     *   This test is a standards compliant-only test; for more complete
-     *   testing, including a Google Gears fallback, please see:
-     *   http://code.google.com/p/geo-location-javascript/
-     * or view a fallback solution using google's geo API:
-     *   http://gist.github.com/366184
-     */
-    tests['geolocation'] = function() {
-        return !!navigator.geolocation;
-    };
-
-    // Per 1.6:
-    // This used to be Modernizr.crosswindowmessaging but the longer
-    // name has been deprecated in favor of a shorter and property-matching one.
-    // The old API is still available in 1.6, but as of 2.0 will throw a warning,
-    // and in the first release thereafter disappear entirely.
-    tests['postmessage'] = function() {
-      return !!window.postMessage;
-    };
-
-    // Web SQL database detection is tricky:
-
-    // In chrome incognito mode, openDatabase is truthy, but using it will
-    //   throw an exception: http://crbug.com/42380
-    // We can create a dummy database, but there is no way to delete it afterwards.
-
-    // Meanwhile, Safari users can get prompted on any database creation.
-    //   If they do, any page with Modernizr will give them a prompt:
-    //   http://github.com/Modernizr/Modernizr/issues/closed#issue/113
-
-    // We have chosen to allow the Chrome incognito false positive, so that Modernizr
-    //   doesn't litter the web with these test databases. As a developer, you'll have
-    //   to account for this gotcha yourself.
-    tests['websqldatabase'] = function() {
-      var result = !!window.openDatabase;
-      /*  if (result){
-            try {
-              result = !!openDatabase( mod + "testdb", "1.0", mod + "testdb", 2e4);
-            } catch(e) {
-            }
-          }  */
-      return result;
-    };
-
-    // Vendors had inconsistent prefixing with the experimental Indexed DB:
-    // - Webkit's implementation is accessible through webkitIndexedDB
-    // - Firefox shipped moz_indexedDB before FF4b9, but since then has been mozIndexedDB
-    // For speed, we don't test the legacy (and beta-only) indexedDB
-    tests['indexedDB'] = function() {
-      for ( var i = -1, len = domPrefixes.length; ++i < len; ){
-        if ( window[domPrefixes[i].toLowerCase() + 'IndexedDB'] ){
-          return true;
-        }
-      }
-      return !!window.indexedDB;
-    };
-
-    // documentMode logic from YUI to filter out IE8 Compat Mode
-    //   which false positives.
-    tests['hashchange'] = function() {
-      return isEventSupported('hashchange', window) && (document.documentMode === undefined || document.documentMode > 7);
-    };
-
-    // Per 1.6:
-    // This used to be Modernizr.historymanagement but the longer
-    // name has been deprecated in favor of a shorter and property-matching one.
-    // The old API is still available in 1.6, but as of 2.0 will throw a warning,
-    // and in the first release thereafter disappear entirely.
-    tests['history'] = function() {
-      return !!(window.history && history.pushState);
-    };
-
-    tests['draganddrop'] = function() {
-        return isEventSupported('dragstart') && isEventSupported('drop');
-    };
-
-    // Mozilla is targeting to land MozWebSocket for FF6
-    // bugzil.la/659324
-    tests['websockets'] = function() {
-        for ( var i = -1, len = domPrefixes.length; ++i < len; ){
-          if ( window[domPrefixes[i] + 'WebSocket'] ){
-            return true;
-          }
-        }
-        return 'WebSocket' in window;
-    };
-
-
-    // http://css-tricks.com/rgba-browser-support/
-    tests['rgba'] = function() {
-        // Set an rgba() color and check the returned value
-
-        setCss('background-color:rgba(150,255,150,.5)');
-
-        return contains(mStyle.backgroundColor, 'rgba');
-    };
-
-    tests['hsla'] = function() {
-        // Same as rgba(), in fact, browsers re-map hsla() to rgba() internally,
-        //   except IE9 who retains it as hsla
-
-        setCss('background-color:hsla(120,40%,100%,.5)');
-
-        return contains(mStyle.backgroundColor, 'rgba') || contains(mStyle.backgroundColor, 'hsla');
-    };
-
-    tests['multiplebgs'] = function() {
-        // Setting multiple images AND a color on the background shorthand property
-        //  and then querying the style.background property value for the number of
-        //  occurrences of "url(" is a reliable method for detecting ACTUAL support for this!
-
-        setCss('background:url(https://),url(https://),red url(https://)');
-
-        // If the UA supports multiple backgrounds, there should be three occurrences
-        //   of the string "url(" in the return value for elemStyle.background
-
-        return /(url\s*\(.*?){3}/.test(mStyle.background);
-    };
-
-
-    // In testing support for a given CSS property, it's legit to test:
-    //    `elem.style[styleName] !== undefined`
-    // If the property is supported it will return an empty string,
-    // if unsupported it will return undefined.
-
-    // We'll take advantage of this quick test and skip setting a style
-    // on our modernizr element, but instead just testing undefined vs
-    // empty string.
-
-
-    tests['backgroundsize'] = function() {
-        return testPropsAll('backgroundSize');
-    };
-
-    tests['borderimage'] = function() {
-        return testPropsAll('borderImage');
-    };
-
-
-    // Super comprehensive table about all the unique implementations of
-    // border-radius: http://muddledramblings.com/table-of-css3-border-radius-compliance
-
-    tests['borderradius'] = function() {
-        return testPropsAll('borderRadius');
-    };
-
-    // WebOS unfortunately false positives on this test.
-    tests['boxshadow'] = function() {
-        return testPropsAll('boxShadow');
-    };
-
-    // FF3.0 will false positive on this test
-    tests['textshadow'] = function() {
-        return document.createElement('div').style.textShadow === '';
-    };
-
-
-    tests['opacity'] = function() {
-        // Browsers that actually have CSS Opacity implemented have done so
-        //  according to spec, which means their return values are within the
-        //  range of [0.0,1.0] - including the leading zero.
-
-        setCssAll('opacity:.55');
-
-        // The non-literal . in this regex is intentional:
-        //   German Chrome returns this value as 0,55
-        // https://github.com/Modernizr/Modernizr/issues/#issue/59/comment/516632
-        return /^0.55$/.test(mStyle.opacity);
-    };
-
-
-    tests['cssanimations'] = function() {
-        return testPropsAll('animationName');
-    };
-
-
-    tests['csscolumns'] = function() {
-        return testPropsAll('columnCount');
-    };
-
-
-    tests['cssgradients'] = function() {
-        /**
-         * For CSS Gradients syntax, please see:
-         * http://webkit.org/blog/175/introducing-css-gradients/
-         * https://developer.mozilla.org/en/CSS/-moz-linear-gradient
-         * https://developer.mozilla.org/en/CSS/-moz-radial-gradient
-         * http://dev.w3.org/csswg/css3-images/#gradients-
-         */
-
-        var str1 = 'background-image:',
-            str2 = 'gradient(linear,left top,right bottom,from(#9f9),to(white));',
-            str3 = 'linear-gradient(left top,#9f9, white);';
-
-        setCss(
-            (str1 + prefixes.join(str2 + str1) + prefixes.join(str3 + str1)).slice(0, -str1.length)
-        );
-
-        return contains(mStyle.backgroundImage, 'gradient');
-    };
-
-
-    tests['cssreflections'] = function() {
-        return testPropsAll('boxReflect');
-    };
-
-
-    tests['csstransforms'] = function() {
-        return !!testProps(['transformProperty', 'WebkitTransform', 'MozTransform', 'OTransform', 'msTransform']);
-    };
-
-
-    tests['csstransforms3d'] = function() {
-
-        var ret = !!testProps(['perspectiveProperty', 'WebkitPerspective', 'MozPerspective', 'OPerspective', 'msPerspective']);
-
-        // Webkitâ€™s 3D transforms are passed off to the browser's own graphics renderer.
-        //   It works fine in Safari on Leopard and Snow Leopard, but not in Chrome in
-        //   some conditions. As a result, Webkit typically recognizes the syntax but
-        //   will sometimes throw a false positive, thus we must do a more thorough check:
-        if ( ret && 'webkitPerspective' in docElement.style ) {
-
-          // Webkit allows this media query to succeed only if the feature is enabled.
-          // `@media (transform-3d),(-o-transform-3d),(-moz-transform-3d),(-ms-transform-3d),(-webkit-transform-3d),(modernizr){ ... }`
-          ret = Modernizr['csstransforms3d'];
-        }
-        return ret;
-    };
-
-
-    tests['csstransitions'] = function() {
-        return testPropsAll('transitionProperty');
-    };
-
-
-    /*>>fontface*/
-    // @font-face detection routine by Diego Perini
-    // http://javascript.nwbox.com/CSSSupport/
-    tests['fontface'] = function() {
-        return Modernizr['fontface'];
-    };
-    /*>>fontface*/
-
-    // CSS generated content detection
-    tests['generatedcontent'] = function() {
-        return Modernizr['generatedcontent'];
-    };
-
-
-
-    // These tests evaluate support of the video/audio elements, as well as
-    // testing what types of content they support.
-    //
-    // We're using the Boolean constructor here, so that we can extend the value
-    // e.g.  Modernizr.video     // true
-    //       Modernizr.video.ogg // 'probably'
-    //
-    // Codec values from : http://github.com/NielsLeenheer/html5test/blob/9106a8/index.html#L845
-    //                     thx to NielsLeenheer and zcorpan
-
-    // Note: in FF 3.5.1 and 3.5.0, "no" was a return value instead of empty string.
-    //   Modernizr does not normalize for that.
-
-    tests['video'] = function() {
-        var elem = document.createElement('video'),
-            bool = false;
-            
-        // IE9 Running on Windows Server SKU can cause an exception to be thrown, bug #224
-        try {
-            if ( bool = !!elem.canPlayType ) {
-                bool      = new Boolean(bool);
-                bool.ogg  = elem.canPlayType('video/ogg; codecs="theora"');
-
-                // Workaround required for IE9, which doesn't report video support without audio codec specified.
-                //   bug 599718 @ msft connect
-                var h264 = 'video/mp4; codecs="avc1.42E01E';
-                bool.h264 = elem.canPlayType(h264 + '"') || elem.canPlayType(h264 + ', mp4a.40.2"');
-
-                bool.webm = elem.canPlayType('video/webm; codecs="vp8, vorbis"');
-            }
-            
-        } catch(e) { }
-        
-        return bool;
-    };
-
-    tests['audio'] = function() {
-        var elem = document.createElement('audio'),
-            bool = false;
-
-        try { 
-            if ( bool = !!elem.canPlayType ) {
-                bool      = new Boolean(bool);
-                bool.ogg  = elem.canPlayType('audio/ogg; codecs="vorbis"');
-                bool.mp3  = elem.canPlayType('audio/mpeg;');
-
-                // Mimetypes accepted:
-                //   https://developer.mozilla.org/En/Media_formats_supported_by_the_audio_and_video_elements
-                //   http://bit.ly/iphoneoscodecs
-                bool.wav  = elem.canPlayType('audio/wav; codecs="1"');
-                bool.m4a  = elem.canPlayType('audio/x-m4a;') || elem.canPlayType('audio/aac;');
-            }
-        } catch(e) { }
-        
-        return bool;
-    };
-
-
-    // Firefox has made these tests rather unfun.
-
-    // In FF4, if disabled, window.localStorage should === null.
-
-    // Normally, we could not test that directly and need to do a
-    //   `('localStorage' in window) && ` test first because otherwise Firefox will
-    //   throw http://bugzil.la/365772 if cookies are disabled
-
-    // However, in Firefox 4 betas, if dom.storage.enabled == false, just mentioning
-    //   the property will throw an exception. http://bugzil.la/599479
-    // This looks to be fixed for FF4 Final.
-
-    // Because we are forced to try/catch this, we'll go aggressive.
-
-    // FWIW: IE8 Compat mode supports these features completely:
-    //   http://www.quirksmode.org/dom/html5.html
-    // But IE8 doesn't support either with local files
-
-    tests['localstorage'] = function() {
-        try {
-            return !!localStorage.getItem;
-        } catch(e) {
-            return false;
-        }
-    };
-
-    tests['sessionstorage'] = function() {
-        try {
-            return !!sessionStorage.getItem;
-        } catch(e){
-            return false;
-        }
-    };
-
-
-    tests['webworkers'] = function() {
-        return !!window.Worker;
-    };
-
-
-    tests['applicationcache'] = function() {
-        return !!window.applicationCache;
-    };
-
-
-    // Thanks to Erik Dahlstrom
-    tests['svg'] = function() {
-        return !!document.createElementNS && !!document.createElementNS(ns.svg, 'svg').createSVGRect;
-    };
-
-    // specifically for SVG inline in HTML, not within XHTML
-    // test page: paulirish.com/demo/inline-svg
-    tests['inlinesvg'] = function() {
-      var div = document.createElement('div');
-      div.innerHTML = '<svg/>';
-      return (div.firstChild && div.firstChild.namespaceURI) == ns.svg;
-    };
-
-    // Thanks to F1lt3r and lucideer, ticket #35
-    tests['smil'] = function() {
-        return !!document.createElementNS && /SVG/.test(toString.call(document.createElementNS(ns.svg, 'animate')));
-    };
-
-    tests['svgclippaths'] = function() {
-        // Possibly returns a false positive in Safari 3.2?
-        return !!document.createElementNS && /SVG/.test(toString.call(document.createElementNS(ns.svg, 'clipPath')));
-    };
-
-    // input features and input types go directly onto the ret object, bypassing the tests loop.
-    // Hold this guy to execute in a moment.
-    function webforms() {
-        // Run through HTML5's new input attributes to see if the UA understands any.
-        // We're using f which is the <input> element created early on
-        // Mike Taylr has created a comprehensive resource for testing these attributes
-        //   when applied to all input types:
-        //   http://miketaylr.com/code/input-type-attr.html
-        // spec: http://www.whatwg.org/specs/web-apps/current-work/multipage/the-input-element.html#input-type-attr-summary
-        
-        // Only input placeholder is tested while textarea's placeholder is not. 
-        // Currently Safari 4 and Opera 11 have support only for the input placeholder
-        // Both tests are available in feature-detects/forms-placeholder.js
-        Modernizr['input'] = (function( props ) {
-            for ( var i = 0, len = props.length; i < len; i++ ) {
-                attrs[ props[i] ] = !!(props[i] in inputElem);
-            }
-            return attrs;
-        })('autocomplete autofocus list placeholder max min multiple pattern required step'.split(' '));
-
-        // Run through HTML5's new input types to see if the UA understands any.
-        //   This is put behind the tests runloop because it doesn't return a
-        //   true/false like all the other tests; instead, it returns an object
-        //   containing each input type with its corresponding true/false value
-
-        // Big thanks to @miketaylr for the html5 forms expertise. http://miketaylr.com/
-        Modernizr['inputtypes'] = (function(props) {
-
-            for ( var i = 0, bool, inputElemType, defaultView, len = props.length; i < len; i++ ) {
-
-                inputElem.setAttribute('type', inputElemType = props[i]);
-                bool = inputElem.type !== 'text';
-
-                // We first check to see if the type we give it sticks..
-                // If the type does, we feed it a textual value, which shouldn't be valid.
-                // If the value doesn't stick, we know there's input sanitization which infers a custom UI
-                if ( bool ) {
-
-                    inputElem.value         = smile;
-                    inputElem.style.cssText = 'position:absolute;visibility:hidden;';
-
-                    if ( /^range$/.test(inputElemType) && inputElem.style.WebkitAppearance !== undefined ) {
-
-                      docElement.appendChild(inputElem);
-                      defaultView = document.defaultView;
-
-                      // Safari 2-4 allows the smiley as a value, despite making a slider
-                      bool =  defaultView.getComputedStyle &&
-                              defaultView.getComputedStyle(inputElem, null).WebkitAppearance !== 'textfield' &&
-                              // Mobile android web browser has false positive, so must
-                              // check the height to see if the widget is actually there.
-                              (inputElem.offsetHeight !== 0);
-
-                      docElement.removeChild(inputElem);
-
-                    } else if ( /^(search|tel)$/.test(inputElemType) ){
-                      // Spec doesnt define any special parsing or detectable UI
-                      //   behaviors so we pass these through as true
-
-                      // Interestingly, opera fails the earlier test, so it doesn't
-                      //  even make it here.
-
-                    } else if ( /^(url|email)$/.test(inputElemType) ) {
-                      // Real url and email support comes with prebaked validation.
-                      bool = inputElem.checkValidity && inputElem.checkValidity() === false;
-
-                    } else if ( /^color$/.test(inputElemType) ) {
-                        // chuck into DOM and force reflow for Opera bug in 11.00
-                        // github.com/Modernizr/Modernizr/issues#issue/159
-                        docElement.appendChild(inputElem);
-                        docElement.offsetWidth;
-                        bool = inputElem.value != smile;
-                        docElement.removeChild(inputElem);
-
-                    } else {
-                      // If the upgraded input compontent rejects the :) text, we got a winner
-                      bool = inputElem.value != smile;
-                    }
-                }
-
-                inputs[ props[i] ] = !!bool;
-            }
-            return inputs;
-        })('search tel url email datetime date month week time datetime-local number range color'.split(' '));
-    }
-
-
-    // End of test definitions
-    // -----------------------
-
-
-
-    // Run through all tests and detect their support in the current UA.
-    // todo: hypothetically we could be doing an array of tests and use a basic loop here.
-    for ( var feature in tests ) {
-        if ( hasOwnProperty(tests, feature) ) {
-            // run the test, throw the return value into the Modernizr,
-            //   then based on that boolean, define an appropriate className
-            //   and push it into an array of classes we'll join later.
-            featureName  = feature.toLowerCase();
-            Modernizr[featureName] = tests[feature]();
-
-            classes.push((Modernizr[featureName] ? '' : 'no-') + featureName);
-        }
-    }
-
-    // input tests need to run.
-    Modernizr.input || webforms();
-
-
-    /**
-     * addTest allows the user to define their own feature tests
-     * the result will be added onto the Modernizr object,
-     * as well as an appropriate className set on the html element
-     *
-     * @param feature - String naming the feature
-     * @param test - Function returning true if feature is supported, false if not
-     */
-     Modernizr.addTest = function ( feature, test ) {
-       if ( typeof feature == "object" ) {
-         for ( var key in feature ) {
-           if ( hasOwnProperty( feature, key ) ) { 
-             Modernizr.addTest( key, feature[ key ] );
-           }
-         }
-       } else {
-
-         feature = feature.toLowerCase();
-
-         if ( Modernizr[feature] !== undefined ) {
-           // we're going to quit if you're trying to overwrite an existing test
-           // if we were to allow it, we'd do this:
-           //   var re = new RegExp("\\b(no-)?" + feature + "\\b");  
-           //   docElement.className = docElement.className.replace( re, '' );
-           // but, no rly, stuff 'em.
-           return; 
-         }
-
-         test = typeof test == "boolean" ? test : !!test();
-
-         docElement.className += ' ' + (test ? '' : 'no-') + feature;
-         Modernizr[feature] = test;
-
-       }
-
-       return Modernizr; // allow chaining.
-     };
-    
-
-    // Reset modElem.cssText to nothing to reduce memory footprint.
-    setCss('');
-    modElem = inputElem = null;
-
-    //>>BEGIN IEPP
-    // Enable HTML 5 elements for styling (and printing) in IE.
-    if ( window.attachEvent && (function(){ var elem = document.createElement('div');
-                                            elem.innerHTML = '<elem></elem>';
-                                            return elem.childNodes.length !== 1; })() ) {
-                                              
-        // iepp v2 by @jon_neal & afarkas : github.com/aFarkas/iepp/
-        (function(win, doc) {
-          win.iepp = win.iepp || {};
-          var iepp = win.iepp,
-            elems = iepp.html5elements || 'abbr|article|aside|audio|canvas|datalist|details|figcaption|figure|footer|header|hgroup|mark|meter|nav|output|progress|section|summary|time|video',
-            elemsArr = elems.split('|'),
-            elemsArrLen = elemsArr.length,
-            elemRegExp = new RegExp('(^|\\s)('+elems+')', 'gi'),
-            tagRegExp = new RegExp('<(\/*)('+elems+')', 'gi'),
-            filterReg = /^\s*[\{\}]\s*$/,
-            ruleRegExp = new RegExp('(^|[^\\n]*?\\s)('+elems+')([^\\n]*)({[\\n\\w\\W]*?})', 'gi'),
-            docFrag = doc.createDocumentFragment(),
-            html = doc.documentElement,
-            head = html.firstChild,
-            bodyElem = doc.createElement('body'),
-            styleElem = doc.createElement('style'),
-            printMedias = /print|all/,
-            body;
-          function shim(doc) {
-            var a = -1;
-            while (++a < elemsArrLen)
-              // Use createElement so IE allows HTML5-named elements in a document
-              doc.createElement(elemsArr[a]);
-          }
-
-          iepp.getCSS = function(styleSheetList, mediaType) {
-            if(styleSheetList+'' === undefined){return '';}
-            var a = -1,
-              len = styleSheetList.length,
-              styleSheet,
-              cssTextArr = [];
-            while (++a < len) {
-              styleSheet = styleSheetList[a];
-              //currently no test for disabled/alternate stylesheets
-              if(styleSheet.disabled){continue;}
-              mediaType = styleSheet.media || mediaType;
-              // Get css from all non-screen stylesheets and their imports
-              if (printMedias.test(mediaType)) cssTextArr.push(iepp.getCSS(styleSheet.imports, mediaType), styleSheet.cssText);
-              //reset mediaType to all with every new *not imported* stylesheet
-              mediaType = 'all';
-            }
-            return cssTextArr.join('');
-          };
-
-          iepp.parseCSS = function(cssText) {
-            var cssTextArr = [],
-              rule;
-            while ((rule = ruleRegExp.exec(cssText)) != null){
-              // Replace all html5 element references with iepp substitute classnames
-              cssTextArr.push(( (filterReg.exec(rule[1]) ? '\n' : rule[1]) +rule[2]+rule[3]).replace(elemRegExp, '$1.iepp_$2')+rule[4]);
-            }
-            return cssTextArr.join('\n');
-          };
-
-          iepp.writeHTML = function() {
-            var a = -1;
-            body = body || doc.body;
-            while (++a < elemsArrLen) {
-              var nodeList = doc.getElementsByTagName(elemsArr[a]),
-                nodeListLen = nodeList.length,
-                b = -1;
-              while (++b < nodeListLen)
-                if (nodeList[b].className.indexOf('iepp_') < 0)
-                  // Append iepp substitute classnames to all html5 elements
-                  nodeList[b].className += ' iepp_'+elemsArr[a];
-            }
-            docFrag.appendChild(body);
-            html.appendChild(bodyElem);
-            // Write iepp substitute print-safe document
-            bodyElem.className = body.className;
-            bodyElem.id = body.id;
-            // Replace HTML5 elements with <font> which is print-safe and shouldn't conflict since it isn't part of html5
-            bodyElem.innerHTML = body.innerHTML.replace(tagRegExp, '<$1font');
-          };
-
-
-          iepp._beforePrint = function() {
-            // Write iepp custom print CSS
-            styleElem.styleSheet.cssText = iepp.parseCSS(iepp.getCSS(doc.styleSheets, 'all'));
-            iepp.writeHTML();
-          };
-
-          iepp.restoreHTML = function(){
-            // Undo everything done in onbeforeprint
-            bodyElem.innerHTML = '';
-            html.removeChild(bodyElem);
-            html.appendChild(body);
-          };
-
-          iepp._afterPrint = function(){
-            // Undo everything done in onbeforeprint
-            iepp.restoreHTML();
-            styleElem.styleSheet.cssText = '';
-          };
-
-
-
-          // Shim the document and iepp fragment
-          shim(doc);
-          shim(docFrag);
-
-          //
-          if(iepp.disablePP){return;}
-
-          // Add iepp custom print style element
-          head.insertBefore(styleElem, head.firstChild);
-          styleElem.media = 'print';
-          styleElem.className = 'iepp-printshim';
-          win.attachEvent(
-            'onbeforeprint',
-            iepp._beforePrint
-          );
-          win.attachEvent(
-            'onafterprint',
-            iepp._afterPrint
-          );
-        })(window, document);
-    }
-    //>>END IEPP
-
-    // Assign private properties to the return object with prefix
-    Modernizr._version      = version;
-
-    // expose these for the plugin API. Look in the source for how to join() them against your input
-    Modernizr._prefixes     = prefixes;
-    Modernizr._domPrefixes  = domPrefixes;
-    
-    // Modernizr.mq tests a given media query, live against the current state of the window
-    // A few important notes:
-    //   * If a browser does not support media queries at all (eg. oldIE) the mq() will always return false
-    //   * A max-width or orientation query will be evaluated against the current state, which may change later.
-    //   * You must specify values. Eg. If you are testing support for the min-width media query use: 
-    //       Modernizr.mq('(min-width:0)')
-    // usage:
-    // Modernizr.mq('only screen and (max-width:768)')
-    Modernizr.mq            = testMediaQuery;   
-    
-    // Modernizr.hasEvent() detects support for a given event, with an optional element to test on
-    // Modernizr.hasEvent('gesturestart', elem)
-    Modernizr.hasEvent      = isEventSupported; 
-
-    // Modernizr.testProp() investigates whether a given style property is recognized
-    // Note that the property names must be provided in the camelCase variant.
-    // Modernizr.testProp('pointerEvents')
-    Modernizr.testProp      = function(prop){
-        return testProps([prop]);
-    };        
-
-    // Modernizr.testAllProps() investigates whether a given style property,
-    //   or any of its vendor-prefixed variants, is recognized
-    // Note that the property names must be provided in the camelCase variant.
-    // Modernizr.testAllProps('boxSizing')    
-    Modernizr.testAllProps  = testPropsAll;     
-
-
-    
-    // Modernizr.testStyles() allows you to add custom styles to the document and test an element afterwards
-    // Modernizr.testStyles('#modernizr { position:absolute }', function(elem, rule){ ... })
-    Modernizr.testStyles    = injectElementWithStyles; 
-
-
-    // Modernizr.prefixed() returns the prefixed or nonprefixed property name variant of your input
-    // Modernizr.prefixed('boxSizing') // 'MozBoxSizing'
-    
-    // Properties must be passed as dom-style camelcase, rather than `box-sizing` hypentated style.
-    // Return values will also be the camelCase variant, if you need to translate that to hypenated style use:
-    //
-    //     str.replace(/([A-Z])/g, function(str,m1){ return '-' + m1.toLowerCase(); }).replace(/^ms-/,'-ms-');
-    
-    // If you're trying to ascertain which transition end event to bind to, you might do something like...
-    // 
-    //     var transEndEventNames = {
-    //       'WebkitTransition' : 'webkitTransitionEnd',
-    //       'MozTransition'    : 'transitionend',
-    //       'OTransition'      : 'oTransitionEnd',
-    //       'msTransition'     : 'msTransitionEnd', // maybe?
-    //       'transition'       : 'transitionEnd'
-    //     },
-    //     transEndEventName = transEndEventNames[ Modernizr.prefixed('transition') ];
-    
-    Modernizr.prefixed      = function(prop){
-      return testPropsAll(prop, 'pfx');
-    };
-
-
-
-    // Remove "no-js" class from <html> element, if it exists:
-    docElement.className = docElement.className.replace(/\bno-js\b/, '')
-                            
-                            // Add the new classes to the <html> element.
-                            + (enableClasses ? ' js ' + classes.join(' ') : '');
-
-    return Modernizr;
-
-})(this, this.document);/*
-    Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011 by Henrik Vendelbo
+    Essential JavaScript - v0.4.0 ❀ http://essentialjs.com
+    Copyright (c) 2011-2014 Henrik Vendelbo
 
     This program is free software: you can redistribute it and/or modify it under the terms of
     the GNU Affero General Public License version 3 as published by the Free Software Foundation.
 
     Additionally,
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
-    and associated documentation files (the "Software"), to deal in the Software without restriction, 
-    including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-    and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+    and associated documentation files (the 'Software'), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
     subject to the following conditions:
 
     The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
+    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
     BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
-    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
-/*!
-    Essential JavaScript ❀ http://essentialjs.com
-    Copyright (C) 2011 by Henrik Vendelbo
-
-    Licensed under GNU Affero v3 and MIT. See http://essentialjs.com/license/
-*/
-
-
-/**
- *
- * options.name
- * options.generator
- * options.mixinto
- */
+window.html5 = {
+	elements: "template message abbr article aside audio bdi canvas data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video"
+};
+	
+;window.Modernizr=function(e,t,n){function C(e){f.cssText=e}function k(e,t){return C(h.join(e+";")+(t||""))}function L(e,t){return typeof e===t}function A(e,t){return!!~(""+e).indexOf(t)}function O(e,t){for(var r in e){var i=e[r];if(!A(i,"-")&&f[i]!==n)return t=="pfx"?i:!0}return!1}function M(e,t,r){for(var i in e){var s=t[e[i]];if(s!==n)return r===!1?e[i]:L(s,"function")?s.bind(r||t):s}return!1}function _(e,t,n){var r=e.charAt(0).toUpperCase()+e.slice(1),i=(e+" "+d.join(r+" ")+r).split(" ");return L(t,"string")||L(t,"undefined")?O(i,t):(i=(e+" "+v.join(r+" ")+r).split(" "),M(i,t,n))}var r="2.7.1",i={},s=!0,o=t.documentElement,u="modernizr",a=t.createElement(u),f=a.style,l,c={}.toString,h=" -webkit- -moz- -o- -ms- ".split(" "),p="Webkit Moz O ms",d=p.split(" "),v=p.toLowerCase().split(" "),m={},g={},y={},b=[],w=b.slice,E,S=function(e,n,r,i){var s,a,f,l,c=t.createElement("div"),h=t.body,p=h||t.createElement("body");if(parseInt(r,10))while(r--)f=t.createElement("div"),f.id=i?i[r]:u+(r+1),c.appendChild(f);return s=["&#173;",'<style id="s',u,'">',e,"</style>"].join(""),c.id=u,(h?c:p).innerHTML+=s,p.appendChild(c),h||(p.style.background="",p.style.overflow="hidden",l=o.style.overflow,o.style.overflow="hidden",o.appendChild(p)),a=n(c,e),h?c.parentNode.removeChild(c):(p.parentNode.removeChild(p),o.style.overflow=l),!!a},x=function(){function r(r,i){i=i||t.createElement(e[r]||"div"),r="on"+r;var s=r in i;return s||(i.setAttribute||(i=t.createElement("div")),i.setAttribute&&i.removeAttribute&&(i.setAttribute(r,""),s=L(i[r],"function"),L(i[r],"undefined")||(i[r]=n),i.removeAttribute(r))),i=null,s}var e={select:"input",change:"input",submit:"form",reset:"form",error:"img",load:"img",abort:"img"};return r}(),T={}.hasOwnProperty,N;!L(T,"undefined")&&!L(T.call,"undefined")?N=function(e,t){return T.call(e,t)}:N=function(e,t){return t in e&&L(e.constructor.prototype[t],"undefined")},Function.prototype.bind||(Function.prototype.bind=function(t){var n=this;if(typeof n!="function")throw new TypeError;var r=w.call(arguments,1),i=function(){if(this instanceof i){var e=function(){};e.prototype=n.prototype;var s=new e,o=n.apply(s,r.concat(w.call(arguments)));return Object(o)===o?o:s}return n.apply(t,r.concat(w.call(arguments)))};return i}),m.touch=function(){var n;return"ontouchstart"in e||e.DocumentTouch&&t instanceof DocumentTouch?n=!0:S(["@media (",h.join("touch-enabled),("),u,")","{#modernizr{top:9px;position:absolute}}"].join(""),function(e){n=e.offsetTop===9}),n},m.hashchange=function(){return x("hashchange",e)&&(t.documentMode===n||t.documentMode>7)},m.draganddrop=function(){var e=t.createElement("div");return"draggable"in e||"ondragstart"in e&&"ondrop"in e},m.websockets=function(){return"WebSocket"in e||"MozWebSocket"in e},m.backgroundsize=function(){return _("backgroundSize")},m.csscolumns=function(){return _("columnCount")};for(var D in m)N(m,D)&&(E=D.toLowerCase(),i[E]=m[D](),b.push((i[E]?"":"no-")+E));return i.addTest=function(e,t){if(typeof e=="object")for(var r in e)N(e,r)&&i.addTest(r,e[r]);else{e=e.toLowerCase();if(i[e]!==n)return i;t=typeof t=="function"?t():t,typeof s!="undefined"&&s&&(o.className+=" "+(t?"":"no-")+e),i[e]=t}return i},C(""),a=l=null,function(e,t){function c(e,t){var n=e.createElement("p"),r=e.getElementsByTagName("head")[0]||e.documentElement;return n.innerHTML="x<style>"+t+"</style>",r.insertBefore(n.lastChild,r.firstChild)}function h(){var e=y.elements;return typeof e=="string"?e.split(" "):e}function p(e){var t=f[e[u]];return t||(t={},a++,e[u]=a,f[a]=t),t}function d(e,n,r){n||(n=t);if(l)return n.createElement(e);r||(r=p(n));var o;return r.cache[e]?o=r.cache[e].cloneNode():s.test(e)?o=(r.cache[e]=r.createElem(e)).cloneNode():o=r.createElem(e),o.canHaveChildren&&!i.test(e)&&!o.tagUrn?r.frag.appendChild(o):o}function v(e,n){e||(e=t);if(l)return e.createDocumentFragment();n=n||p(e);var r=n.frag.cloneNode(),i=0,s=h(),o=s.length;for(;i<o;i++)r.createElement(s[i]);return r}function m(e,t){t.cache||(t.cache={},t.createElem=e.createElement,t.createFrag=e.createDocumentFragment,t.frag=t.createFrag()),e.createElement=function(n){return y.shivMethods?d(n,e,t):t.createElem(n)},e.createDocumentFragment=Function("h,f","return function(){var n=f.cloneNode(),c=n.createElement;h.shivMethods&&("+h().join().replace(/[\w\-]+/g,function(e){return t.createElem(e),t.frag.createElement(e),'c("'+e+'")'})+");return n}")(y,t.frag)}function g(e){e||(e=t);var n=p(e);return y.shivCSS&&!o&&!n.hasCSS&&(n.hasCSS=!!c(e,"article,aside,dialog,figcaption,figure,footer,header,hgroup,main,nav,section{display:block}mark{background:#FF0;color:#000}template{display:none}")),l||m(e,n),e}var n="3.7.0",r=e.html5||{},i=/^<|^(?:button|map|select|textarea|object|iframe|option|optgroup)$/i,s=/^(?:a|b|code|div|fieldset|h1|h2|h3|h4|h5|h6|i|label|li|ol|p|q|span|strong|style|table|tbody|td|th|tr|ul)$/i,o,u="_html5shiv",a=0,f={},l;(function(){try{var e=t.createElement("a");e.innerHTML="<xyz></xyz>",o="hidden"in e,l=e.childNodes.length==1||function(){t.createElement("a");var e=t.createDocumentFragment();return typeof e.cloneNode=="undefined"||typeof e.createDocumentFragment=="undefined"||typeof e.createElement=="undefined"}()}catch(n){o=!0,l=!0}})();var y={elements:r.elements||"abbr article aside audio bdi canvas data datalist details dialog figcaption figure footer header hgroup main mark meter nav output progress section summary template time video",version:n,shivCSS:r.shivCSS!==!1,supportsUnknownElements:l,shivMethods:r.shivMethods!==!1,type:"default",shivDocument:g,createElement:d,createDocumentFragment:v};e.html5=y,g(t)}(this,t),i._version=r,i._prefixes=h,i._domPrefixes=v,i._cssomPrefixes=d,i.hasEvent=x,i.testProp=function(e){return O([e])},i.testAllProps=_,i.testStyles=S,i.prefixed=function(e,t,n){return t?_(e,t,n):_(e,"pfx")},o.className=o.className.replace(/(^|\s)no-js(\s|$)/,"$1$2")+(s?" js "+b.join(" "):""),i}(this,this.document),function(e,t,n){function r(e){return"[object Function]"==d.call(e)}function i(e){return"string"==typeof e}function s(){}function o(e){return!e||"loaded"==e||"complete"==e||"uninitialized"==e}function u(){var e=v.shift();m=1,e?e.t?h(function(){("c"==e.t?k.injectCss:k.injectJs)(e.s,0,e.a,e.x,e.e,1)},0):(e(),u()):m=0}function a(e,n,r,i,s,a,f){function l(t){if(!d&&o(c.readyState)&&(w.r=d=1,!m&&u(),c.onload=c.onreadystatechange=null,t)){"img"!=e&&h(function(){b.removeChild(c)},50);for(var r in T[n])T[n].hasOwnProperty(r)&&T[n][r].onload()}}var f=f||k.errorTimeout,c=t.createElement(e),d=0,g=0,w={t:r,s:n,e:s,a:a,x:f};1===T[n]&&(g=1,T[n]=[]),"object"==e?c.data=n:(c.src=n,c.type=e),c.width=c.height="0",c.onerror=c.onload=c.onreadystatechange=function(){l.call(this,g)},v.splice(i,0,w),"img"!=e&&(g||2===T[n]?(b.insertBefore(c,y?null:p),h(l,f)):T[n].push(c))}function f(e,t,n,r,s){return m=0,t=t||"j",i(e)?a("c"==t?E:w,e,t,this.i++,n,r,s):(v.splice(this.i++,0,e),1==v.length&&u()),this}function l(){var e=k;return e.loader={load:f,i:0},e}var c=t.documentElement,h=e.setTimeout,p=t.getElementsByTagName("script")[0],d={}.toString,v=[],m=0,g="MozAppearance"in c.style,y=g&&!!t.createRange().compareNode,b=y?c:p.parentNode,c=e.opera&&"[object Opera]"==d.call(e.opera),c=!!t.attachEvent&&!c,w=g?"object":c?"script":"img",E=c?"script":w,S=Array.isArray||function(e){return"[object Array]"==d.call(e)},x=[],T={},N={timeout:function(e,t){return t.length&&(e.timeout=t[0]),e}},C,k;k=function(e){function t(e){var e=e.split("!"),t=x.length,n=e.pop(),r=e.length,n={url:n,origUrl:n,prefixes:e},i,s,o;for(s=0;s<r;s++)o=e[s].split("="),(i=N[o.shift()])&&(n=i(n,o));for(s=0;s<t;s++)n=x[s](n);return n}function o(e,i,s,o,u){var a=t(e),f=a.autoCallback;a.url.split(".").pop().split("?").shift(),a.bypass||(i&&(i=r(i)?i:i[e]||i[o]||i[e.split("/").pop().split("?")[0]]),a.instead?a.instead(e,i,s,o,u):(T[a.url]?a.noexec=!0:T[a.url]=1,s.load(a.url,a.forceCSS||!a.forceJS&&"css"==a.url.split(".").pop().split("?").shift()?"c":n,a.noexec,a.attrs,a.timeout),(r(i)||r(f))&&s.load(function(){l(),i&&i(a.origUrl,u,o),f&&f(a.origUrl,u,o),T[a.url]=2})))}function u(e,t){function n(e,n){if(e){if(i(e))n||(f=function(){var e=[].slice.call(arguments);l.apply(this,e),c()}),o(e,f,t,0,u);else if(Object(e)===e)for(p in h=function(){var t=0,n;for(n in e)e.hasOwnProperty(n)&&t++;return t}(),e)e.hasOwnProperty(p)&&(!n&&!--h&&(r(f)?f=function(){var e=[].slice.call(arguments);l.apply(this,e),c()}:f[p]=function(e){return function(){var t=[].slice.call(arguments);e&&e.apply(this,t),c()}}(l[p])),o(e[p],f,t,p,u))}else!n&&c()}var u=!!e.test,a=e.load||e.both,f=e.callback||s,l=f,c=e.complete||s,h,p;n(u?e.yep:e.nope,!!a),a&&n(a)}var a,f,c=this.yepnope.loader;if(i(e))o(e,0,c,0);else if(S(e))for(a=0;a<e.length;a++)f=e[a],i(f)?o(f,0,c,0):S(f)?k(f):Object(f)===f&&u(f,c);else Object(e)===e&&u(e,c)},k.addPrefix=function(e,t){N[e]=t},k.addFilter=function(e){x.push(e)},k.errorTimeout=1e4,null==t.readyState&&t.addEventListener&&(t.readyState="loading",t.addEventListener("DOMContentLoaded",C=function(){t.removeEventListener("DOMContentLoaded",C,0),t.readyState="complete"},0)),e.yepnope=l(),e.yepnope.executeStack=u,e.yepnope.injectJs=function(e,n,r,i,a,f){var l=t.createElement("script"),c,d,i=i||k.errorTimeout;l.src=e;for(d in r)l.setAttribute(d,r[d]);n=f?u:n||s,l.onreadystatechange=l.onload=function(){!c&&o(l.readyState)&&(c=1,n(),l.onload=l.onreadystatechange=null)},h(function(){c||(c=1,n(1))},i),a?l.onload():p.parentNode.insertBefore(l,p)},e.yepnope.injectCss=function(e,n,r,i,o,a){var i=t.createElement("link"),f,n=a?u:n||s;i.href=e,i.rel="stylesheet",i.type="text/css";for(f in r)i.setAttribute(f,r[f]);o||(p.parentNode.insertBefore(i,p),h(n,0))}}(this,document),Modernizr.load=function(){yepnope.apply(window,[].slice.call(arguments,0))},Modernizr.addTest("filereader",function(){return!!(window.File&&window.FileList&&window.FileReader)}),Modernizr.addTest("ie8compat",function(){return!window.addEventListener&&document.documentMode&&document.documentMode===7}),Modernizr.addTest("csscalc",function(){var e="width:",t="calc(10px);",n=document.createElement("div");return n.style.cssText=e+Modernizr._prefixes.join(t+e),!!n.style.length}),Modernizr.addTest("regions",function(){var e=Modernizr.prefixed("flowFrom"),t=Modernizr.prefixed("flowInto");if(!e||!t)return!1;var n=document.createElement("div"),r=document.createElement("div"),i=document.createElement("div"),s="modernizr_flow_for_regions_check";r.innerText="M",n.style.cssText="top: 150px; left: 150px; padding: 0px;",i.style.cssText="width: 50px; height: 50px; padding: 42px;",i.style[e]=s,n.appendChild(r),n.appendChild(i),document.documentElement.appendChild(n);var o,u,a=r.getBoundingClientRect();return r.style[t]=s,o=r.getBoundingClientRect(),u=o.left-a.left,document.documentElement.removeChild(n),r=i=n=undefined,u==42}),Modernizr.addTest("csspositionsticky",function(){var e="position:",t="sticky",n=document.createElement("modernizr"),r=n.style;return r.cssText=e+Modernizr._prefixes.join(t+";"+e).slice(0,-e.length),r.position.indexOf(t)!==-1});
 function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -1178,13 +48,14 @@ function Resolver(name_andor_expr,ns,options)
                 return _resolver(name,ns,options,arguments.length==1 || ns); //TODO return namespace
 
             case 2: 
+                var _r = _resolver(name,ns,options,arguments.length==1 || ns);
                 // Resolver("abc::") returns the namespace of resolver 
                 if (expr == "") {
-                    return _resolver(name,ns,options,arguments.length==1 || ns);
+                    return _r.namespace;
 
                 // Resolver("abc::def") returns reference for expression
                 } else {
-                    return Resolver[name].reference(expr,ns);
+                    return _r.reference(expr,ns);
 
                 }
                 break;
@@ -1203,6 +74,8 @@ function Resolver(name_andor_expr,ns,options)
         if (name_expr.length>1 && expr) {
             var call = "reference";
             switch(ns) {
+                case "0":
+                case "false":
                 case "generate":
                 case "null":
                 case "undefined":
@@ -1230,7 +103,7 @@ function Resolver(name_andor_expr,ns,options)
     function _resolver(name,ns,options,auto) {
         if (Resolver[name] == undefined) {
             if (!auto) return ns;
-            Resolver[name] = Resolver(ns,options || {});
+            Resolver[name] = Resolver(ns || {},options || {});
             Resolver[name].named = name;
         }
         return Resolver[name];
@@ -1248,18 +121,25 @@ function Resolver(name_andor_expr,ns,options)
             if (top == undefined) { // catching null as well (not sure if it's desirable)
                 switch(onundefined) {
                 case undefined:
+                case "force":
                 case "generate":
                 	if (top === undefined) {
 	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
 	                    continue; // go to next now that we filled in an object
                 	}
-                //TODO "false"
+                //TODO use map to determine return
+                case "false":
+                    if (top === undefined) return false;
+                    break;
                 case "null":
                 	if (top === undefined) return null;
                 	break;
                 case "undefined":
                 	if (top === undefined) return undefined;
                 	break;
+                case "0":
+                    if (top === undefined) return 0;
+                    break;
                 }
                 if (j < names.length-1) {
 	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
@@ -1278,13 +158,18 @@ function Resolver(name_andor_expr,ns,options)
 		                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
 		                    continue; // go to next now that we filled in an object
 	                	}
-	                //TODO "false"
+                    case "false":
+                        if (top === undefined) return false;
+                        break;
 	                case "null":
 	                	if (top === undefined) return null;
 	                	break;
 	                case "undefined":
 	                	if (top === undefined) return undefined;
 	                	break;
+                    case "0":
+                        if (top === undefined) return 0;
+                        break;
 	                }
 	                if (j < names.length-1) {
 		            	throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
@@ -1321,12 +206,13 @@ function Resolver(name_andor_expr,ns,options)
     	e.callback = callback;
         e.inTrigger = 0;
 
-    	function trigger(base,symbol,value) {
+    	function trigger(base,symbol,value,oldValue) {
             if (this.inTrigger) return;
             ++this.inTrigger;
             this.base = base;
     		this.symbol = symbol;
     		this.value = value;
+            this.oldValue = oldValue;
     		this.callback.call(resolver,this);
             --this.inTrigger;
     	}
@@ -1348,6 +234,12 @@ function Resolver(name_andor_expr,ns,options)
             return _resolve(name.name.split("."),null,name.onundefined);
         }
         else {
+            var parts = name.split("::");
+            if (parts.length > 1) {
+                // name = parts[1];
+                if (parts.length == 2) name += "::"; // return value by default not ref
+                return Resolver(name,onundefined);
+            }
             return _resolve(name.split("."),null,onundefined);
         }
     };
@@ -1359,6 +251,9 @@ function Resolver(name_andor_expr,ns,options)
     resolver.references = { };
 
     var VALID_LISTENERS = {
+        "true": true, // change to true value
+        "false": true, // change to false value
+        "reflect": true, // allows forcing reflection of current value
     	"get": true, // allows for switching in alternate lookups
     	"change": true, // allows reflecting changes elsewhere
     	"undefined": true // allow filling in unfound entries
@@ -1386,7 +281,7 @@ function Resolver(name_andor_expr,ns,options)
             names.push(leafName);
         }
 
-        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined;
+        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
 
     	function get() {
     		if (arguments.length==1) {
@@ -1408,28 +303,68 @@ function Resolver(name_andor_expr,ns,options)
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
-                value = !arguments[1]; //TODO configurable toggle
+                var oldValue = arguments[1];
+                value = !oldValue; //TODO configurable toggle
 
                 if (_setValue(value,combined,base,symbol)) {
                     var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                     var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                 }
             } else {
-                var base = _resolve(baseNames,null,onundefinedSet);
+                var base = _resolve(baseNames,null,onundefinedSet),
+                    oldValue = arguments[0];
+                value = !oldValue; //TODO configurable toggle
 
                 if (_setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value);
+                    this._callListener("change",baseNames,base,leafName,value,oldValue);
                     //TODO test for triggering specific listeners
                     if (baseRefName) {
                         var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
                     }
                 }
             }
             return value;
         }
+
+        function remove() {
+            if (arguments.length > 0) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+
+                //TODO if typeof base != object 
+                var oldValue = base[symbol];
+                if (oldValue === undefined) return;
+                delete base[symbol];
+
+                var childRef = resolver.references[parentName + "." + symbol];
+                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
+                var parentRef = resolver.references[parentName];
+                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
+
+            } else {
+                var symbol = names[names.length - 1];
+                var base = _resolve(baseNames,null,onundefinedSet);
+                var oldValue = base[symbol];
+                if (oldValue === undefined) return;
+                delete base[symbol];
+
+                this._callListener("change",baseNames,base,leafName,undefined,oldValue);
+                //TODO test for triggering specific listeners
+                if (baseRefName) {
+                    var parentRef = resolver.references[baseRefName];
+                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,undefined,oldValue);
+                }
+            }
+            return oldValue;
+        }
+
         function set(value) {
         	if (arguments.length > 1) {
         		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
@@ -1439,22 +374,24 @@ function Resolver(name_andor_expr,ns,options)
                 var parentName = combined.join(".");
                 subnames.push(symbol);
 	        	value = arguments[1];
+                var oldValue = base[symbol];
 
                 if (_setValue(value,combined,base,symbol)) {
                     var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                     var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                 }
         	} else {
 				var base = _resolve(baseNames,null,onundefinedSet);
+                var oldValue = base[symbol];
 
                 if (_setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value);
+                    this._callListener("change",baseNames,base,leafName,value,oldValue);
                     //TODO test for triggering specific listeners
                     if (baseRefName) {
                         var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
                     }
                 }
         	}
@@ -1469,26 +406,28 @@ function Resolver(name_andor_expr,ns,options)
                 var parentName = combined.join(".");
                 subnames.push(symbol);
                 value = arguments[1];
+                var oldValue = base[symbol];
 
                 if (base[symbol] === undefined) {
                     if (_setValue(value,combined,base,symbol)) {
                         var childRef = resolver.references[parentName + "." + symbol];
-                        if (childRef) childRef._callListener("change",combined,base,symbol,value);
+                        if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                         var parentRef = resolver.references[parentName];
-                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value);
+                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                     }
                 }
                 return base[symbol];
         	} else {
                 var base = _resolve(baseNames,null,onundefinedSet);
+                var oldValue = base[symbol];
 
                 if (base[leafName] === undefined) {
                     if (_setValue(value,baseNames,base,leafName)) {
-                        this._callListener("change",baseNames,base,leafName,value);
+                        this._callListener("change",baseNames,base,leafName,value,oldValue);
                         //TODO test for triggering specific listeners
                         if (baseRefName) {
                             var parentRef = resolver.references[baseRefName];
-                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value);
+                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
                         }
                     }
                 }
@@ -1503,13 +442,14 @@ function Resolver(name_andor_expr,ns,options)
         function declareEntry(key,value) {
             var symbol = names.pop();
         	var base = _resolve(names,null,onundefined);
+            var oldValue = base[symbol];
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
         	if (base[symbol][key] === undefined) {
         		names.push(key);
         		if (_setValue(value,names,base[symbol],key)) {
-			    	this._callListener("change",names,key,value);
+			    	this._callListener("change",names,base,key,value,oldValue);
 	    	//TODO parent listeners
         		}
 	    		names.pop(); // return names to unchanged
@@ -1518,12 +458,13 @@ function Resolver(name_andor_expr,ns,options)
         function setEntry(key,value) {
             var symbol = names.pop();
         	var base = _resolve(names,null,onundefined);
+            var oldValue = base[symbol];
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
     		names.push(key);
     		if (_setValue(value,names,base[symbol],key)) {
-		    	this._callListener("change",names,key,value);
+		    	this._callListener("change",names,base,key,value,oldValue);
 	    	//TODO parent listeners
     		}
     		names.pop(); // return names to unchanged
@@ -1542,8 +483,27 @@ function Resolver(name_andor_expr,ns,options)
         		}
         	}
         	names.pop(); // return names to unchanged
-	    	this._callListener("change",names,null,mods);
+	    	this._callListener("change",names,base[symbol],null,mods);
 	    	//TODO parent listeners
+        }
+        function unmix(map) {
+            var symbol = names.pop();
+            var base = _resolve(names,null,onundefined);
+            names.push(symbol);
+
+            if (base[symbol] === undefined) _setValue({},names,base,symbol);
+            var ni = names.length;
+            var mods = {};
+
+            for(var n in map) {
+                names[ni] = n;
+                if (_setValue(undefined,names,base[symbol],n)) {
+                    mods[n] = undefined;
+                }
+            }
+
+            names.pop(); // return names to unchanged
+            this._callListener("change",names,base[symbol],null,mods);
         }
         function mixinto(target) {
             var base = _resolve(names,null,onundefined);
@@ -1552,8 +512,6 @@ function Resolver(name_andor_expr,ns,options)
             }
         }
 	    function on(type,data,callback) {
-	    	if (! type in VALID_LISTENERS) return;//fail
-
 	    	switch(arguments.length) {
 	    		case 2: this._addListener(type,name,null,arguments[1]); break;
 	    		case 3: this._addListener(type,name,data,callback); break;
@@ -1566,7 +524,7 @@ function Resolver(name_andor_expr,ns,options)
 
 	    	this._callListener(type,baseNames,base,leafName,value);
 			var parentRef = resolver.references[baseRefName];
-			if (parentRef) parentRef._callListener("change",baseNames,_resolve(baseNames,null),leafName,value);
+			if (parentRef) parentRef._callListener(type,baseNames,_resolve(baseNames,null),leafName,value);
 	    }
 
         function read_session(ref) {
@@ -1626,7 +584,7 @@ function Resolver(name_andor_expr,ns,options)
             //TODO if (ref is defined)
             try {
                 localStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) {} //TODO consider feedback
+            } catch(ex) { console.warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
         }
         function store_cookie(ref) {
             if (ref._reading_cookie) return; //TODO only if same cookie
@@ -1659,7 +617,7 @@ function Resolver(name_andor_expr,ns,options)
                 //TODO swap script with the id. If cachebuster param update timestamp
                 var script = document.getElementById(this.options.touchScript);
                 if (script) {
-                    var newScript = Resolver("essential::HTMLScriptElement")(script);
+                    var newScript = Resolver("essential::HTMLScriptElement::")(script);
                     try {
                         //TODO if (! state.unloading)
                     script.parentNode.replaceChild(newScript,script);
@@ -1724,11 +682,13 @@ function Resolver(name_andor_expr,ns,options)
             }
         }    
 
+        get.remove = remove;
         get.set = set;
         get.toggle = toggle;
         get.get = get;
         get.declare = declare;
         get.mixin = mixin;
+        get.unmix = unmix;
         get.mixinto = mixinto;
         get.getEntry = getEntry;
         get.declareEntry = declareEntry;
@@ -1739,9 +699,19 @@ function Resolver(name_andor_expr,ns,options)
 
         get.listeners = listeners || _makeListeners();
 
-	    function _callListener(type,names,base,symbol,value) {
+	    function _callListener(type,names,base,symbol,value,oldValue) {
+            if (type == "change" && value === false) {
+                for(var i=0,event; event = this.listeners["false"][i]; ++i) {
+                    event.trigger(base,symbol,value,oldValue);
+                }
+            }
+            if (type == "change" && value === true) {
+                for(var i=0,event; event = this.listeners["true"][i]; ++i) {
+                    event.trigger(base,symbol,value,oldValue);
+                }
+            }
 	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
-	    		event.trigger(base,symbol,value);
+	    		event.trigger(base,symbol,value,oldValue);
 	    	}
             if (this.storechanges && type == "change") {
                 for(var n in this.storechanges) this.storechanges[n].call(this);
@@ -1757,17 +727,20 @@ function Resolver(name_andor_expr,ns,options)
 	    		a.b
 	    		a.b.c
 	    	*/
-            var ev = _makeResolverEvent(resolver,type,selector,data,callback);
-
             if (/^bind | bind | bind$|^bind$/.test(type)) {
-                type = type.replace(" bind ","").replace("bind ","").replace(" bind","");
-                this.listeners[type].push(ev);
+                type = type.replace(" bind "," ").replace("bind ","").replace(" bind","");
 
                 var baseNames = selector.split(".");
                 var leafName = baseNames.pop();
                 var base = _resolve(baseNames,null,"undefined");
+                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
+                ev.binding = true;
                 ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
-            } else {
+                ev.binding = false;
+            }
+            var types = type.split(" ");
+            for(var i=0,type; type = types[i]; ++i) {
+                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
                 this.listeners[type].push(ev);
             }
 	    }
@@ -1781,19 +754,46 @@ function Resolver(name_andor_expr,ns,options)
 
     resolver.on = function(type,selector,data,callback) 
     {
-    	if (! type in VALID_LISTENERS) return;//fail
     	switch(arguments.length) {
     		case 2: break; //TODO
     		case 3: if (typeof arguments[1] == "string") {
+                    //TODO reference "undefined" ?
 			    	this.reference(selector).on(type,null,arguments[2]);
     			} else { // middle param is data
 			    	//TODO this.reference("*").on(type,arguments[1],arguments[2]);
     			}
     			break;
     		case 4:
+                    //TODO reference "undefined" ?
 		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
+    };
+
+    resolver.remove = function(name,onundefined)
+    {
+        var names;
+        if (typeof name == "object" && name.join) {
+            names = name;
+            name = name.join(".");
+        } else {
+            names = name.split("::");
+            if (names.length > 1) {
+                return Resolver(names.shift()).declare(names[0],value,onundefined);
+            }
+            names = name.split(".");
+        }
+        var symbol = names.pop();
+        var base = _resolve(names,null,onundefined), oldValue = base[symbol];
+        if (oldValue === undefined) return;
+        delete base[symbol];
+
+        var ref = resolver.references[name];
+        if (ref) ref._callListener("change",names,base,symbol,value);
+        var parentName = names.join(".");
+        var parentRef = resolver.references[parentName];
+        if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+        return oldValue;
     };
     
     /*
@@ -1805,7 +805,13 @@ function Resolver(name_andor_expr,ns,options)
         if (typeof name == "object" && name.join) {
             names = name;
             name = name.join(".");
-        } else names = name.split(".");
+        } else {
+            names = name.split("::");
+            if (names.length > 1) {
+                return Resolver(names.shift()).declare(names[0],value,onundefined);
+            }
+            names = name.split(".");
+        }
         var symbol = names.pop();
     	var base = _resolve(names,null,onundefined);
     	if (base[symbol] === undefined) { 
@@ -1829,15 +835,28 @@ function Resolver(name_andor_expr,ns,options)
         if (typeof name == "object" && name.join) {
             names = name;
             name = name.join(".");
-        } else names = name.split(".");
+        } else {
+            names = name.split("::");
+            if (names.length > 1) {
+                return Resolver(names.shift()).set(names[0],value,onundefined);
+            }
+            names = name.split(".");
+        }
 		var symbol = names.pop();
 		var base = _resolve(names,null,onundefined);
+        if (onundefined=="force" && (typeof base != "object" || typeof base != "function")) {
+            var leaf = names.pop();
+            _resolve(names,null,onundefined)[leaf] = {};
+            names.push(leaf);
+            base = _resolve(names,null,onundefined);
+        }
+        var oldValue = base[symbol];
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
-			if (ref) ref._callListener("change",names,base,symbol,value);
+			if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
 			var parentName = names.join(".");
 			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+			if (parentRef) parentRef._callListener("change",names,base,symbol,value,oldValue);
 		}
 		return value;
     };
@@ -1848,16 +867,22 @@ function Resolver(name_andor_expr,ns,options)
         if (typeof name == "object" && name.join) {
             names = name;
             name = name.join(".");
-        } else names = name.split(".");
+        } else {
+            names = name.split("::");
+            if (names.length > 1) {
+                return Resolver(names.shift()).toggle(names[0],value,onundefined);
+            }
+            names = name.split(".");
+        }
         var symbol = names.pop();
         var base = _resolve(names,null,onundefined);
         var value = ! base[symbol]; //TODO configurable toggle
         if (_setValue(value,names,base,symbol)) {
             var ref = resolver.references[name];
-            if (ref) ref._callListener("change",names,base,symbol,value);
+            if (ref) ref._callListener("change",names,base,symbol,value,!value);
             var parentName = names.join(".");
             var parentRef = resolver.references[parentName];
-            if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+            if (parentRef) parentRef._callListener("change",names,base,symbol,value,!value);
         }
         return value;
     };
@@ -1885,7 +910,9 @@ function Resolver(name_andor_expr,ns,options)
     	if (typeof name == "object") {
             onundefined = name.onundefined;
             name = name.name;
-    	}
+        } else {
+            if (name.indexOf("::") >= 0) return Resolver(name,onundefined);
+        }
     	var ref = onundefined? name+":"+onundefined : name;
     	var entry = this.references[ref];
     	if (entry) return entry;
@@ -1942,6 +969,23 @@ function Resolver(name_andor_expr,ns,options)
 Resolver.readloads = [];
 Resolver.storeunloads = [];
 
+Resolver.loadReadStored = function() {
+    for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
+        for(var n in ref.readloads) {
+            ref.readloads[n].call(ref);
+        }
+    }
+};
+
+Resolver.unloadWriteStored = function() {
+
+    for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
+        for(var n in ref.storeunloads) {
+            ref.storeunloads[n].call(ref);
+        }
+    }
+};
+
 Resolver.hasGenerator = function(subject) {
 	if (subject.__generator__) return true;
 	if (typeof subject == "function" && typeof subject.type == "function") return true;
@@ -1955,14 +999,6 @@ Resolver.exists = function(name) {
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
 
-/**
- * Generator(constr) - get cached or new generator
- * Generator(constr,base1,base2) - define with bases
- * Generator(constr,base,options) - define with options 
- *
- * options { singleton: false, pool: undefined, allocate: true } 
- *
- */
 function Generator(mainConstr,options)
 {
 	//"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -2327,6 +1363,24 @@ function Generator(mainConstr,options)
 	}
 	generator.restrict = restrict;
 
+	function destroy() {
+
+	}
+	generator.destroy = destroy;
+	
+	function discard() {
+		var discarded = this.info.constructors[-1].discarded;
+		for(var n in this.info.existing) {
+			var instance = this.info.existing[n];
+			if (discarded) discarded.call(this,instance);
+			if (this.discarded) this.discarded.call(this,instance);
+			if (this.info.options.discarded) this.info.options.discarded.call(this,instance);
+		}
+
+		this.info.existing = {};
+	}
+	generator.discard = discard; //TODO { destroy and then discard existing }
+
 	// Future calls will return this generator
 	mainConstr.__generator__ = generator;
 		
@@ -2337,9 +1391,17 @@ function Generator(mainConstr,options)
 Generator.restricted = [];
 Generator.ObjectGenerator = Generator(Object);
 
+Generator.discardRestricted = function()
+{
+	for(var i=Generator.restricted.length-1,g; g = Generator.restricted[i]; --i) g.destroy();
+	for(var i=Generator.restricted.length-1,g; g = Generator.restricted[i]; --i) {
+		g.discard();
+		g.info.constructors[-1].__generator__ = undefined;
+		g.__generator__ = undefined;
+	}
+};
 
 
-/*jslint white: true */
 // types for describing generator arguments and generated properties
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -2530,13 +1592,18 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
+	function fixClass(cls) {
+		cls = cls.replace(/   /g," ").replace(/  /g," ").replace(/ $/,'').replace(/^ /,'');
+		return cls;
+	}
+
 	DOMTokenList.mixin = function(dtl,mix) {
 		if (mix.split) { // string
-			var toset = mix.split(" ");
+			var toset = fixClass(mix).split(" ");
 			for(var i=0,entry; entry = toset[i]; ++i) dtl.add(entry);
 			return;
 		}
-		if (mix.length) {
+		if (typeof mix.length == "number") {
 			for(var i=0,entry; entry = mix[i]; ++i) dtl.add(entry);
 			return;
 		}
@@ -2574,8 +1641,16 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	}
 	
+	function ensureCleaner(el,cleaner) {
+
+		if (el._cleaners == undefined) el._cleaners = [];
+		if (!arrayContains(el._cleaners,cleaner)) el._cleaners.push(cleaner); 
+	}
+	essential.declare("ensureCleaner",ensureCleaner);
+
 	/**
 	 * Cleans up registered event listeners and other references
+	 * LIFO call order
 	 * 
 	 * @param {Element} el
 	 */
@@ -2584,23 +1659,38 @@ Generator.ObjectGenerator = Generator(Object);
 		if (typeof el == "object" && el) {
 			var _cleaners = el._cleaners, c;
 			if (_cleaners != undefined) {
+				_cleaners._incall = (_cleaners._incall || 0) + 1;
 				do {
 					c = _cleaners.pop();
 					if (c) c.call(el);
 				} while(c);
-				_cleaners = undefined;
+				el._cleaners = undefined;
 			}
 		} 
-	};
+	}
 	essential.declare("callCleaners",callCleaners);
 
-	//TODO recursive clean of element and children?
-	function cleanRecursively(el) {
-		callCleaners(el);
+	/*
+	 * Cleans up registered event listeners and other references
+	 * Children first.
+	 */
+	function cleanRecursively(el,unwind,nested) {
+		unwind = unwind || 0;
+		var cleaners = el._cleaners = el._cleaners || [];
+		var incall = cleaners._incall || 0;
+		var cleanMe = !nested && !cleaners._inrecurse;
+
+		if (incall > unwind) return; // if in the middle of cleaning leave branch alone
+
+		cleaners._inrecurse = (cleaners._inrecurse || 0) + 1;
+
 		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
 			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
-			cleanRecursively(child);
+			if (child.nodeType == 1) cleanRecursively(child,unwind,true); //TODO perhaps run through .children instead
 		}
+
+		if (cleanMe) callCleaners(el);
+		--cleaners._inrecurse;
 	}
 	essential.declare("cleanRecursively",cleanRecursively);
 
@@ -2608,7 +1698,7 @@ Generator.ObjectGenerator = Generator(Object);
 	/* Container for laid out elements */
 	function _Layouter(key,el,conf) {
 
-		var layouterDesc = EnhancedDescriptor.all[el.uniqueId];
+		var layouterDesc = EnhancedDescriptor.all[el.uniqueID];
 		var appConfig = Resolver("essential::ApplicationConfig::")();
 
 		for(var i=0,c; c = el.children[i]; ++i) {
@@ -2617,12 +1707,15 @@ Generator.ObjectGenerator = Generator(Object);
 			if (se) {
 				// set { sizingElement:true } on conf?
 				var desc = EnhancedDescriptor(c,role,conf,false,appConfig);
-				desc.layouterParent = layouterDesc;
-				sizingElements[desc.uniqueId] = desc;
+				desc.context.layouterParent = layouterDesc.layouter;
+				sizingElements[desc.uniqueID] = desc;
 			}
 		}
 	}
 	var Layouter = essential.declare("Layouter",Generator(_Layouter));
+
+	_Layouter.prototype.init = function(el,conf,sizing,layout) {};
+	_Layouter.prototype.destroy = function(el) {};
 
 	/*
 		Called for descendants of the layouter to allow forcing sizing, return true to force
@@ -2651,56 +1744,322 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	var Laidout = essential.declare("Laidout",Generator(_Laidout));
 
+	_Laidout.prototype.init = function(el,conf,sizing,layout) {};
+	_Laidout.prototype.destroy = function(el) {};
 	_Laidout.prototype.layout = function(el,layout) {};
 	_Laidout.prototype.calcSizing = function(el,sizing) {};
 
 
-	// map of uniqueId referenced
+	// map of uniqueID referenced (TODO array for performance/memory?)
 	var enhancedElements = essential.declare("enhancedElements",{});
 
-	// map of uniqueId referenced
+	var unfinishedElements = essential.declare("unfinishedElements",{});
+
+	// map of uniqueID referenced
 	var sizingElements = essential.declare("sizingElements",{});
 
-	// map of uniqueId referenced
+	// map of uniqueID referenced
 	var maintainedElements = essential.declare("maintainedElements",{});
 
 	// open windows
 	var enhancedWindows = essential.declare("enhancedWindows",[]);
 
+	function DescriptorQuery(sel,el) {
+		var q = [], context = { list:q };
 
-	function _EnhancedDescriptor(el,role,conf,page,uniqueId) {
+		if (typeof sel == "string") {
+			var strainer = selectorStrainer(sel);
+			if (el) {
+				var context = { list:q };
+				findChildrenToEnhance(el || document.body,context,strainer);
+			} else {
+				for(var id in enhancedElements) {
+					var desc = enhancedElements[id];
+					if (strainer(desc.el,desc)) q.push(desc);
+				}
+			}
+
+		} else {
+			var ac = essential("ApplicationConfig")();
+			el=sel; sel=undefined;
+			if (typeof el.length == "number") {
+				for(var i=0,e; e = el[i]; ++i) {
+
+					var conf = ac.getConfig(e), role = e.getAttribute("role");
+					var desc = EnhancedDescriptor(e,role,conf,false,ac);
+					if (desc) q.push(desc);
+				}
+			} else if (el.nodeType == 1) {
+				//TODO third param context ? integrate with desc.context
+				//TODO identify existing descriptors
+
+				var conf = essential("ApplicationConfig")().getConfig(el), role = el.getAttribute("role");
+				var desc = EnhancedDescriptor(el,role,conf);
+				if (desc) q.push(desc);
+			}
+		}
+		q.el = el;
+		for(var n in DescriptorQuery.fn) q[n] = DescriptorQuery.fn[n];
+
+		return q;
+	}
+	essential.declare("DescriptorQuery",DescriptorQuery);
+
+	DescriptorQuery.fn = {};
+
+	DescriptorQuery.fn.enhance = function() {
+		var pageResolver = Resolver("page"),
+			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
+
+		for(var i=0,desc; desc = this[i]; ++i) if (desc.inits.length>0) desc._init();
+
+		for(var i=0,desc; desc = this[i]; ++i) {
+
+			//already done: desc.ensureStateful();
+			desc._tryEnhance(handlers,enabledRoles);
+			desc._tryMakeLayouter(""); //TODO key?
+			desc._tryMakeLaidout(""); //TODO key?
+
+			if (desc.conf.sizingElement) sizingElements[desc.uniqueID] = desc;
+		}
+
+	};
+
+	DescriptorQuery.fn.discard = function() {
+		for(var i=0,desc; desc = this[i]; ++i) {
+			if (desc) {
+				desc.discardNow();
+				desc._unlist();
+			}
+		}
+	};
+
+	DescriptorQuery.fn.queue = function() {
+		for(var i=0,desc; desc = this[i]; ++i) {
+			if (desc) {
+				EnhancedDescriptor.unfinished[desc.uniqueID] = desc;
+			}
+		}
+	};
+
+	DescriptorQuery.fn.getInstance = function() {
+		if (this.length) return this[0].instance;
+		return null;
+	};
+
+	function findChildrenToEnhance(el,context,fn) {
+
+		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
+		while(e) {
+			if (e.attributes) {
+				var conf = essential("ApplicationConfig")().getConfig(e), role = e.getAttribute("role");
+				// var sizingElement = false;
+				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
+				var desc = EnhancedDescriptor(e,role,conf);
+				var add = true;
+				if (fn) add = fn(e,desc,conf);
+				if (desc && add) {
+					if (context.list) context.list.push(desc);
+				} else {
+
+				}
+				if (desc==null || !desc.state.contentManaged) findChildrenToEnhance(e,{layouter:context.layouter,list:context.list},fn);
+			}
+			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
+		}
+	}
+
+	function selectorStrainer(sel) {
+		var attrEq = {};
+		if (sel.charAt(0) == "[" && sel.charAt(sel.length-1) == "]") {
+			var attrs = sel.substring(1,sel.length-1).split(",");
+			for(var i=0,a; a = attrs[i]; ++i) {
+				var attr = a.split("=");
+				attrEq[attr[0]] = attr[1];
+			}
+		}
+
+		return function(el,desc,conf) {
+			for(var n in attrEq) {
+				var v = el.getAttribute(n);
+				if (v != attrEq[n]) return false;
+			}
+			return true;
+		};
+	}
+
+	DescriptorQuery.fn.onlyBranch = function() {
+		if (this.el == undefined) throw new Error('Branch of undefined element'); // not sure what to do
+		var context = { list:this };
+		this.length = 0;
+		//TODO if the el is a layouter, pass that in conf
+		findChildrenToEnhance(this.el,context);
+		//TODO push those matched descriptors into q
+		return this;
+	};
+
+	DescriptorQuery.fn.withBranch = function() {
+		this.onlyBranch();
+
+		var conf = essential("ApplicationConfig")().getConfig(this.el), role = this.el.getAttribute("role");
+		var desc = EnhancedDescriptor(this.el,role,conf);
+		if (desc) this.shift(desc);
+		return this;
+	};
+ 
+
+
+	function EnhancedContext() {
+	}
+	EnhancedContext.prototype.clear = function() {
+		this.instance = null;
+		this.placement = null;
+
+		// this.uniqueID
+		this.el = null;
+		this.stateful = null;
+
+		this.controller = null;
+		this.controllerID = null;
+		this.controllerStateful = null;
+		this.layouterParent = null;
+		this.layouterEl = null;
+	};
+	// EnhancedContext.prototype.??
+
+	function _EnhancedDescriptor(el,role,conf,page,uniqueID) {
 
 		var roles = role? role.split(" ") : [];
 
-		this.uniqueId = uniqueId;
-		this.roles = roles;
-		this.role = roles[0]; //TODO document that the first role is the switch for enhance
 		this.el = el;
-		this.conf = conf || {};
-		this.instance = null;
-		this.sizing = {
-			"contentWidth":0,"contentHeight":0
-		};
+		this.placement = essential("ElementPlacement")(el,[]);
+		this.placement.manually(["overflow"]);
+		if (this.placement.style.overflow == "visible") this._updateDisplayed = this._updateDisplayedNotNone;
+
 		// sizingHandler
+		this.sizing = {
+			"contentWidth":0,"contentHeight":0,
+			"currentStyle": this.placement.style,
+
+			track: {
+				sizeBy: "offset",
+				contentBy: "scroll",
+				width:true, height:true,
+				contentWidth: true, contentHeight: true,
+				scrollLeft:false, scrollTop: false
+			}
+		};
+
 		this.layout = {
-			"displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
+			// "displayed": !(el.offsetWidth == 0 && el.offsetHeight == 0),
+			"currentStyle": this.placement.style,
 			"lastDirectCall": 0,
 			"enable": false,
 			"throttle": null //TODO throttle by default?
 		};
-		// layoutHandler
-		this.enhanced = false;
-		this.discarded = false;
-		this.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
+		this._updateDisplayed();
+		this.ensureStateful();
+		ensureCleaner(this.el,_roleEnhancedCleaner); //TODO either enhanced, layouter, or laidout
+		this.stateful.set("state.needEnhance", roles.length > 0);
+		this.uniqueID = uniqueID;
+		this.roles = roles;
+		this.role = roles[0]; //TODO document that the first role is the switch for enhance
+		this.conf = conf || {};
+		this.context = new EnhancedContext();
+		this.context.placement = this.placement;
+		this.instance = null;
+		this.controller = null; // Enhanced Controller can be separate from instance
+
+		// layoutHandler / maintained
+		this.state.initDone = false; // might change to reconfigured=true
+		this.state.enhanced = false;
+		this.state.discarded = false;
+		this.state.contentManaged = false; // The content HTML is managed by the enhanced element the content will not be enhanced automatically
 
 		this.page = page;
 		this.handlers = page.resolver("handlers");
-		this._init();
+		this.enabledRoles = page.resolver("enabledRoles");
+		this.inits = [];
+
+		if (this.role) this.inits.push(this._roleInit);
+
+		this._updateContext();
 	}
 
 	_EnhancedDescriptor.prototype._init = function() {
-		if (this.role && this.handlers.init[this.role]) {
-			 this.handlers.init[this.role].call(this,this.el,this.role,this.conf);
+		this._updateContext();
+		for(var i=0,c; c = this.inits[i]; ++i) c.call(this);
+		this.inits.length = 0;
+	};
+
+	_EnhancedDescriptor.prototype._roleInit = function() {
+		if (this.handlers.init[this.role]) {
+			this.handlers.init[this.role].call(this,this.el,this.role,this.conf,this.context);
+		}
+	};
+	_EnhancedDescriptor.prototype._layouterInit = function() {
+		if (this.layouter) this.layouter.init(this.el,this.conf,this.sizing,this.layout);
+	};
+	_EnhancedDescriptor.prototype._laidoutInit = function() {
+		if (this.laidout) this.laidout.init(this.el,this.conf,this.sizing,this.layout);
+	};
+
+	// try during construction, before init and enhance
+
+	_EnhancedDescriptor.prototype._updateContext = function() {
+		if (this.conf.controllerID != undefined) {
+			var desc = EnhancedDescriptor.all[this.conf.controllerID];
+			this.context.controllerID = desc.uniqueID;
+			this.context.controller = desc.controller || desc.instance;
+			this.context.controllerStateful = this.context.controller.stateful || desc.stateful;
+			return;
+		}
+
+		this.context.el = null;
+		this.context.controller = null;
+		for(var el = this.el.parentNode; el; el = el.parentNode) {
+			if (el.uniqueID) {
+				var desc = enhancedElements[el.uniqueID];
+				if (desc) {
+
+					// in case it wasn't set by the layouter constructor
+					if (this.context.layouterParent == null && desc.layouter) {
+						this.context.layouterParent = desc.layouter;
+						this.context.layouterEl = desc.el;
+					}
+					if (this.context.el == null && (this.state.enhanced || this.state.needEnhance)) { // skip non-enhanced
+						this.context.el = el;
+						this.context.uniqueID = el.uniqueID;
+						this.context.instance = desc.instance;
+						this.context.stateful = desc.stateful;
+					}
+					if (this.context.controller == null && desc.conf.controller) {
+						// make controller ? looking up generator/function
+						this.context.controllerID = desc.uniqueID;
+						this.context.controller = desc.controller || desc.instance;
+						this.context.controllerStateful = this.context.controller? this.context.controller.stateful || desc.stateful : null;
+					}
+
+				}
+			}
+		}
+	};
+
+	_EnhancedDescriptor.prototype._updateLayouterContext = function() {
+		this.context.el = null;
+		this.context.controller = null;
+		for(var el = this.el.parentNode; el; el = el.parentNode) {
+			if (el.uniqueID) {
+				var desc = enhancedElements[el.uniqueID];
+				if (desc) {
+
+					// in case it wasn't set by the layouter constructor
+					if (this.context.layouterParent == null && desc.layouter) {
+						this.context.layouterParent = desc.layouter;
+						this.context.layouterEl = desc.el;
+					}
+				}
+			}
 		}
 	};
 
@@ -2711,9 +2070,11 @@ Generator.ObjectGenerator = Generator(Object);
 	_EnhancedDescriptor.prototype.ensureStateful = function() {
 		if (this.stateful) return;
 
-			var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
-			stateful.set("sizing",this.sizing);
-			stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
+		var stateful = this.stateful = essential("StatefulResolver")(this.el,true);
+		this.state = stateful("state");
+		stateful.set("sizing",this.sizing);
+		stateful.set("layout",this.layout);
+		stateful.on("change","state",this,this.onStateChange); //TODO remove on discard
 	};	
 
 	_EnhancedDescriptor.prototype.onStateChange = function(ev) {
@@ -2724,50 +2085,118 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
+	_EnhancedDescriptor.prototype.getAttribute = function(name) {
+		return this.el.getAttribute(name);
+	};
 
-	function _roleEnhancedCleaner(desc) {
-		return function() {
-			//TODO destroy
-			//TODO discard/destroy for layouter and laidout
-			// if (desc.discardHandler) 
-			return desc.discardHandler(desc.el,desc.role,desc.instance);
-		};
+	_EnhancedDescriptor.prototype.setAttribute = function(name,value) {
+		return this.el.setAttribute(name,value);
 	};
 
 
-	_EnhancedDescriptor.prototype._tryEnhance = function(handlers) {
-		// desc.callCount = 1;
-		if (this.role && handlers.enhance[this.role]) {
-			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf);
-			this.enhanced = this.instance === false? false:true;
+	function _roleEnhancedCleaner() {
+		if (this.uniqueID == null) return; // just in case, shouldn't happen
+		var desc = enhancedElements[this.uniqueID];
+		if (desc) {
+			var enhanced = desc.state.enhanced;
+			if (desc.laidout) desc.laidout.destroy(desc.el);
+			if (desc.layouter) desc.layouter.destroy(desc.el);
+			//TODO destroy
+			//TODO discard/destroy for layouter and laidout
+
+			var controller = desc.controller || desc.getController();
+			if (controller && controller.destroyed) controller.destroyed(desc.el,desc.instance);
+
+			// if (desc.discardHandler) 
+			var r = desc.discardHandler(desc.el,desc.role,desc.instance);
+			// desc._domCheck();
+			desc._unlist(true); // make sure that sizing stops
+
+			if (controller && controller.discarded) controller.discarded(desc.el,desc.instance);
+
+			//TODO discard queue for generator instances
+
+			if (controller && enhanced) {
+				--controller.__enhanced;
+				if (controller.__enhanced == 0 && controller.destroy) {
+					controller.destroy(desc.el);
+					controller.__init_called = false;
+				}	
+			}
+
+			return r;
 		}
-		if (this.enhanced) {
-			this.sizingHandler = handlers.sizing[this.role];
-			this.layoutHandler = handlers.layout[this.role];
+	}
+
+	_EnhancedDescriptor.prototype.setInstance = function(instance) {
+		this._initController();
+		this.instance = instance;
+		this._setInstance();
+	};
+
+	_EnhancedDescriptor.prototype._initController = function() {
+		this._updateContext();
+		var controller = this.getController();
+		if (controller && ! controller.__init_called && controller.init) {
+			controller.init(this.el,this.config,this.context);
+			controller.__init_called = true;
+		}
+	};
+
+	_EnhancedDescriptor.prototype._setInstance = function() {
+		this.state.enhanced = this.instance === false? false:true;
+		this.state.needEnhance = !this.state.enhanced;
+
+		if (this.state.enhanced) {
+			var controller = this.getController();
+			if (controller) {
+				if (controller.enhanced) controller.enhanced(this.el,this.instance,this.config,this.context);
+				controller.__enhanced = controller.__enhanced? controller.__enhanced+1 : 1;
+			}
+
+			this.sizingHandler = this.handlers.sizing[this.role];
+			this.layoutHandler = this.handlers.layout[this.role];
 			if (this.layoutHandler && this.layoutHandler.throttle) this.layout.throttle = this.layoutHandler.throttle;
-			var discardHandler = handlers.discard[this.role];
+			var discardHandler = this.handlers.discard[this.role];
 			if (discardHandler) this.discardHandler = discardHandler;
-			this.el._cleaners.push(_roleEnhancedCleaner(this)); //TODO either enhanced, layouter, or laidout
-			if (this.sizingHandler) sizingElements[this.uniqueId] = this;
+
+			// if (this.sizingHandler), enhanced will update layout even if no sizingHandler
+			if (this.sizingHandler !== false) sizingElements[this.uniqueID] = this;
 			if (this.layoutHandler) {
 				this.layout.enable = true;
-				maintainedElements[this.uniqueId] = this;
+				maintainedElements[this.uniqueID] = this;
 			}
 		} 
+	};
+
+	//TODO keep params on page
+
+	_EnhancedDescriptor.prototype._tryEnhance = function(handlers,enabledRoles) {
+		if (!this.state.needEnhance) return;
+		if (handlers.enhance == undefined) debugger;
+		// desc.callCount = 1;
+		if (this.role && handlers.enhance[this.role] && enabledRoles[this.role]) {
+			this._initController();
+			//TODO allow parent to modify context
+			this.instance = handlers.enhance[this.role].call(this,this.el,this.role,this.conf,this.context);
+			this._setInstance();
+		}
 	};
 
 	_EnhancedDescriptor.prototype._tryMakeLayouter = function(key) {
 
 		if (this.conf.layouter && this.layouter==undefined) {
+			this._updateLayouterContext();
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
-				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.layouterParent);
-				if (this.layouterParent) sizingElements[this.uniqueId] = this;
+				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent);
+				if (this.context.layouterParent) sizingElements[this.uniqueID] = this; //TODO not sure this is needed, adds overhead
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
-	                this.layout.queued = true;
-	                maintainedElements[this.uniqueId] = this;
+	                // this.layout.queued = true; laidout will queue it
+	                maintainedElements[this.uniqueID] = this;
 				}
+				this.inits.push(this._layouterInit);
 			}
 		}
 	};
@@ -2775,15 +2204,17 @@ Generator.ObjectGenerator = Generator(Object);
 	_EnhancedDescriptor.prototype._tryMakeLaidout = function(key) {
 
 		if (this.conf.laidout && this.laidout==undefined) {
+			this._updateLayouterContext();
 			var varLaidout = Laidout.variants[this.conf.laidout];
 			if (varLaidout) {
-				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.layouterParent);
-				sizingElements[this.uniqueId] = this;
+				this.laidout = this.el.laidout = varLaidout.generator(key,this.el,this.conf,this.context.layouterParent);
+				sizingElements[this.uniqueID] = this;
 				if (varLaidout.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;
 	                this.layout.queued = true;
-	                maintainedElements[this.uniqueId] = this;
+	                maintainedElements[this.uniqueID] = this;
 				}
+				this.inits.push(this._laidoutInit);
 			}
 		}
 
@@ -2795,6 +2226,8 @@ Generator.ObjectGenerator = Generator(Object);
 	_EnhancedDescriptor.prototype.refresh = function() {
 		var getActiveArea = essential("getActiveArea"); //TODO switch to Resolver("page::activeArea")
 		var updateLayout = false;
+
+		if (this.el && this.el.stateful == null) this.liveCheck();
 		
 		if (this.layout.area != getActiveArea()) { 
 			this.layout.area = getActiveArea();
@@ -2802,10 +2235,14 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 
 		if (updateLayout || this.layout.queued) {
+			//proxyConsole.debug("Refresh element","w="+this.layout.width,"h="+this.layout.height, updateLayout?"updateLayout":"",this.layout.queued?"queued":"", this.role, this.uniqueID)
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
-			if (laidout) laidout.layout(this.el,this.layout); //TODO pass instance
+			if (laidout) {
+				laidout.layout(this.el,this.layout); //TODO pass instance
+				if (this.context.layouterEl) this.context.layouterEl.stateful.set("layout.queued",true);
+			}
 
             this.layout.queued = false;
 		}	
@@ -2815,7 +2252,7 @@ Generator.ObjectGenerator = Generator(Object);
 		var laidouts = []; // laidouts and layouter
         for(var n in sizingElements) {
             var desc = sizingElements[n];
-            if (desc.layouterParent == this) laidouts.push(desc.el);
+            if (desc.context.layouterParent == this.layouter && desc.laidout) laidouts.push(desc.el);
         }        
 		// for(var c = this.el.firstElementChild!==undefined? this.el.firstElementChild : this.el.firstChild; c; 
 		// 				c = c.nextElementSibling!==undefined? c.nextElementSibling : c.nextSibling) {
@@ -2824,8 +2261,8 @@ Generator.ObjectGenerator = Generator(Object);
 		return laidouts;
 	};
 
-	_EnhancedDescriptor.prototype.liveCheck = function() {
-		if (!this.enhanced || this.discarded) return;
+	_EnhancedDescriptor.prototype._domCheck = function() {
+
 		var inDom = document.body==this.el || essential("contains")(document.body,this.el); //TODO reorg import
 		//TODO handle subpages
 		if (!inDom) {
@@ -2834,11 +2271,43 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 	};
 
+	_EnhancedDescriptor.prototype.liveCheck = function() {
+		if (!this.state.enhanced || this.state.discarded) return;
+		this._domCheck();
+	};
+
+	_EnhancedDescriptor.prototype._null = function() {
+		this.instance = null;
+		this.controller = null;
+		this.sizingHandler = undefined;
+		this.layoutHandler = undefined;
+		this.layouter = undefined;
+		this.laidout = undefined;
+		this.sizing.currentStyle = null;
+		this.layout.currentStyle = null;
+		this.layout.enable = false;					
+		if (this.context) this.context.clear();
+		this.context = undefined;
+		this._updateContext = function() {}; //TODO why is this called after discard, fix that
+	};
+
 	_EnhancedDescriptor.prototype.discardNow = function() {
-		//TODO anything else ?
-		callCleaners(this.el);
-		delete this.el;
-		this.discarded = true;					
+		if (this.state.discarded) return;
+
+		cleanRecursively(this.el);
+		this._null();
+		this.el = undefined;
+		this.state.enhanced = false;
+		this.state.discarded = true;					
+	};
+
+	_EnhancedDescriptor.prototype._unlist = function(forget) {
+		this.state.discarded = true;	//TODO is this correct??? prevents discardNow				
+		if (this.layout.enable) delete maintainedElements[this.uniqueID];
+		if (sizingElements[this.uniqueID]) delete sizingElements[this.uniqueID];
+		if (unfinishedElements[this.uniqueID]) delete unfinishedElements[this.uniqueID];
+		if (forget) delete enhancedElements[this.uniqueID];
+		this._null();
 	};
 
 	_EnhancedDescriptor.prototype._queueLayout = function() {
@@ -2849,58 +2318,108 @@ Generator.ObjectGenerator = Generator(Object);
 		}
 
 		if (this.layout.width != this.sizing.width || this.layout.height != this.sizing.height) {
+			this.layout.oldWidth = this.layout.width;
+			this.layout.oldHeight = this.layout.height;
 			this.layout.width = this.sizing.width;
 			this.layout.height = this.sizing.height;
 			this.layout.queued = true;
 		}
 		if (this.layout.contentWidth != this.sizing.contentWidth || this.layout.contentHeight != this.sizing.contentHeight) {
+			this.layout.oldContentWidth = this.layout.contentWidth;
+			this.layout.oldContentHeight = this.layout.contentHeight;
 			this.layout.contentWidth = this.sizing.contentWidth;
 			this.layout.contentHeight = this.sizing.contentHeight;
 			this.layout.queued = true;
 		}
 	};
 
-	_EnhancedDescriptor.prototype.checkSizing = function() {
-
-		// update sizing with element state
-		var ow = this.sizing.width = this.el.offsetWidth;
-		var oh = this.sizing.height = this.el.offsetHeight;
-		this.sizing.displayed = !(ow == 0 && oh == 0);
-		this.sizing.contentWidth = this.el.scrollWidth;
-		this.sizing.contentHeight = this.el.scrollHeight;
-
-		if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
-		if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
-		if (this.layouterParent) this.layouterParent.layouter.calcSizing(this.el,this.sizing,this.laidout);
-
-		this._queueLayout();
-		if (this.layout.queued) {
-			if (this.layouterParent) this.layouterParent.layout.queued = true;
-		}
-
-
+	_EnhancedDescriptor.prototype._updateDisplayed = function() {
+		this.sizing.displayed = !(this.sizing.width == 0 && this.sizing.height == 0);
 	};
 
-	// used to emulate IE uniqueId property
-	var lastUniqueId = 555;
+	_EnhancedDescriptor.prototype._updateDisplayedNotNone = function() {
+		//TODO 
+		this.placement.manually(["display"])
+		this.sizing.displayed = this.placement.style.display != "none";
+	};
+
+	_EnhancedDescriptor.prototype.checkSizing = function() {
+
+		var track = this.sizing.track;
+
+		// update sizing with element state
+		this.sizing.width = this.el[track.sizeBy+"Width"];
+		this.sizing.height = this.el[track.sizeBy+"Height"];
+		this._updateDisplayed();
+
+		// seems to be displayed
+		if (this.sizing.displayed) {
+			this.placement.compute();
+			if (track.contentWidth) this.sizing.contentWidth = this.el[track.contentBy+"Width"];
+			if (track.contentHeight) this.sizing.contentHeight = this.el[track.contentBy+"Height"];
+			if (track.scrollTop) this.sizing.scrollTop = this.el.scrollTop;
+			if (track.scrollLeft) this.sizing.scrollLeft = this.el.scrollLeft;
+
+			if (this.sizingHandler) this.sizingHandler(this.el,this.sizing,this.instance);
+			if (this.laidout) this.laidout.calcSizing(this.el,this.sizing);
+			if (this.context.layouterParent) this.context.layouterParent.calcSizing(this.el,this.sizing,this.laidout);
+
+			if (this.sizing.forceLayout) {
+				this.sizing.forceLayout = false;
+				this.sizing.queued = true;
+			}
+			this._queueLayout();
+
+		// not displayed, and was last time			
+		} else if (this.layout.displayed) {
+			this.layout.displayed = false;
+			this.layout.queued = true;
+		}
+	};
+
+    _EnhancedDescriptor.prototype.applyStyle = function() {
+        for(var n in this.layout.style) {
+            this.el.style[n] = this.layout.style[n];
+        }
+    };
+ 
+	_EnhancedDescriptor.prototype.getController = function() {
+		// _updateContext
+
+		return this.context? this.context.controller : null;
+	};
+
+	_EnhancedDescriptor.prototype.query = function(selector) {
+		var q = DescriptorQuery(selector,this.el);
+		return q;
+	}
+
+	// used to emulate IE uniqueID property
+	var lastUniqueID = 555;
 
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
+		var uniqueID = el.uniqueID;
+		if (uniqueID == undefined) uniqueID = el.uniqueID = ++lastUniqueID;
+		var desc = enhancedElements[uniqueID];
+		if (desc && !force) return desc;
 		if (!force && role==null && conf==null && arguments.length>=3) return null;
 
-		var uniqueId = el.uniqueId;
-		if (uniqueId == undefined) uniqueId = el.uniqueId = ++lastUniqueId;
-		var desc = enhancedElements[uniqueId];
-		if (desc && !force) return desc;
-		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueId);
-		enhancedElements[uniqueId] = desc;
+		if (page == undefined) {
+			var pageResolver = Resolver("page");
+			page = pageResolver(["pagesById",(el.ownerDocument || document).uniquePageID || "main"],"null");
+			if (page == null) page = Resolver("essential::ApplicationConfig::")();
+		}
+		desc = new _EnhancedDescriptor(el,role,conf,page,uniqueID);
+		enhancedElements[uniqueID] = desc;
 		var descriptors = page.resolver("descriptors");
-		descriptors[uniqueId] = desc;
-		if (el._cleaners == undefined) el._cleaners = [];
+		descriptors[uniqueID] = desc;
 
 		return desc;
 	}
 	EnhancedDescriptor.all = enhancedElements;
+	EnhancedDescriptor.unfinished = unfinishedElements;
+	EnhancedDescriptor.query = DescriptorQuery;
 	EnhancedDescriptor.maintainer = null; // interval handler
 	essential.declare("EnhancedDescriptor",EnhancedDescriptor);
 
@@ -2908,32 +2427,49 @@ Generator.ObjectGenerator = Generator(Object);
 	{
 		for(var n in enhancedElements) {
 			var desc = enhancedElements[n];
-			if (desc.el) {
-				callCleaners(desc.el); //TODO perhaps use cleanRecursively
-				delete desc.el;
-			}
-			delete enhancedElements[n];
+
+			desc.discardNow();
+			desc._unlist(true);
+			// delete enhancedElements[n];
 		}
-		enhancedElements = essential.set("enhancedElements",{});
+		enhancedElements = EnhancedDescriptor.all = essential.set("enhancedElements",{});
 	}
+	EnhancedDescriptor.discardAll = discardEnhancedElements;
 
 	EnhancedDescriptor.refreshAll = function() {
 		if (document.body == undefined) return;
+
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (desc.inits.length>0) desc._init();
+		}
 
 		for(var n in sizingElements) {
 			var desc = sizingElements[n];
 			desc.checkSizing();
 		}
 
+        for(var n in maintainedElements) {
+            var desc = maintainedElements[n];
+ 
+            if (desc.laidout && desc.layout.enable && !desc.state.discarded) {
+                desc.refresh();
+            }
+        }
 		for(var n in maintainedElements) {
 			var desc = maintainedElements[n];
 
-			if (desc.layout.enable) {
+			if (!desc.laidout && desc.layout.enable && !desc.state.discarded) {
 				desc.refresh();
 			}
 		}
 		for(var n in sizingElements) {
 			var desc = sizingElements[n];
+            if (desc.layout.style) {
+                desc.applyStyle();
+                desc.layout.style = undefined;
+            }
 			desc.layout.queued = false;
 		}
 	};
@@ -2946,20 +2482,78 @@ Generator.ObjectGenerator = Generator(Object);
 
 			desc.liveCheck();
 			//TODO if destroyed, in round 2 discard & move out of maintained 
-			if (desc.discarded) {
-				if (desc.layout.enable) delete maintainedElements[n];
-				if (sizingElements[n]) delete sizingElements[n];
-				delete enhancedElements[n];
+			if (desc.state.discarded) {
+				if (desc.el) cleanRecursively(desc.el);
+				desc._unlist(); // leave it in .all}
 			}
 		}
 	};
+
+	EnhancedDescriptor.get = function(unique) {
+		if (typeof unique == "object") {
+			if (unique.uniqueID) return this.all[unique.uniqueID];
+			return null;
+		}
+
+		return this.all[unique];
+	};
+
+/* was _resize_descs
+	EnhancedDescriptor._resizeAll = function() {
+		//TODO migrate to desc.refresh
+		for(var n in maintainedElements) { //TODO maintainedElements
+			var desc = maintainedElements[n];
+
+			if (desc.layout.enable) {
+				var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
+				if (desc.layout.width != ow || desc.layout.height != oh) {
+					desc.layout.width = ow;
+					desc.layout.height = oh;
+					var now = (new Date()).getTime();
+					var throttle = desc.layout.throttle;
+					if (desc.layout.delayed) {
+						// set dimensions and let delayed do it
+					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
+						// call now
+						desc.refresh();
+						desc.layout.lastDirectCall = now;
+						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
+					} else {
+						// call in a bit
+						var delay = now + throttle - desc.layout.lastDirectCall;
+						// console.log("resizing in",delay);
+						(function(desc){
+							desc.layout.delayed = true;
+							setTimeout(function(){
+								desc.refresh();
+								desc.layout.lastDirectCall = now;
+								desc.layout.delayed = false;
+								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
+							},delay);
+						})(desc);
+					}
+				}
+			}
+		}
+	};
+
+	// refreshAll
+	function _area_changed_descs() {
+		//TODO only active pages
+		for(var n in maintainedElements) {
+			var desc = maintainedElements[n];
+
+			if (desc.layout.enable) desc.refresh();
+		}
+	};
+*/
 
 	function branchDescs(el) {
 		var descs = [];
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
-				var desc = EnhancedDescriptor.all[e.uniqueId];
+				var desc = EnhancedDescriptor.all[e.uniqueID];
 				if (desc) descs.push(desc);
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
@@ -2967,13 +2561,19 @@ Generator.ObjectGenerator = Generator(Object);
 		return descs;
 	}
 
-	function discardEnhancedWindows() {
+	enhancedWindows.notifyAll = function() {
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
+	};
+	enhancedWindows.discardAll = function() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) {
 			if (w.window) w.window.close();
 		}
 		enhancedWindows = null;
-		essential.set("enhancedWindows",[]);
-	}
+		essential.set("enhancedWindows.length",0);
+		//TODO clearInterval(placement.broadcaster) ?
+	};
 
 	function instantiatePageSingletons()
 	{
@@ -2985,20 +2585,7 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.set("instantiatePageSingletons",instantiatePageSingletons);
 
-	function discardRestricted()
-	{
-		for(var i=Generator.restricted-1,g; g = Generator.restricted[i]; --i) {
-			var discarded = g.info.constructors[-1].discarded;
-			for(var n in g.info.existing) {
-				var instance = g.info.existing[n];
-				if (discarded) {
-					discarded.call(g,instance);
-				}
-			}
-			g.info.constructors[-1].__generator__ = undefined;
-			g.__generator__ = undefined;
-		}
-	}
+
 
 	essential.set("_queueDelayedAssets",function(){});
 
@@ -3010,14 +2597,18 @@ Generator.ObjectGenerator = Generator(Object);
 		if (_readyFired) return;
 		_readyFired = true;
 
+		var liveTimeout = Resolver("page::liveTimeout","null");
+		if (liveTimeout) {
+			// Allow the browser to render the page, preventing initial transitions
+			setTimeout(function() {
+				Resolver("page").set("state.livepage",true);
+			},liveTimeout);
+		}
+		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
+
 		//TODO derive state.lang and locale from html.lang
 		
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
-			for(var n in ref.readloads) {
-				ref.readloads[n].call(ref);
-			}
-		}
+		Resolver.loadReadStored();
 
 		try {
 			essential("_queueDelayedAssets")();
@@ -3026,35 +2617,34 @@ Generator.ObjectGenerator = Generator(Object);
 			instantiatePageSingletons();
 		}
 		catch(ex) {
-			essential("console").error("Failed to launch delayed assets and singletons",ex);
-			//debugger;
+			proxyConsole.error("Failed to launch delayed assets and singletons",ex);
 		}
 	}
 	function fireLoad()
 	{
-		
+
 	}
 	function fireUnload()
 	{
 		//TODO singleton deconstruct / before discard?
 
-		// stored entires	
-		for(var i=0,ref; ref = Resolver.storeunloads[i]; ++i) {
-			for(var n in ref.storeunloads) {
-				ref.storeunloads[n].call(ref);
-			}
-		}
+		Resolver.unloadWriteStored();
 
-		discardRestricted();
+		Generator.discardRestricted();
+
+		//TODO move to configured
 		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
 		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
-		discardEnhancedWindows();
+		enhancedWindows.discardAll();
 
 		for(var n in Resolver) {
 			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
 		}
+		Resolver("page").set("state.launched",false);
 		Resolver("page").set("state.livepage",false);
+		Resolver("page").set("pages",null);
+		Resolver("page").set("pagesById",null);
 	}
 
 	// iBooks HTML widget
@@ -3175,17 +2765,17 @@ Generator.ObjectGenerator = Generator(Object);
 		if (window.console.debug == undefined) {
 			// IE8
 			proxyConsole["log"] = function(m) { 
-				window.console.log(m); };
+				window.console.log(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["trace"] = function(m) { 
 				window.console.trace(); };
 			proxyConsole["debug"] = function(m) { 
-				window.console.log(m); };
+				window.console.log(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["info"] = function(m) { 
-				window.console.info(m); };
+				window.console.info(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["warn"] = function(m) { 
-				window.console.warn(m); };
+				window.console.warn(Array.prototype.join.call(arguments," ")); };
 			proxyConsole["error"] = function(m) { 
-				window.console.error(m); };
+				window.console.error(Array.prototype.join.call(arguments," ")); };
 		}
 	}
 	essential.declare("setWindowConsole",setWindowConsole);
@@ -3209,12 +2799,6 @@ Generator.ObjectGenerator = Generator(Object);
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
-
-	translations.on("change","locale",function(ev) {
-		var s = ev.value.split("-");
-		if (s.length == 1) s = ev.value.split("_");
-		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
-	});
 
 	/*
 		locales.de = { chain:"en" }
@@ -3395,7 +2979,18 @@ Generator.ObjectGenerator = Generator(Object);
 
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
+
+	essential.declare("baseUrl",location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1));
+
+	var base = document.getElementsByTagName("BASE")[0];
+	if (base) {
+		var baseUrl = base.href;
+		if (baseUrl.charAt(baseUrl.length - 1) != "/") baseUrl += "/";
+		// debugger;
+		essential.set("baseUrl",baseUrl);
+	}
 
 	var contains;
 	function doc_contains(a,b) {
@@ -3426,28 +3021,13 @@ Generator.ObjectGenerator = Generator(Object);
 		_body.innerHTML = str;
 
 		var src = _body.firstChild;
-		for(var i=0,a; !!(a = src.attributes[0]); ++i) if (a.name != "was") _body.appendChild(a);
+		//TODO attributes[0] changed to attributes[i], check that it fixes stuff
+		for(var i=0,a; !!(a = src.attributes[i]); ++i) if (a.name != "was") _body.appendChild(a);
 		_body.innerHTML = src.innerHTML;
 
 	}
 
-	function _combindHeadAndBody(head,body) { //TODO ,doctype
-		if (head && body) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
-		}
-
-		var text = (head||"") + (body||"");
-		if ((head.substring(0,5) != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
-		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
-
-		return text;
-	}
-
-	/**
-	 * (html) or (head,body)
-	 */
-	function createImportedHTMLDocument(head,body) {
+	function _combineHeadAndBody(head,body) { //TODO ,doctype
 		if (typeof head == "object" && typeof head.length == "number") {
 			head = head.join("");
 		}
@@ -3455,95 +3035,148 @@ Generator.ObjectGenerator = Generator(Object);
 			body = body.join("");
 		}
 
-		var doc, r = {};
-		try {
-			doc = document.createElement("html");
-			doc.innerHTML = _combindHeadAndBody(head,body);
-			r.head = doc.head;
-			r.body = doc.body;
-		}
-		catch(ex) {
-			try {
-				doc = document.implementation.createHTMLDocument("");
-				doc.open();
-				doc.write(_combindHeadAndBody(head,body));
-				doc.close();
-				r.head = doc.head;
-				r.body = doc.body;
-			}
-			catch(ex2) {
-				doc = new ActiveXObject("htmlfile");
-				// doc.open();
-				doc.write(_combindHeadAndBody(head,body));
-				// doc.close();
-				r.head = doc.getElementsByTagName("HEAD")[0];
-				r.body = doc.body;
-			}
+		if (head && body) {
+			if (head.substring(0,5).toLowerCase() != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5).toLowerCase() != "<body") body = '<body>'+body+'</body>';
 		}
 
+		var text = (head||"") + (body||"");
+		if ((head.substring(0,5).toLowerCase() != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
+		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
+
+		text = text.replace("<!DOCTYPE","<!doctype");
+
+		return text;
+	}
+
+	function _createStandardsDoc(markup) {
+		var doc;
+		if (/Gecko\/20/.test(navigator.userAgent)) {
+			doc = document.implementation.createHTMLDocument("");
+			// if (hasDoctype) 
+				doc.documentElement.innerHTML = markup;
+			// else doc.body.innerHTML = markup;
+			// parser = new DOMParser();
+			// doc = parser.parseFromString(_combineHeadAndBody(head,body),"text/html");
+		}
+		else {
+			doc = document.implementation.createHTMLDocument("");
+			doc.open();
+			doc.write(markup);
+			doc.close();
+		}
+		return doc;
+	}
+
+	function _importNode(doc,node,all) {
+		if (node.nodeType == 1) { // ELEMENT_NODE
+			var nn = doc.createElement(node.nodeName);
+			if (node.attributes && node.attributes.length > 0) {
+				for(var i=0,a; a=node.attributes[i]; ++i) nn.setAttribute(a.nodeName, node.getAttribute(a.nodeName));
+			}
+			if (all && node.childNodes && node.childNodes.length>0) {
+				for(var i=0,c; c = node.childNodes[i]; ++i) nn.appendChild(_importNode(doc,c,all));
+			}
+			return nn;
+		}
+
+		// TEXT_NODE CDATA_SECTION_NODE COMMENT_NODE
+		return doc.createTextNode(node.nodeValue);
+	}
+
+	var SUPPORTED_TAGS = "template message abbr article aside audio bdi canvas data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video".split(" ");
+	var IE_HTML_SHIM;
+
+	function shimMarkup(markup) {
+		if (IE_HTML_SHIM == undefined) {
+
+			var bits = ["<script>"];
+			for(var i=0,t; t = SUPPORTED_TAGS[i]; ++i) bits.push('document.createElement("'+t+'");');			
+			bits.push("</script>");
+			IE_HTML_SHIM = bits.join("");
+		}
+		if (markup.indexOf("</head>") >= 0 || markup.indexOf("</HEAD>") >= 0) {
+			markup = markup.replace("</head>","</head>" + IE_HTML_SHIM);
+			markup = markup.replace("</HEAD>","</HEAD>" + IE_HTML_SHIM);
+		} else {
+			markup = markup.replace("<body",IE_HTML_SHIM + "<body");
+			markup = markup.replace("<BODY",IE_HTML_SHIM + "<BODY");
+		}
+		return markup;
+	}
+
+	var documentId = 444;
+
+	/**
+	 * (html) or (head,body) rename to importHTMLDocument ?
+
+	 * head will belong to external doc
+	 * body will be imported so elements can be mixed in
+	 */
+	function importHTMLDocument(head,body) {
+
+		var doc = {},
+			markup = _combineHeadAndBody(head,body),
+			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
+
 		try {
-			doc.head = document.importNode(r.head);
-			doc.body = document.importNode(r.body);
+			var ext = _createStandardsDoc(markup);
+			if (document.adoptNode) {
+				doc.head = document.adoptNode(ext.head);
+				doc.body = document.adoptNode(ext.body);
+			} else {
+				doc.head = document.importNode(ext.head);
+				doc.body = document.importNode(ext.body);
+			}
 		}
 		catch(ex) {
-			// ignore IE9- broken importNode
+			var ext = new ActiveXObject("htmlfile");
+			markup = shimMarkup(markup);
+			ext.write(markup);
+			if (ext.head === undefined) ext.head = ext.body.previousSibling;
+
+			doc.uniqueID = ext.uniqueID;
+			doc.head = ext.head;
+			doc.body = _importNode(document,ext.body,true);
+
+			// markup = markup.replace("<head",'<washead').replace("</head>","</washead>");
+			// markup = markup.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+			// markup = markup.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+			// markup = markup.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
-	essential.declare("createImportedHTMLDocument",createImportedHTMLDocument);
+	essential.declare("importHTMLDocument",importHTMLDocument);
 
  	/**
  	 * (html) or (head,body)
  	 */
 	function createHTMLDocument(head,body) {
-		if (typeof head == "object" && typeof head.length == "number") {
-			head = head.join("");
-		}
-		if (typeof body == "object" && typeof body.length == "number") {
-			body = body.join("");
-		}
 
-		var doc,parser,markup = _combindHeadAndBody(head,body),hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
+		var doc,parser,markup = _combineHeadAndBody(head,body),
+			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 		try {
-			if (/Gecko\/20/.test(navigator.userAgent)) {
-				doc = document.implementation.createHTMLDocument("");
-				// if (hasDoctype) 
-					doc.documentElement.innerHTML = markup;
-				// else doc.body.innerHTML = markup;
-				// parser = new DOMParser();
-				// doc = parser.parseFromString(_combindHeadAndBody(head,body),"text/html");
-			}
-			else {
-				doc = document.implementation.createHTMLDocument("");
-				doc.open();
-				doc.write(markup);
-				doc.close();
-			}
+			doc = _createStandardsDoc(markup);
 		} catch(ex) {
 			// IE can't or won't do it
 
 			if (window.ActiveXObject) {
 				//TODO make super sure that this is garbage collected, supposedly sticky
 				doc = new ActiveXObject("htmlfile");
-					// doc.open();
-					// doc.close();
 				doc.write(markup);
 				if (doc.head === undefined) doc.head = doc.body.previousSibling;
-
 			} else {
 				doc = document.createElement("DIV");// dummy default
 
-					// text = text.replace("<head",'<washead').replace("</head>","</washead>");
-					// text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
-					// text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
-					// text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-					// this.head = div.getElementsByTagName("washead");
-					// this.body = div.getElementsByTagName("wasbody") || div;
-					// var __head = _body.getElementsByTagName("washead");
-					// var __body = _body.getElementsByTagName("wasbody");
+				// this.head = div.getElementsByTagName("washead");
+				// this.body = div.getElementsByTagName("wasbody") || div;
+				// var __head = _body.getElementsByTagName("washead");
+				// var __body = _body.getElementsByTagName("wasbody");
 			}
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
@@ -3869,6 +3502,7 @@ Generator.ObjectGenerator = Generator(Object);
 		"change": new InputEvents(),
 		// "input": new InputEvents(),
 		// "textinput": new InputEvents(),
+		"selectstart": new InputEvents(),
 
 		"scroll": new UIEvents(),
 
@@ -4043,7 +3677,9 @@ Generator.ObjectGenerator = Generator(Object);
 		this.currentTarget = src.currentTarget|| src.target; 
 		if (src.type) {
 			this.type = src.type;
-			EVENTS[src.type].copy.call(this,src);
+			var r = EVENTS[src.type];
+			if (r) r.copy.call(this,src);
+			else console.warn("unhandled essential event",src.type,src);
 		}
 	}
 	_MutableEvent.prototype.relatedTarget = null;
@@ -4241,14 +3877,36 @@ Generator.ObjectGenerator = Generator(Object);
 	}
 	essential.declare("getPageOffsets",getPageOffsets);
 
+	var _innerHTML = function(_document,el,html) {
+		el.innerHTML = html;
+	}
+	if (isIE){
+		_innerHTML = _innerHTMLIE; //TODO do all IE do this shit?
+	}
+
+	function _innerHTMLIE(_document,el,html) {
+		if (_document.body==null) return; // no way to set html then :(
+		if (contains(document.body,el)) el.innerHTML = html;
+		else {
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = html;
+			for(var c = drop.firstChild; c; c = drop.firstChild) el.appendChild(c);
+		}
+	}
+
 	// (tagName,{attributes},content)
 	// ({attributes},content)
 	function HTMLElement(tagName,from,content_list,_document) {
+			//TODO _document
 		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
 		
 		// optional document arg
 		var d = arguments[c_to];
-		var _doc = document;
+		var _doc = document; //TODO override if last arg is a document
 		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
 		
 		// optional tagName arg
@@ -4267,7 +3925,7 @@ Generator.ObjectGenerator = Generator(Object);
 			_from = __from;
 		}
 		
-		var e = _doc.createElement(_tagName);
+		var e = _doc.createElement(_tagName), enhanced = false, enhance = false, appendTo;
 		for(var n in _from) {
 			switch(n) {
 				case "tagName": break; // already used
@@ -4288,12 +3946,37 @@ Generator.ObjectGenerator = Generator(Object);
 					}
 					break;
 
+				case "data-role":
+					if (typeof _from[n] == "object") {
+						var s = JSON.stringify(_from[n]);
+						e.setAttribute(n,s.substring(1,s.length-1));
+					}
+					else e.setAttribute(n,_from[n]);
+					break;
+
 				case "id":
 				case "className":
 				case "rel":
 				case "lang":
 				case "language":
 					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+
+				case "set impl":
+					if (_from[n]) e.impl = HTMLElement.impl(e);
+					break;
+
+				case "append to":
+					appendTo = _from[n];
+					break;
+				case "enhanced element":
+					enhanced = _from[n];
+					break;
+				case "enhance element":
+					enhance = _from[n];
+					break;
+				case "make stateful":
+					essential("StatefulResolver")(e,_from[n]);
 					break;
 
 				// "type" IE9 el.type is readonly:
@@ -4321,23 +4004,39 @@ Generator.ObjectGenerator = Generator(Object);
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
 		if (l.length) {
-			//TODO _document
-			_document = document;
-			var drop = _document._inner_drop;
-			if (drop == undefined) {
-				drop = _document._inner_drop = _document.createElement("DIV");
-				_document.body.appendChild(drop);
-			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+			_innerHTML(_doc,e,l.join("")); 
 		} 
 		
 		//TODO .appendTo function
+
+		if (appendTo) appendTo.appendChild(e);
+		if (enhanced) HTMLElement.query([e]).queue();
+		if (enhance) HTMLElement.query([e]).enhance();
 		
 		return e;
 	}
 	essential.set("HTMLElement",HTMLElement);
 	
+	HTMLElement.query = essential("DescriptorQuery");
+
+	HTMLElement.getEnhancedParent = function(el) {
+		for(el = el.parentNode; el; el = el.parentNode) {
+			var desc = EnhancedDescriptor.all[el.uniqueID];
+			if (desc && (desc.state.enhanced || desc.state.needEnhance)) return el;
+		}
+		return null;
+	};
+
+	/*
+		Discard the element call handlers & cleaners, unlist it if enhanced, remove from DOM
+	*/
+	HTMLElement.discard = function(el,leaveInDom) {
+
+		this.query(el).discard();
+
+		if (!leaveInDom) el.parentNode.removeChild(el);
+	};
+
 	
 	//TODO element cleaner must remove .el references from listeners
 
@@ -4366,28 +4065,103 @@ Generator.ObjectGenerator = Generator(Object);
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
 
-	function _ElementPlacement(el,track) {
-		this.el = el;
+	function _ElementPlacement(el,track,calcBounds) {
+		this.bounds = {};
 		this.style = {};
-		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
-		this.compute();
+		this.track = track || ["display","visibility","marginLeft","marginRight","marginTop","marginBottom"];
+		this.calcBounds = calcBounds;
+
+		this.compute(el || null);
 	}
 	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
 
-	_ElementPlacement.prototype.compute = function() {
-		this.bounds = this.el.getBoundingClientRect();
-		for(var i=0,s; !!(s = this.track[i]); ++i) {
-			this.style[s] = this._compute(s);
+	_ElementPlacement.prototype.setElement = function(newEl) {
+		this.el = newEl;
+		this.computes = [];
+
+		//TODO dedicated compute functions
+		if (this.el && this.el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
+			this._setComputed = this._setComputedIE;
+			this._compute = this._computeIE;
+		}
+		if (document.body.getBoundingClientRect().width == undefined) {
+			this._bounds = this._boundsIE;
+		}
+
+		if (this.calcBounds === false) this._bounds = function() {};
+
+		this.doCompute = !(this.el == null || this.el.nodeType !== 1);
+
+		this.computes = this._getComputes(this.track);
+	};
+
+	_ElementPlacement.prototype.setTrack = function(track) {
+		this.track = track;
+		this.computes = this._getComputes(this.track);
+	};
+
+	_ElementPlacement.prototype._getComputes = function(names) {
+
+		var computes = [];
+		for(var i=0,s; this.doCompute && !!(s = names[i]); ++i) {
+			switch(s) {
+				case "display":
+				case "visibility":
+				// case "zIndex":
+				case "breakBefore":
+				case "breakAfter":
+					computes.push(this._compute_simple);
+					break;
+				default:
+					computes.push(this._compute);
+					break;
+			}
+		}
+		return computes;
+	};
+
+	_ElementPlacement.prototype.compute = function(newEl) {
+		if (newEl != undefined) this.setElement(newEl);
+
+		if (newEl == undefined || contains(document.body,newEl)) {
+
+			if (this.doCompute) {
+				if (this.calcBounds !== false) this._bounds();
+				this._setComputed();
+
+				for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
+					this.style[this.track[i]] = fn.call(this,this.track[i]);
+				}
+			}
+		} 
+		// else ignore (could queue for compute)
+	};
+
+	_ElementPlacement.prototype.manually = function(names) {
+		var computes = this._getComputes(names);
+		this._setComputed();
+		for(var i=0,fn; fn = computes[i]; ++i) {
+			this.style[names[i]] = fn.call(this,names[i]);
 		}
 	};
 
-	_ElementPlacement.prototype.PIXEL = /^\d+(px)?$/i;
+	_ElementPlacement.prototype._bounds = function() {
+		this.bounds = this.el.getBoundingClientRect();
+	};
 
-	_ElementPlacement.prototype.CSS_PRECALCULATED_SIZES = {
+	_ElementPlacement.prototype._boundsIE = function() {
+		var bounds = this.el.getBoundingClientRect();
+		this.bounds = {
+			width: bounds.right - bounds.left, height: bounds.bottom - bounds.top,
+			left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom
+		};
+	};
+
+	_ElementPlacement.prototype.KEYWORDS = {
 		'medium':"2px"	
 	};
 
-	_ElementPlacement.prototype.CSS_PROPERTY_TYPES = {
+	_ElementPlacement.prototype.CSS_TYPES = {
 		'border-width':'size',
 		'border-left-width':'size',
 		'border-right-width':'size',
@@ -4426,7 +4200,7 @@ Generator.ObjectGenerator = Generator(Object);
 		'lineHeight': 'top', 
 		'text-indent': 'size',
 		'textIndent': 'size',
-		
+
 		'width': 'size',
 		'height': 'top',
 		'max-width': 'size',
@@ -4443,7 +4217,15 @@ Generator.ObjectGenerator = Generator(Object);
 		'bottom': 'top'
 	};
 
-	_ElementPlacement.prototype.CSS_PROPERTY_FROM_JS = {
+	_ElementPlacement.prototype.OFFSET_NAME = {
+		"left":"offsetLeft",
+		"width":"offsetWidth",
+		"top":"offsetTop",
+		"height":"offsetHeight"
+	};
+
+	//TODO generate based on currentStyle
+	_ElementPlacement.prototype.CSS_NAME = {
 		'backgroundColor':'background-color',
 		'backgroundImage':'background-image',
 		'backgroundPosition':'background-position',
@@ -4468,6 +4250,9 @@ Generator.ObjectGenerator = Generator(Object);
 		'marginRight': 'margin-right',
 		'marginTop': 'margin-top',
 		'marginBottom': 'margin-bottom',
+
+		'breakBefore': 'break-before',
+		'breakAfter': 'break-after',
 		
 		'fontSize': 'font-size',
 		'lineHeight': 'line-height',
@@ -4475,7 +4260,8 @@ Generator.ObjectGenerator = Generator(Object);
 		
 	};
 
-	_ElementPlacement.prototype.JS_PROPERTY_FROM_CSS = {
+	//TODO inverted CSS_NAME
+	_ElementPlacement.prototype.JS_NAME = {
 		'background-color':'backgroundColor',
 		'background-image':'backgroundImage',
 		'background-position':'backgroundPosition',
@@ -4500,6 +4286,11 @@ Generator.ObjectGenerator = Generator(Object);
 		'margin-right':'marginRight',
 		'margin-top':'marginTop',
 		'margin-bottom':'marginBottom',
+
+		'break-before': 'breakBefore',
+		'break-after': 'breakAfter',
+		'alt breakBefore': 'pageBreakBefore',
+		'alt breakAfter': 'pageBreakAfter',
 		
 		'font-size':'fontSize',
 		'line-height':'lineHeight',
@@ -4520,8 +4311,8 @@ function _makeToPixelsIE(sProp)
 	var sPixelProp = "pixel" + sProp.substring(0,1).toUpperCase() + sProp.substring(1);
 
 	return function(eElement,sValue) {
-		var sInlineStyle = eElement.style[sProp];
-		var sRuntimeStyle = eElement.runtimeStyle[sProp];
+		var inlineStyle = eElement.style[sProp];
+		var runtimeStyle = eElement.runtimeStyle[sProp];
 		try
 		{
 			eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
@@ -4532,61 +4323,72 @@ function _makeToPixelsIE(sProp)
 		{
 			
 		}
-		eElement.style[sProp] = sInlineStyle;
-		eElement.runtimeStyle[sProp] = sRuntimeStyle;
+		eElement.style[sProp] = inlineStyle;
+		eElement.runtimeStyle[sProp] = runtimeStyle;
 
 		return sValue;
 	};
 }
 
 
-	_ElementPlacement.prototype.TO_PIXELS_IE = {
-		"left": _makeToPixelsIE("left"),
-		"top": _makeToPixelsIE("top"),
-		"size": _makeToPixelsIE("left")
-	};
+_ElementPlacement.prototype.TO_PIXELS_IE = {
+	"left": _makeToPixelsIE("left"),
+	"top": _makeToPixelsIE("top"),
+	"size": _makeToPixelsIE("left")
+};
 
-function _correctChromeWebkitDimensionsBug(s,v) {
+_ElementPlacement.prototype._compute_simple = function(name) {
+	var altName = this.JS_NAME["alt "+name],
+		inlineStyle = this.el.style[name] || this.el.style[altName];
+	if (inlineStyle) return inlineStyle;
 
-	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom") && v === "auto")
-	{
-		return true;
+	if (this.el.currentStyle) {
+		return this.el.currentStyle[name] || this.el.currentStyle[altName];
+	} else {
+		return this._computed[name] || this._computed[altName]
 	}
-}
+};
 
-_ElementPlacement.prototype._compute = function(style)
+_ElementPlacement.prototype._setComputed = function()
+{
+	this._computed = document.defaultView.getComputedStyle(this.el, null);
+};
+
+_ElementPlacement.prototype._compute = function(name)
+{
+	var value = this._computed[name];
+	//TODO do this test at load to see if needed
+	if (typeof value == "string" && value.indexOf("%")>-1) {
+		value = this.el[this.OFFSET_NAME[name]] + "px";
+	}
+		
+	return value;
+};
+
+_ElementPlacement.prototype._setComputedIE = function()
+{
+};
+
+_ElementPlacement.prototype._computeIE = function(style)
 {
 	var value;
 	
-	style = this.JS_PROPERTY_FROM_CSS[style] || style;
-	if (this.el.currentStyle)
-	{
-		var v = this.el.currentStyle[style];
-		var sPrecalc = this.CSS_PRECALCULATED_SIZES[v];
-		if (sPrecalc !== undefined) return sPrecalc; 
-		if (this.PIXEL.test(v)) return v;
+	//TODO prepare this when setting track
+	style = this.JS_NAME[style] || style;
 
-		var fToPixels = this.TO_PIXELS_IE[this.CSS_PROPERTY_TYPES[style]];
-  		value = fToPixels? fToPixels(this.el, v) : v;
+	var v = this.el.currentStyle[style];
+	var sPrecalc = this.KEYWORDS[v];
+	if (sPrecalc !== undefined) return sPrecalc;
+	if (v == "0" || (v.substring(v.length-2) == "px")) return v; 
 
-	}
-	else if (document.defaultView)
-	{
-		value = document.defaultView.getComputedStyle(this.el, null)[style];
-	}
-	
-	//TODO fix bad performance overhead
-	if (!value || value === "" || _correctChromeWebkitDimensionsBug(style, value))
-	{
-		value = this.el.style[style];
-	}
-	
+	var fToPixels = this.TO_PIXELS_IE[this.CSS_TYPES[style]];
+		value = fToPixels? fToPixels(this.el, v) : v;
+		
 	return value;
 };
 
 
 }();
-/*jslint white: true */
 /*
 	StatefulResolver and ApplicationConfig
 */
@@ -4596,18 +4398,16 @@ _ElementPlacement.prototype._compute = function(style)
 		console = essential("console"),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
-		arrayContains = essential("arrayContains"),
+		ensureCleaner = essential("ensureCleaner"),
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host,
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		sizingElements = essential("sizingElements"),
-		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 	var contains = essential("contains"),
-		createHTMLDocument = essential("createHTMLDocument");
+		importHTMLDocument = essential("importHTMLDocument");
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true };
@@ -4651,7 +4451,7 @@ _ElementPlacement.prototype._compute = function(style)
 			return;
 		}
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
@@ -4662,7 +4462,7 @@ _ElementPlacement.prototype._compute = function(style)
 	*/
 	function reflectAria(el,key,value) {
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -4673,13 +4473,13 @@ _ElementPlacement.prototype._compute = function(style)
 	*/
 	function reflectAttributeAria(el,key,value) {
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
 
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -4690,13 +4490,13 @@ _ElementPlacement.prototype._compute = function(style)
 			el[key] = !!value;
 		} else {
 			if (value) {
-				el.setAttribute(key,key);
+				el.setAttribute(key,this["true"] || "true");
 			} else {
 				el.removeAttribute(key);
 			}
 		}
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -4705,6 +4505,27 @@ _ElementPlacement.prototype._compute = function(style)
 	function reflectAriaProp(el,key,value) {
 		el[this.property] = value;
 	}
+
+	function reflectBoolean(el,key,value) {
+		// html5: html5 property/attribute name
+		// aria: aria property name
+		if (this.html5 !== false && typeof el[this.html5 || key] == "boolean") {
+			el[this.html5] = !!value;
+		} 
+		// Set aria prop or leave it to the attribute ?
+		if (this.aria && typeof el[this.aria] == "boolean") {
+			el[this.aria] = !!value;
+		} 
+
+		if (value) {
+			if (this.aria) el.setAttribute("aria-"+key,this["true"] || "true");
+			el.setAttribute(this.html5,this["true"] || "true");
+		} else {
+			if (this.aria) el.removeAttribute("aria-"+key);
+			el.removeAttribute(this.html5);
+		}
+	}
+
 
 	function readPropertyAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result;
@@ -4737,6 +4558,25 @@ _ElementPlacement.prototype._compute = function(style)
 		return result;
 	}
 
+	function readBoolean(el,key) {
+		// html5: html5 property/attribute name
+		// aria: aria property name
+		if (this.html5 !== false && typeof el[this.html5 || key] == "boolean") {
+			if (el[this.html5]) return true;
+		} 
+		if (this.aria && typeof el[this.aria] == "boolean") {
+			if (el[this.aria]) return true;
+		} 
+
+		var value = el.getAttribute("aria-"+key), result;
+		if (value != null) result = value != "false" && value != ""; 
+
+		value = el.getAttribute(this.html5 || key);
+		if (value != null) result = value != "false" && value != ""; 
+
+		return !!result;
+	}
+
 	function readAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
@@ -4748,30 +4588,29 @@ _ElementPlacement.prototype._compute = function(style)
 	}
 
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled", "true":"disabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
-		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
-		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" } //TODO ariaChecked ?
+		hidden: { index: 2, reflect: reflectBoolean, read: readBoolean, aria:"ariaHidden", html5:"hidden" }, // Aria all elements
+		required: { index: 3, reflect: reflectBoolean, read: readBoolean, aria:"ariaRequired", html5:"required" },
+		invalid: { index: 4, reflect: reflectBoolean, read: readBoolean, aria:"ariaInvalid", html5:false },
+		expanded: { index: 5, reflect: reflectBoolean, read: readBoolean, aria:"ariaExpanded" }, //TODO ariaExpanded
+		checked: { index: 6, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
+		pressed: { index: 7, reflect: reflectBoolean, read: readBoolean, aria:"ariaPressed", html5:false },
+		selected: { index: 8, reflect: reflectBoolean, read: readBoolean, "default":false, aria:"ariaSelected", html5:"selected" },
+		active: { index: 9, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
 		//TODO draggable
 		//TODO contenteditable
 		//TODO tooltip
 		//TODO hover
-		//TODO down ariaPressed
-		//TODO ariaHidden
+		//TODO down 
 		//TODO ariaDisabled
-		//TODO ariaSelected
-
-		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
-		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
 
 		/*TODO IE aria props
 			string:
-			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
-			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
+			ariaPressed ariaSecret ariaRelevant ariaReadonly ariaLive
+			ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
 		*/
 
 		//TODO restricted/forbidden tie in with session specific permissions
@@ -4828,6 +4667,7 @@ _ElementPlacement.prototype._compute = function(style)
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
 	ClassForState.prototype.expanded = "state-expanded";
+	ClassForState.prototype.active = "state-active";
 
 	function ClassForNotState() {
 
@@ -4837,6 +4677,7 @@ _ElementPlacement.prototype._compute = function(style)
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
 	ClassForNotState.prototype.expanded = "";
+	ClassForNotState.prototype.active = "";
 
 	function make_Stateful_fireAction(el) {
 		return function() {
@@ -4849,11 +4690,10 @@ _ElementPlacement.prototype._compute = function(style)
 
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
-		if (el._cleaners == undefined) el._cleaners = [];
 		//TODO consider when to clean body element
-		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+		ensureCleaner(el,statefulCleaner);
 		if (useAsSource != false) readElementState(el,stateful("state"));
-		stateful.on("change","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
+		stateful.on("change reflect","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
 		if (!nativeClassList) {
 			el.classList = DOMTokenList();
 			DOMTokenList_mixin(el.classList,el.className);
@@ -4894,7 +4734,10 @@ _ElementPlacement.prototype._compute = function(style)
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.reflectStateOn = Stateful_reflectStateOn;
 
-		if (el) stateful.reflectStateOn(el);
+		if (el) {
+			stateful.reflectStateOn(el);
+			stateful.uniqueID = el.uniqueID;
+		}
 		
 		return stateful;
 	}
@@ -4911,6 +4754,7 @@ _ElementPlacement.prototype._compute = function(style)
 	pageResolver.reference("state").mixin({
 		"livepage": false,
 		"background": false, // is the page running in the background
+		"managed": false, // managed by a main window
 		"authenticated": true,
 		"authorised": true,
 		"connected": true,
@@ -4929,6 +4773,14 @@ _ElementPlacement.prototype._compute = function(style)
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+
+	Resolver("translations").on("change bind","locale",function(ev) {
+		var s = ev.value.split("-");
+		if (s.length == 1) s = ev.value.split("_");
+		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+	});
+
+
 	pageResolver.reference("connection").mixin({
 		"loadingProgress": "",
 		"status": "connected",
@@ -4937,11 +4789,31 @@ _ElementPlacement.prototype._compute = function(style)
 		"logStatus": false
 	});
 
+	pageResolver.declare("enabledRoles",{});
 	pageResolver.declare("handlers.init",{});
 	pageResolver.declare("handlers.enhance",{});
 	pageResolver.declare("handlers.sizing",{});
 	pageResolver.declare("handlers.layout",{});
 	pageResolver.declare("handlers.discard",{});
+
+	pageResolver.declare("templates",{});
+
+	// Object.defineProperty(pageResolver.namespace,'handlers',{
+	// 	get: function() { return pageResolver.namespace.__handlers; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.__handlers = value;
+	// 	}
+	// });
+
+	// Object.defineProperty(pageResolver("handlers"),'enhance',{
+	// 	get: function() { return pageResolver.namespace.handlers.__enhance; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.handlers.__enhance = value;
+	// 	}
+	// });
+
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
@@ -4956,23 +4828,43 @@ _ElementPlacement.prototype._compute = function(style)
 		authenticated: "login"
 	});
 
+    var NEXT_PAGE_ID = 1;
+    function getUniquePageID(doc) {
+    	if (doc.uniquePageID==undefined) {
+    		doc.uniquePageID = NEXT_PAGE_ID++;
+    	}
+    	return doc.uniquePageID;
+    }
+    getUniquePageID(document);
+
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
 		for(var n in state_treatment) triggers[n] = true;
 		for(var n in stateful("map.class.state")) triggers[n] = true;
 		for(var n in stateful("map.class.notstate")) triggers[n] = true;
 		for(var n in triggers) {
-			stateful.reference("state."+n,"null").trigger("change");
+			stateful.reference("state."+n,"null").trigger("reflect");
 		}
 	};
+
+
+	/* Active Element (pagewide) */
+	var oldActiveElement = null;
+	pageResolver.set("activeElement",null);
+	pageResolver.reference("activeElement").on("change",function(ev){
+		if (oldActiveElement) StatefulResolver(oldActiveElement).set("state.active",false);
+		if (ev.value) StatefulResolver(ev.value,true).set("state.active",true);
+		oldActiveElement = ev.value;
+	});
+
 
 	/*
 		Area Activation
 	*/
-	var _activeAreaName,_liveAreas=false;
+	var _activeAreaName;
 
 	function activateArea(areaName) {
-		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
+		if (! pageResolver("state.livepage")) { //TODO switch to pageResolver("livepage")
 			_activeAreaName = areaName;
 			return;
 		}
@@ -4992,11 +4884,7 @@ _ElementPlacement.prototype._compute = function(style)
 	}
 	essential.set("getActiveArea",getActiveArea);
 
-	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-
-	function bringLive() {
-		// var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
-
+	function launchWindows() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
 			w.openNow();
 			delete w.openWhenReady;
@@ -5004,25 +4892,12 @@ _ElementPlacement.prototype._compute = function(style)
 		EnhancedWindow.prototype.open = EnhancedWindow.prototype.openNow;
 
 		//TODO if waiting for initial page src postpone this
-
-		// Allow the browser to render the page, preventing initial transitions
-		_liveAreas = true;
-		pageResolver.set("state.livepage",true);
-
 	}
-
-	function onPageLoad(ev) {
-		_liveAreas = true;
-		pageResolver.set("state.livepage",true);
-	}
-
-	if (!_essentialTesting) {
-		if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-		else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
-	}
+	essential.set("launchWindows",launchWindows);
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
 	Resolver("page").declare("pages",{});
+	Resolver("page").declare("pagesById",{});
 	Resolver("page").declare("state.requiredPages",0);
 
 	function _Scripted() {
@@ -5103,7 +4978,8 @@ _ElementPlacement.prototype._compute = function(style)
 
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
-		var el = this.document.getElementById(keys[0]);
+		// var el = this.document.getElementById(keys[0]);
+		var el = this.document.body.querySelector("#"+keys[0]); //TODO API
 		if (el && keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
@@ -5116,7 +4992,13 @@ _ElementPlacement.prototype._compute = function(style)
 		if (element.id) {
 			return this._getElementRoleConfig(element,element.id);
 		}
-		var name = element.getAttribute("name");
+		var name;
+		try {
+			name = element.getAttribute("name");
+		}
+		catch(ex) { // access denied
+			return null;
+		}
 		if (name) {
 			var p = element.parentNode;
 			while(p && p.tagName) {
@@ -5129,6 +5011,23 @@ _ElementPlacement.prototype._compute = function(style)
 		return this._getElementRoleConfig(element);
 	};
 
+	_Scripted.prototype.doInitScripts = function() {
+		var inits = this.inits();
+		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
+			// this.currently = s
+			try {
+				this.context["element"] = s;
+				this.context["parentElement"] = s.parentElement || s.parentNode;
+				with(this.context) eval(s.text);
+				s.done = true;
+			} catch(ex) {
+				// debugger;
+			} //TODO only ignore ex.ignore
+		}
+		this.context["this"] = undefined;
+	};
+
+	//TODO move to DescriptorQuery, move when improving scroller
 	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -5139,7 +5038,8 @@ _ElementPlacement.prototype._compute = function(style)
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
 				if (desc) {
-					// if (sizingElement) sizingElements[desc.uniqueId] = desc;
+					if (context.list) context.list.push(desc);
+					// if (sizingElement) sizingElements[desc.uniqueID] = desc;
 					desc.layouterParent = context.layouter;
 					if (desc.conf.layouter) {
 						context.layouter = desc;
@@ -5147,7 +5047,7 @@ _ElementPlacement.prototype._compute = function(style)
 				} else {
 
 				}
-				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter});
+				if (desc==null || !desc.state.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
@@ -5165,7 +5065,7 @@ _ElementPlacement.prototype._compute = function(style)
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
-			var el = this;
+			var el = this, src = el.getAttribute("src");
 			var name = el.getAttribute("name");
 			if (name) {
 				ApplicationConfig().modules[name] = true;
@@ -5173,11 +5073,13 @@ _ElementPlacement.prototype._compute = function(style)
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				if (scripts[el.src.replace(baseUrl,"")] != undefined) {
+				//console.info("script",el.getAttribute("src"),el.src,scriptRel);
+
+				if (scripts[src] != undefined) {
 					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+					pageResolver.set(["state","loadingScriptsUrl",src],false);
 				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
-					// absolute url
+					//TODO absolute url
 					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
 				}
 			},0);
@@ -5209,12 +5111,12 @@ _ElementPlacement.prototype._compute = function(style)
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
 				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
-				attrs["base"] = baseUrl;
+				attrs["base"] = essential("baseUrl");
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");
 				attrs["onload"] = delayedScriptOnload(l.rel);
 
-				var relSrc = attrs["src"].replace(baseUrl,"");
+				var relSrc = attrs["src"].replace(essential("baseUrl"),"");
 				l.attrs = attrs;
 				if (l.rel == "preload") {
 					var langOk = true;
@@ -5257,7 +5159,7 @@ _ElementPlacement.prototype._compute = function(style)
 
 	function _SubPage(appConfig) {
 		// subpage application/config and enhanced element descriptors
-		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers") });
+		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers"), "enabledRoles":pageResolver("enabledRoles") });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -5265,6 +5167,19 @@ _ElementPlacement.prototype._compute = function(style)
 		this.body = document.createElement("DIV");
 	}
 	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
+
+	SubPage.prototype.destroy = function() {
+		if (this.applied) this.unapplyBody();
+		this.head = undefined;
+		this.body = undefined;
+		this.document = undefined;
+		if (this.url) {
+			delete Resolver("page::pages::")[this.url];
+		}
+		if (this.uniquePageID) {
+			delete Resolver("page::pagesById::")[this.uniquePageID];
+		}
+	};
 
 	SubPage.prototype.page = function(url) {
 		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
@@ -5321,7 +5236,9 @@ _ElementPlacement.prototype._compute = function(style)
     }
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
-		var doc = this.document = createHTMLDocument(text);
+		var doc = this.document = importHTMLDocument(text);
+		this.uniquePageID = getUniquePageID(doc);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -5342,8 +5259,12 @@ _ElementPlacement.prototype._compute = function(style)
 		this.documentLoaded = true;
 	};
 
-	SubPage.prototype.parseHTML = function(text) {
-		var doc = this.document = createHTMLDocument(text);
+	//TODO should it be(head,body,options) ?
+	SubPage.prototype.parseHTML = function(text,text2) {
+		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
+		var doc = this.document = importHTMLDocument(head,text);
+		this.uniquePageID = getUniquePageID(doc);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -5367,7 +5288,9 @@ _ElementPlacement.prototype._compute = function(style)
 		// 	this.head = doc.head;
 		// 	this.body = doc.body;
 		// }
+		if (this.applied) return;
 
+		var applied = this.applied = [];
 		while(e) {
 			// insert before the first permanent, or at the end
 			if (fc == null) {
@@ -5375,10 +5298,18 @@ _ElementPlacement.prototype._compute = function(style)
 			} else {
 				db.insertBefore(e,fc);
 			}
+			applied.push(e);
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
-		this.applied = true;
-		enhanceUnhandledElements();
+
+		this.doInitScripts();
+
+		//TODO put descriptors in reheating them
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+		enhanceUnfinishedElements();
 	};
 
 	SubPage.prototype.unapplyBody = function() {
@@ -5386,21 +5317,21 @@ _ElementPlacement.prototype._compute = function(style)
 			pc = null,
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 
-		while(e) {
-			if (e.permanent) {
-				// not part of subpage
-				e = e.previousElementSibling || e.previousSibling;
-			} else {
-				if (pc == null) {
-					this.body.appendChild(e);
-				} else {
-					this.body.insertBefore(e,pc)
-				}
-				pc = e;
-			}
-			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
+		if (this.applied == null) return;
+		var applied = this.applied;
+		this.applied = null;
+
+		//TODO pull the descriptors out, freeze them
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
 		}
-		this.applied = false;
+		enhanceUnfinishedElements();
+		//TODO move descriptors out
+
+		// move out of main page body into subpage body
+		for(var i=0,e; e = applied[i]; ++i) this.body.appendChild(e);
+
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -5426,9 +5357,10 @@ _ElementPlacement.prototype._compute = function(style)
 			base = link.attrs.base;
 			if (this.doesElementApply(link)) p.push( outerHtml(link) );
 		}
-		if (base) base = '<base href="'+base+'">';
+		if (this.options && this.options["track main"]) p.push('<meta name="track main" content="true">');
+		if (base) p.push('<base href="'+base+'">');
 		p.push('</head>');
-		return escapeJs(this.headPrefix.join("") + base + p.join(""));
+		return escapeJs(this.headPrefix.join("") + p.join(""));
 
 	};
 
@@ -5447,7 +5379,7 @@ _ElementPlacement.prototype._compute = function(style)
 			'javascript:document.write("',
 			'<html><!-- From Main Window -->',
 			this.getHeadHtml(),
-			this.getBodyHtml(),
+			this.getBodyHtml(),//.replace("</body>",'<script>debugger;Resolver("essential::_queueDelayedAssets::")();</script></body>'),
 			'</html>',
 			'");'
 		];
@@ -5467,38 +5399,27 @@ _ElementPlacement.prototype._compute = function(style)
 			pageResolver.set(["state","online"],online);	
 		}
 	}
-	pageResolver.updateOnlineStatus = updateOnlineStatus;
-
+	essential.set("updateOnlineStatus",updateOnlineStatus);
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+		//TODO kill it on document, it's a generator not a fixed number, pagesByName
+		this.uniquePageID = getUniquePageID(document);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
 		_Scripted.call(this);
-
-		updateOnlineStatus();
-		if (this.body.addEventListener) {
-			this.body.addEventListener("online",updateOnlineStatus);
-			this.body.addEventListener("offline",updateOnlineStatus);
-		
-			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
-		} else if (this.body.attachEvent) {
-			// IE8
-			this.body.attachEvent("online",updateOnlineStatus);
-			this.body.attachEvent("offline",updateOnlineStatus);
-		}
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		document.documentElement.lang = this.state("lang");
-		state.on("change",this,this.onStateChange);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
-		this.pages = this.resolver.reference("pages",{ generator:SubPage});
+		this.pages = this.resolver.reference("pages",{ generator:SubPage });
 		SubPage.prototype.appConfig = this;
 
 		pageResolver.reflectStateOn(document.body,false);
@@ -5507,14 +5428,35 @@ _ElementPlacement.prototype._compute = function(style)
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
-		this._markPermanents();
+		this._markPermanents(); 
+		this.applied = true; // descriptors are always applied
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) this._requiredPage(bodySrc);
-
-		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
 
-	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );
+	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{
+		"prototype": _Scripted.prototype,
+		"discarded": function(ac) {
+
+			delete Resolver("page::pagesById::")[ac.uniquePageID];
+
+			//TODO blank member vars config on generator
+			ac.document = null;
+			ac.head = null;
+			ac.body = null;
+			ac.resolver = null;
+			ac.config = null;
+			ac.resources = null;
+			ac.inits = null;
+			// ac.pages = null;
+			// ac.state = null;
+		}
+	}) );
 	
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
@@ -5543,6 +5485,7 @@ _ElementPlacement.prototype._compute = function(style)
 		return this.resolver("authenticated-area","null") || "authenticated";
 	};
 
+	//TODO sure we want to support many content strings?
 	ApplicationConfig.prototype.page = function(url,options,content,content2) {
 		//this.pages.declare(key,value);
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
@@ -5591,56 +5534,76 @@ _ElementPlacement.prototype._compute = function(style)
 		return page;
 	};
 
-	function enhanceUnhandledElements() {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-		//var handlers = DocumentRoles.presets("handlers");
-		//TODO listener to presets -> Doc Roles additional handlers
-		var dr = essential("DocumentRoles")()
-		// dr._enhance_descs(enhancedElements);
-		var descs = statefuls.resolver("descriptors");
-		dr._enhance_descs(descs);
-		dr._enhance_descs(descs);
-		
-		//TODO pendingDescriptors and descriptors
+	function enhanceUnfinishedElements() {
+		var handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 
-		//TODO time to default_enhance yet?
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
+			if (desc && !desc.state.initDone) desc._init();
+		}
 
-		//TODO enhance active page
-		var pages = pageResolver("pages");
-		for(var n in pages) {
-			var page = pages[n];
-			if (page.applied) {
-				var descs = page.resolver("descriptors");
-				dr._enhance_descs(descs);
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
+
+			//TODO speed up outstanding enhance check
+			if (desc) {
+				if (desc.page.applied) {
+					// enhance elements of applied subpage
+
+					desc.ensureStateful();
+					desc._tryEnhance(handlers,enabledRoles);
+					desc._tryMakeLayouter(""); //TODO key?
+					desc._tryMakeLaidout(""); //TODO key?
+
+					if (desc.conf.sizingElement) sizingElements[n] = desc;
+					if (!desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				} else {
+					// freeze in unapplied subpage
+					//TODO & reheat
+					// if (desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				}
 			}
 		}
 	}
+	EnhancedDescriptor.enhanceUnfinished = enhanceUnfinishedElements;
 
-	ApplicationConfig.prototype.onStateChange = function(ev) {
+	pageResolver.on("change","state", onStateChange);
+
+	function onStateChange(ev) {
+		var b = ev.base;
 		switch(ev.symbol) {
-			case "livepage":
-				var ap = ev.data;
-				//if (ev.value == true) ap.reflectState();
-				ev.data.doInitScripts();
-				if (_activeAreaName) {
-					activateArea(_activeAreaName);
-				} else {
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
+			case "livepage": 
+				if (ev.value) {
+					var ap = ApplicationConfig();
+
+					if (!b.loadingScripts && !b.loadingConfig) {
+						--ev.inTrigger;
+						this.set("state.loading",false);
+						++ev.inTrigger;
+					} else {
+						ap.doInitScripts();
+						enhanceUnfinishedElements();
+					}
+					if (_activeAreaName) {
+						activateArea(_activeAreaName);
+					} else {
+						if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+						else activateArea(ap.getIntroductionArea());
+					}
 				}
 				break;
 			case "loadingScripts":
 			case "loadingConfig":
 				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
 				--ev.inTrigger;
-				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
+				this.set("state.loading",b.loadingScripts || b.loadingConfig);
 				++ev.inTrigger;
 				break;
 
 			case "preloading":
 				if (! ev.value) {
-					for(var n in ev.base.loadingScriptsUrl) {
-						var link = ev.base.loadingScriptsUrl[n];
+					for(var n in b.loadingScriptsUrl) {
+						var link = b.loadingScriptsUrl[n];
 						if (link.rel == "pastload" && !link.added) {
 							var langOk = true;
 							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
@@ -5653,46 +5616,56 @@ _ElementPlacement.prototype._compute = function(style)
 
 			case "loading":
 				if (ev.value == false) {
+					var ap = ApplicationConfig();
+
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					ap.doInitScripts();	
+					enhanceUnfinishedElements();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
-					if (ev.base.configured == true && ev.base.authenticated == true 
-						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+					if (b.configured && b.authenticated 
+						&& b.authorised && b.connected && !b.launched) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
 						if (document.body) essential("instantiatePageSingletons")();
-						enhanceUnhandledElements();
+						enhanceUnfinishedElements();
 					}
 				} 
 				break;
 			case "authenticated":
-				var ap = ev.data;
-				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-				else activateArea(ap.getIntroductionArea());
+				if (ev.base.livepage) {
+					var ap = ApplicationConfig();
+
+					if (b.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
+				}
 				// no break
 			case "authorised":
 			case "configured":
-				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
-					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+				if ( !b.loading && b.configured && b.authenticated 
+					&& b.authorised && b.connected && !b.launched) {
 					this.set("state.launching",true);
+
+					var ap = ApplicationConfig();
+
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					ap.doInitScripts();	
+					enhanceUnfinishedElements();
 				}
 				break;			
 			case "launching":
 			case "launched":
 				if (ev.value == true) {
+					var ap = ApplicationConfig();
+
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
-					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
+					ap.doInitScripts();	
+					enhanceUnfinishedElements();
+					if (ev.symbol == "launched" && b.requiredPages == 0) this.set("state.launching",false);
 				}
 				break;
 			case "requiredPages":
-				if (ev.value == 0 && !ev.base.launching) {
+				if (ev.value == 0 && !b.launching) {
 					this.set("state.launching",false);
 				}
 				break
@@ -5701,10 +5674,15 @@ _ElementPlacement.prototype._compute = function(style)
 				break;
 			
 			default:
-				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
+				if (b.loading==false && b.launching==false && b.launched==false) {
 					if (document.body) essential("instantiatePageSingletons")();
 				}
 		}
+
+		// should this be configurable in the future?
+        if (b.launched && (!b.authorised || !b.authenticated) && b.autoUnlaunch !== false) {
+            this.set("state.launched",false);
+        }
 	};
 
 	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
@@ -5746,29 +5724,19 @@ _ElementPlacement.prototype._compute = function(style)
 		this.resolver.set(["state",whichState],v);
 	};
 
+	//TODO split list of permanent and those with page, put it in subpage
 	ApplicationConfig.prototype._markPermanents = function() 
 	{
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
 		while(e) {
-			e.permanent = true;
+			try {
+				e.permanent = true;
+			} catch(ex) {
+				//TODO handle text elements
+				// will probably have to be a managed list of permanent elements or uniqueID
+			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
-	};
-
-	ApplicationConfig.prototype.doInitScripts = function() {
-		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
-			// this.currently = s
-			try {
-				this.context["element"] = s;
-				this.context["parentElement"] = s.parentElement || s.parentNode;
-				with(this.context) eval(s.text);
-				s.done = true;
-			} catch(ex) {
-				// debugger;
-			} //TODO only ignore ex.ignore
-		}
-		this.context["this"] = undefined;
 	};
 
 	// iBooks HTML widget
@@ -5783,13 +5751,29 @@ _ElementPlacement.prototype._compute = function(style)
 	}
 
 	function onmessage(ev) {
-		var data = JSON.parse(ev.data);
-		if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
-			placement.setOptions(data.enhanced.options);
-			placement.setMain(data.enhanced.main);
-			placement.track();
+		if (ev.data) {
+			var data = JSON.parse(ev.data);
+			if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
+				placement.setOptions(data.enhanced.options);
+				placement.setMain(data.enhanced.main);
+				placement.track();
+			}
 		}
+		//TODO else foreign message, or IE support?
 	} 
+
+	function placementBroadcaster() {
+		placement.measure();
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify();
+		}
+		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
+		placement.notifyNeeded = false;
+	}
+
+	function trackMainWindow() {
+		placement.track();
+	}
 
 	var placement = {
 		x: undefined, y: undefined,
@@ -5863,46 +5847,49 @@ _ElementPlacement.prototype._compute = function(style)
 			this.y = y;
 			this.width = width;
 			this.height = height;
+		},
+
+		"startTrackMain": function() {
+			if (this.mainTracker) return;
+
+			this.mainTracker = setInterval(trackMainWindow,250);
+
+			if (window.postMessage) {
+				if (window.addEventListener) {
+					window.addEventListener("message",onmessage,false);
+
+				} else if (window.attachEvent) {
+					window.attachEvent("onmessage",onmessage);
+				}
+			}
+		},
+		"stopTrackMain": function() {
+			if (!this.mainTracker) return;
+
+			clearInterval(this.mainTracker);
+			this.mainTracker = null;
+
+			if (window.postMessage) {
+				if (window.removeEventListener) {
+					window.removeEventListener("message",onmessage);
+
+				} else if (window.attachEvent) {
+					window.deattachEvent("onmessage",onmessage);
+				}
+			}
+		},
+
+		"ensureBroadcaster": function() {
+			if (this.broadcaster) return;
+
+			placement.measure();
+			placement.notifyNeeded = false;
+			this.broadcaster = setInterval(placementBroadcaster,250);
 		}
 	};
-	placement.measure();
-	placement.notifyNeeded = false;
+
 	essential.declare("placement",placement);
 
-	//TODO make this testable
-	placement.broadcaster = setInterval(function() {
-		placement.measure();
-		for(var i=0,w; w = enhancedWindows[i]; ++i) {
-			w.notify();
-		}
-		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
-		placement.notifyNeeded = false;
-	},250);
-
-
-	function trackMainWindow() {
-		placement.track();
-	}
-
-	// tracking main window
-	if (window.opener) {
-
-		// TODO might not be needed
-		setInterval(trackMainWindow,250);
-
-		if (window.postMessage) {
-			if (window.addEventListener) {
-				window.addEventListener("message",onmessage,false);
-
-			} else if (window.attachEvent) {
-				window.attachEvent("onmessage",onmessage);
-
-			}
-			//TODO removeEvent
-		}
-
-
-	}
 
 	function EnhancedWindow(url,name,options,index) {
 		this.name = name;
@@ -5912,6 +5899,8 @@ _ElementPlacement.prototype._compute = function(style)
 		this.index = index;
 		this.width = this.options.width || 100;
 		this.height = this.options.height || 500;
+
+		placement.ensureBroadcaster();
 	}
 
 	EnhancedWindow.prototype.override = function(url,options) {
@@ -6039,7 +6028,7 @@ function(scripts) {
 }
 );
 
-/**
+/*!
 * XMLHttpRequest.js Copyright (C) 2011 Sergey Ilinsky (http://www.ilinsky.com)
 *
 * This work is free software; you can redistribute it and/or modify
@@ -6584,7 +6573,6 @@ function(scripts) {
 	Resolver("essential").set("XMLHttpRequest", cXMLHttpRequest); //TODO Generator(cXMLHttpRequest));
 
 }();
-/*jslint white: true */
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
@@ -6595,14 +6583,582 @@ function(scripts) {
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
 		pageResolver = Resolver("page"),
-		statefulCleaner = essential("statefulCleaner"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		callCleaners = essential("callCleaners"),
-		enhancedElements = essential("enhancedElements"),
-		sizingElements = essential("sizingElements"),
-		maintainedElements = essential("maintainedElements"),
-		enhancedWindows = essential("enhancedWindows");
+		cleanRecursively = essential("cleanRecursively"),
+		addEventListeners = essential("addEventListeners");
+
+
+
+	/**
+	 * Determines the default implementation for an element.
+	 * The implementation can provide information about the template element.
+	 *
+	 * @return HTMLImplementation appropriate for the template element.
+	 *
+	 * @param {HTMLElement} clone Template Element
+	 */
+	function HTMLImplementation(el) {
+
+		if (typeof el == "string") {
+			var defaultIndex = el;
+			var commonIndex = el;
+		} else {
+			if (typeof el.impl === "object") return el.impl;
+
+			var type = el.getAttribute? el.getAttribute("type") : null;
+			var defaultIndex = type? el.nodeName.toLowerCase() + " " + type : el.nodeName.toLowerCase();
+			var commonIndex = el.nodeName.toLowerCase();
+		}
+
+		if (IMPL[defaultIndex]) return IMPL[defaultIndex];
+		if (IMPL[commonIndex]) return IMPL[commonIndex];
+		return IMPL.span;
+	}
+	HTMLElement.impl = essential.set("HTMLImplementation",HTMLImplementation);
+
+	function _HTMLImplementation(fn) {
+		this._init(fn);
+	}
+	HTMLElement.fn = HTMLImplementation.fn = _HTMLImplementation.prototype;
+
+	HTMLElement.fn._init = function(fn) {
+		this.core = this; // allows access to the core implementation when proxied
+		for(var n in fn) this[n] = fn[n];
+	}
+
+	function _ButtonImplementation(fn) {
+		this._init(fn);
+	}
+	_ButtonImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Button = _ButtonImplementation;
+
+	function _SelectImplementation(fn) {
+		this._init(fn);
+	}
+	_SelectImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Select = _SelectImplementation;
+
+	function _TextInputImplementation(fn) {
+		this._init(fn);
+	}
+	_TextInputImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.TextInput = _TextInputImplementation;
+
+	function _DateInputImplementation(fn) {
+		this._init(fn);
+	}
+	_DateInputImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.DateInput = _DateInputImplementation;
+
+	function _NumberInputImplementation(fn) {
+		this._init(fn);
+	}
+	_NumberInputImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.NumberInput = _NumberInputImplementation;
+
+	function _RadioImplementation(fn) {
+		this._init(fn);
+	}
+	_RadioImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Radio = _RadioImplementation;
+
+	function _CheckboxImplementation(fn) {
+		this._init(fn);
+	}
+	_CheckboxImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Checkbox = _CheckboxImplementation;
+
+	function _WrapperImplementation(fn) {
+		this._init(fn);
+	}
+	_WrapperImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Wrapper = _WrapperImplementation;
+
+	function _FragmentImplementation(fn) {
+		this._init(fn);
+	}
+	_FragmentImplementation.prototype = new _HTMLImplementation;
+	HTMLElement.Fragment = _FragmentImplementation;
+	_FragmentImplementation.prototype.copyAttributes = function() {}
+
+
+	var IMPL = HTMLImplementation.IMPL = {
+		"input": new _TextInputImplementation(),
+		// "input text": new _TextInputImplementation(),
+		// "input url": new _TextInputImplementation(),
+		"input search": new _TextInputImplementation(/*{fixInputSpin:fixInputSpin}*/),
+		// "input email": new _TextInputImplementation(),
+		// "input tel": new _TextInputImplementation(),
+		// "input password": new _TextInputImplementation(),
+		// "input hidden": new _TextInputImplementation(),
+		// "input file": new _TextInputImplementation(),
+
+		"input date": new _DateInputImplementation(/*{fixInputSpin:fixInputSpin}*/),
+		"input time": new _DateInputImplementation(/*{fixInputSpin:fixInputSpin}*/),
+
+    	"input number": new _NumberInputImplementation(/*{fixInputSpin:fixInputSpin}*/),
+    	"input range": new _NumberInputImplementation(/*{fixInputSpin:fixInputSpin}*/),
+
+	    "input image": new _HTMLImplementation({
+	            //?? handleOnChange:true,
+	            getContent: function() { return ''; },
+	            setContent: function() { return ''; },
+	            getValue: function() { return ''; },
+	            setValue: function() { return ''; }
+	        }),
+	    "input button": new _TextInputImplementation(),
+	    // "input submit": new _TextInputImplementation(),
+	    // "input reset": new _TextInputImplementation(),
+
+	    "button": new _ButtonImplementation(),
+	    // "button button": new _ButtonImplementation(),
+	    // "button submit": new _ButtonImplementation(),
+	    // "button reset": new _ButtonImplementation(),
+
+
+	    "button radio": new _RadioImplementation(),
+	    "input radio": new _RadioImplementation(),
+	    "button checkbox": new _CheckboxImplementation(),
+	    "input checkbox": new _CheckboxImplementation(),
+
+	    "select": new _SelectImplementation(),
+	    // "select select-one": new _SelectImplementation(),
+
+	    "textarea": new _HTMLImplementation(),
+	    // "textarea textarea": new _HTMLImplementation(),
+
+	    "img": new _WrapperImplementation(),
+	    "a": new _WrapperImplementation(),
+	    "iframe": new _WrapperImplementation(),
+	    "object": new _WrapperImplementation(),
+	    "fieldset": new _WrapperImplementation(),
+	    "form": new _WrapperImplementation(),
+
+	    "#document-fragment": new _FragmentImplementation(),
+	    // "label": new _HTMLImplementation(),
+	    // "div": new _HTMLImplementation(),
+
+	    "span": new _HTMLImplementation()
+	};
+
+	/**
+	 * Check if a thing is a document fragment created by HTMLTemplate
+	 *
+	 * @param {Any} vThing Any instance
+	 */
+	HTMLElement.fn.isFragment = function(thing)
+	{
+		return typeof thing == "object" && thing instanceof DocumentFragment;
+	};
+
+	/** @private */
+	HTMLElement.fn.isFragmentIE = function(thing)
+	{
+		return typeof thing == "object" && thing.nodeName == "#document-fragment";// thing.toHTML && thing.isDocumentFragment; 
+	};
+
+	/**
+	 * Copy html attributes according to a positive list
+	 * @param {HTMLElement} src Source element
+	 * @param {HTMLElement} dst Destination element
+	 * @param {Object} attrs Map of attributes and their default value
+	 */
+	HTMLElement.fn.copyAttributes = function(src,dst,attrs)
+	{
+		if (!attrs || attrs["class"] !== undefined) {
+		 	dst.className = dst.className? dst.className + " " + src.className : src.className;
+		}
+		if (!attrs || attrs["style"] !== undefined && src.style.cssText != "") {
+			dst.style.cssText = src.style.cssText;
+		}
+		if (!attrs) {
+			for(var i=0,a; a = src.attributes[i]; ++i) {
+				var n = a.name;
+				if (this.IGNORE_ATTRIBUTES[n]) continue;
+				var value = src.getAttribute(n);
+				if (value != null) dst.setAttribute(n,value);
+				else dst.removeAttribute(n);	
+			}
+		} else {
+			for(var n in attrs) {
+				if (n == "class" || n == "style") continue;
+				var value = src.getAttribute(n);
+				if (value != null && value !== attrs[n]) {
+					dst.setAttribute(n,value);
+				}
+			}
+		}
+	};
+
+	HTMLElement.fn.CLONED_ATTRIBUTES = {
+		"class": "",
+		"style": "",
+		"size": "",
+		"cols": 0,
+		"rows": 0,
+		// not supported properly by IE, "type": true,
+		"role": "",
+		"data-role":"",
+		"name": "",
+		"id": "",
+		"title": "",
+		"dir": "",
+		"lang": "",
+		"language": "",
+		"accesskey": "",
+		"tabindex": 0
+	};
+
+	HTMLElement.fn.IGNORE_ATTRIBUTES = {
+		"class": true,
+		"classList": true,
+		"style": true,
+		"layouter": true,
+		"laidout": true,
+		"impl": true,
+		"stateful": true,
+		"_cleaners": true
+	};
+
+	// stream.cloneNode that can be copied to .content
+	function streamCloneNode(deep,state) {
+		var root = this.nodeName? this:this.root;
+		var fragment = root.ownerDocument.createDocumentFragment();
+		if (deep) {
+			root.impl.renderStream(fragment,this,state);
+		}
+		return fragment;
+	}
+
+	/**
+	 * Create an array describing the DOM tree using clonable implementations.
+	 * null entries indicates the previous element was a leaf
+	 */
+	HTMLElement.describeStream = function(root,policy)
+	{
+	    var stream = [];//EnhancedArray([]);
+	    stream.cloneNode = streamCloneNode;
+	    if (root.impl == null) root.impl = HTMLImplementation(root);
+	    stream.root = root;
+	    var firstText = root.childNodes[0];
+	    stream.prefix = firstText && firstText.nodeType == 3? firstText.nodeValue : ""; 
+	    this._describeStream(root,stream,root.impl,policy);
+	    //TODO apply default values to elements
+	    return stream;
+	};
+
+	/**
+	 */
+	HTMLElement.forgetStream = function(stream,policy)
+	{
+	    for(var i=0,impl; impl=stream[i]; ++i) {
+	        if (typeof impl == "object" && impl.forgetUnique) {
+	            impl.forgetUnique();
+	        }
+	    }
+	};
+
+	// IE workaround for cloneNode not working for HTML5 elements
+	function ieClonable(child,deep) {
+		var pseudo = {
+			"cloneNode":function() {
+				var el = this.ownerDocument.createElement(this.tagName);
+				this.impl.copyAttributes(child,el);
+				el.innerHTML = this.innerHTML;
+				return el;
+			},
+			"removeAttribute": function() {},
+
+			"ownerDocument":child.ownerDocument,
+			"impl": HTMLElement.impl(child),
+			"tagName": child.tagName,
+			"nodeName": child.nodeName,
+			"innerHTML": deep? child.innerHTML : ""
+		};
+		return pseudo;
+	}
+
+	/*
+		Make an implementation for a cloned element which knows about the original
+		from snippet/template. The cloned element is slightly different, as some content
+		and attributes will not apply. 
+	*/
+	HTMLElement.fn.childWrapper = function(el,child,props,policy)
+	{
+		var impl = this.uniqueForChild(child,policy);
+	    impl.original = child;
+	    // impl.toClone = el.children? ieClonable(child,false) : child.cloneNode(false);
+	    impl.toClone = child.cloneNode(false);
+	    var firstText = child.childNodes[0];
+	    if (firstText && firstText.nodeType != 3) firstText = null;
+	    if (firstText) {
+	        impl.toClone.appendChild(impl.toClone.ownerDocument.createTextNode(firstText.nodeValue));
+	    }
+
+	    //TODO deep if no enhancement needed
+	    impl.idx = props.idx;
+	    impl.parent = props.parent;
+	    impl.attributes = impl.describeAttributes(el,policy);
+	    impl.context = impl.describeContext(el,policy);
+	    impl.decorators = impl.describeDecorators(impl,policy);
+	    var repeat = child.getAttribute("repeat");
+	    impl.repeat = typeof repeat == "string"? parseFloat(repeat) : 1;
+
+	    // no need to clone the snippet attributes
+	    for(var n in impl.attributes) {
+	        impl.toClone.removeAttribute(n);
+	    }
+	    impl.toClone.removeAttribute("repeat");
+
+	    // handlers on snippet ? or use decorators for "data-implementation" ?
+	    // var oData = eClone.data;
+	    // if (oData) {
+	    //  oImplementation = oData.fireTrigger(null,"implementation","init",oImplementation);
+	    // }
+	    //TODO call before decorators oImplementation.decorate(eClone,eForm,mNames);
+
+	    return impl;
+	};
+
+	HTMLElement.fn._cloneNode = function(src,deep) {
+		return src.cloneNode(deep);
+	};
+
+	HTMLElement.fn._cloneNodeIE = function(src,deep) {
+		var el = src.ownerDocument.createElement(src.tagName);
+		this.copyAttributes(src,el);
+		// el.innerHTML = src.innerHTML;
+		if (src.firstChild) el.appendChild(el.ownerDocument.createTextNode(src.firstChild.data)); //TODO review this
+		return el;
+	};
+
+	//IE8 cloneNode for HTML5
+	if (/MSIE/.test(navigator.userAgent)) HTMLElement.fn._cloneNode = HTMLElement.fn._cloneNodeIE;
+
+	/**
+	 * Default behaviour for making a unique template implementation wrapper.
+	 * Can be overridden for enhanced elements. Called on implementation of the source element.
+	 *
+	 * @param original Template element.
+	 * @param policy Policy used to determine constructor
+	 */
+	HTMLElement.fn.uniqueForChild = function(original,policy)
+	{
+		return HTMLImplementation(original).makeUnique(policy);
+	};
+
+	// Default way to make unique implementation for a cloned element. Can be overridden for special implementations
+	HTMLElement.fn.makeUnique = function(policy)
+	{
+		function ImplProxy() {}
+		ImplProxy.prototype = this;
+		return new ImplProxy();
+	};
+
+	/*
+	TODO cleanHandler?
+	*/
+	HTMLElement.fn.forgetUnique = function()
+	{
+	    //TODO call "implementation" "destroy" handler
+	    
+	    // var oImplementation = this;
+	    // oImplementation.undecorate(eClone,eForm);
+	    // var oData = eClone.data;
+	    // if (oData) {
+	    //  oData.fireLifecycleTrigger("implementation","destroy",eForm,eClone,oImplementation);
+	    // }
+	    // this.callCleaners(eClone);
+	    //     eClone.implementation = null;
+	    
+	};
+
+	/**
+	 * @param el Template Element with attributes
+	 * @param decorators Map of objects specifying decorator functions and category attributes
+	 */
+	HTMLElement.fn.describeAttributes = function(el,policy)
+	{
+	    var attributes = {};
+	    var decorators = policy.DECORATORS || {};
+	    for(var name in decorators) {
+	        var value = el.getAttribute(name);
+	        if (value != null) {
+	        	var mAttribute = {
+	        	    value: value,
+	        	    defaults: [],
+	        	    
+	        	    is_context: decorators[name].context,
+	        	    is_refs: decorators[name].refs,
+	        	    is_simple: decorators[name].simple
+	        	};
+	        	
+	        	// *entry:mapping references decoding
+	            if (decorators[name].refs) { //TODO review the flag to filter on !!!
+	            	var pParts = [];
+	        		var pNames = value.indexOf(" ") >= 0? value.split(" ") : value.split(",");
+	        		for(var i=0,n; n = pNames[i]; ++i) {
+	        			var pExpressAndMapping = n.split(":");
+	        			pParts[i] = /([!+-]*)(.*)/.exec(pExpressAndMapping[0]);
+	        			pParts[i].mapping = pExpressAndMapping[1]; // name of mapping for the data entry
+	        			pParts[i].name = pNames[i] = pParts[i][2]; // third entry is the name
+	        		}
+
+	        		mAttribute.name = pNames[0];
+	        		mAttribute.parts = pParts;
+	        		mAttribute.names = pNames;
+	            } 
+	            attributes[name] = mAttribute;
+	        } // value != null
+	    }
+	    return attributes;
+	};
+
+	HTMLElement.fn.describeContext = function(el,policy)
+	{
+	    //TODO consider improving context determination
+	    
+	    for(var impl = this; impl; impl = impl.parent) {
+	        var decorators = policy.DECORATORS || {};
+	        for(var n in decorators) {
+	            if (policy.DECORATORS[n].context) {
+	                var value = el.getAttribute(n);
+	                if (value) return value;
+	            }
+	        }
+	    }
+	    return policy.defaultContext;
+	};
+
+	HTMLElement.fn.describeDecorators = function(impl,policy)
+	{
+	    var decorators = [];
+	    for(var name in impl.attributes) {
+	        var attribute = impl.attributes[name];
+	        var decorator = policy.DECORATORS[name];
+	        if (typeof decorator == "function") {
+	            var func = decorator.call(impl,name,attribute);
+	            if (func) decorators.push(func);
+	        }
+	    }
+	    
+	    return decorators;
+	};
+
+	HTMLElement.fn.decorate = function(clone,eForm,mNames)
+	{
+		//TODO
+	};
+
+	HTMLElement.fn.undecorate = function(clone,eForm)
+	{
+		//TODO
+	};
+
+	// enhance the branch
+	HTMLElement.fn.enhance = function(clone)
+	{
+		//TODO
+	};
+
+
+	/**
+	  Called on wrapped implementation to clone the original element.
+	 */
+	HTMLElement.fn.cloneOriginal = function(state)
+	{
+	    //TODO allow configuration override
+	    
+	    var el = this._cloneNode(this.toClone,true);
+	    el.impl = this;
+	    // el.state = state; //TODO really?
+	    
+	    this.decorate(el); //TODO (el,container/enhanced,names)
+
+	    for(var i=0,d; d = this.decorators[i]; ++i) {
+	        d.call(this,el.state,el);
+	    }
+		return el; 
+	};
+
+	HTMLElement.fn.setPrefix = function(el,text) {
+
+		if (el.firstChild == null) {
+			el.appendChild(el.ownerDocument.createTextNode(''));
+		} else if (el.firstChild.nodeType != 3/* TEXTNODE */) {
+			el.insertBefore(el.ownerDocument.createTextNode(''),el.firstChild);
+		}
+		el.firstChild.nodeValue = text;
+	};
+
+	HTMLElement.fn.setPostfix = function(el,text) {
+
+		if (el.lastChild == null || el.lastChild.nodeType != 3/* TEXTNODE */) el.appendChild(el.ownerDocument.createTextNode(''));
+		// if (ev.lastChild.)
+		el.lastChild.nodeValue = text;
+	};
+
+
+	HTMLElement._describeStream = function(root,stream,rootImpl,policy)
+	{
+	    var prev = null;
+	    for(var i=0,childNodes = root.childNodes,node; node = childNodes[i]; ++i) {
+	        switch(node.nodeType) {
+	            case 1 : // ELEMENT_NODE
+	            	var impl = rootImpl.childWrapper(root,node,{idx:i},policy);
+	                // impl.level
+	                // impl.locator
+	                impl.postfix = "";
+	                stream.push(impl);
+	                prev = impl;
+
+	                if (node.firstElementChild || // modern browser
+	                	(node.children && node.children[0])) { // IE browser
+	                    stream.push(1);
+	                    this._describeStream(node,stream,impl,policy);
+	                    stream.push(-1);
+	                } 
+	                break;
+	            case 3 : // TEXT_NODE
+	                if (prev) prev.postfix = node.nodeValue;
+	                break;
+	            case 4 : // CDATA_SECTION_NODE
+	            case 7 : // PROCESSING_INSTRUCTION_NODE
+	            case 8 : // COMMENT_NODE
+	            case 12 : // NOTATION_NODE
+	        };
+	    } 
+	};
+
+	/**
+	 * Render a stream to an element
+	 */
+	HTMLElement.fn.renderStream = function(top,stream,state)
+	{
+	    if (stream.prefix) top.appendChild(document.createTextNode(stream.prefix));
+	    var el = top;
+	    var stack = [el];
+	    for(var i=0,entry; entry = stream[i]; ++i) {
+	        if (entry === -1) stack.pop();
+	        else if (entry === 1) stack.push(el);
+	        else {
+	            //TODO do the substream for each repeat
+	            var parent = stack[stack.length-1];
+	            for(var r=0; r < entry.repeat; ++r) {
+	                el = entry.cloneOriginal(state? state.getElementState(entry) : null);
+	                parent.appendChild(el);
+	            }
+	            if (entry.postfix) {
+	                parent.appendChild(document.createTextNode(entry.postfix));
+	            } 
+	        }
+	    }
+	    this.copyAttributes(stream.root,top);
+	    (top.impl || this).enhance(top);
+	};
+
+
 
 	function _queueDelayedAssets()
 	{
@@ -6620,8 +7176,16 @@ function(scripts) {
 		var metas = document.getElementsByTagName("meta");
 		for(var i=0,m; m = metas[i]; ++i) {
 			switch((m.getAttribute("name") || "").toLowerCase()) {
+				case "text selection":
+					textSelection((m.getAttribute("content") || "").split(" "));
+					break;
 				case "enhanced roles":
-					DocumentRoles.useBuiltins((m.getAttribute("content") || "").split(" "));
+					useBuiltins((m.getAttribute("content") || "").split(" "));
+					break;
+				case "track main":
+					if (this.opener) {
+						pageResolver.set("state.managed",true);
+					}
 					break;
 			}
 		}
@@ -6650,46 +7214,64 @@ function(scripts) {
 	var DialogAction = essential.set("DialogAction",Generator(_DialogAction));
 
 
-	function resizeTriggersReflow(ev) {
-		// debugger;
-		DocumentRoles()._resize_descs();
-		for(var i=0,w; w = enhancedWindows[i]; ++i) {
-			w.notify(ev);
-		}
-	}
-
 	/*
 		action buttons not caught by enhanced dialogs/navigations
 	*/
 	function defaultButtonClick(ev) {
 		ev = MutableEvent(ev).withActionInfo();
-		if (ev.commandElement && ev.commandElement == ev.actionElement) {
+		if (ev.commandElement && (ev.commandElement == ev.actionElement || ev.actionElement == null)) {
 
 			//TODO action event filtering
 			//TODO disabled
 			fireAction(ev);
+			if (ev.isDefaultPrevented()) return false;
 		}
 	}
+	essential.declare("defaultButtonClick",defaultButtonClick);
 
 	function fireAction(ev) 
 	{
 		var el = ev.actionElement, action = ev.action, name = ev.commandName;
-		if (! el.actionVariant) {
-			if (action) {
-				action = action.replace(baseUrl,"");
-			} else {
-				action = "submit";
+		if (el) {
+
+			if (! el.actionVariant) {
+				if (action) {
+					action = action.replace(essential("baseUrl"),"");
+				} else {
+					action = "submit";
+				}
+
+				el.actionVariant = DialogAction.variant(action)(action);
 			}
 
-			el.actionVariant = DialogAction.variant(action)(action);
-		}
+			if (el.actionVariant[name]) el.actionVariant[name](el,ev);
+			else {
+				var sn = name.replace("-","_").replace(" ","_");
+				if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
+			}
+			//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 
-		if (el.actionVariant[name]) el.actionVariant[name](el,ev);
+		} 
 		else {
-			var sn = name.replace("-","_").replace(" ","_");
-			if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
+			el = HTMLElement.getEnhancedParent(ev.commandElement);
+
+			switch(ev.commandName) {
+			//TODO other builtin commands
+			case "parent.toggle-expanded":
+			// if (el == null) el = ancestor enhanced
+				StatefulResolver(el.parentNode,true).toggle("state.expanded");
+				break;
+
+			case "toggle-expanded":
+				StatefulResolver(el,true).toggle("state.expanded");
+				break;
+
+			case "close":
+				//TODO close up shop
+				if (ev.submitElement) HTMLElement.discard(ev.submitElement);
+				break;
+			}
 		}
-		//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 	}
 	essential.declare("fireAction",fireAction);
 
@@ -6753,190 +7335,28 @@ function(scripts) {
 	}
 	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
 
-	function _DocumentRoles(handlers,page) {
-		this.handlers = handlers || this.handlers || { enhance:{}, discard:{}, layout:{} };
-		this._on_event = [];
-		this.page = page || ApplicationConfig(); // Ensure that config is present
-		
-		//TODO configure reference as DI arg
-
-		if (window.addEventListener) {
-			window.addEventListener("resize",resizeTriggersReflow,false);
-			this.page.body.addEventListener("orientationchange",resizeTriggersReflow,false);
-			this.page.body.addEventListener("click",defaultButtonClick,false);
-		} else {
-			window.attachEvent("onresize",resizeTriggersReflow);
-			this.page.body.attachEvent("onclick",defaultButtonClick);
-		}
-
-		var descs = this.page.resolver("descriptors");
-		this._enhance_descs(descs);
-		//this.enhanceBranch(doc);
+	function useBuiltins(list) {
+		for(var i=0,r; r = list[i]; ++i) pageResolver.set(["enabledRoles",r],true);
 	}
-	var DocumentRoles = essential.set("DocumentRoles",Generator(_DocumentRoles));
-	
-	_DocumentRoles.args = [
-		ObjectType({ name:"handlers" })
-	];
 
-/*
-	_DocumentRoles.prototype.enhanceBranch = function(el) {
-		var descs;
-		if (el.querySelectorAll) {
-			descs = this._role_descs(el.querySelectorAll("*[role]"));
-		} else {
-			descs = this._role_descs(el.getElementsByTagName("*"));
+	function textSelection(tags) {
+		var pass = {};
+		for(var i=0,n; n = tags[i]; ++i) {
+			pass[n] = true;
+			pass[n.toUpperCase()] = true;
 		}
-		this._enhance_descs(descs);
-		//TODO reflow on resize etc
-	};
-
-	_DocumentRoles.prototype.discardBranch = function(el) {
-		//TODO
-	};
-*/
-
-	_DocumentRoles.prototype._enhance_descs = function(descs) 
-	{
-		var incomplete = false, enhancedCount = 0;
-
-		for(var n in descs) {
-			var desc = descs[n];
-
-			//TODO speed up outstanding enhance check
-
-			desc.ensureStateful();
-
-			if (!desc.enhanced) { //TODO flag needEnhance
-				desc._tryEnhance(this.handlers);
-				++enhancedCount;	//TODO only increase if enhance handler?
-			} 
-			if (! desc.enhanced) incomplete = true;
-
-			desc._tryMakeLayouter(""); //TODO key?
-			desc._tryMakeLaidout(""); //TODO key?
-
-			if (desc.conf.sizingElement) sizingElements[desc.uniqueId] = desc;
-		}
-
-		//TODO enhance additional descriptors created during this instead of double call on loading = false
-
-
-		// notify enhanced listeners
-		if (! incomplete && enhancedCount > 0) {
-			for(var i=0,oe; oe = this._on_event[i]; ++i) {
-				if (oe.type == "enhanced") {
-					var descs2 = [];
-
-					// list of relevant descs
-					for(var n in descs) {
-						var desc = descs[n];
-						if (desc.role) if (oe.role== null || oe.role==desc.role) descs2.push(desc);
-					}
-
-					oe.func.call(this, this, descs2);
-				}
+		addEventListeners(document.body, {
+			"selectstart": function(ev) {
+				ev = MutableEvent(ev);
+				var allow = false;
+				for(var el = ev.target; el; el = el.parentNode) {
+					if (pass[el.tagName || ""]) allow = true;
+				} 
+				if (!allow) ev.preventDefault();
+				return allow;
 			}
-		} 
-	};
-
-	_DocumentRoles.discarded = function(instance) {
-		for(var n in enhancedElements) {
-			var desc = enhancedElements[n];
-			if (desc.role && desc.enhanced && !desc.discarded) {
-
-				callCleaners(desc.el);
-				delete desc.el;
-				delete enhancedElements[n];
-			}
-		}
-	};
-
-	_DocumentRoles.prototype._resize_descs = function() {
-		//TODO migrate to desc.refresh
-		for(var n in maintainedElements) { //TODO maintainedElements
-			var desc = maintainedElements[n];
-			var ow = desc.el.offsetWidth, oh  = desc.el.offsetHeight;
-
-			if (desc.layout.enable) {
-				if (desc.layout.width != ow || desc.layout.height != oh) {
-					desc.layout.width = ow;
-					desc.layout.height = oh;
-					var now = (new Date()).getTime();
-					var throttle = desc.layout.throttle;
-					if (desc.layout.delayed) {
-						// set dimensions and let delayed do it
-					} else if (typeof throttle != "number" || (desc.layout.lastDirectCall + throttle < now)) {
-						// call now
-						desc.refresh();
-						desc.layout.lastDirectCall = now;
-						if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-					} else {
-						// call in a bit
-						var delay = now + throttle - desc.layout.lastDirectCall;
-						// console.log("resizing in",delay);
-						(function(desc){
-							desc.layout.delayed = true;
-							setTimeout(function(){
-								desc.refresh();
-								desc.layout.lastDirectCall = now;
-								desc.layout.delayed = false;
-								if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-							},delay);
-						})(desc);
-					}
-				}
-			}
-		}
-	};
-
-	_DocumentRoles.prototype._area_changed_descs = function() {
-		//TODO only active pages
-		for(var n in maintainedElements) {
-			var desc = maintainedElements[n];
-
-			if (desc.layout.enable) {
-				desc.refresh();
-				// if (desc.layouterParent) desc.layouterParent.layout.queued = true;
-				// this.handlers.layout[desc.role].call(this,desc.el,desc.layout,desc.instance);
-			}
-		}
-	};
-
-	_DocumentRoles.prototype.on = function(name,role,func) {
-		if (arguments.length == 2) func = role;
-		
-		//TODO
-		this._on_event.push({ "type":name,"func":func,"name":name,"role":role });
-	};
-	
-	// Element specific handlers
-	DocumentRoles.presets.declare("handlers", pageResolver("handlers"));
-
-
-	_DocumentRoles.default_enhance = function(el,role,config) {
-		
-		return {};
-	};
-
-	_DocumentRoles.default_layout = function(el,layout,instance) {
-		
-	};
-	
-	_DocumentRoles.default_discard = function(el,role,instance) {
-		
-	};
-
-	DocumentRoles.useBuiltins = function(list) {
-		DocumentRoles.restrict({ singleton: true, lifecycle: "page" });
-		for(var i=0,r; r = list[i]; ++i) {
-			if (this["init_"+r]) this.presets.declare(["handlers","init",r], this["init_"+r]);
-			if (this["enhance_"+r]) this.presets.declare(["handlers","enhance",r], this["enhance_"+r]);
-			if (this["sizing_"+r]) this.presets.declare(["handlers","sizing",r], this["sizing_"+r]);
-			if (this["layout_"+r]) this.presets.declare(["handlers","layout",r], this["layout_"+r]);
-			if (this["discard_"+r]) this.presets.declare(["handlers","discard",r], this["discard_"+r]);
-		}
-	};
+		});
+	}
 
 	var _scrollbarSize;
 	function scrollbarSize() {
@@ -6955,7 +7375,6 @@ function(scripts) {
 }();
 
 
-/*jshint forin:true, eqnull:true, noarg:true, noempty:true, eqeqeq:true, bitwise:true, strict:true, undef:true, unused:true, curly:true, browser:true, indent:4, maxerr:50, newcap:false, white:false, devel:true */
 !function () {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
@@ -6969,17 +7388,15 @@ function(scripts) {
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
+		DescriptorQuery = essential("DescriptorQuery"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		DocumentRoles = essential("DocumentRoles"),
 		pageResolver = Resolver("page"),
-		templates = Resolver("templates"),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host;
 
 
@@ -7044,6 +7461,7 @@ function(scripts) {
 		if (clicked == undefined) { clicked = MutableEvent().withDefaultSubmit(this); }
 
 		if (clicked.commandElement) {
+			clicked.submitElement = this;
 			fireAction(clicked);
 		} 
 		//else {
@@ -7080,8 +7498,156 @@ function(scripts) {
 		if (ev.defaultPrevented) return false;
 	}
 
+	function mousedownDialogHeader(ev) {
+		if (activeMovement != null) return;
+		if (ev.target.tagName == "BUTTON") return; // don't drag on close button
+		var dialog = this.parentNode;
+		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
+		Resolver("page").set("activeElement",dialog);
+		dialog.parentNode.appendChild(dialog);
 
-	DocumentRoles.enhance_dialog = function (el,role,config) {
+		if (ev.preventDefault) ev.preventDefault();
+
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			dialog.style.left = x + "px"; 
+			dialog.style.top = y + "px"; 
+		};
+		movement.start(this,ev);
+		movement.startY = dialog.offsetTop;
+		movement.startX = dialog.offsetLeft;
+		movement.maxY = document.body.offsetHeight - dialog.offsetHeight;
+		movement.maxX = document.body.offsetWidth - dialog.offsetWidth;
+
+		return false; // prevent default
+	}
+
+	function getChildWithRole(el,role) {
+		if (el.querySelector && !/; MSIE /.test(navigator.userAgent)) return el.querySelector("[role="+role+"]");
+
+		for(var c=el.firstChild; c; c = c.nextSibling) if (c.getAttribute) {
+			if (c.getAttribute("role") == role) return c;
+			if (c.firstChild) {
+				var match = getChildWithRole(c,role);
+				if (match) return match;
+			}
+		}
+		return null;
+	}
+
+	// TODO resolver entries for bounds, use layouter to position
+	var initial_top = 100, initial_left = 40, dialog_top_inc = 32, dialog_left_inc = 32, 
+		dialog_top = initial_top, dialog_left = initial_left,
+		dialog_next_down = initial_top;
+
+	function enhance_dialog(el,role,config,context) {
+		// TODO if (config['invalid-config']) console.log()
+
+		var configTemplate = config.template,
+			contentTemplate = config['content-template'], 
+			contentClass = config['content-class'] || "dialog-content",
+			contentRole = config['content-role'], contentConfig = config['content-config'];
+		var children = [];
+		for(var i=0,c; c = el.childNodes[i]; ++i) children.push(c);
+
+		// template around the content
+		if (configTemplate) {
+			var template = Resolver("page::templates","null")([configTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+
+		var header = el.getElementsByTagName("HEADER")[0],
+			footer = el.getElementsByTagName("FOOTER")[0];
+
+		var wrap = getChildWithRole(el,"content");
+		// content-template appended to role=content or element
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+
+			(wrap || el).appendChild(content);
+		}
+		else {
+			if (wrap == null) wrap = HTMLElement("div",{});
+				
+			if (contentRole) {
+				wrap.setAttribute("role",contentRole);
+			}
+			while(children.length) wrap.appendChild(children.shift());
+
+
+			if (contentConfig) {
+				if (typeof contentConfig == "object") {
+					var c = JSON.stringify(contentConfig);
+					contentConfig = c.substring(1,c.length-1);
+				}
+				wrap.setAttribute("data-role",contentConfig);
+			}
+		} 
+		if (wrap) {
+			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+			DescriptorQuery(wrap).withBranch().enhance();
+		}
+
+		// restrict height to body (TODO use layouter to restrict this on page resize)
+		if (el.offsetHeight > document.body.offsetHeight) {
+			var height = document.body.offsetHeight - 20;
+			if (header) height -= header.offsetHeight;
+			if (footer) height -= footer.offsetHeight;
+			wrap.style.maxHeight = height + "px";
+		}
+
+		// position the dialog
+		if (config.placement) { // explicit position
+			if (config.placement.bottom) el.style.bottom = config.placement.bottom + "px";
+			else el.style.top = (config.placement.top || 0) + "px";
+
+			if (config.placement.right) el.style.right = config.placement.right + "px";
+			else el.style.left = (config.placement.left || 0) + "px";
+		} else { // managed position
+
+			if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
+				dialog_top = initial_top;
+			}
+			if (dialog_left + el.offsetWidth > document.body.offsetWidth) {
+				initial_left += dialog_left_inc;
+				dialog_left = initial_left;
+				if (config.tile) {
+					if (dialog_next_down + el.offsetHeight > document.body.offsetHeight) {
+						initial_top += dialog_top_inc;
+						dialog_next_down =  initial_top;
+					}
+					dialog_top = dialog_next_down;
+				}
+			}
+			el.style.top = Math.max(0,Math.min(dialog_top,document.body.offsetHeight - el.offsetHeight - 12)) + "px";
+			el.style.left = Math.max(0,dialog_left) + "px";
+
+			if (config.tile) { // side by side
+				dialog_left += el.offsetWidth + dialog_left_inc;
+				dialog_next_down = dialog_top + el.offsetHeight + dialog_top_inc;
+			} else { // stacked
+				dialog_top += dialog_top_inc;
+				dialog_left += dialog_left_inc;
+				//TODO move down by height of header
+			}
+		}
+
+
+		// dialog header present
+		if (header && header.parentNode == el) {
+
+			addEventListeners(header,{ "mousedown": mousedownDialogHeader });
+		}
+
+		//TODO header instrumentation
+
+
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -7111,13 +7677,34 @@ function(scripts) {
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
-	DocumentRoles.layout_dialog = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_dialog = function (el,role,instance) {
-	};
+	function layout_dialog(el,layout,instance) {
+
+		//TODO sizing if bodyHeight changed
+		var top = el.offsetTop, 
+			height = el.offsetHeight,
+			newTop = Math.max(0, Math.min(top,document.body.offsetHeight - height - 12)); 
+		if (top != newTop) {
+			el.style.top = newTop + "px";
+		}
+
+	}
+	pageResolver.set("handlers.layout.dialog",layout_dialog);
+
+	function discard_dialog(el,role,instance) {
+		var existing = 0, dialogs = DescriptorQuery("[role=dialog]");
+		for(var i=0,d; d = dialogs[i]; ++i) {
+			if (d.state.enhanced && !d.state.discarded) ++existing;
+		}
+
+		if (existing == 1) {
+			dialog_top = initial_top;
+			dialog_left = initial_left;
+		} 
+	}
+	pageResolver.set("handlers.discard.dialog",discard_dialog);
 
 	function applyDefaultRole(elements) {
 		for(var i=0,el; (el = elements[i]); ++i) {
@@ -7144,7 +7731,7 @@ function(scripts) {
 		}
 	}
 
-	DocumentRoles.enhance_toolbar = function(el,role,config) {
+	function enhance_toolbar(el,role,config,context) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -7157,32 +7744,29 @@ function(scripts) {
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.toolbar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menu",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menubar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.navigation",enhance_toolbar);
 
-	DocumentRoles.layout_toolbar = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_toolbar = function(el,role,instance) {
-		
-	};
+	function layout_toolbar(el,layout,instance) {		
+	}
+	pageResolver.set("handlers.layout.toolbar",layout_toolbar);
 
-	// menu, menubar
-	DocumentRoles.enhance_navigation = 
-	DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
+	function discard_toolbar(el,role,instance) {
+	}
+	pageResolver.set("handlers.discard.toolbar",discard_toolbar);
 
-	DocumentRoles.enhance_sheet = function(el,role,config) {
+	function enhance_sheet(el,role,config,context) {
 		
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.sheet",enhance_sheet);
 
-	DocumentRoles.layout_sheet = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_sheet = function(el,role,instance) {
-		
-	};
+	function enhance_spinner(el,role,config,context) {
+		if (window.Spinner == undefined) return false;
 
-	DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -7199,15 +7783,19 @@ function(scripts) {
 			left: 'auto'
 		};
 		return new Spinner(opts).spin(el);
-	};
+	}
+	pageResolver.set("handlers.enhance.spinner",enhance_spinner);
 
-	DocumentRoles.layout_spinner = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_spinner = function(el,role,instance) {
+	function layout_spinner(el,layout,instance) {
+		//TODO when hiding stop the spinner		
+	}
+	pageResolver.set("handlers.layout.spinner",layout_spinner);
+
+	function discard_spinner(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
-	};
+	}
+	pageResolver.set("handlers.discard.spinner",discard_spinner);
 	
 	function _lookup_generator(name,resolver) {
 		var constructor = Resolver(resolver || "default")(name,"null");
@@ -7215,14 +7803,23 @@ function(scripts) {
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRoles.enhance_application = function(el,role,config) {
+	function enhance_application(el,role,config,context) {
+		// template around the content
+		if (config.template) {
+			var template = Resolver("page::templates","null")([config.template]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
 		if (config.generator) {
 			var g = _lookup_generator(config.generator,config.resolver);
 			if (g) {
-				var instance = g(el,role,config);
+				var instance = g(el,role,config,context);
 				return instance;
 			}
 			else return false; // not yet ready
@@ -7230,13 +7827,16 @@ function(scripts) {
 		
 		return {};
 	};
+	pageResolver.set("handlers.enhance.application",enhance_application);
 
-	DocumentRoles.layout_application = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_application = function(el,role,instance) {
-		
-	};
+	function layout_application(el,layout,instance) {	
+	}
+	pageResolver.set("handlers.layout.application",layout_application);
+
+	function discard_application(el,role,instance) {	
+		//TODO destroy/discard support on generator ?
+	}
+	pageResolver.set("handlers.discard.application",discard_application);
 
 	//TODO find parent of scrolled role
 
@@ -7250,19 +7850,56 @@ function(scripts) {
 		return null;
 	}
 
+	function JSON2Attr(obj,excludes) {
+		excludes = excludes || {};
+		var r = {};
+		for(var n in obj) if (! (n in excludes)) r[n] = obj[n];
+		var txt = JSON.stringify(r);
+		return txt.substring(1,txt.length-1);
+	}
+	essential.declare("JSON2Attr",JSON2Attr);
+
+
 	// Templates
 
-	function Template(el) {
+	function Template(el,config) {
+		this.el = el; // TODO switch to uniqueID
 		this.tagName = el.tagName;
-		this.html = el.innerHTML;
+		this.dataRole = JSON2Attr(config,{id:true});
 
-		//TODO content = DocumentFragment that can be cloned and appendChild
-		this.content = document.createElement("DIV");
-		this.content.innerHTML = this.html;
-		//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+		this.id = config.id || el.id;
+		this.selector = config.selector || (this.id? ("#"+this.id) : null);
+		// TODO class support, looking up on main document by querySelector
 
-		this.content.cloneNode = this.contentCloneFunc(this.content);
+		// HTML5 template tag support
+		if ('content' in el) {
+			this.content = el.content;
+			//TODO additional functionality in cloneNode
+		// HTML4 shim
+		} else {
+			this.content = el.content = el.ownerDocument.createDocumentFragment();
+			while(el.firstChild) this.content.appendChild(el.firstChild);
+			var policy = {};
+			this.stream = HTMLElement.describeStream(this.content,policy);
+			//TODO handle img preloading
+			//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+
+			this.content.cloneNode = this.stream.cloneNode.bind(this.stream);
+		}
 	}
+
+	Template.prototype.getDataRole = function() {
+		return this.dataRole;
+	};
+
+	Template.prototype.getAttribute = function(name) {
+		return this.el.getAttribute(name);
+	};
+
+	Template.prototype.setAttribute = function(name,value) {
+		return this.el.setAttribute(name,value);
+	};
+
 
 	Template.prototype.contentCloneFunc = function(el) {
 		return function(deep) {
@@ -7290,44 +7927,28 @@ function(scripts) {
 
 	//TODO TemplateContent.prototype.clone = function(config,model) {}
 
-	function enhance_template(el,role,config) {
-		var id = config.id || el.id;
-		var template = new Template(el);
-		el.innerHTML = ''; // blank out the content
+	function enhance_template(el,role,config,context) {
+		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (id) templates.set("#"+id,template);
-		// TODO class support, looking up on main document by querySelector
+		if (template.selector) pageResolver.set(["templates",template.selector],template);
 
 		return template;
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
-	DocumentRoles.init_template = function(el,role,config) {
-		this.contentManaged = true; // template content skipped
-	};
-	pageResolver.set("handlers.init.template",DocumentRoles.init_template);
-
-	DocumentRoles.init_templated = function(el,role,config) {
-		this.contentManaged = true; // templated content skipped
-	};
-
-/* TODO support on EnhancedDescriptor
-function enhance_templated(el,role,config) {
-	if (config.template && templates[config.template]) {
-		var template = templates[config.template];
-		//TODO replace element with template.tagName, mixed attributes and template.html
-		el.innerHTML = template.html; //TODO better
-		var context = { layouter: this.parentLayouter };
-		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-		ApplicationConfig()._prep(el,context); //TODO prepAncestors
-		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-		// DocumentRoles()._enhance_descs(descs);
+	function init_template(el,role,config,context) {
+		this.state.contentManaged = true; // template content skipped
 	}
-}
+	pageResolver.set("handlers.init.template",init_template);
 
-pageResolver.set("handlers.enhance.templated",enhance_templated);
-*/
+	pageResolver.set("handlers.sizing.template",false);
+
+	function init_templated(el,role,config,context) {
+		this.state.contentManaged = true; // templated content skipped
+	}
+	pageResolver.set("handlers.init.templated",init_templated);
+
 
 	// Scrolled
 
@@ -7341,7 +7962,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = null;
-			this.stateful.set("over",true);
+			this.stateful.set("state.over",true);
 			enhanced.vert.show();
 			enhanced.horz.show();
 		},
@@ -7351,8 +7972,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
-				sp.stateful.set("over",false);
-				if (sp.stateful("dragging") != true) {
+				sp.stateful.set("state.over",false);
+				if (sp.stateful("state.dragging") != true) {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
@@ -7375,8 +7996,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		"scroll": function(ev) {
 			var el = ev? (ev.target || ev.scrElement) : event.srcElement;
 
-			if (el.stateful("pos.scrollVert")) el.stateful.set("pos.scrollTop",el.scrollTop);
-			if (el.stateful("pos.scrollHorz")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
+			if (el.stateful("pos.scrollVert","0")) el.stateful.set("pos.scrollTop",el.scrollTop);
+			if (el.stateful("pos.scrollHorz","0")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
 		},
 		"DOMMouseScroll": function(ev) {
 			// Firefox with axis
@@ -7401,12 +8022,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 			var prevent = false;
 
-			if (this.stateful("pos.scrollVert")) {
+			if (this.stateful("pos.scrollVert","0")) {
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaY != 0) {
-					var max = Math.max(0, this.stateful("pos.scrollHeight") - this.offsetHeight);
-					var top = this.stateful("pos.scrollTop");
+					var max = Math.max(0, this.stateful("pos.scrollHeight","0") - this.offsetHeight);
+					var top = this.stateful("pos.scrollTop","0");
 					// console.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
 					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
@@ -7414,12 +8035,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				}
 			}
 
-			if (this.stateful("pos.scrollHorz")) { // native scrolling?
+			if (this.stateful("pos.scrollHorz","0")) { // native scrolling?
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaX != 0) {
-					var max = Math.max(0,this.stateful("pos.scrollWidth") - this.offsetWidth);
-					var left = this.stateful("pos.scrollLeft");
+					var max = Math.max(0,this.stateful("pos.scrollWidth","0") - this.offsetWidth);
+					var left = this.stateful("pos.scrollLeft","0");
 					left =  Math.min(max,Math.max(0,left + ev.deltaY)); //TODO inverted?
 					this.stateful.set("pos.scrollLeft",left);
 					prevent = true;
@@ -7449,6 +8070,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	// Current active Movement activity
 	var activeMovement = null;
+	Resolver("page").set("activeMovement",null);
 
 	/*
 		The user operation of moving an element within the existing parent element.
@@ -7460,6 +8082,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
+	//TODO support fixed position offsetTop/Bottom in IE, kinda crap negative offsets
+
+	//TODO support bottom/right positioning
+	
 	ElementMovement.prototype.start = function(el,event) {
 		var movement = this;
 		this.el = el;
@@ -7473,12 +8099,17 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
-		document.onselectstart = function(ev) { return false; };
+		document.onselectstart = function(ev) { return false; }; //TODO save old handler?
 
 		//TODO capture in IE
 		//movement.track(event,0,0);
 
-		if (el.stateful) el.stateful.set("dragging",true);
+		if (el.stateful) el.stateful.set("state.dragging",true);
+		this.target = document.body;
+		if (document.body.setCapture) {
+			this.target = this.el;
+			this.target.setCapture();
+		}
 
 		this.drag_events = {
 			//TODO  keyup ESC
@@ -7492,24 +8123,36 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				movement.track(ev,x,y);
 				// console.log(movement.factorX,movement.factorY)
 			},
+			"click": function(ev) {
+				ev.preventDefault();
+				ev.stopPropagation(); //TODO ev.stopImmediatePropagation() ?
+				return false;
+			},
 			"mouseup": function(ev) {
 				movement.end();
+				ev.preventDefault();
+				ev.stopPropagation(); //TODO ev.stopImmediatePropagation() ?
+				return false;
 			}
 		};
-		addEventListeners(document.body,this.drag_events);
+		addEventListeners(this.target,this.drag_events);
 
 		activeMovement = this;
+		Resolver("page").set("activeMovement",this);
 
 		return this;
 	};
 
 	ElementMovement.prototype.end = function() {
-		if (this.el.stateful) this.el.stateful.set("dragging",false);
-		removeEventListeners(document.body,this.drag_events);
+		if (this.el.stateful) this.el.stateful.set("state.dragging",false);
+		removeEventListeners(this.target,this.drag_events);
+		if (this.target.releaseCapture) this.target.releaseCapture();
+		this.target = null;
 
 		delete document.onselectstart ;
 
 		activeMovement = null;
+		Resolver("page").set("activeMovement",null);
 
 		return this;
 	};
@@ -7548,10 +8191,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
 		};
 		movement.start(this,ev);
-		movement.startY = scrolled.stateful("pos.scrollTop");
-		movement.startX = scrolled.stateful("pos.scrollLeft");
-		movement.factorY = scrolled.stateful("pos.scrollHeight") / movement.el.offsetHeight;
-		movement.maxY = scrolled.stateful("pos.scrollHeight") - scrolled.clientHeight;
+		movement.startY = scrolled.stateful("pos.scrollTop","0");
+		movement.startX = scrolled.stateful("pos.scrollLeft","0");
+		movement.factorY = scrolled.stateful("pos.scrollHeight","0") / movement.el.offsetHeight;
+		movement.maxY = scrolled.stateful("pos.scrollHeight","0") - scrolled.clientHeight;
 		return false; // prevent default
 	}
 
@@ -7585,29 +8228,35 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			this.scrolledTo = x;
 		};
 		movement.start(this,ev);
-		movement.startY = scrolled.stateful("pos.scrollTop");
-		movement.startX = scrolled.stateful("pos.scrollLeft");
-		movement.factorX = scrolled.stateful("pos.scrollWidth") / movement.el.offsetWidth;
-		movement.maxY = scrolled.stateful("pos.scrollWidth") - scrolled.clientWidth;
+		movement.startY = scrolled.stateful("pos.scrollTop","0");
+		movement.startX = scrolled.stateful("pos.scrollLeft","0");
+		movement.factorX = scrolled.stateful("pos.scrollWidth","0") / movement.el.offsetWidth;
+		movement.maxY = scrolled.stateful("pos.scrollWidth","0") - scrolled.clientWidth;
 		return false; // prevent default
 	}
 
 
 	function EnhancedScrollbar(el,container,config,opts,mousedownEvent) {
+		this.enable = opts.enable !== false;
         var sbsc = scrollbarSize();
-		var lc = opts.horzvert.toLowerCase();
+		var lc = opts.horzvert.toLowerCase(), cn = lc+"-scroller";
+		if (config.obscured) cn += " obscured";
+		if (config.overhang) cn += " overhang";
 
 		this.scrolled = el;
-		var className = config.obscured? lc+"-scroller obscured" : lc+"-scroller";
+		var className = cn;
 		this.el = HTMLElement("div", { "class":className }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		container.appendChild(this.el);
-		this.sizeName = opts.sizeName; this.posName = opts.posName;
-		this.sizeStyle = opts.sizeName.toLowerCase();
+		this.contentName = "content"+ opts.sizeName;
+		this.scrollName = "scroll"+ opts.sizeName; 
+		this.sizeName = this.sizeStyle = opts.sizeName.toLowerCase();
+		this.posName = opts.posName;
 		this.posStyle = opts.posName.toLowerCase();
 		this.autoHide = opts.autoHide;
 		this.trackScroll = opts.trackScroll == false? false : true;;
 
-		this.trackScrolled(el);
+		this.sizing = el.stateful("sizing");
+		// this.trackScrolled(el);
 
 		addEventListeners(el,ENHANCED_SCROLLED_EVENTS);
 		addEventListeners(this.el,{ "mousedown": mousedownEvent });
@@ -7617,29 +8266,34 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
 			}
 		}
-		if (config.obscured) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
-        else this.el.style[opts.thicknessName] = sbsc + "px";
+		// if (config.overhang) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
+  //       else this.el.style[opts.thicknessName] = sbsc + "px";
 	}
 
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
 		if (this.trackScroll) {
 			this.scrolledTo = el["scroll"+this.posName];
-			this.scrolledContentSize = el["scroll"+this.sizeName];
+			this.scrolledContentSize = this.sizing[this.contentName]; //TODO remove intermediate variable
 		}
 		else {
-			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName);
-			this.scrolledContentSize = this.scrolled.stateful("pos.scroll"+this.sizeName);
+			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName,"0");
+			this.scrolledContentSize = this.scrolled.stateful("pos."+this.scrollName,"0");
 		}
-		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
 	};
 
 	EnhancedScrollbar.prototype.update = function(scrolled) {
-		this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
-		this.el.lastChild.style[this.sizeStyle] = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+		if (this.scrolledContentSize) {
+			this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+			this.el.lastChild.style[this.sizeStyle] = (100 * this.sizing[this.sizeName] / this.scrolledContentSize) + "%";
+		} else {
+			this.el.lastChild.style[this.posStyle] = "0%";
+			this.el.lastChild.style[this.sizeStyle] = "0%";
+		}
+		if (!this.enable || !this.scrolledContentSize || this.scrolledContentSize <= this.sizing[this.sizeName]) this.hide();
 	};
 
 	EnhancedScrollbar.prototype.show = function() {
-		if (this.scrolledContentSize <= this.scrolledSize) return false;
+		if (!this.enable || !this.scrolledContentSize || this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
 
 		if (!this.shown) {
 			this.update(this.scrolled);
@@ -7655,7 +8309,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 	};
 
 	EnhancedScrollbar.prototype.hide = function() {
-		if (this.autoHide !== false && this.shown) {
+		if (this.autoHide !== false && this.shown && this.enable) {
 			this.el.className = this.el.className.replace(" shown","");
 			if (this.hiding) {
 				clearTimeout(this.hiding);
@@ -7676,14 +8330,16 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
 			callCleaners(this.el);
 			this.el = undefined;
+			this.shown = this.enable = false;
 		}
 	};
 
 	function EnhancedScrolled(el,config) {
 
+		if (config.overhang == undefined) config.overhang = !!config.obscured;
+		config.obscured = config.obscured !== false;
 		//? this.el = el
 		var container = this._getContainer(el,config);
-
 
 		var trackScrollVert = !(config.trackScrollVert==false || config.trackScroll == false),
 			trackScrollHorz = !(config.trackScrollHorz==false || config.trackScroll == false);
@@ -7693,9 +8349,13 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		el.stateful.declare("pos.scrollTop",0);
 		el.stateful.declare("pos.scrollLeft",0);
 
+		//TODO sizing.track = {} width,height,content,scroll
+		el.stateful.set("sizing.track.sizeBy","client");
+
 		this.x = false !== config.x;
 		this.y = false !== config.y;
 		this.vert = new EnhancedScrollbar(el,container,config,{
+			enable: config.vert,
 			horzvert: "Vert", 
 			trackScroll: trackScrollVert,
 			sizeName: "Height", 
@@ -7704,7 +8364,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			edgeName: "right" 
 			},trackScrollVert? mousedownVert : mousedownStatefulVert);
 
-		this.horz = new EnhancedScrollbar(el,container,config,{ 
+		this.horz = new EnhancedScrollbar(el,container,config,{
+			enable: config.horz, 
 			horzvert: "Horz",
 			trackScroll: trackScrollHorz,
 			sizeName: "Width", 
@@ -7718,7 +8379,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		addEventListeners(container,ENHANCED_SCROLLED_PARENT_EVENTS);
 		container.scrollContainer = "top";
 
-		this.refresh(el);
+		// this.refresh(el);
 
 		el.stateful.on("change","pos.scrollTop",{el:el,es:this},this.scrollTopChanged);
 		el.stateful.on("change","pos.scrollLeft",{el:el,es:this},this.scrollLeftChanged);
@@ -7730,10 +8391,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		// if not shown, show and if not entered and not dragging, hide after 1500 ms
 		if (!es.vert.shown) {
 			es.vert.show();
-			es.horz.show();
-			if (!ev.resolver("over") && !ev.resolver("dragging")) {
+			if (!ev.resolver("state.over") && !ev.resolver("state.dragging")) {
 				es.vert.delayedHide();
-				es.horz.delayedHide();
 			}
 		}
 
@@ -7745,17 +8404,19 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		var el = ev.data.el, es = ev.data.es;
 
 		// if not shown, show and if not entered and not dragging, hide after 1500 ms
-		if (!es.vert.shown) {
-			es.vert.show();
+		if (!es.horz.shown) {
 			es.horz.show();
-			if (!el.stateful("over") && !el.stateful("dragging")) {
-				es.vert.delayedHide();
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				es.horz.delayedHide();
 			}
 		}
 		es.horz.trackScrolled(el);
 		es.horz.update(el);
 	};
+
+	// Define on browser type
+	var bGecko  = !!window.controllers;
+	var bIE     = window.document.all && !window.opera;
 
 	EnhancedScrolled.prototype._getContainer = function(el,config) {
 
@@ -7766,14 +8427,20 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			if (! config.unstyledParent) el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
 			el.style.right = "-" + sbsc + "px";
 			el.style.bottom = "-" + sbsc + "px";
-			el.style.paddingRight = sbsc + "px";
-			el.style.paddingBottom = sbsc + "px";
+
+			if (!bGecko && !bIE) {
+				// fix incorrect width for children
+				el.style.paddingRight = sbsc + "px";
+				el.style.paddingBottom = sbsc + "px";
+			}
 			container = container.parentNode;
 		}
 		return container;
 	};
 
 	EnhancedScrolled.prototype.refresh = function(el) {
+
+		//TODO get the information via layout call
 		this.vert.trackScrolled(el);
 		this.vert.update(el);
 		this.horz.trackScrolled(el);
@@ -7782,12 +8449,16 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	EnhancedScrolled.prototype.layout = function(el,layout) {
 
-		//TODO show scrollbars only if changed && in play
-		if (!this.vert.shown) {
-			this.vert.show();
-			this.horz.show();
-			if (!el.stateful("over") && !el.stateful("dragging")) {
+		if (layout.contentHeight != layout.oldContentHeight && !this.vert.shown) {
+			if (this.vert.show() === false) this.vert.hide(); // if content less/eq to space hide right now
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.vert.delayedHide(750);
+			}
+		}
+
+		if (layout.contentWidth != layout.oldContentWidth && !this.horz.shown) {
+			if (this.horz.show() === false) this.horz.hide(); // if content less/eq to space hide right now
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.horz.delayedHide(750);
 			}
 		}
@@ -7810,546 +8481,130 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
-	DocumentRoles.enhance_scrolled = function(el,role,config) {
-		if (config.template && templates[config.template]) {
-			var template = templates[config.template];
-			//TODO replace element with template.tagName, mixed attributes and template.html
-			el.innerHTML = template.html; //TODO better
-			var context = { layouter: this.parentLayouter };
-			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-			ApplicationConfig()._prep(el,context); //TODO prepAncestors
-			// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-			// DocumentRoles()._enhance_descs(descs);
+	function enhance_scrolled(el,role,config,context) {
+
+		var contentTemplate = config.template;
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+
+			el.appendChild(content);
+			DescriptorQuery(el).onlyBranch().enhance();
 		}
 
-		StatefulResolver(el,true);
+		// StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
 
 		return r;
-	};
+	}
+	pageResolver.set("handlers.enhance.scrolled",enhance_scrolled);
 
-	DocumentRoles.layout_scrolled = function(el,layout,instance) {
+	function layout_scrolled(el,layout,instance) {
 		instance.layout(el,layout);
-	};
+	}
+	pageResolver.set("handlers.layout.scrolled",layout_scrolled);
 	
-	DocumentRoles.discard_scrolled = function(el,role,instance) {
+	function discard_scrolled(el,role,instance) {
 		instance.discard(el);
 		if (el.stateful) el.stateful.destroy();
-	};
+	}
+	pageResolver.set("handlers.discard.scrolled",discard_scrolled);
 	
 }();
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
 
+Resolver("page").set("liveTimeout",60);
 //TODO clearInterval on unload
+
+!function() {
+	function onPageLoad(ev) {
+		Resolver("page").set("state.livepage",true);
+	}
+	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
+	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
+}();
+
 
 Resolver("page::state.livepage").on("change",function(ev) {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
-		pageResolver = Resolver("page");
+		enhancedWindows = Resolver("essential::enhancedWindows::"),
+		placement = Resolver("essential::placement::"),
+		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
+		pageResolver = Resolver("page"),
+		updateOnlineStatus = Resolver("essential::updateOnlineStatus::");
+
+	function resizeTriggersReflow(ev) {
+		EnhancedDescriptor.refreshAll();
+		enhancedWindows.notifyAll(ev);
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify(ev);
+		}
+	}
+
 
 	if (ev.value) { // bring live
 		
 		//TODO manage interval in configured.js, and space it out consistent results
 		// for browsers that don't support events
-		pageResolver.uosInterval = setInterval(pageResolver.updateOnlineStatus,5000);
+		pageResolver.uosInterval = setInterval(Resolver("essential::updateOnlineStatus::"),5000);
 
 		EnhancedDescriptor.maintainer = setInterval(EnhancedDescriptor.maintainAll,330); // minimum frequency 3 per sec
-		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 3 per sec
+		EnhancedDescriptor.refresher = setInterval(EnhancedDescriptor.refreshAll,160); // minimum frequency 6 per sec
+
+		updateOnlineStatus();
+
+		if (window.addEventListener) {
+			document.body.addEventListener("online",updateOnlineStatus);
+			document.body.addEventListener("offline",updateOnlineStatus);
+		
+			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
+
+			window.addEventListener("resize",resizeTriggersReflow,false);
+			document.body.addEventListener("orientationchange",resizeTriggersReflow,false);
+			document.body.addEventListener("click",defaultButtonClick,false);
+		} else {
+			// IE8
+			window.attachEvent("onresize",resizeTriggersReflow);
+			document.body.attachEvent("onclick",defaultButtonClick);
+
+			document.body.attachEvent("online",updateOnlineStatus);
+			document.body.attachEvent("offline",updateOnlineStatus);
+		}
+
+		Resolver("essential")("launchWindows")();
+
 	} else { // unload
+
+		if (window.removeEventListener) {
+			window.removeEventListener("resize",resizeTriggersReflow);
+			document.body.removeEventListener("orientationchange",resizeTriggersReflow);
+			document.body.removeEventListener("click",defaultButtonClick);
+		} else {
+			window.detachEvent("onresize",resizeTriggersReflow);
+			document.body.detachEvent("onclick",defaultButtonClick);
+		}
+
 		clearInterval(pageResolver.uosInterval);
+		pageResolver.uosInterval = null;
 		clearInterval(EnhancedDescriptor.maintainer);
+		EnhancedDescriptor.maintainer = null;
 		clearInterval(EnhancedDescriptor.refresher);
+		EnhancedDescriptor.refresher = null;
+		if (placement.broadcaster) clearInterval(placement.broadcaster);
+		placement.broadcaster = null;
+		placement.stopTrackMain();
 	}
 });
 
+Resolver("page::state.managed").on("change",function(ev) {
 
+	var	placement = Resolver("essential::placement::");
 
-if(!this.JSON){
-JSON={};
-}
-(function(){
-function f(n){
-return n<10?'0'+n:n;
-}
-if(typeof Date.prototype.toJSON!=='function'){
-Date.prototype.toJSON=function(key){
-return this.getUTCFullYear()+'-'+
-f(this.getUTCMonth()+1)+'-'+
-f(this.getUTCDate())+'T'+
-f(this.getUTCHours())+':'+
-f(this.getUTCMinutes())+':'+
-f(this.getUTCSeconds())+'Z';
-};
-String.prototype.toJSON=
-Number.prototype.toJSON=
-Boolean.prototype.toJSON=function(key){
-return this.valueOf();
-};
-}
-var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
-escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
-gap,
-indent,
-meta={
-'\b':'\\b',
-'\t':'\\t',
-'\n':'\\n',
-'\f':'\\f',
-'\r':'\\r',
-'"':'\\"',
-'\\':'\\\\'
-},
-rep;
-function quote(string){
-escapable.lastIndex=0;
-return escapable.test(string)?
-'"'+string.replace(escapable,function(a){
-var c=meta[a];
-return typeof c==='string'?c:
-'\\u'+('0000'+a.charCodeAt(0).toString(16)).slice(-4);
-})+'"':
-'"'+string+'"';
-}
-function str(key,holder){
-var i,
-k,
-v,
-length,
-mind=gap,
-partial,
-value=holder[key];
-if(value&&typeof value==='object'&&
-typeof value.toJSON==='function'){
-value=value.toJSON(key);
-}
-if(typeof rep==='function'){
-value=rep.call(holder,key,value);
-}
-switch(typeof value){
-case'string':
-return quote(value);
-case'number':
-return isFinite(value)?String(value):'null';
-case'boolean':
-case'null':
-return String(value);
-case'object':
-if(!value){
-return'null';
-}
-gap+=indent;
-partial=[];
-if(Object.prototype.toString.apply(value)==='[object Array]'){
-length=value.length;
-for(i=0;i<length;i+=1){
-partial[i]=str(i,value)||'null';
-}
-v=partial.length===0?'[]':
-gap?'[\n'+gap+
-partial.join(',\n'+gap)+'\n'+
-mind+']':
-'['+partial.join(',')+']';
-gap=mind;
-return v;
-}
-if(rep&&typeof rep==='object'){
-length=rep.length;
-for(i=0;i<length;i+=1){
-k=rep[i];
-if(typeof k==='string'){
-v=str(k,value);
-if(v){
-partial.push(quote(k)+(gap?': ':':')+v);
-}
-}
-}
-}else{
-for(k in value){
-if(Object.hasOwnProperty.call(value,k)){
-v=str(k,value);
-if(v){
-partial.push(quote(k)+(gap?': ':':')+v);
-}
-}
-}
-}
-v=partial.length===0?'{}':
-gap?'{\n'+gap+partial.join(',\n'+gap)+'\n'+
-mind+'}':'{'+partial.join(',')+'}';
-gap=mind;
-return v;
-}
-}
-if(typeof JSON.stringify!=='function'){
-JSON.stringify=function(value,replacer,space){
-var i;
-gap='';
-indent='';
-if(typeof space==='number'){
-for(i=0;i<space;i+=1){
-indent+=' ';
-}
-}else if(typeof space==='string'){
-indent=space;
-}
-rep=replacer;
-if(replacer&&typeof replacer!=='function'&&
-(typeof replacer!=='object'||
-typeof replacer.length!=='number')){
-throw new Error('JSON.stringify');
-}
-return str('',{'':value});
-};
-}
-if(typeof JSON.parse!=='function'){
-JSON.parse=function(text,reviver){
-var j;
-function walk(holder,key){
-var k,v,value=holder[key];
-if(value&&typeof value==='object'){
-for(k in value){
-if(Object.hasOwnProperty.call(value,k)){
-v=walk(value,k);
-if(v!==undefined){
-value[k]=v;
-}else{
-delete value[k];
-}
-}
-}
-}
-return reviver.call(holder,key,value);
-}
-cx.lastIndex=0;
-if(cx.test(text)){
-text=text.replace(cx,function(a){
-return'\\u'+
-('0000'+a.charCodeAt(0).toString(16)).slice(-4);
+	if (ev.value) {
+		placement.startTrackMain();
+	}
 });
-}
-if(/^[\],:{}\s]*$/.
-test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,'@').
-replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,']').
-replace(/(?:^|:|,)(?:\s*\[)+/g,''))){
-j=eval('('+text+')');
-return typeof reviver==='function'?
-walk({'':j},''):j;
-}
-throw new SyntaxError('JSON.parse');
-};
-}
-})();
 
-// Simple Set Clipboard System
-// Author: Joseph Huckaby
-
-var ZeroClipboard = {
-	
-	version: "1.0.7",
-	clients: {}, // registered upload clients on page, indexed by id
-	moviePath: 'ZeroClipboard.swf', // URL to movie
-	nextId: 1, // ID of next movie
-	
-	$: function(thingy) {
-		// simple DOM lookup utility function
-		if (typeof(thingy) == 'string') thingy = document.getElementById(thingy);
-		if (!thingy.addClass) {
-			// extend element with a few useful methods
-			thingy.hide = function() { this.style.display = 'none'; };
-			thingy.show = function() { this.style.display = ''; };
-			thingy.addClass = function(name) { this.removeClass(name); this.className += ' ' + name; };
-			thingy.removeClass = function(name) {
-				var classes = this.className.split(/\s+/);
-				var idx = -1;
-				for (var k = 0; k < classes.length; k++) {
-					if (classes[k] == name) { idx = k; k = classes.length; }
-				}
-				if (idx > -1) {
-					classes.splice( idx, 1 );
-					this.className = classes.join(' ');
-				}
-				return this;
-			};
-			thingy.hasClass = function(name) {
-				return !!this.className.match( new RegExp("\\s*" + name + "\\s*") );
-			};
-		}
-		return thingy;
-	},
-	
-	setMoviePath: function(path) {
-		// set path to ZeroClipboard.swf
-		this.moviePath = path;
-	},
-	
-	dispatch: function(id, eventName, args) {
-		// receive event from flash movie, send to client		
-		var client = this.clients[id];
-		if (client) {
-			client.receiveEvent(eventName, args);
-		}
-	},
-	
-	register: function(id, client) {
-		// register new client to receive events
-		this.clients[id] = client;
-	},
-	
-	getDOMObjectPosition: function(obj, stopObj) {
-		// get absolute coordinates for dom element
-		var info = {
-			left: 0, 
-			top: 0, 
-			width: obj.width ? obj.width : obj.offsetWidth, 
-			height: obj.height ? obj.height : obj.offsetHeight
-		};
-
-		while (obj && (obj != stopObj)) {
-			info.left += obj.offsetLeft;
-			info.top += obj.offsetTop;
-			obj = obj.offsetParent;
-		}
-
-		return info;
-	},
-	
-	Client: function(elem) {
-		// constructor for new simple upload client
-		this.handlers = {};
-		
-		// unique ID
-		this.id = ZeroClipboard.nextId++;
-		this.movieId = 'ZeroClipboardMovie_' + this.id;
-		
-		// register client with singleton to receive flash events
-		ZeroClipboard.register(this.id, this);
-		
-		// create movie
-		if (elem) this.glue(elem);
-	}
-};
-
-ZeroClipboard.Client.prototype = {
-	
-	id: 0, // unique ID for us
-	ready: false, // whether movie is ready to receive events or not
-	movie: null, // reference to movie object
-	clipText: '', // text to copy to clipboard
-	handCursorEnabled: true, // whether to show hand cursor, or default pointer cursor
-	cssEffects: true, // enable CSS mouse effects on dom container
-	handlers: null, // user event handlers
-	
-	glue: function(elem, appendElem, stylesToAdd) {
-		// glue to DOM element
-		// elem can be ID or actual DOM element object
-		this.domElement = ZeroClipboard.$(elem);
-		
-		// float just above object, or zIndex 99 if dom element isn't set
-		var zIndex = 99;
-		if (this.domElement.style.zIndex) {
-			zIndex = parseInt(this.domElement.style.zIndex, 10) + 1;
-		}
-		
-		if (typeof(appendElem) == 'string') {
-			appendElem = ZeroClipboard.$(appendElem);
-		}
-		else if (typeof(appendElem) == 'undefined') {
-			appendElem = document.getElementsByTagName('body')[0];
-		}
-		
-		// find X/Y position of domElement
-		var box = ZeroClipboard.getDOMObjectPosition(this.domElement, appendElem);
-		
-		// create floating DIV above element
-		this.div = document.createElement('div');
-		var style = this.div.style;
-		style.position = 'absolute';
-		style.left = '' + box.left + 'px';
-		style.top = '' + box.top + 'px';
-		style.width = '' + box.width + 'px';
-		style.height = '' + box.height + 'px';
-		style.zIndex = zIndex;
-		
-		if (typeof(stylesToAdd) == 'object') {
-			for (addedStyle in stylesToAdd) {
-				style[addedStyle] = stylesToAdd[addedStyle];
-			}
-		}
-		
-		// style.backgroundColor = '#f00'; // debug
-		
-		appendElem.appendChild(this.div);
-		
-		this.div.innerHTML = this.getHTML( box.width, box.height );
-	},
-	
-	getHTML: function(width, height) {
-		// return HTML for movie
-		var html = '';
-		var flashvars = 'id=' + this.id + 
-			'&width=' + width + 
-			'&height=' + height;
-			
-		if (navigator.userAgent.match(/MSIE/)) {
-			// IE gets an OBJECT tag
-			var protocol = location.href.match(/^https/i) ? 'https://' : 'http://';
-			html += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="'+protocol+'download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=9,0,0,0" width="'+width+'" height="'+height+'" id="'+this.movieId+'" align="middle"><param name="allowScriptAccess" value="always" /><param name="allowFullScreen" value="false" /><param name="movie" value="'+ZeroClipboard.moviePath+'" /><param name="loop" value="false" /><param name="menu" value="false" /><param name="quality" value="best" /><param name="bgcolor" value="#ffffff" /><param name="flashvars" value="'+flashvars+'"/><param name="wmode" value="transparent"/></object>';
-		}
-		else {
-			// all other browsers get an EMBED tag
-			html += '<embed id="'+this.movieId+'" src="'+ZeroClipboard.moviePath+'" loop="false" menu="false" quality="best" bgcolor="#ffffff" width="'+width+'" height="'+height+'" name="'+this.movieId+'" align="middle" allowScriptAccess="always" allowFullScreen="false" type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/go/getflashplayer" flashvars="'+flashvars+'" wmode="transparent" />';
-		}
-		return html;
-	},
-	
-	hide: function() {
-		// temporarily hide floater offscreen
-		if (this.div) {
-			this.div.style.left = '-2000px';
-		}
-	},
-	
-	show: function() {
-		// show ourselves after a call to hide()
-		this.reposition();
-	},
-	
-	destroy: function() {
-		// destroy control and floater
-		if (this.domElement && this.div) {
-			this.hide();
-			this.div.innerHTML = '';
-			
-			var body = document.getElementsByTagName('body')[0];
-			try { body.removeChild( this.div ); } catch(e) {;}
-			
-			this.domElement = null;
-			this.div = null;
-		}
-	},
-	
-	reposition: function(elem) {
-		// reposition our floating div, optionally to new container
-		// warning: container CANNOT change size, only position
-		if (elem) {
-			this.domElement = ZeroClipboard.$(elem);
-			if (!this.domElement) this.hide();
-		}
-		
-		if (this.domElement && this.div) {
-			var box = ZeroClipboard.getDOMObjectPosition(this.domElement);
-			var style = this.div.style;
-			style.left = '' + box.left + 'px';
-			style.top = '' + box.top + 'px';
-		}
-	},
-	
-	setText: function(newText) {
-		// set text to be copied to clipboard
-		this.clipText = newText;
-		if (this.ready) this.movie.setText(newText);
-	},
-	
-	addEventListener: function(eventName, func) {
-		// add user event listener for event
-		// event types: load, queueStart, fileStart, fileComplete, queueComplete, progress, error, cancel
-		eventName = eventName.toString().toLowerCase().replace(/^on/, '');
-		if (!this.handlers[eventName]) this.handlers[eventName] = [];
-		this.handlers[eventName].push(func);
-	},
-	
-	setHandCursor: function(enabled) {
-		// enable hand cursor (true), or default arrow cursor (false)
-		this.handCursorEnabled = enabled;
-		if (this.ready) this.movie.setHandCursor(enabled);
-	},
-	
-	setCSSEffects: function(enabled) {
-		// enable or disable CSS effects on DOM container
-		this.cssEffects = !!enabled;
-	},
-	
-	receiveEvent: function(eventName, args) {
-		// receive event from flash
-		eventName = eventName.toString().toLowerCase().replace(/^on/, '');
-				
-		// special behavior for certain events
-		switch (eventName) {
-			case 'load':
-				// movie claims it is ready, but in IE this isn't always the case...
-				// bug fix: Cannot extend EMBED DOM elements in Firefox, must use traditional function
-				this.movie = document.getElementById(this.movieId);
-				if (!this.movie) {
-					var self = this;
-					setTimeout( function() { self.receiveEvent('load', null); }, 1 );
-					return;
-				}
-				
-				// firefox on pc needs a "kick" in order to set these in certain cases
-				if (!this.ready && navigator.userAgent.match(/Firefox/) && navigator.userAgent.match(/Windows/)) {
-					var self = this;
-					setTimeout( function() { self.receiveEvent('load', null); }, 100 );
-					this.ready = true;
-					return;
-				}
-				
-				this.ready = true;
-				this.movie.setText( this.clipText );
-				this.movie.setHandCursor( this.handCursorEnabled );
-				break;
-			
-			case 'mouseover':
-				if (this.domElement && this.cssEffects) {
-					this.domElement.addClass('hover');
-					if (this.recoverActive) this.domElement.addClass('active');
-				}
-				break;
-			
-			case 'mouseout':
-				if (this.domElement && this.cssEffects) {
-					this.recoverActive = false;
-					if (this.domElement.hasClass('active')) {
-						this.domElement.removeClass('active');
-						this.recoverActive = true;
-					}
-					this.domElement.removeClass('hover');
-				}
-				break;
-			
-			case 'mousedown':
-				if (this.domElement && this.cssEffects) {
-					this.domElement.addClass('active');
-				}
-				break;
-			
-			case 'mouseup':
-				if (this.domElement && this.cssEffects) {
-					this.domElement.removeClass('active');
-					this.recoverActive = false;
-				}
-				break;
-		} // switch eventName
-		
-		if (this.handlers[eventName]) {
-			for (var idx = 0, len = this.handlers[eventName].length; idx < len; idx++) {
-				var func = this.handlers[eventName][idx];
-			
-				if (typeof(func) == 'function') {
-					// actual function reference
-					func(this, args);
-				}
-				else if ((typeof(func) == 'object') && (func.length == 2)) {
-					// PHP style object + method, i.e. [myObject, 'myMethod']
-					func[0][ func[1] ](this, args);
-				}
-				else if (typeof(func) == 'string') {
-					// name of function
-					window[func](this, args);
-				}
-			} // foreach event handler defined
-		} // user defined handler for event
-	}
-	
-};
-
-ZeroClipboard.setMoviePath("js/ZeroClipboard.swf");

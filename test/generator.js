@@ -280,6 +280,51 @@ test("Singleton generator is created and destroyed correctly",function(){
 	var test = Test();
 	ok(test);
 	equal(typeof Test.info.existing[0],"object");
+
+	//TODO with instance param
+	Test.destroy();
+	Test.discard();
+	equal(typeof Test.info.existing[0],"undefined");
+
+
+	var single = Generator(
+		function(){
+			this.A = "A";
+		},
+		{ 
+			"discarded": function(s) {
+				s.A = "-"
+			},
+			"prototype": {
+				f1: function() {}
+		}}
+		);
+	single.restrict({"singleton":true});
+
+	equal(typeof single.info.existing[0],"undefined");
+	var s = single();
+
+	equal(typeof single.info.existing[0],"object");
+	equal(s.A,"A");
+	equal(typeof s.f1,"function");
+	equal(single.info.existing[0].A,"A");
+
+	Generator.discardRestricted();
+	equal(s.A,"-");
+	equal(typeof s.f1,"function");
+	equal(typeof single.info.existing[0],"undefined");
+
+	var s = single();
+
+	equal(typeof single.info.existing[0],"object");
+	equal(s.A,"A");
+	equal(typeof s.f1,"function");
+	equal(single.info.existing[0].A,"A");
+
+	Generator.discardRestricted();
+	equal(s.A,"-");
+	equal(typeof s.f1,"function");
+	equal(typeof single.info.existing[0],"undefined");
 });
 
 //TODO singleton construction and discard/teardown
@@ -311,4 +356,5 @@ test("Generator presets",function(){
 });
 
 //TODO test restrict called multiple times
+
 

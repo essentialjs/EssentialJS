@@ -96,7 +96,7 @@ test("ArraySet entry uniqueness",function(){
 });
 
 
-test("DOMTokenList",function(){
+test("DOMTokenList API",function(){
 	var DOMTokenList = Resolver("essential::DOMTokenList::");
 	var ArraySet = Resolver("essential::ArraySet::");
 
@@ -117,10 +117,20 @@ test("DOMTokenList",function(){
 
 	// additional API
 	DOMTokenList.mixin(dtl,"a b c");
-	equal(dtl.length,3);
+	equal(dtl.length,3,"mixin a b c");
 	ok(dtl.has("a"));
 	ok(dtl.has("b"));
 	ok(dtl.has("c"));
+
+	dtl.remove("a");
+	dtl.remove("b");
+	dtl.remove("c");
+	DOMTokenList.mixin(dtl," a   b c ");
+	equal(dtl.length,3,"mixin  a    b c ");
+	ok(dtl.has("a"));
+	ok(dtl.has("b"));
+	ok(dtl.has("c"));
+
 	DOMTokenList.set(dtl,"d",true);
 	equal(dtl.length,4);
 })

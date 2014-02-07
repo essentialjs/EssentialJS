@@ -1,0 +1,31 @@
+title: EssentialJS
+server_port: 9292
+
+exclude: essential.less
+
+modules :
+  modernizr: 
+    - js/modernizr-prefix.js
+    - js/modernizr.min.js
+  essential:
+    - js/license.txt
+    - js/resolver.js
+    - js/generator.js
+    - js/essentialns.js
+    - js/dom.js
+    - js/page.js
+    - js/xhr.js
+    - js/elements.js
+    - js/roles.js
+    - js/configured.js
+  plus:
+    - app/js/raphael.min.js
+    - app/js/spin.min.js
+
+js-base: app/js
+css-base: app/css
+
+concatenate:
+- modernizr+essential+plus.js
+- modernizr+essential.js
+- essential.js

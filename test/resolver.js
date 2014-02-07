@@ -6,6 +6,14 @@ test ("Anonymous resolver",function(){
 	equal(Resolver()("a","undefined"),undefined);
 })
 
+test ("Default resolver",function() {
+	var d = Resolver();
+	equal(Resolver["default"],d);
+	equal(Resolver("default"),d);
+
+	equal(Resolver("::"),d.namespace);
+})
+
 test ("Named resolver",function(){
 
 	ok(! Resolver.exists("A"))
@@ -18,6 +26,7 @@ test ("Named resolver",function(){
 	equal(Resolver()("a","undefined"),undefined);
 	equal(r,Resolver("A"));
 	ok(Resolver.exists("A"))
+	equal(Resolver("A::"),rs,"Looking up the A namespace");
 
 	var r = Resolver({},{name:"B"});
 	r.set("a","a");
@@ -31,6 +40,7 @@ test ("Named resolver",function(){
 
 	var r = Resolver("C"); // create blank one 
 	equal(typeof r, "function");
+	equal(Resolver["default"].named,"default");
 
 	ok(Resolver.exists("C"))
 })
@@ -41,17 +51,20 @@ test("Window resolver",function(){
 	equal(win("Array"),Array);
 	equal(win("Boolean"),Boolean);
 	equal(win("self"),window);
-	// equal(Resolver("window::"),window);
+	equal(Resolver("window::"),window);
 
 	var win = Resolver(window);
 
 	equal(win.namespace,window);
 	equal(win("Array"),Array);
 	equal(win("Boolean"),Boolean);
-	equal(win("self"),window);
+	equal(win("self"),window,"window.self == window");
 
 	win.set("global_api.a.b.func",function(){ return "return"});
-	equal(global_api.a.b.func(),"return");
+	equal(typeof global_api.a.b.func,"function","New global function was set")
+	equal(global_api.a.b.func(),"return","calling global function works");
+
+	window.global_api = undefined; // clean up
 })
 
 test("Document resolver",function(){
@@ -66,7 +79,7 @@ test("Document resolver",function(){
 })
 
 test('Namespace and package creation',function(){
-  	expect(6);
+  	expect(7);
 	var shapes = Resolver()("my.shapes");
 	var tools = Resolver()("my.tools");
 
@@ -78,6 +91,7 @@ test('Namespace and package creation',function(){
 
 	Resolver("default").override({});
 	equal(Resolver["default"].namespace.my, undefined, "namespace replaced");
+	equal(Resolver["default"].named,"default");
 
 	Resolver()("my")
 	notEqual(Resolver["default"].namespace.my, undefined, "namespace replaced");
@@ -91,6 +105,8 @@ test('Resolve defined and undefined',function(){
 	equal(typeof resolver("d.e.f","generate"),"object");
 	equal(resolver("g.h.i","null"),null);
 	equal(resolver("g.h.i","undefined"),undefined);
+	equal(resolver("g.h.i","0"),0);
+	equal(resolver("g.h.i","false"),false);
 	raises(function(){ resolver("j.k.l","throw") },"The 'j' part of 'j.k.l' couldn't be resolved.");
 
 	strictEqual(resolver({ name: "m.n.o", onundefined:"null"}), null);
@@ -166,9 +182,51 @@ test('Resolver set/declare value',function(){
 	var opq = resolver.declare(["o",null,"q"],"opq");
 	equal(resolver(["o",null,"q"]),"opq")
 
+	resolver.set("a.b",false);
+	strictEqual(resolver("a.b"),false);
+	throws(function() {
+		resolver("a.b.c");
+	});
+	throws(function() {
+		resolver.set("a.b.c",false);
+	});
+
+	resolver.set("a.b.c",false,"force");
+	strictEqual(typeof resolver("a.b"),"object");
+	strictEqual(resolver("a.b.c"),false);
+
+
 	//TODO try string like objects for get/set/declare
 	//TODO try array like objects for get/set/declare
 })
+
+test('Resolver remove value',function(){
+	var resolver = Resolver({});
+
+	resolver.set("a.b.c","abc");
+	equal(resolver("a.b.c"), "abc");	
+	var abc_value = resolver.remove("a.b.c");
+	strictEqual(abc_value,"abc","returned value from remove");
+	equal(resolver("a.b.c","undefined"), undefined);	
+
+	var def_value = resolver.declare("d.e.f","def");
+	strictEqual(def_value,"def","returned value from declare");
+	equal(resolver("d.e.f"), "def");	
+	var r = resolver.reference("d.e.f","undefined");
+	equal(r(),"def");
+	r.remove();
+	equal(r(),undefined);
+
+	var rde = resolver.reference("d.e","undefined");
+	rde.set({});
+	deepEqual(rde(),{},"Blank object to begin");
+	rde.set("f","def 3");
+	deepEqual(rde(),{f:"def 3"},"Blank object to begin");
+	rde.remove("f");
+	deepEqual(rde(),{},"Blank object to begin");
+	//TODO change handlers
+	//TODO reference("d.e").remove("f")
+});
 
 test('Resolver toggle value',function(){
 	var resolver = Resolver({});
@@ -204,6 +262,9 @@ test('Resolver reference set/declare value',function(){
 	var def_value = def.declare("def");
 	strictEqual(def_value,"def","returned value from declare");
 	equal(def(), "def");	
+	def_value = def.set("def 2");
+	strictEqual(def_value,"def 2","returned value from declare");
+	equal(def(), "def 2");	
 
 	// sub-values
 	var ghi = resolver.reference("g.h.i");
@@ -260,7 +321,7 @@ test('Resolver namespace::expression API',function() {
 		"c":"c"
 	});
 
-	equal(Resolver("F"),Resolver("F::"));
+	equal(Resolver("F::"),Resolver("F").namespace);
 
 	equal(Resolver("F::a"),Resolver("F").reference("a"));
 	equal(Resolver("F::b"),Resolver("F").reference("b"));
@@ -330,11 +391,151 @@ test('Resolver reference',function(){
 	equal(r.getEntry("g"), "g");
 	equal(r.getEntry("h"), "h");
 	equal(r.getEntry("i"), "i");
+
+	r.unmix({ "g":"g", "h":"h", "i":"i" });
+	equal(r.getEntry("g"), undefined);
+	equal(r.getEntry("h"), undefined);
+	equal(r.getEntry("i"), undefined);
 })
 
 // test trigger function handler(event) .trigger(eventName)
 // test trigger function handler(event,p1,p2) .trigger(event,[p1,p2])
 // test trigger function handler(event,p1) .trigger(event,p1)
+
+test('Resolver reflect listener',function() {
+
+	var resolver = Resolver({});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("change reflect",_onab);
+
+	ab.trigger("reflect");
+
+	equal(_onab.callCount,1);
+
+	resolver.set("a.b",{});
+
+	equal(_onab.callCount,2);
+
+	resolver.set("a.b.c","c");
+
+	equal(_onab.callCount,3);
+});
+
+test('Resolver true listener',function() {
+
+	var resolver = Resolver({});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("true",_onab);
+
+	var abc = resolver.reference("a.b.c");
+	var _onabc = sinon.spy();
+	abc.on("true",_onabc);
+
+	var abcVal = abc.set(function(){});
+	equal(typeof abc(),"function");
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set(false);
+	equal(abc(),false);
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	abc.set({});
+	abc.setEntry("d","dd");
+	equal(resolver("a.b.c.d"), "dd");
+	equal(_onabc.callCount,0);
+
+	var abcVal = abc.set(true);
+	equal(abc(),true);
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set("x");
+	equal(abc(),"x");
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+});
+
+test('Resolver false listener',function() {
+
+	var resolver = Resolver({});
+
+	var ab = resolver.reference("a.b");
+	var _onab = sinon.spy();
+	ab.on("false",_onab);
+
+	var abc = resolver.reference("a.b.c");
+	var _onabc = sinon.spy();
+	abc.on("false",_onabc);
+
+	var abcVal = abc.set(function(){});
+	equal(typeof abc(),"function");
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set(true);
+	equal(abc(),true);
+	equal(_onabc.callCount,0);
+	equal(_onab.callCount,0);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,0,"Change listener is only called if values have changed");
+	equal(_onab.callCount,0,"Change listener is only called if values have changed");
+
+	abc.set({});
+	abc.setEntry("d","dd");
+	equal(resolver("a.b.c.d"), "dd");
+	equal(_onabc.callCount,0);
+
+	var abcVal = abc.set(false);
+	equal(abc(),false);
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+	var abcVal = abc.set("x");
+	equal(abc(),"x");
+	equal(_onabc.callCount,1);
+	equal(_onab.callCount,1);
+
+	abc.set(abcVal);
+	equal(_onabc.callCount,1,"Change listener is only called if values have changed");
+	equal(_onab.callCount,1,"Change listener is only called if values have changed");
+
+
+
+});
+
+
 
 /*
   Change listeners are notified of changes to the entry or members of it.
@@ -363,6 +564,29 @@ test('Resolver change listener',function() {
 	//ok(_onabc.calledWith({value:5}));
 	equal(_onab.callCount,1,"Change listener is only called if values have changed");
 
+	// ok(
+	// 	_onab.calledWith(sinon.match({
+	// 		type: "change",
+	// 		base: ab(),
+	// 		symbol: "c",
+	// 		selector: "a.b.c",
+	// 		value: abcVal
+	// 	})),"called with a.b event"
+	// 	);
+	deepEqual(_onabc.lastCall.args[0],{
+		type: "change",
+		base: ab(),
+		symbol: "c",
+		selector: "a.b.c",
+		oldValue: undefined,
+		value: abcVal,
+		data: null,
+		inTrigger: 0,
+		resolver: _onabc.lastCall.args[0].resolver,
+		callback: _onabc.lastCall.args[0].callback,
+		trigger: _onabc.lastCall.args[0].trigger
+	},"called with a.b.c event");
+
 	abc.setEntry("d","dd");
 	equal(resolver("a.b.c.d"), "dd");
 	equal(_onabc.callCount,2);
@@ -372,10 +596,26 @@ test('Resolver change listener',function() {
 
 	resolver.set("d.e.f", 6);
 	equal(resolver("d.e.f"), 6);
-	equal(_ondef.callCount,1);
+	equal(_ondef.callCount,1,"d.e.f 6 first time");
 //	ok(_ondef.calledWith({value:6}));
 	resolver.set("d.e.f", 6);
 	equal(_ondef.callCount,1);
+	resolver.set("d.e.f", 6);
+	equal(_ondef.callCount,1);
+
+	deepEqual(_ondef.lastCall.args[0],{
+		type: "change",
+		base: resolver("d.e"),
+		symbol: "f",
+		selector: "d.e.f",
+		oldValue: undefined,
+		value: 6,
+		data: null,
+		inTrigger: 0,
+		resolver: _ondef.lastCall.args[0].resolver,
+		callback: _ondef.lastCall.args[0].callback,
+		trigger: _ondef.lastCall.args[0].trigger
+	},"called with d.e.f event");
 
 	var _onxyz = sinon.spy();
 	resolver.on("change","x.y.z",{},_onxyz);
@@ -383,6 +623,34 @@ test('Resolver change listener',function() {
 	equal(_onxyz.callCount,1,"Change listener on resolver using string is triggered");
 	resolver.set(["x","y","z"],"xyz2");
 	equal(_onxyz.callCount,2,"Change listener on resolver using array name is triggered");
+
+	var _onmn = sinon.spy();
+	resolver.on("change","m.n",_onmn);
+	// debugger;
+	resolver.reference("m.n").mixin({ "key":"val"})
+
+	// ok(
+	// 	_onmn.calledWith(sinon.match({
+	// 		type: "change",
+	// 		base: resolver("m"),
+	// 		symbol: null,
+	// 		selector: null,
+	// 		value: { "key":"val" }
+	// 	})),"called with m.n event"
+	// 	);
+	deepEqual(_onmn.lastCall.args[0],{
+		type: "change",
+		base: resolver("m.n"),
+		symbol: null,
+		selector: "m.n",
+		value: { "key":"val" },
+		oldValue: undefined,
+		data: null,
+		inTrigger: 0,
+		resolver: _onmn.lastCall.args[0].resolver,
+		callback: _onmn.lastCall.args[0].callback,
+		trigger: _onmn.lastCall.args[0].trigger
+	});
 
 	ok(1,"Removing change listener")
 	ok(1,"Resolver change listener with 3 params")
@@ -398,9 +666,13 @@ test('Resolver bind + change listener',function() {
 	var resolver = Resolver({ "b":{ "c": "bc" }});
 
 	var ab = resolver.reference("a.b");
-	var _onab = sinon.spy();
+	var bindingCount = 0;
+	var _onab = sinon.spy(function(ev) {
+		if (ev.binding) ++bindingCount;
+	});
 
 	ab.on("bind change",_onab);
+	equal(bindingCount,1,"binding not triggered in listener");
 	// ok(_onab.calledWith(sinon.match({
 	// 	"base": undefined,
 	// 	"symbol": "b",
@@ -482,17 +754,93 @@ test("Resolver proxying",function(){
 	ok(1,"when resolver is destroyed the proxies are deregistered")
 });
 
-test("Resolver entries locally stored",function(){
-	ok(1)
+if (window.localStorage) test("Resolver entries locally stored",function(){
+	localStorage.clear(); 
+
+	// load
+	var demoSession = Resolver("::demo-session");
+	demoSession.declare(false);
+	demoSession.stored("load change unload","local");
+
+	Resolver.loadReadStored();
+	equal(demoSession(),false,"Entry with no stored value is set to declared value");
+
+	localStorage.setItem("resolver.default#demo-session","true");
+	Resolver.loadReadStored();
+	equal(demoSession(),true,"Entry with stored value is set to stored value");
+
+	localStorage.setItem("resolver.default#demo-session",'{"a":"A"}');
+	Resolver.loadReadStored();
+	deepEqual(demoSession(),{a:'A'},"Entry with stored value is set to stored value");
+
+	// change
+	demoSession.set("abc");
+	equal(localStorage["resolver.default#demo-session"],'"abc"');
+
+	demoSession.set("");
+	equal(localStorage["resolver.default#demo-session"],'""');
+
+	demoSession.set(false);
+	equal(localStorage["resolver.default#demo-session"],'false');
+
+	demoSession.set({});
+	equal(localStorage["resolver.default#demo-session"],'{}');
+
+	// unload
+	demoSession.set({});
+	localStorage.removeItem("resolver.default#demo-session");
+	Resolver.unloadWriteStored();
+	equal(localStorage["resolver.default#demo-session"],'{}');
+
+	// test options.id, options.name
+
+	//TODO switch off the stored config
 });
 
 test("Resolver entries server stored",function(){
 	ok(1)
 });
 
+//TODO test combinations of storage & cookie
+
 test("Resolver reference logging changes",function(){
 	ok(1,'ref.log("change","info")')
 });
+
+
+test('namespace::expression in another resolver',function() {
+
+	var priv = Resolver({});
+	equal(priv("document","undefined"),undefined);
+	equal(priv("window::document","undefined"),window.document);
+
+	var nstest = Resolver("nstest",{ initial:"initial"});
+	equal(Resolver("nstest::initial::"),"initial","Straight nstest get");
+	equal(priv("nstest::initial::"),"initial","Indirect nstest get");
+
+	var _oninitial = sinon.spy();
+	nstest.on("change","initial",_oninitial);
+
+	priv.set("nstest::initial","changed");
+	equal(Resolver("nstest::initial::"),"changed","Straight nstest get changed");
+	equal(priv("nstest::initial::"),"changed","Indirect nstest get changed");
+
+	deepEqual(_oninitial.lastCall.args[0],{
+		type: "change",
+		base: nstest.namespace,
+		symbol: "initial",
+		selector: "initial",
+		value: "changed",
+		oldValue: "initial",
+		data: null,
+		inTrigger: 0,
+		resolver: _oninitial.lastCall.args[0].resolver,
+		callback: _oninitial.lastCall.args[0].callback,
+		trigger: _oninitial.lastCall.args[0].trigger
+	});
+
+});
+
 
 //TODO test setEntry morphing "number", "boolean", "string" into builtin
 

@@ -39,7 +39,24 @@ test('Enhanced element config',function(){
 });
 
 test('EnhancedDescriptor cross browser support',function(){
-	ok(true,"TODO uniqueId works across multiple documents");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var sizingElements = Resolver("essential::sizingElements::");
+
+	var div = HTMLElement("div",{ "abc":"abc" });
+	var desc = EnhancedDescriptor(div,null,{});
+	equal(desc.uniqueID,div.uniqueID);
+	equal(desc.getAttribute("abc"),"abc");
+
+	ok(true,"TODO uniqueID works across multiple documents");
+});
+
+if (navigator.userAgent.indexOf(" MSIE ") >= 0) test('uniqueID',function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var div = HTMLElement("div",{ "abc":"abc" });
+	equal(typeof div.uniqueID,"string");	
 });
 
 test('addEventListeners catch',function() {
@@ -66,13 +83,50 @@ test('addEventListeners catch',function() {
 	equal(events.click.callCount,1);
 });
 
+test('Shoehorning enhanced elements',function() {
+
+	// var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	// var appConfig = ApplicationConfig();
+	var myInstance = {}, otherInstance = {};
+
+	Resolver("page::handlers.init").mixin({"my":null});
+	Resolver("page::handlers.enhance").mixin({"my":sinon.stub().returns(myInstance)});
+	Resolver("page::handlers.sizing").mixin({"my":null});
+	Resolver("page::handlers.layout").mixin({"my":null});
+	Resolver("page::handlers.discard").mixin({"my":null});
+	Resolver("page").set("enabledRoles.my",true);
+
+	var myDiv = HTMLElement("div",{
+		"role":"my",
+		"enhanced element":true,
+		"append to": document.body
+	});
+	ok(myDiv.uniqueID);
+	var myDesc = EnhancedDescriptor.get(myDiv);
+	ok(myDesc);
+	equal(myDesc.role,"my");
+	ok(! myDesc.instance);
+	ok(myDesc.state.needEnhance);
+	ok(! myDesc.state.enhanced);
+	myDesc.setInstance(otherInstance);
+	equal(myDesc.instance,otherInstance);
+
+	DescriptorQuery(myDiv).enhance();
+	equal(myDesc.instance,otherInstance);
+
+	myDiv.parentNode.removeChild(myDiv);
+});
+
 test('Enhance element early or delayed',function() {
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
-	var enhancedElements = Resolver("essential::enhancedElements::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
 	var appConfig = ApplicationConfig();
 
-
+	var earlyInstance = {}, delayedInstance = {};
 	var handlers = {
 		"init": {
 
@@ -93,62 +147,303 @@ test('Enhance element early or delayed',function() {
 		}
 	};
 	handlers.enhance.delayed.returns(false);
+	handlers.enhance.early.returns(earlyInstance);
+	// handlers.enhance.early.
+
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page").set("enabledRoles",{"early":true,"delayed":true});
 
 	var page = appConfig.page("/test/pages/a2.html",{},[
 		'<html><head>', '', '</head><body>',
 
-		'<span role="delayed" id="a"></span>',
-		'<span role="early" id="b"></span>',
+		'<span role="delayed" data-role="\'x\':\'y\'" id="a"><b><pre></pre></b></span>',
+		'<span role="early" data-role="\'abc\':\'def\'" id="b"><code><em>EM</em></code></span>',
 		'<span role="other" id="c"></span>',
 
-		'</body>'
+		'</body></html>'
 		].join(""));
+	var delayedSpan = page.body.getElementsByTagName("span")[0];
+	var earlySpan = page.body.getElementsByTagName("span")[1];
+	ok(earlySpan,"early span");
+	ok(delayedSpan,"delayed span");
+	var earlyDesc = EnhancedDescriptor.all[earlySpan.uniqueID];
+	ok(earlyDesc);
+	equal(EnhancedDescriptor.get(earlySpan.uniqueID),earlyDesc);
+	equal(earlyDesc.role,"early");
+	equal(earlyDesc.instance,undefined);
+	ok(!earlyDesc.state.enhanced);
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
+	ok(delayedDesc);
+	equal(delayedDesc.role,"delayed");
+	equal(delayedDesc.instance,undefined);
+	ok(!delayedDesc.state.enhanced);
 
+	var em = page.body.getElementsByTagName("em")[0],
+		code = page.body.getElementsByTagName("code")[0],
+		pre = page.body.getElementsByTagName("pre")[0],
+		b = page.body.getElementsByTagName("b")[0];
 
-	var dr = DocumentRoles(handlers,page);
+	equal(HTMLElement.getEnhancedParent(em),earlySpan);
+	equal(HTMLElement.getEnhancedParent(code),earlySpan);
+	equal(HTMLElement.getEnhancedParent(pre),delayedSpan);
+	equal(HTMLElement.getEnhancedParent(b),delayedSpan);
+
+	// add html to body enhancing early elements
+	page.applyBody();
+
 
 	var sinonConfig = {}; //TODO config for the sinon elem
 
+	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
+	// ok(delayedDesc);
+
+	// early elements
+	equal(earlyDesc.instance,earlyInstance,"early instance");
 	equal(handlers.enhance.early.callCount,1);
-	equal(handlers.enhance.delayed.callCount,1);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
+	ok(handlers.enhance.early.alwaysCalledWith(earlySpan,"early",{ 'abc':'def'}));
 
-	ok(handlers.enhance.early.alwaysCalledWith(page.body.getElementsByTagName("span")[1],"early"))
+	// delayed elements
+	equal(delayedDesc.instance,false,"delayed desc");
+	equal(handlers.enhance.delayed.callCount,1);
+	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
+
 	//TODO equal(handlers.enhance.early.args[0][2],sinonConfig);
 
 	ok(true,"TODO additional handlers, enhance call after initial round")
 
 	handlers.enhance.additional = sinon.stub();
-	handlers.enhance.delayed.returns({});
-	dr._enhance_descs(page.resolver("descriptors"));
+	handlers.enhance.delayed.returns(delayedInstance);
+	EnhancedDescriptor.enhanceUnfinished();
+
+	// early elements
 	equal(handlers.enhance.early.callCount,1,"enhance should be completed already");
-	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,0);
 
+	// delayed elements
+	equal(delayedDesc.instance,delayedInstance,"delayed instance");
+	equal(handlers.enhance.delayed.callCount,2);
+	ok(handlers.enhance.delayed.alwaysCalledWith(delayedSpan,"delayed",{ 'x':'y'}));
 
-	var delayedEl = page.body.getElementsByTagName("span")[0];
-	ok(delayedEl);
-	var delayedDesc = enhancedElements[delayedEl.uniqueId];
+	var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
 	ok(delayedDesc);
 	ok(! delayedDesc.layout.queued);
-	delayedEl.stateful.set("state.expanded",true);
+	delayedSpan.stateful.set("state.expanded",true);
 	ok(delayedDesc.layout.queued);
 
 	//TODO all with roles are enhanced
 	//TODO discard called for all enhanced
 
-	DocumentRoles.info.constructors[-1].discarded(dr); // emulate singleton teardown
+	page.unapplyBody();
+	page.destroy();
+
+	EnhancedDescriptor.discardAll();
 	equal(handlers.enhance.early.callCount,1);
 	equal(handlers.enhance.delayed.callCount,2);
 	equal(handlers.layout.early.callCount,0);
 	equal(handlers.discard.early.callCount,1,"early has been discarded");
 	equal(handlers.discard.delayed.callCount,1,"delayed has been discarded");
 	//TODO make sure that discardHandler for other is blank
+
+	Resolver("page::handlers.init").unmix(handlers.init);
+	Resolver("page::handlers.enhance").unmix(handlers.enhance);
+	Resolver("page::handlers.sizing").unmix(handlers.sizing);
+	Resolver("page::handlers.layout").unmix(handlers.layout);
+	Resolver("page::handlers.discard").unmix(handlers.discard);
+	Resolver("page").set("enabledRoles",{});
 });
 
 //TODO layout and discard are optional handlers
+
+test("Enhance element with layout",function() {
+
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var appConfig = ApplicationConfig();
+	var masterInstance = { "this is":"an instance"};
+
+	var handlers = {
+		"init": {
+
+		},		
+		"enhance": {
+			"master": sinon.stub()
+		},
+		"sizing": {},
+		"layout": {
+			"master": sinon.stub()
+		},
+		"discard": {
+			"master": sinon.stub()
+		}
+	};
+	handlers.enhance.master.returns(masterInstance);
+
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page").set("enabledRoles",{"master":true});
+
+	// alternative HTMLElement("div",{ "enhance element":true, "role":"master", "data-role":{"controller":true,"template":"#master-template"} });
+
+	var page = appConfig.page("/test/pages/plain.html",{},[
+		'<html><head>', '', '</head><body>',
+		'<div role="master" data-role="',"'template':'#master-template','controller':true",'">',
+		'</div>',
+
+		'</body></html>'
+		].join(""));
+
+	var masterDiv = page.body.getElementsByTagName("div")[0]
+	ok(masterDiv,"Master Element");
+
+	// master desc and context
+	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueID];
+	ok(masterDesc,"Master Descriptor found");
+	equal(masterDesc.instance,null,"No instance before enhance");
+	ok(masterDesc.context);
+	equal(masterDesc.context.uniqueID,undefined);
+	equal(masterDesc.context.el,undefined);
+	equal(masterDesc.context.instance,undefined);
+	// equal(typeof masterDesc.context.resolver,"function");
+	equal(typeof masterDesc.context.placement,"object");
+	equal(typeof masterDesc.sizing.currentStyle,"object");
+	equal(typeof masterDesc.layout.currentStyle,"object");
+
+	masterDesc.context.placement.setTrack(["paddingLeft","paddingRight"]);
+	masterDesc.context.placement.compute();
+	equal(masterDesc.layout.currentStyle.paddingLeft,"","padding left");
+	equal(masterDesc.layout.currentStyle.paddingRight,"","padding right");
+
+	DescriptorQuery(masterDiv).enhance();
+	equal(masterDesc.instance,masterInstance);
+
+});
+
+test('Enhance element with context',function() {
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var HTMLElement = Resolver("essential::HTMLElement::");
+	var appConfig = ApplicationConfig();
+	var masterInstance = { "this is":"an instance"};
+
+	var handlers = {
+		"init": {
+
+		},		
+		"enhance": {
+			"master": sinon.stub(),
+			"slave1": sinon.stub(),
+			"slave2": sinon.stub()
+		},
+		"sizing": {},
+		"layout": {
+			"master": sinon.stub(),
+			"slave1": sinon.stub()
+		},
+		"discard": {
+			"master": sinon.stub(),
+			"slave1": sinon.stub(),
+			"slave2": sinon.stub()
+		}
+	};
+	handlers.enhance.master.returns(masterInstance);
+
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page").set("enabledRoles",{"master":true,"slave1":true,"slave2":true});
+
+	var page = appConfig.page("/test/pages/with-context.html",{},[
+		'<html><head>', '', '</head><body>',
+		'<div role="master" data-role="',"'template':'#master-template','controller':true",'">',
+			'<span role="slave1" id="a" data-role="',"'model':'myModel'",'"></span>',
+			'<span role="slave2" id="b" data-role="',"'model':'slaveTwoModel'",'"></span>',
+		'</div>',
+
+		'</body></html>'
+		].join(""));
+
+	var masterDiv = page.body.getElementsByTagName("div")[0]
+	ok(masterDiv);
+	var slaveOneSpan = page.body.getElementsByTagName("span")[0];
+	ok(slaveOneSpan);
+	var slaveTwoSpan = page.body.getElementsByTagName("span")[1];
+	ok(slaveTwoSpan);
+
+	// master desc and context
+	var masterDesc = EnhancedDescriptor.all[masterDiv.uniqueID];
+	ok(masterDesc);
+	equal(masterDesc.instance,null);
+	ok(masterDesc.context);
+	equal(masterDesc.context.uniqueID,undefined);
+	equal(masterDesc.context.el,undefined);
+	equal(masterDesc.context.instance,undefined);
+	// equal(typeof masterDesc.context.resolver,"function");
+	equal(typeof masterDesc.context.placement,"object");
+
+	DescriptorQuery(masterDiv).enhance();
+	equal(masterDesc.instance,masterInstance);
+
+	// slave1 desc and context
+	var slaveOneDesc = EnhancedDescriptor.all[slaveOneSpan.uniqueID];
+	ok(slaveOneDesc,"slave one");
+	ok(slaveOneDesc.context);
+	equal(slaveOneDesc.context.uniqueID,masterDiv.uniqueID);
+	equal(slaveOneDesc.context.el,masterDiv);
+	equal(slaveOneDesc.context.instance,undefined);
+
+	ok(slaveOneDesc.state.needEnhance);
+	ok(! slaveOneDesc.state.enhanced);
+	DescriptorQuery(slaveOneDesc.el).enhance();
+	ok(slaveOneDesc.state.enhanced);
+	equal(slaveOneDesc.context.controllerID,masterDiv.uniqueID);
+	equal(slaveOneDesc.context.controller,masterDesc.instance);
+	equal(slaveOneDesc.context.controllerStateful,masterDiv.stateful);
+	// equal(typeof masterDesc.context.resolver,"function");
+
+	// slave2 desc and context
+	var slaveTwoDesc = EnhancedDescriptor.all[slaveTwoSpan.uniqueID];
+	ok(slaveTwoDesc,"slave two");
+	ok(slaveTwoDesc.context);
+	equal(slaveTwoDesc.context.uniqueID,masterDiv.uniqueID);
+	equal(slaveTwoDesc.context.el,masterDiv);
+	equal(slaveTwoDesc.context.instance,undefined);
+
+	ok(slaveTwoDesc.state.needEnhance);
+	ok(! slaveTwoDesc.state.enhanced);
+	DescriptorQuery(slaveTwoDesc.el).enhance();
+	ok(slaveTwoDesc.state.enhanced);
+	equal(slaveTwoDesc.context.controllerID,masterDiv.uniqueID);
+	equal(slaveTwoDesc.context.controller,masterDesc.instance);
+	equal(slaveTwoDesc.context.controllerStateful,masterDiv.stateful);
+	// equal(typeof masterDesc.context.resolver,"function");
+
+	//TODO test nested with role has id el instance on context
+
+	// page.applyBody();
+	// var delayedDesc = EnhancedDescriptor.all[delayedSpan.uniqueID];
+	// ok(delayedDesc);
+
+	equal(HTMLElement.getEnhancedParent(slaveOneSpan),masterDiv);
+	equal(HTMLElement.getEnhancedParent(slaveTwoSpan),masterDiv);
+
+	//TODO context.el is of parent, not topmost enhanced
+
+});
 
 function _TestLayouter(key,el,config) {
 	this.key = key;
@@ -161,7 +456,7 @@ function _TestLayouter(key,el,config) {
 Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,Resolver("essential::Layouter::"),{
 	prototype:{
 
-		sizingElement : sinon.spy(function(parent,child,role,conf) {
+		sizingElement : sinon.spy(function(el,parent,child,role,conf) {
 			return true;
 		}),
 
@@ -176,10 +471,12 @@ Resolver("essential::Layouter::").variant("test-group",Generator(_TestLayouter,R
 test("Enhance layouter element",function() {
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var sizingElements = Resolver("essential::sizingElements::");
-	var enhancedElements = Resolver("essential::enhancedElements::");
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
+
+	_TestLayouter.prototype.layout.callCount = 0;
+
+	equal(typeof Resolver("essential::Layouter.variants.test-group.generator::","undefined"),"function");
 
 	var handlers = {
 		"init": {
@@ -196,37 +493,65 @@ test("Enhance layouter element",function() {
 			"early": sinon.stub()
 		}
 	};
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+
+	equal(Resolver("page")(["pages","/test/pages/a3.html"],"undefined"),undefined);
 
 	var page = appConfig.page("/test/pages/a3.html",{},[
 		'<html><head>', '', '</head><body>',
 
 		'<span role="delayed"></span>',
-		'<span data-role="',"'layouter':'test-group'",'"><em>abc</em></span>',
+		'<span data-role="',"'layouter':'test-group'",
+
+			'"><em data-role="'+"'laidout':'lo'"+'">abc</em></span>',
 
 		'</body>'
 		].join(""));
+	var layouterSpan = page.body.firstChild.nextSibling;
+	page.applyBody();
 
-
-	var dr = DocumentRoles(handlers,page);
-	equal(typeof page.body.firstChild.nextSibling.layouter,"object");
-	var desc = page.resolver("descriptors")[page.body.firstChild.nextSibling.uniqueId];
+	equal(typeof layouterSpan.layouter,"object");
+	var desc = page.resolver("descriptors")[layouterSpan.uniqueID];
 	// page.body.firstChild.nextSibling.layouter
 	ok(desc);
-	ok(desc.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
-	ok(desc.layout.queued);
+	ok(desc.state.enhanced || desc.layouter || desc.laidout,"Mark TestLayouter desc enhanced");
+	// ok(desc.layout.queued);
 	
 	equal(_TestLayouter.prototype.sizingElement.callCount,1);
-	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueId];
-	var emDesc = enhancedElements[page.body.firstChild.nextSibling.firstChild.uniqueId];
+	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueID];
+	ok(layouterSpan.firstChild.uniqueID);
+	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueID];
 	ok(emDesc);
-	equal(sizingElements[emDesc.uniqueId],emDesc);
-	equal(emDesc.layouterParent,desc);
+	equal(emDesc.el.tagName,"EM");
+	equal(sizingElements[emDesc.uniqueID],emDesc);
+	equal(emDesc.context.layouterParent,desc.layouter);
+	equal(emDesc.context.layouterEl,desc.el);
 
+	// Layouter not called until laidout is or explicitly queued
+	EnhancedDescriptor.refreshAll();
+	equal(_TestLayouter.prototype.layout.callCount,0);
+
+	// explicit queue
+	desc.layout.queued = true;
 	EnhancedDescriptor.refreshAll();
 	equal(_TestLayouter.prototype.layout.callCount,1);
 	//TODO test no queued layout.queued
 	//TODO sizing values
 	//TODO sizing object in stateful is the one from EnhancedElement
+
+	page.unapplyBody();
+	page.destroy();
+	EnhancedDescriptor.discardAll();
+	Resolver("page::handlers.init").unmix(handlers.init);
+	Resolver("page::handlers.enhance").unmix(handlers.enhance);
+	Resolver("page::handlers.sizing").unmix(handlers.sizing);
+	Resolver("page::handlers.layout").unmix(handlers.layout);
+	Resolver("page::handlers.discard").unmix(handlers.discard);
+	Resolver("page").set("enabledRoles",{});
 });
 
 
@@ -342,32 +667,41 @@ test("Enhancing elements creating stateful fields",function() {
 	equal(buttonField.prototype.discard.callCount,4);
 });
 
-test('Enhancing DocumentRoles with builtin handlers',function(){
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
+/* TODO what do we want to test here without hacking the handlers 
+  and considering enhancedRoles.dialog = true
+
+test('Enhancing Document Roles with builtin handlers',function(){
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var appConfig = ApplicationConfig();
+	var pageHandlers = Resolver("page::handlers::");
 
 	var handlers = {
 		"enhance": {
-			"dialog": sinon.spy(DocumentRoles.enhance_dialog),// ,
-			"navigation": sinon.spy(DocumentRoles.enhance_toolbar),// ,
-			"spinner": sinon.spy(DocumentRoles.enhance_spinner),// ,
-			"application": sinon.spy(DocumentRoles.enhance_application)// 
+			"dialog": sinon.spy(pageHandlers.enhance.dialog),// ,
+			"navigation": sinon.spy(pageHandlers.enhance.toolbar),// ,
+			"spinner": sinon.spy(pageHandlers.enhance.spinner),// ,
+			"application": sinon.spy(pageHandlers.enhance.application)// 
 		},
 		"sizing": {},
 		"layout": {
-			"dialog": sinon.spy(),// DocumentRoles.layout_dialog,
-			"navigation": sinon.spy(),// DocumentRoles.layout_toolbar,
-			"spinner": sinon.spy(),// DocumentRoles.layout_spinner,
-			"application": sinon.spy()// DocumentRoles.layout_application
+			"dialog": sinon.spy(),// pageHandlers.layout.dialog,
+			"navigation": sinon.spy(),// pageHandlers.layout_toolbar,
+			"spinner": sinon.spy(),// pageHandlers.layout_spinner,
+			"application": sinon.spy()// pageHandlers.layout_application
 		},
 		"discard": {
-			"dialog": sinon.spy(),// DocumentRoles.discard_dialog,
-			"navigation": sinon.spy(),// DocumentRoles.discard_toolbar,
-			"spinner": sinon.spy(),// DocumentRoles.discard_spinner,
-			"application": sinon.spy()// DocumentRoles.discard_application
+			"dialog": sinon.spy(),// pageHandlers.discard_dialog,
+			"navigation": sinon.spy(),// pageHandlers.discard_toolbar,
+			"spinner": sinon.spy(),// pageHandlers.discard_spinner,
+			"application": sinon.spy()// pageHandlers.discard_application
 		}
 	};
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
 
 	var page = appConfig.page("/test/pages/a4.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -379,12 +713,13 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 		'</body>'
 		].join(""));
 
-	var dr = DocumentRoles(handlers,page);
+	page.applyBody();
+
 	equal(handlers.enhance.navigation.callCount,1);
 	equal(handlers.layout.navigation.callCount,0);
 	equal(handlers.discard.navigation.callCount,0);
 
-	dr._enhance_descs(page.resolver("descriptors"));
+	EnhancedDescriptor.enhanceUnfinished();
 	equal(handlers.enhance.navigation.callCount,1,"enhance should be completed already");
 	equal(handlers.layout.navigation.callCount,0);
 	equal(handlers.discard.navigation.callCount,0);
@@ -402,11 +737,14 @@ test('Enhancing DocumentRoles with builtin handlers',function(){
 	//TODO all with roles are enhanced
 	//TODO discard called for all enhanced
 
-	DocumentRoles.info.constructors[-1].discarded(dr); // emulate singleton teardown
-	// equal(handlers.enhance.sinon.callCount,1);
-	// equal(handlers.layout.sinon.callCount,0);
-	// equal(handlers.discard.sinon.callCount,1);
+	page.unapplyBody();
+	page.destroy();
+
+	EnhancedDescriptor.discardAll();
+	//TODO Resolver("page::handlers").unmix(handlers);
+	Resolver("page").set("enabledRoles",{});
 });
+*/
 
 test('Discarding enhanced',function() {
 
@@ -416,7 +754,7 @@ test('Discarding enhanced',function() {
 	// var desc = EnhancedDescriptor(document.body,"application",{},force,ApplicationConfig());
 	// desc.enhanced = true;
 	// desc.liveCheck();
-	// ok(!desc.discarded,"liveCheck on document.body doesn't discard");
+	// ok(!desc.state.discarded,"liveCheck on document.body doesn't discard");
 	// document.body.stateful = null;
 	// desc.discardNow();
 	// document.body.stateful = ApplicationConfig().resolver;
@@ -426,42 +764,163 @@ test('Discarding enhanced',function() {
 	ok(1,"Maintain will discard unattached elements");
 
 	ok(1,"Maintain all will not discard elements (especially body) being enhanced");
+
+	EnhancedDescriptor.discardAll();
 })
 
-test('Template cloneNode',function() {
+test('Cleaning enhanced',function() {
 
-	var enhance_template = Resolver("page::handlers.enhance.template::","null");
-	ok(enhance_template,"enhance_template");
-	if (enhance_template == null) {
-		debugger;
-		Resolver("page::handlers.enhance.template::","null");
-	}
+	ok(1,"TODO enhanced element is unlisted as part of cleanup immediately");
+	// no longer in sizingElements
+});
+
+test("HTMLElement impl",function(){
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	equal(typeof HTMLElement.impl("span"),"object");
+	equal(typeof HTMLElement.impl("b"),"object");
+	equal(typeof HTMLElement.impl("strong"),"object");
+	equal(typeof HTMLElement.impl("div"),"object");
+	equal(typeof HTMLElement.impl("label"),"object");
+	equal(typeof HTMLElement.impl("input"),"object");
+	equal(typeof HTMLElement.impl("unknown"),"object");
+})
+
+test('Describe Stream',function() {
+
 	var HTMLElement = Resolver("essential::HTMLElement::","null");
 	ok(HTMLElement,"HTMLElement");
 
-	var div = HTMLElement("div",{},"abc<span>def</span>");
-	var tplAbc = enhance_template(div,"template",{ id:"abc" });
-	ok(tplAbc);
+	var root = HTMLElement("div",{},"<span>",
+		"hello ",
+		"<b>you</b>",
+		" STOP!",
+		"</span>");
+	var policy = {};
+	var stream = HTMLElement.describeStream(root,policy);
+	ok(stream);
+	equal(stream.length,4);
+	equal(stream[0].original.nodeName,"SPAN");
+	equal(stream[0].toClone.innerHTML,"hello ");
+	equal(stream[1],1);
+	equal(stream[2].original.nodeName,"B");
+	equal(stream[2].toClone.nodeName,"B");
+	equal(stream[2].toClone.innerHTML,"you");
+	equal(stream[2].postfix," STOP!");
+	equal(stream[3],-1);
 
-	var tplAbc = Resolver("templates")(["#abc"]); //TODO Resolver("templates")("#abc");
+});
+
+test('Render Stream',function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	ok(HTMLElement,"HTMLElement");
+
+	var policy = {};
+
+	var root = HTMLElement("div",{},"<span>",
+		"hello ",
+		"<b>you</b>",
+		" STOP!",
+		"</span>");
+	equal(typeof root,"object");
+	equal(root.tagName,"DIV","Created Root DIV");
+	var stream = HTMLElement.describeStream(root,policy);
+	ok(stream,"Stream described");
+
+	var wrapper = HTMLElement("div",{"set impl":true});
+	equal(typeof wrapper,"object")
+	equal(root.tagName,"DIV","Created Wrapper DIV");
+	wrapper.impl.renderStream(wrapper,stream);
+	equal(wrapper.innerHTML,root.innerHTML,"wrapper = root");
+
+	var root = HTMLElement("div",{},'<output class="abc">',
+		"hello ",
+		"<b>you</b>",
+		" STOP!",
+		"</output>");
+	var stream = HTMLElement.describeStream(root,policy);
+	equal(stream[0].original.className,"abc");
+	var wrapper = HTMLElement("div",{"set impl":true});
+	wrapper.impl.renderStream(wrapper,stream);
+	equal(wrapper.innerHTML,root.innerHTML);
+
+
+	//TODO with state
+});
+
+test('Template cloneNode',function() {
+
+	equal(typeof Resolver("page::templates::",undefined),"object");
+
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
+	var HTMLElement = Resolver("essential::HTMLElement::","null");
+	ok(HTMLElement,"HTMLElement");
+	var enhance_template = Resolver("page::handlers.enhance.template::","null");
+	equal(typeof enhance_template,"function","enhance_template");
+
+
+	var div = HTMLElement("div",{},"abc<span>def</span>");
+	var tplAbcNew = enhance_template(div,"template",{ id:"abc" });
+	ok(tplAbcNew);
+	equal(tplAbcNew,Resolver("page")(["templates","#abc"],"undefined"));
+
+	var tplAbc = Resolver("page")(["templates","#abc"],"undefined"); //TODO Resolver("templates")("#abc"); ?
 	ok(tplAbc);
+	equal(tplAbc,tplAbcNew);
 
 	var cloned = tplAbc.content.cloneNode(true);
-	// ok(cloned typeof document.DocumentFragment);
+	// ok(isDocumentFragment(cloned));
 	equal(cloned.childNodes[0].data,"abc");
 	equal(cloned.childNodes[1].innerHTML,"def");
+
+	var tpl2 = HTMLElement("template",{ id:"tpl2" }, "abc<span>def</span>");
+	// document.body.appendChild(tpl2);
+	// (tpl2.content || tpl2).appendChild(document.createTextNode("abc"));
+	// (tpl2.content || tpl2).appendChild(HTMLElement("span",{},"def"));
+	enhance_template(tpl2,"template",{ id:"2" });
+
+	var cloned2 = tpl2.content.cloneNode(true);
+	equal(cloned2.childNodes[0].data,"abc");
+	equal(cloned2.childNodes[1].innerHTML,"def");
+	// document.body.removeChild(tpl2);
+
+	// Cloning template loaded in page
+	var tpl3 = document.getElementById("abcd");
+	ok(tpl3);
+	ok(tpl3.innerHTML.length>0,"template isn't empty")
+	var desc3 = EnhancedDescriptor(tpl3,"template",{}); // make sure it is enhanced
+
+	enhance_template(tpl3,"template",{}); //TODO call on descriptor
+
+	var cloned3 = tpl3.content.cloneNode(true);
+	equal(cloned3.childNodes.length,5,"cloned elements")
+	equal(cloned3.childNodes[0].data,"hello");
+	equal(cloned3.childNodes[1].innerHTML,"there");
+	equal(cloned3.childNodes[2].data,"how");
+	equal(cloned3.childNodes[3].innerHTML,"are");
 
 			//TODO anonymous template tag
 
 	//TODO test querySelector template lookup
 
+	var tpl4 = HTMLElement("template",{ id:"tpl4" }, "abc<header>header</header><section>section</section><footer>footer</footer>");
+	enhance_template(tpl4,"template",{ id:"4" });
+
+	var cloned4 = tpl4.content.cloneNode(true);
+	equal(cloned4.childNodes[0].data,"abc");
+	equal(cloned4.childNodes[1].tagName.toLowerCase(),"header");
+	equal(cloned4.childNodes[1].innerHTML,"header");
 })
+
+//TODO if preventDefault is called on event during action, prevent it in button click event
 
 test('Role navigation action',function(){
 	var DialogAction = Resolver("essential::DialogAction::");
-	var DocumentRoles = Resolver("essential::DocumentRoles::");
+	var pageHandlers = Resolver("page::handlers::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var appConfig = ApplicationConfig();
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
 	var fireAction = Resolver("essential::fireAction::");
 
 	function ABC_DialogAction() {
@@ -478,16 +937,22 @@ test('Role navigation action',function(){
 
 	var handlers = {
 		"enhance": {
-			"navigation": DocumentRoles.enhance_toolbar
+			"navigation": pageHandlers.enhance.toolbar
 		},
 		"sizing": {},
 		"layout": {
-			"navigation": DocumentRoles.layout_toolbar
+			"navigation": pageHandlers.layout.toolbar
 		},
 		"discard": {
-			"navigation": DocumentRoles.discard_toolbar
+			"navigation": pageHandlers.discard.toolbar
 		}
 	};
+	Resolver("page::handlers.init").mixin(handlers.init);
+	Resolver("page::handlers.enhance").mixin(handlers.enhance);
+	Resolver("page::handlers.sizing").mixin(handlers.sizing);
+	Resolver("page::handlers.layout").mixin(handlers.layout);
+	Resolver("page::handlers.discard").mixin(handlers.discard);
+	Resolver("page::enabledRoles").set({"navigation":true})
 
 	var page = appConfig.page("/test/pages/a5.html",{},[
 		'<html><head>', '', '</head><body>',
@@ -500,8 +965,9 @@ test('Role navigation action',function(){
 		'</body>'
 		].join(""));
 
-	var dr = DocumentRoles(handlers,page);
 	var dialog = page.body.firstChild;
+
+	page.applyBody();
 
 	//page.body.firstChild.firstChild.click();
 	//simulateClick(page.body.firstChild);//.firstChild);
@@ -514,6 +980,16 @@ test('Role navigation action',function(){
 	// permissions and routers
 
 	//TODO assert action(el,ev)
+	page.unapplyBody();
+	page.destroy();
+
+	EnhancedDescriptor.discardAll();
+	Resolver("page::handlers.init").unmix(handlers.init);
+	Resolver("page::handlers.enhance").unmix(handlers.enhance);
+	Resolver("page::handlers.sizing").unmix(handlers.sizing);
+	Resolver("page::handlers.layout").unmix(handlers.layout);
+	Resolver("page::handlers.discard").unmix(handlers.discard);
+	Resolver("page").set("enabledRoles",{});
 });
 
 
@@ -528,3 +1004,171 @@ test("Language choice",function(){
 
 });
 
+test("impl copyAttributes",function() {
+
+	var FEW_HTML_ATTRS = {
+		"class": "",
+		"style": "",
+		"id": "",
+		"name": ""	
+	};
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var basic = HTMLElement("span");
+	var implementation = HTMLElement.impl(basic);
+	
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(basic,dest,FEW_HTML_ATTRS);
+	equal(dest.className,"");
+	equal(dest.style.cssText,"");
+	equal(dest.getAttribute("id") || "","");
+	equal(dest.getAttribute("name") || "","");
+
+	var styled = HTMLElement('span',{},'<span class="cls" style="vertical-align: top"></span>').firstChild;
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(styled,dest,FEW_HTML_ATTRS);
+	equal(dest.className,"cls");
+	var cssText = dest.style.cssText.replace(/^\s|\s$|;\s*$/g,"").toLowerCase();
+	equal(cssText,"vertical-align: top");
+	equal(dest.getAttribute("id") || "","");
+	equal(dest.getAttribute("name") || "","");
+
+	var named = HTMLElement('span',{},'<span name="nm" id="id1"></span>').firstChild;
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(named,dest,FEW_HTML_ATTRS);
+	equal(dest.id,"id1");
+	equal(dest.getAttribute("name"),"nm");
+
+	//TODO do not set class to blank, instead remove the attribute
+
+	var various = HTMLElement('span',{},'<span name="nm" id="id1" role="r" data-role="dr" data-state="ds"></span>').firstChild;
+	var dest = HTMLElement("span");
+	implementation.copyAttributes(various,dest);
+	equal(dest.id,"id1");
+	equal(dest.getAttribute("name"),"nm");
+	equal(dest.getAttribute("role"),"r");
+	equal(dest.getAttribute("data-role"),"dr");
+	equal(dest.getAttribute("data-state"),"ds");
+});
+
+test("Define a list of templates using DescriptorQuery([])",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+	var div = HTMLElement("div",{ role:"template",id:"template-1"},'');
+	var div2 = HTMLElement("div",{ role:"template","data-role":"'selector':'@template-2'"},'');
+
+	Resolver("page").set("enabledRoles.template",true);
+
+	var templates = DescriptorQuery([div,div2]);
+	equal(templates.length,2);
+	ok(templates[0].state.needEnhance);
+	ok(! templates[0].state.enhanced,"template-1 not enhanced");
+	ok(templates[1].state.needEnhance);
+	ok(! templates[1].state.enhanced,"template-2 not enhanced");
+
+	ok(templates[0].instance == null);
+	ok(templates[1].instance == null);
+	equal(Resolver("page::templates","null")("#template-1"),null);
+	equal(Resolver("page::templates","null")("@template-2"),null);
+
+	templates.enhance();
+	ok(templates[0].instance);
+	ok(templates[1].instance);
+	equal(Resolver("page::templates","null")("#template-1"),templates[0].instance);
+	equal(Resolver("page::templates","null")("@template-2"),templates[1].instance);
+
+	var templates = DescriptorQuery("[role=template]");
+	equal(templates.length,2,"two templates defined");
+	for(var i=0,desc; desc = templates[i]; ++i) {
+		equal(desc.role,"template");
+	}
+
+})
+
+test("Define list of elements using DescriptorQuery(NodeList)",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	var h1s = DescriptorQuery(document.body.getElementsByTagName("H1"));
+	equal(h1s.length, 0); // no role on the H1 elements
+});
+
+test("Define list of elements using DescriptorQuery('[role=dialog]')",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	ok(1,"TODO");
+
+	var dialogs = DescriptorQuery("[role=dialog]");
+	// ok(dialogs.length);
+	for(var i=0,desc; desc = dialogs[i]; ++i) {
+		equal(desc.role,"dialog");
+	}
+});
+
+test("Query descriptor subset in EnhancedDescriptor",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	var bucket = HTMLElement("div",{});
+	EnhancedDescriptor(bucket,null,{},true);
+	bucket.appendChild(HTMLElement("div",{"role":"dialog","enhanced element":true}));
+	bucket.appendChild(HTMLElement("div",{"role":"dialog","enhanced element":true}));
+
+	var q = DescriptorQuery(bucket);
+	ok(q);
+	var bucketDesc = q[0];
+
+	var dialogs = bucketDesc.query("[role=dialog]");
+	equal(dialogs.length,2);
+
+	equal(DescriptorQuery("[role=dialog]",bucket).length,2);
+
+	//TODO test nested matching recursing down.
+});
+
+test("Basic enhanced dialog",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::");
+
+	Resolver("page").set("enabledRoles.template",true);
+	Resolver("page").set("enabledRoles.dialog",true);
+
+	var template4 = HTMLElement("div",{ role:"template",id:"template-4","enhanced element":true },
+		'<div role="content" class="dialog-stuff">',
+		'</div>');
+	var q4 = HTMLElement.query([template4]);
+	ok(q4.length);
+	equal(q4[0].el, template4);
+
+	DescriptorQuery(template4).enhance();
+
+
+	var dialog = HTMLElement("div",{
+		"role":"dialog",
+		"data-role": [
+			"'content-class':'abcd'",
+			"'template':'#template-4'"
+		].join(","),
+
+		// Queue it for enhancing
+		"enhanced element":true
+	});
+	var qd = HTMLElement.query([dialog]);
+	ok(qd.length);
+	equal(qd[0].el, dialog);
+	// ok(dialog.stateful);
+
+	DescriptorQuery(dialog).enhance();
+	ok(dialog.stateful);
+	equal(dialog.firstChild.className,"dialog-stuff abcd");
+
+	//TODO discard both
+});

@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" essential-testing="yes">
 <head>
+	<meta content="IE=10" http-equiv="X-UA-Compatible">
+
 	<title>QUnit Tests</title>
 	<link rel="stylesheet" href="test/qunit/qunit.css" media="screen">
 
 <!-- reference your own javascript files here -->
 
 <script type="text/javascript" src="js/modernizr-prefix.js" data-save-as="modernizr+essential+json+clipboard"></script>
-<script type="text/javascript" src="js/modernizr.js" data-save-as="modernizr+essential+json+clipboard"></script>
+<script type="text/javascript" src="js/modernizr.min.js" data-save-as="modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/json2.js" data-save-as="modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/resolver.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
 <script type="text/javascript" src="js/generator.js" data-save-as="essential modernizr+essential+json+clipboard"></script>
@@ -38,18 +40,24 @@ declare("test-scripted.username",{ "default-value":"123" });
 	<script src="test/dom.js"></script>
 	<script src="test/resolver.js"></script>
 	<script src="test/generator.js"></script>
+	<script src="test/types.js"></script>
 	<script src="test/console.js"></script>
 	<script src="test/translation.js"></script>
 	<script src="test/pages.js"></script>
 	<script src="test/config.js"></script>
+	<!--
+	-->
 	<script src="test/launching.js"></script>
 	<script src="test/elements.js"></script>
 	<script src="test/stateful.js"></script>
 	<script src="test/tests.js"></script>
 
 
-
 </head>
+<style>
+template { visibility: hidden !important;}
+br.page { break-after: always; page-break-after: always;}
+</style>
 <body class="flora">
 	<h1 id="qunit-header">QUnit Test Suite</h1>
 	<h2 id="qunit-banner"></h2>
@@ -57,5 +65,7 @@ declare("test-scripted.username",{ "default-value":"123" });
 	<h2 id="qunit-userAgent"></h2>
 	<ol id="qunit-tests"></ol>
 	<div id="qunit-fixture">test markup</div>
+
+	<template id="abcd">hello<span>there</span>how<b>are</b>you doing</template>
 	</body>
 </html>

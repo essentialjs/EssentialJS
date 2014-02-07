@@ -12,17 +12,15 @@
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
+		DescriptorQuery = essential("DescriptorQuery"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		callCleaners = essential("callCleaners"),
 		addEventListeners = essential("addEventListeners"),
 		removeEventListeners = essential("removeEventListeners"),
 		ApplicationConfig = essential("ApplicationConfig"),
-		DocumentRoles = essential("DocumentRoles"),
 		pageResolver = Resolver("page"),
-		templates = Resolver("templates"),
 		fireAction = essential("fireAction"),
 		scrollbarSize = essential("scrollbarSize"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host;
 
 
@@ -87,6 +85,7 @@
 		if (clicked == undefined) { clicked = MutableEvent().withDefaultSubmit(this); }
 
 		if (clicked.commandElement) {
+			clicked.submitElement = this;
 			fireAction(clicked);
 		} 
 		//else {
@@ -123,8 +122,156 @@
 		if (ev.defaultPrevented) return false;
 	}
 
+	function mousedownDialogHeader(ev) {
+		if (activeMovement != null) return;
+		if (ev.target.tagName == "BUTTON") return; // don't drag on close button
+		var dialog = this.parentNode;
+		if (ev.button > 0 || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.metaKey) return;
+		Resolver("page").set("activeElement",dialog);
+		dialog.parentNode.appendChild(dialog);
 
-	DocumentRoles.enhance_dialog = function (el,role,config) {
+		if (ev.preventDefault) ev.preventDefault();
+
+		var movement = new ElementMovement();
+		movement.track = function(ev,x,y) {
+			dialog.style.left = x + "px"; 
+			dialog.style.top = y + "px"; 
+		};
+		movement.start(this,ev);
+		movement.startY = dialog.offsetTop;
+		movement.startX = dialog.offsetLeft;
+		movement.maxY = document.body.offsetHeight - dialog.offsetHeight;
+		movement.maxX = document.body.offsetWidth - dialog.offsetWidth;
+
+		return false; // prevent default
+	}
+
+	function getChildWithRole(el,role) {
+		if (el.querySelector && !/; MSIE /.test(navigator.userAgent)) return el.querySelector("[role="+role+"]");
+
+		for(var c=el.firstChild; c; c = c.nextSibling) if (c.getAttribute) {
+			if (c.getAttribute("role") == role) return c;
+			if (c.firstChild) {
+				var match = getChildWithRole(c,role);
+				if (match) return match;
+			}
+		}
+		return null;
+	}
+
+	// TODO resolver entries for bounds, use layouter to position
+	var initial_top = 100, initial_left = 40, dialog_top_inc = 32, dialog_left_inc = 32, 
+		dialog_top = initial_top, dialog_left = initial_left,
+		dialog_next_down = initial_top;
+
+	function enhance_dialog(el,role,config,context) {
+		// TODO if (config['invalid-config']) console.log()
+
+		var configTemplate = config.template,
+			contentTemplate = config['content-template'], 
+			contentClass = config['content-class'] || "dialog-content",
+			contentRole = config['content-role'], contentConfig = config['content-config'];
+		var children = [];
+		for(var i=0,c; c = el.childNodes[i]; ++i) children.push(c);
+
+		// template around the content
+		if (configTemplate) {
+			var template = Resolver("page::templates","null")([configTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+
+		var header = el.getElementsByTagName("HEADER")[0],
+			footer = el.getElementsByTagName("FOOTER")[0];
+
+		var wrap = getChildWithRole(el,"content");
+		// content-template appended to role=content or element
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+
+			(wrap || el).appendChild(content);
+		}
+		else {
+			if (wrap == null) wrap = HTMLElement("div",{});
+				
+			if (contentRole) {
+				wrap.setAttribute("role",contentRole);
+			}
+			while(children.length) wrap.appendChild(children.shift());
+
+
+			if (contentConfig) {
+				if (typeof contentConfig == "object") {
+					var c = JSON.stringify(contentConfig);
+					contentConfig = c.substring(1,c.length-1);
+				}
+				wrap.setAttribute("data-role",contentConfig);
+			}
+		} 
+		if (wrap) {
+			wrap.className = ((wrap.className||"") + " "+contentClass).replace("  "," ");
+			DescriptorQuery(wrap).withBranch().enhance();
+		}
+
+		// restrict height to body (TODO use layouter to restrict this on page resize)
+		if (el.offsetHeight > document.body.offsetHeight) {
+			var height = document.body.offsetHeight - 20;
+			if (header) height -= header.offsetHeight;
+			if (footer) height -= footer.offsetHeight;
+			wrap.style.maxHeight = height + "px";
+		}
+
+		// position the dialog
+		if (config.placement) { // explicit position
+			if (config.placement.bottom) el.style.bottom = config.placement.bottom + "px";
+			else el.style.top = (config.placement.top || 0) + "px";
+
+			if (config.placement.right) el.style.right = config.placement.right + "px";
+			else el.style.left = (config.placement.left || 0) + "px";
+		} else { // managed position
+
+			if (dialog_top + el.offsetHeight > document.body.offsetHeight) {
+				dialog_top = initial_top;
+			}
+			if (dialog_left + el.offsetWidth > document.body.offsetWidth) {
+				initial_left += dialog_left_inc;
+				dialog_left = initial_left;
+				if (config.tile) {
+					if (dialog_next_down + el.offsetHeight > document.body.offsetHeight) {
+						initial_top += dialog_top_inc;
+						dialog_next_down =  initial_top;
+					}
+					dialog_top = dialog_next_down;
+				}
+			}
+			el.style.top = Math.max(0,Math.min(dialog_top,document.body.offsetHeight - el.offsetHeight - 12)) + "px";
+			el.style.left = Math.max(0,dialog_left) + "px";
+
+			if (config.tile) { // side by side
+				dialog_left += el.offsetWidth + dialog_left_inc;
+				dialog_next_down = dialog_top + el.offsetHeight + dialog_top_inc;
+			} else { // stacked
+				dialog_top += dialog_top_inc;
+				dialog_left += dialog_left_inc;
+				//TODO move down by height of header
+			}
+		}
+
+
+		// dialog header present
+		if (header && header.parentNode == el) {
+
+			addEventListeners(header,{ "mousedown": mousedownDialogHeader });
+		}
+
+		//TODO header instrumentation
+
+
 		switch(el.tagName.toLowerCase()) {
 			case "form":
 				// f.method=null; f.action=null;
@@ -154,13 +301,34 @@
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
-	DocumentRoles.layout_dialog = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_dialog = function (el,role,instance) {
-	};
+	function layout_dialog(el,layout,instance) {
+
+		//TODO sizing if bodyHeight changed
+		var top = el.offsetTop, 
+			height = el.offsetHeight,
+			newTop = Math.max(0, Math.min(top,document.body.offsetHeight - height - 12)); 
+		if (top != newTop) {
+			el.style.top = newTop + "px";
+		}
+
+	}
+	pageResolver.set("handlers.layout.dialog",layout_dialog);
+
+	function discard_dialog(el,role,instance) {
+		var existing = 0, dialogs = DescriptorQuery("[role=dialog]");
+		for(var i=0,d; d = dialogs[i]; ++i) {
+			if (d.state.enhanced && !d.state.discarded) ++existing;
+		}
+
+		if (existing == 1) {
+			dialog_top = initial_top;
+			dialog_left = initial_left;
+		} 
+	}
+	pageResolver.set("handlers.discard.dialog",discard_dialog);
 
 	function applyDefaultRole(elements) {
 		for(var i=0,el; (el = elements[i]); ++i) {
@@ -187,7 +355,7 @@
 		}
 	}
 
-	DocumentRoles.enhance_toolbar = function(el,role,config) {
+	function enhance_toolbar(el,role,config,context) {
 		// make sure no submit buttons outside form, or enter key will fire the first one.
 		forceNoSubmitType(el.getElementsByTagName("BUTTON"));
 		applyDefaultRole(el.getElementsByTagName("BUTTON"));
@@ -200,32 +368,29 @@
 		},false);
 
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.toolbar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menu",enhance_toolbar);
+	pageResolver.set("handlers.enhance.menubar",enhance_toolbar);
+	pageResolver.set("handlers.enhance.navigation",enhance_toolbar);
 
-	DocumentRoles.layout_toolbar = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_toolbar = function(el,role,instance) {
-		
-	};
+	function layout_toolbar(el,layout,instance) {		
+	}
+	pageResolver.set("handlers.layout.toolbar",layout_toolbar);
 
-	// menu, menubar
-	DocumentRoles.enhance_navigation = 
-	DocumentRoles.enhance_menu = DocumentRoles.enhance_menubar = DocumentRoles.enhance_toolbar;
+	function discard_toolbar(el,role,instance) {
+	}
+	pageResolver.set("handlers.discard.toolbar",discard_toolbar);
 
-	DocumentRoles.enhance_sheet = function(el,role,config) {
+	function enhance_sheet(el,role,config,context) {
 		
 		return {};
-	};
+	}
+	pageResolver.set("handlers.enhance.sheet",enhance_sheet);
 
-	DocumentRoles.layout_sheet = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_sheet = function(el,role,instance) {
-		
-	};
+	function enhance_spinner(el,role,config,context) {
+		if (window.Spinner == undefined) return false;
 
-	DocumentRoles.enhance_spinner = function(el,role,config) {
 		var opts = {
 			lines: 8,
 			length: 5,
@@ -242,15 +407,19 @@
 			left: 'auto'
 		};
 		return new Spinner(opts).spin(el);
-	};
+	}
+	pageResolver.set("handlers.enhance.spinner",enhance_spinner);
 
-	DocumentRoles.layout_spinner = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_spinner = function(el,role,instance) {
+	function layout_spinner(el,layout,instance) {
+		//TODO when hiding stop the spinner		
+	}
+	pageResolver.set("handlers.layout.spinner",layout_spinner);
+
+	function discard_spinner(el,role,instance) {
 		instance.stop();
 		el.innerHTML = "";
-	};
+	}
+	pageResolver.set("handlers.discard.spinner",discard_spinner);
 	
 	function _lookup_generator(name,resolver) {
 		var constructor = Resolver(resolver || "default")(name,"null");
@@ -258,14 +427,23 @@
 		return constructor? Generator(constructor) : null;
 	}
 
-	DocumentRoles.enhance_application = function(el,role,config) {
+	function enhance_application(el,role,config,context) {
+		// template around the content
+		if (config.template) {
+			var template = Resolver("page::templates","null")([config.template]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+			el.appendChild(content);
+		}
+
 		if (config.variant) {
 //    		variant of generator (default ApplicationController)
 		}
 		if (config.generator) {
 			var g = _lookup_generator(config.generator,config.resolver);
 			if (g) {
-				var instance = g(el,role,config);
+				var instance = g(el,role,config,context);
 				return instance;
 			}
 			else return false; // not yet ready
@@ -273,13 +451,16 @@
 		
 		return {};
 	};
+	pageResolver.set("handlers.enhance.application",enhance_application);
 
-	DocumentRoles.layout_application = function(el,layout,instance) {
-		
-	};
-	DocumentRoles.discard_application = function(el,role,instance) {
-		
-	};
+	function layout_application(el,layout,instance) {	
+	}
+	pageResolver.set("handlers.layout.application",layout_application);
+
+	function discard_application(el,role,instance) {	
+		//TODO destroy/discard support on generator ?
+	}
+	pageResolver.set("handlers.discard.application",discard_application);
 
 	//TODO find parent of scrolled role
 
@@ -293,19 +474,56 @@
 		return null;
 	}
 
+	function JSON2Attr(obj,excludes) {
+		excludes = excludes || {};
+		var r = {};
+		for(var n in obj) if (! (n in excludes)) r[n] = obj[n];
+		var txt = JSON.stringify(r);
+		return txt.substring(1,txt.length-1);
+	}
+	essential.declare("JSON2Attr",JSON2Attr);
+
+
 	// Templates
 
-	function Template(el) {
+	function Template(el,config) {
+		this.el = el; // TODO switch to uniqueID
 		this.tagName = el.tagName;
-		this.html = el.innerHTML;
+		this.dataRole = JSON2Attr(config,{id:true});
 
-		//TODO content = DocumentFragment that can be cloned and appendChild
-		this.content = document.createElement("DIV");
-		this.content.innerHTML = this.html;
-		//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+		this.id = config.id || el.id;
+		this.selector = config.selector || (this.id? ("#"+this.id) : null);
+		// TODO class support, looking up on main document by querySelector
 
-		this.content.cloneNode = this.contentCloneFunc(this.content);
+		// HTML5 template tag support
+		if ('content' in el) {
+			this.content = el.content;
+			//TODO additional functionality in cloneNode
+		// HTML4 shim
+		} else {
+			this.content = el.content = el.ownerDocument.createDocumentFragment();
+			while(el.firstChild) this.content.appendChild(el.firstChild);
+			var policy = {};
+			this.stream = HTMLElement.describeStream(this.content,policy);
+			//TODO handle img preloading
+			//TODO handle sources in img/object/audio/video in cloneNode, initially inert
+
+			this.content.cloneNode = this.stream.cloneNode.bind(this.stream);
+		}
 	}
+
+	Template.prototype.getDataRole = function() {
+		return this.dataRole;
+	};
+
+	Template.prototype.getAttribute = function(name) {
+		return this.el.getAttribute(name);
+	};
+
+	Template.prototype.setAttribute = function(name,value) {
+		return this.el.setAttribute(name,value);
+	};
+
 
 	Template.prototype.contentCloneFunc = function(el) {
 		return function(deep) {
@@ -333,44 +551,28 @@
 
 	//TODO TemplateContent.prototype.clone = function(config,model) {}
 
-	function enhance_template(el,role,config) {
-		var id = config.id || el.id;
-		var template = new Template(el);
-		el.innerHTML = ''; // blank out the content
+	function enhance_template(el,role,config,context) {
+		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (id) templates.set("#"+id,template);
-		// TODO class support, looking up on main document by querySelector
+		if (template.selector) pageResolver.set(["templates",template.selector],template);
 
 		return template;
 	}
 	pageResolver.set("handlers.enhance.template",enhance_template);
 
-	DocumentRoles.init_template = function(el,role,config) {
-		this.contentManaged = true; // template content skipped
-	};
-	pageResolver.set("handlers.init.template",DocumentRoles.init_template);
-
-	DocumentRoles.init_templated = function(el,role,config) {
-		this.contentManaged = true; // templated content skipped
-	};
-
-/* TODO support on EnhancedDescriptor
-function enhance_templated(el,role,config) {
-	if (config.template && templates[config.template]) {
-		var template = templates[config.template];
-		//TODO replace element with template.tagName, mixed attributes and template.html
-		el.innerHTML = template.html; //TODO better
-		var context = { layouter: this.parentLayouter };
-		if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-		ApplicationConfig()._prep(el,context); //TODO prepAncestors
-		// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-		// DocumentRoles()._enhance_descs(descs);
+	function init_template(el,role,config,context) {
+		this.state.contentManaged = true; // template content skipped
 	}
-}
+	pageResolver.set("handlers.init.template",init_template);
 
-pageResolver.set("handlers.enhance.templated",enhance_templated);
-*/
+	pageResolver.set("handlers.sizing.template",false);
+
+	function init_templated(el,role,config,context) {
+		this.state.contentManaged = true; // templated content skipped
+	}
+	pageResolver.set("handlers.init.templated",init_templated);
+
 
 	// Scrolled
 
@@ -384,7 +586,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = null;
-			this.stateful.set("over",true);
+			this.stateful.set("state.over",true);
 			enhanced.vert.show();
 			enhanced.horz.show();
 		},
@@ -394,8 +596,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			
 			if (this.stateful.movedOutInterval) clearTimeout(this.stateful.movedOutInterval);
 			this.stateful.movedOutInterval = setTimeout(function(){
-				sp.stateful.set("over",false);
-				if (sp.stateful("dragging") != true) {
+				sp.stateful.set("state.over",false);
+				if (sp.stateful("state.dragging") != true) {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
@@ -418,8 +620,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		"scroll": function(ev) {
 			var el = ev? (ev.target || ev.scrElement) : event.srcElement;
 
-			if (el.stateful("pos.scrollVert")) el.stateful.set("pos.scrollTop",el.scrollTop);
-			if (el.stateful("pos.scrollHorz")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
+			if (el.stateful("pos.scrollVert","0")) el.stateful.set("pos.scrollTop",el.scrollTop);
+			if (el.stateful("pos.scrollHorz","0")) el.stateful.set("pos.scrollLeft",el.scrollLeft);
 		},
 		"DOMMouseScroll": function(ev) {
 			// Firefox with axis
@@ -444,12 +646,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 			var prevent = false;
 
-			if (this.stateful("pos.scrollVert")) {
+			if (this.stateful("pos.scrollVert","0")) {
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaY != 0) {
-					var max = Math.max(0, this.stateful("pos.scrollHeight") - this.offsetHeight);
-					var top = this.stateful("pos.scrollTop");
+					var max = Math.max(0, this.stateful("pos.scrollHeight","0") - this.offsetHeight);
+					var top = this.stateful("pos.scrollTop","0");
 					// console.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
 					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
@@ -457,12 +659,12 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				}
 			}
 
-			if (this.stateful("pos.scrollHorz")) { // native scrolling?
+			if (this.stateful("pos.scrollHorz","0")) { // native scrolling?
 				// native scrolling default works fine
 			} else {
 				if (ev.deltaX != 0) {
-					var max = Math.max(0,this.stateful("pos.scrollWidth") - this.offsetWidth);
-					var left = this.stateful("pos.scrollLeft");
+					var max = Math.max(0,this.stateful("pos.scrollWidth","0") - this.offsetWidth);
+					var left = this.stateful("pos.scrollLeft","0");
 					left =  Math.min(max,Math.max(0,left + ev.deltaY)); //TODO inverted?
 					this.stateful.set("pos.scrollLeft",left);
 					prevent = true;
@@ -492,6 +694,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	// Current active Movement activity
 	var activeMovement = null;
+	Resolver("page").set("activeMovement",null);
 
 	/*
 		The user operation of moving an element within the existing parent element.
@@ -503,6 +706,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
+	//TODO support fixed position offsetTop/Bottom in IE, kinda crap negative offsets
+
+	//TODO support bottom/right positioning
+	
 	ElementMovement.prototype.start = function(el,event) {
 		var movement = this;
 		this.el = el;
@@ -516,12 +723,17 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 		this.startPageY = event.pageY; // - getComputedStyle( 'top' )
 		this.startPageX = event.pageX; //??
-		document.onselectstart = function(ev) { return false; };
+		document.onselectstart = function(ev) { return false; }; //TODO save old handler?
 
 		//TODO capture in IE
 		//movement.track(event,0,0);
 
-		if (el.stateful) el.stateful.set("dragging",true);
+		if (el.stateful) el.stateful.set("state.dragging",true);
+		this.target = document.body;
+		if (document.body.setCapture) {
+			this.target = this.el;
+			this.target.setCapture();
+		}
 
 		this.drag_events = {
 			//TODO  keyup ESC
@@ -535,24 +747,36 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				movement.track(ev,x,y);
 				// console.log(movement.factorX,movement.factorY)
 			},
+			"click": function(ev) {
+				ev.preventDefault();
+				ev.stopPropagation(); //TODO ev.stopImmediatePropagation() ?
+				return false;
+			},
 			"mouseup": function(ev) {
 				movement.end();
+				ev.preventDefault();
+				ev.stopPropagation(); //TODO ev.stopImmediatePropagation() ?
+				return false;
 			}
 		};
-		addEventListeners(document.body,this.drag_events);
+		addEventListeners(this.target,this.drag_events);
 
 		activeMovement = this;
+		Resolver("page").set("activeMovement",this);
 
 		return this;
 	};
 
 	ElementMovement.prototype.end = function() {
-		if (this.el.stateful) this.el.stateful.set("dragging",false);
-		removeEventListeners(document.body,this.drag_events);
+		if (this.el.stateful) this.el.stateful.set("state.dragging",false);
+		removeEventListeners(this.target,this.drag_events);
+		if (this.target.releaseCapture) this.target.releaseCapture();
+		this.target = null;
 
 		delete document.onselectstart ;
 
 		activeMovement = null;
+		Resolver("page").set("activeMovement",null);
 
 		return this;
 	};
@@ -591,10 +815,10 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			//posInfo.innerHTML = "x=" +x + " y="+y + " sy="+scrolled.scrollTop + " cy="+ev.clientY + " py="+ev.pageY;
 		};
 		movement.start(this,ev);
-		movement.startY = scrolled.stateful("pos.scrollTop");
-		movement.startX = scrolled.stateful("pos.scrollLeft");
-		movement.factorY = scrolled.stateful("pos.scrollHeight") / movement.el.offsetHeight;
-		movement.maxY = scrolled.stateful("pos.scrollHeight") - scrolled.clientHeight;
+		movement.startY = scrolled.stateful("pos.scrollTop","0");
+		movement.startX = scrolled.stateful("pos.scrollLeft","0");
+		movement.factorY = scrolled.stateful("pos.scrollHeight","0") / movement.el.offsetHeight;
+		movement.maxY = scrolled.stateful("pos.scrollHeight","0") - scrolled.clientHeight;
 		return false; // prevent default
 	}
 
@@ -628,29 +852,35 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			this.scrolledTo = x;
 		};
 		movement.start(this,ev);
-		movement.startY = scrolled.stateful("pos.scrollTop");
-		movement.startX = scrolled.stateful("pos.scrollLeft");
-		movement.factorX = scrolled.stateful("pos.scrollWidth") / movement.el.offsetWidth;
-		movement.maxY = scrolled.stateful("pos.scrollWidth") - scrolled.clientWidth;
+		movement.startY = scrolled.stateful("pos.scrollTop","0");
+		movement.startX = scrolled.stateful("pos.scrollLeft","0");
+		movement.factorX = scrolled.stateful("pos.scrollWidth","0") / movement.el.offsetWidth;
+		movement.maxY = scrolled.stateful("pos.scrollWidth","0") - scrolled.clientWidth;
 		return false; // prevent default
 	}
 
 
 	function EnhancedScrollbar(el,container,config,opts,mousedownEvent) {
+		this.enable = opts.enable !== false;
         var sbsc = scrollbarSize();
-		var lc = opts.horzvert.toLowerCase();
+		var lc = opts.horzvert.toLowerCase(), cn = lc+"-scroller";
+		if (config.obscured) cn += " obscured";
+		if (config.overhang) cn += " overhang";
 
 		this.scrolled = el;
-		var className = config.obscured? lc+"-scroller obscured" : lc+"-scroller";
+		var className = cn;
 		this.el = HTMLElement("div", { "class":className }, '<header></header><footer></footer><nav><header></header><footer></footer></nav>');
 		container.appendChild(this.el);
-		this.sizeName = opts.sizeName; this.posName = opts.posName;
-		this.sizeStyle = opts.sizeName.toLowerCase();
+		this.contentName = "content"+ opts.sizeName;
+		this.scrollName = "scroll"+ opts.sizeName; 
+		this.sizeName = this.sizeStyle = opts.sizeName.toLowerCase();
+		this.posName = opts.posName;
 		this.posStyle = opts.posName.toLowerCase();
 		this.autoHide = opts.autoHide;
 		this.trackScroll = opts.trackScroll == false? false : true;;
 
-		this.trackScrolled(el);
+		this.sizing = el.stateful("sizing");
+		// this.trackScrolled(el);
 
 		addEventListeners(el,ENHANCED_SCROLLED_EVENTS);
 		addEventListeners(this.el,{ "mousedown": mousedownEvent });
@@ -660,29 +890,34 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 				this.hiding = setTimeout(this.hide.bind(this), parseInt(opts.initialDisplay,10) || 3000);
 			}
 		}
-		if (config.obscured) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
-        else this.el.style[opts.thicknessName] = sbsc + "px";
+		// if (config.overhang) this.el.style[opts.edgeName] = "-" + (config[lc+"Offset"]!=undefined? config[lc+"Offset"]:sbsc) + "px";
+  //       else this.el.style[opts.thicknessName] = sbsc + "px";
 	}
 
 	EnhancedScrollbar.prototype.trackScrolled = function(el) {
 		if (this.trackScroll) {
 			this.scrolledTo = el["scroll"+this.posName];
-			this.scrolledContentSize = el["scroll"+this.sizeName];
+			this.scrolledContentSize = this.sizing[this.contentName]; //TODO remove intermediate variable
 		}
 		else {
-			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName);
-			this.scrolledContentSize = this.scrolled.stateful("pos.scroll"+this.sizeName);
+			this.scrolledTo = this.scrolled.stateful("pos.scroll"+this.posName,"0");
+			this.scrolledContentSize = this.scrolled.stateful("pos."+this.scrollName,"0");
 		}
-		this.scrolledSize = el["client"+this.sizeName]; //scrolled.offsetHeight - scrollbarSize();
 	};
 
 	EnhancedScrollbar.prototype.update = function(scrolled) {
-		this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
-		this.el.lastChild.style[this.sizeStyle] = (100 * this.scrolledSize / this.scrolledContentSize) + "%";
+		if (this.scrolledContentSize) {
+			this.el.lastChild.style[this.posStyle] = (100 * this.scrolledTo / this.scrolledContentSize) + "%";
+			this.el.lastChild.style[this.sizeStyle] = (100 * this.sizing[this.sizeName] / this.scrolledContentSize) + "%";
+		} else {
+			this.el.lastChild.style[this.posStyle] = "0%";
+			this.el.lastChild.style[this.sizeStyle] = "0%";
+		}
+		if (!this.enable || !this.scrolledContentSize || this.scrolledContentSize <= this.sizing[this.sizeName]) this.hide();
 	};
 
 	EnhancedScrollbar.prototype.show = function() {
-		if (this.scrolledContentSize <= this.scrolledSize) return false;
+		if (!this.enable || !this.scrolledContentSize || this.scrolledContentSize <= this.sizing[this.sizeName]) return false;
 
 		if (!this.shown) {
 			this.update(this.scrolled);
@@ -698,7 +933,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 	};
 
 	EnhancedScrollbar.prototype.hide = function() {
-		if (this.autoHide !== false && this.shown) {
+		if (this.autoHide !== false && this.shown && this.enable) {
 			this.el.className = this.el.className.replace(" shown","");
 			if (this.hiding) {
 				clearTimeout(this.hiding);
@@ -719,14 +954,16 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
 			callCleaners(this.el);
 			this.el = undefined;
+			this.shown = this.enable = false;
 		}
 	};
 
 	function EnhancedScrolled(el,config) {
 
+		if (config.overhang == undefined) config.overhang = !!config.obscured;
+		config.obscured = config.obscured !== false;
 		//? this.el = el
 		var container = this._getContainer(el,config);
-
 
 		var trackScrollVert = !(config.trackScrollVert==false || config.trackScroll == false),
 			trackScrollHorz = !(config.trackScrollHorz==false || config.trackScroll == false);
@@ -736,9 +973,13 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		el.stateful.declare("pos.scrollTop",0);
 		el.stateful.declare("pos.scrollLeft",0);
 
+		//TODO sizing.track = {} width,height,content,scroll
+		el.stateful.set("sizing.track.sizeBy","client");
+
 		this.x = false !== config.x;
 		this.y = false !== config.y;
 		this.vert = new EnhancedScrollbar(el,container,config,{
+			enable: config.vert,
 			horzvert: "Vert", 
 			trackScroll: trackScrollVert,
 			sizeName: "Height", 
@@ -747,7 +988,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			edgeName: "right" 
 			},trackScrollVert? mousedownVert : mousedownStatefulVert);
 
-		this.horz = new EnhancedScrollbar(el,container,config,{ 
+		this.horz = new EnhancedScrollbar(el,container,config,{
+			enable: config.horz, 
 			horzvert: "Horz",
 			trackScroll: trackScrollHorz,
 			sizeName: "Width", 
@@ -761,7 +1003,7 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		addEventListeners(container,ENHANCED_SCROLLED_PARENT_EVENTS);
 		container.scrollContainer = "top";
 
-		this.refresh(el);
+		// this.refresh(el);
 
 		el.stateful.on("change","pos.scrollTop",{el:el,es:this},this.scrollTopChanged);
 		el.stateful.on("change","pos.scrollLeft",{el:el,es:this},this.scrollLeftChanged);
@@ -773,10 +1015,8 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		// if not shown, show and if not entered and not dragging, hide after 1500 ms
 		if (!es.vert.shown) {
 			es.vert.show();
-			es.horz.show();
-			if (!ev.resolver("over") && !ev.resolver("dragging")) {
+			if (!ev.resolver("state.over") && !ev.resolver("state.dragging")) {
 				es.vert.delayedHide();
-				es.horz.delayedHide();
 			}
 		}
 
@@ -788,17 +1028,19 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 		var el = ev.data.el, es = ev.data.es;
 
 		// if not shown, show and if not entered and not dragging, hide after 1500 ms
-		if (!es.vert.shown) {
-			es.vert.show();
+		if (!es.horz.shown) {
 			es.horz.show();
-			if (!el.stateful("over") && !el.stateful("dragging")) {
-				es.vert.delayedHide();
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				es.horz.delayedHide();
 			}
 		}
 		es.horz.trackScrolled(el);
 		es.horz.update(el);
 	};
+
+	// Define on browser type
+	var bGecko  = !!window.controllers;
+	var bIE     = window.document.all && !window.opera;
 
 	EnhancedScrolled.prototype._getContainer = function(el,config) {
 
@@ -809,14 +1051,20 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 			if (! config.unstyledParent) el.parentNode.style.cssText = "position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;";
 			el.style.right = "-" + sbsc + "px";
 			el.style.bottom = "-" + sbsc + "px";
-			el.style.paddingRight = sbsc + "px";
-			el.style.paddingBottom = sbsc + "px";
+
+			if (!bGecko && !bIE) {
+				// fix incorrect width for children
+				el.style.paddingRight = sbsc + "px";
+				el.style.paddingBottom = sbsc + "px";
+			}
 			container = container.parentNode;
 		}
 		return container;
 	};
 
 	EnhancedScrolled.prototype.refresh = function(el) {
+
+		//TODO get the information via layout call
 		this.vert.trackScrolled(el);
 		this.vert.update(el);
 		this.horz.trackScrolled(el);
@@ -825,12 +1073,16 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	EnhancedScrolled.prototype.layout = function(el,layout) {
 
-		//TODO show scrollbars only if changed && in play
-		if (!this.vert.shown) {
-			this.vert.show();
-			this.horz.show();
-			if (!el.stateful("over") && !el.stateful("dragging")) {
+		if (layout.contentHeight != layout.oldContentHeight && !this.vert.shown) {
+			if (this.vert.show() === false) this.vert.hide(); // if content less/eq to space hide right now
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.vert.delayedHide(750);
+			}
+		}
+
+		if (layout.contentWidth != layout.oldContentWidth && !this.horz.shown) {
+			if (this.horz.show() === false) this.horz.hide(); // if content less/eq to space hide right now
+			if (!el.stateful("state.over") && !el.stateful("state.dragging")) {
 				this.horz.delayedHide(750);
 			}
 		}
@@ -853,32 +1105,36 @@ pageResolver.set("handlers.enhance.templated",enhance_templated);
 
 	};
 
-	DocumentRoles.enhance_scrolled = function(el,role,config) {
-		if (config.template && templates[config.template]) {
-			var template = templates[config.template];
-			//TODO replace element with template.tagName, mixed attributes and template.html
-			el.innerHTML = template.html; //TODO better
-			var context = { layouter: this.parentLayouter };
-			if (config.layouter) context.layouter = this; //TODO temp fix, move _prep to descriptor
-			ApplicationConfig()._prep(el,context); //TODO prepAncestors
-			// var descs = branchDescs(el); //TODO manage descriptors as separate branch?
-			// DocumentRoles()._enhance_descs(descs);
+	function enhance_scrolled(el,role,config,context) {
+
+		var contentTemplate = config.template;
+		if (contentTemplate) {
+			var template = Resolver("page::templates","null")([contentTemplate]);
+			if (template == null) return false;
+
+			var content = template.content.cloneNode(true);
+
+			el.appendChild(content);
+			DescriptorQuery(el).onlyBranch().enhance();
 		}
 
-		StatefulResolver(el,true);
+		// StatefulResolver(el,true);
 		el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:scroll;';
 		var r = new EnhancedScrolled(el,config);
 
 		return r;
-	};
+	}
+	pageResolver.set("handlers.enhance.scrolled",enhance_scrolled);
 
-	DocumentRoles.layout_scrolled = function(el,layout,instance) {
+	function layout_scrolled(el,layout,instance) {
 		instance.layout(el,layout);
-	};
+	}
+	pageResolver.set("handlers.layout.scrolled",layout_scrolled);
 	
-	DocumentRoles.discard_scrolled = function(el,role,instance) {
+	function discard_scrolled(el,role,instance) {
 		instance.discard(el);
 		if (el.stateful) el.stateful.destroy();
-	};
+	}
+	pageResolver.set("handlers.discard.scrolled",discard_scrolled);
 	
 }();

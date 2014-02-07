@@ -2,7 +2,18 @@
 
 	var essential = Resolver("essential",{}),
 		console = essential("console"),
+		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
+
+	essential.declare("baseUrl",location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1));
+
+	var base = document.getElementsByTagName("BASE")[0];
+	if (base) {
+		var baseUrl = base.href;
+		if (baseUrl.charAt(baseUrl.length - 1) != "/") baseUrl += "/";
+		// debugger;
+		essential.set("baseUrl",baseUrl);
+	}
 
 	var contains;
 	function doc_contains(a,b) {
@@ -33,28 +44,13 @@
 		_body.innerHTML = str;
 
 		var src = _body.firstChild;
-		for(var i=0,a; !!(a = src.attributes[0]); ++i) if (a.name != "was") _body.appendChild(a);
+		//TODO attributes[0] changed to attributes[i], check that it fixes stuff
+		for(var i=0,a; !!(a = src.attributes[i]); ++i) if (a.name != "was") _body.appendChild(a);
 		_body.innerHTML = src.innerHTML;
 
 	}
 
-	function _combindHeadAndBody(head,body) { //TODO ,doctype
-		if (head && body) {
-			if (head.substring(0,5) != "<head") head = '<head>'+head+'</head>';
-			if (body.substring(0,5) != "<body") body = '<body>'+body+'</body>';
-		}
-
-		var text = (head||"") + (body||"");
-		if ((head.substring(0,5) != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
-		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
-
-		return text;
-	}
-
-	/**
-	 * (html) or (head,body)
-	 */
-	function createImportedHTMLDocument(head,body) {
+	function _combineHeadAndBody(head,body) { //TODO ,doctype
 		if (typeof head == "object" && typeof head.length == "number") {
 			head = head.join("");
 		}
@@ -62,95 +58,148 @@
 			body = body.join("");
 		}
 
-		var doc, r = {};
-		try {
-			doc = document.createElement("html");
-			doc.innerHTML = _combindHeadAndBody(head,body);
-			r.head = doc.head;
-			r.body = doc.body;
-		}
-		catch(ex) {
-			try {
-				doc = document.implementation.createHTMLDocument("");
-				doc.open();
-				doc.write(_combindHeadAndBody(head,body));
-				doc.close();
-				r.head = doc.head;
-				r.body = doc.body;
-			}
-			catch(ex2) {
-				doc = new ActiveXObject("htmlfile");
-				// doc.open();
-				doc.write(_combindHeadAndBody(head,body));
-				// doc.close();
-				r.head = doc.getElementsByTagName("HEAD")[0];
-				r.body = doc.body;
-			}
+		if (head && body) {
+			if (head.substring(0,5).toLowerCase() != "<head") head = '<head>'+head+'</head>';
+			if (body.substring(0,5).toLowerCase() != "<body") body = '<body>'+body+'</body>';
 		}
 
+		var text = (head||"") + (body||"");
+		if ((head.substring(0,5).toLowerCase() != "<head") && (/<\/body>/.test(text) === false)) text = "<body>" + text + "</body>";
+		if (/<\/html>/.test(text) === false) text = '<html>' + text + '</html>';
+
+		text = text.replace("<!DOCTYPE","<!doctype");
+
+		return text;
+	}
+
+	function _createStandardsDoc(markup) {
+		var doc;
+		if (/Gecko\/20/.test(navigator.userAgent)) {
+			doc = document.implementation.createHTMLDocument("");
+			// if (hasDoctype) 
+				doc.documentElement.innerHTML = markup;
+			// else doc.body.innerHTML = markup;
+			// parser = new DOMParser();
+			// doc = parser.parseFromString(_combineHeadAndBody(head,body),"text/html");
+		}
+		else {
+			doc = document.implementation.createHTMLDocument("");
+			doc.open();
+			doc.write(markup);
+			doc.close();
+		}
+		return doc;
+	}
+
+	function _importNode(doc,node,all) {
+		if (node.nodeType == 1) { // ELEMENT_NODE
+			var nn = doc.createElement(node.nodeName);
+			if (node.attributes && node.attributes.length > 0) {
+				for(var i=0,a; a=node.attributes[i]; ++i) nn.setAttribute(a.nodeName, node.getAttribute(a.nodeName));
+			}
+			if (all && node.childNodes && node.childNodes.length>0) {
+				for(var i=0,c; c = node.childNodes[i]; ++i) nn.appendChild(_importNode(doc,c,all));
+			}
+			return nn;
+		}
+
+		// TEXT_NODE CDATA_SECTION_NODE COMMENT_NODE
+		return doc.createTextNode(node.nodeValue);
+	}
+
+	var SUPPORTED_TAGS = "template message abbr article aside audio bdi canvas data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video".split(" ");
+	var IE_HTML_SHIM;
+
+	function shimMarkup(markup) {
+		if (IE_HTML_SHIM == undefined) {
+
+			var bits = ["<script>"];
+			for(var i=0,t; t = SUPPORTED_TAGS[i]; ++i) bits.push('document.createElement("'+t+'");');			
+			bits.push("</script>");
+			IE_HTML_SHIM = bits.join("");
+		}
+		if (markup.indexOf("</head>") >= 0 || markup.indexOf("</HEAD>") >= 0) {
+			markup = markup.replace("</head>","</head>" + IE_HTML_SHIM);
+			markup = markup.replace("</HEAD>","</HEAD>" + IE_HTML_SHIM);
+		} else {
+			markup = markup.replace("<body",IE_HTML_SHIM + "<body");
+			markup = markup.replace("<BODY",IE_HTML_SHIM + "<BODY");
+		}
+		return markup;
+	}
+
+	var documentId = 444;
+
+	/**
+	 * (html) or (head,body) rename to importHTMLDocument ?
+
+	 * head will belong to external doc
+	 * body will be imported so elements can be mixed in
+	 */
+	function importHTMLDocument(head,body) {
+
+		var doc = {},
+			markup = _combineHeadAndBody(head,body),
+			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
+
 		try {
-			doc.head = document.importNode(r.head);
-			doc.body = document.importNode(r.body);
+			var ext = _createStandardsDoc(markup);
+			if (document.adoptNode) {
+				doc.head = document.adoptNode(ext.head);
+				doc.body = document.adoptNode(ext.body);
+			} else {
+				doc.head = document.importNode(ext.head);
+				doc.body = document.importNode(ext.body);
+			}
 		}
 		catch(ex) {
-			// ignore IE9- broken importNode
+			var ext = new ActiveXObject("htmlfile");
+			markup = shimMarkup(markup);
+			ext.write(markup);
+			if (ext.head === undefined) ext.head = ext.body.previousSibling;
+
+			doc.uniqueID = ext.uniqueID;
+			doc.head = ext.head;
+			doc.body = _importNode(document,ext.body,true);
+
+			// markup = markup.replace("<head",'<washead').replace("</head>","</washead>");
+			// markup = markup.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
+			// markup = markup.replace("<body",'<wasbody').replace("</body>","</wasbody>");
+			// markup = markup.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
-	essential.declare("createImportedHTMLDocument",createImportedHTMLDocument);
+	essential.declare("importHTMLDocument",importHTMLDocument);
 
  	/**
  	 * (html) or (head,body)
  	 */
 	function createHTMLDocument(head,body) {
-		if (typeof head == "object" && typeof head.length == "number") {
-			head = head.join("");
-		}
-		if (typeof body == "object" && typeof body.length == "number") {
-			body = body.join("");
-		}
 
-		var doc,parser,markup = _combindHeadAndBody(head,body),hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
+		var doc,parser,markup = _combineHeadAndBody(head,body),
+			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 		try {
-			if (/Gecko\/20/.test(navigator.userAgent)) {
-				doc = document.implementation.createHTMLDocument("");
-				// if (hasDoctype) 
-					doc.documentElement.innerHTML = markup;
-				// else doc.body.innerHTML = markup;
-				// parser = new DOMParser();
-				// doc = parser.parseFromString(_combindHeadAndBody(head,body),"text/html");
-			}
-			else {
-				doc = document.implementation.createHTMLDocument("");
-				doc.open();
-				doc.write(markup);
-				doc.close();
-			}
+			doc = _createStandardsDoc(markup);
 		} catch(ex) {
 			// IE can't or won't do it
 
 			if (window.ActiveXObject) {
 				//TODO make super sure that this is garbage collected, supposedly sticky
 				doc = new ActiveXObject("htmlfile");
-					// doc.open();
-					// doc.close();
 				doc.write(markup);
 				if (doc.head === undefined) doc.head = doc.body.previousSibling;
-
 			} else {
 				doc = document.createElement("DIV");// dummy default
 
-					// text = text.replace("<head",'<washead').replace("</head>","</washead>");
-					// text = text.replace("<HEAD",'<washead').replace("</HEAD>","</washead>");
-					// text = text.replace("<body",'<wasbody').replace("</body>","</wasbody>");
-					// text = text.replace("<BODY",'<wasbody').replace("</BODY>","</wasbody>");
-					// this.head = div.getElementsByTagName("washead");
-					// this.body = div.getElementsByTagName("wasbody") || div;
-					// var __head = _body.getElementsByTagName("washead");
-					// var __body = _body.getElementsByTagName("wasbody");
+				// this.head = div.getElementsByTagName("washead");
+				// this.body = div.getElementsByTagName("wasbody") || div;
+				// var __head = _body.getElementsByTagName("washead");
+				// var __body = _body.getElementsByTagName("wasbody");
 			}
 		}
+		if (!doc.uniqueID) doc.uniqueID = documentId++;
 
 		return doc;
 	}
@@ -476,6 +525,7 @@
 		"change": new InputEvents(),
 		// "input": new InputEvents(),
 		// "textinput": new InputEvents(),
+		"selectstart": new InputEvents(),
 
 		"scroll": new UIEvents(),
 
@@ -650,7 +700,9 @@
 		this.currentTarget = src.currentTarget|| src.target; 
 		if (src.type) {
 			this.type = src.type;
-			EVENTS[src.type].copy.call(this,src);
+			var r = EVENTS[src.type];
+			if (r) r.copy.call(this,src);
+			else console.warn("unhandled essential event",src.type,src);
 		}
 	}
 	_MutableEvent.prototype.relatedTarget = null;
@@ -848,14 +900,36 @@
 	}
 	essential.declare("getPageOffsets",getPageOffsets);
 
+	var _innerHTML = function(_document,el,html) {
+		el.innerHTML = html;
+	}
+	if (isIE){
+		_innerHTML = _innerHTMLIE; //TODO do all IE do this shit?
+	}
+
+	function _innerHTMLIE(_document,el,html) {
+		if (_document.body==null) return; // no way to set html then :(
+		if (contains(document.body,el)) el.innerHTML = html;
+		else {
+			var drop = _document._inner_drop;
+			if (drop == undefined) {
+				drop = _document._inner_drop = _document.createElement("DIV");
+				_document.body.appendChild(drop);
+			}
+			drop.innerHTML = html;
+			for(var c = drop.firstChild; c; c = drop.firstChild) el.appendChild(c);
+		}
+	}
+
 	// (tagName,{attributes},content)
 	// ({attributes},content)
 	function HTMLElement(tagName,from,content_list,_document) {
+			//TODO _document
 		var c_from = 2, c_to = arguments.length-1, _tagName = tagName, _from = from;
 		
 		// optional document arg
 		var d = arguments[c_to];
-		var _doc = document;
+		var _doc = document; //TODO override if last arg is a document
 		if (typeof d == "object" && d && "doctype" in d && c_to>1) { _doc = d; --c_to; }
 		
 		// optional tagName arg
@@ -874,7 +948,7 @@
 			_from = __from;
 		}
 		
-		var e = _doc.createElement(_tagName);
+		var e = _doc.createElement(_tagName), enhanced = false, enhance = false, appendTo;
 		for(var n in _from) {
 			switch(n) {
 				case "tagName": break; // already used
@@ -895,12 +969,37 @@
 					}
 					break;
 
+				case "data-role":
+					if (typeof _from[n] == "object") {
+						var s = JSON.stringify(_from[n]);
+						e.setAttribute(n,s.substring(1,s.length-1));
+					}
+					else e.setAttribute(n,_from[n]);
+					break;
+
 				case "id":
 				case "className":
 				case "rel":
 				case "lang":
 				case "language":
 					if (_from[n] !== undefined) e[n] = _from[n]; 
+					break;
+
+				case "set impl":
+					if (_from[n]) e.impl = HTMLElement.impl(e);
+					break;
+
+				case "append to":
+					appendTo = _from[n];
+					break;
+				case "enhanced element":
+					enhanced = _from[n];
+					break;
+				case "enhance element":
+					enhance = _from[n];
+					break;
+				case "make stateful":
+					essential("StatefulResolver")(e,_from[n]);
 					break;
 
 				// "type" IE9 el.type is readonly:
@@ -928,23 +1027,39 @@
 			else if (typeof p == "string") l.push(arguments[i]);
 		}
 		if (l.length) {
-			//TODO _document
-			_document = document;
-			var drop = _document._inner_drop;
-			if (drop == undefined) {
-				drop = _document._inner_drop = _document.createElement("DIV");
-				_document.body.appendChild(drop);
-			}
-			drop.innerHTML = l.join("");
-			for(var c = drop.firstChild; c; c = drop.firstChild) e.appendChild(c);
+			_innerHTML(_doc,e,l.join("")); 
 		} 
 		
 		//TODO .appendTo function
+
+		if (appendTo) appendTo.appendChild(e);
+		if (enhanced) HTMLElement.query([e]).queue();
+		if (enhance) HTMLElement.query([e]).enhance();
 		
 		return e;
 	}
 	essential.set("HTMLElement",HTMLElement);
 	
+	HTMLElement.query = essential("DescriptorQuery");
+
+	HTMLElement.getEnhancedParent = function(el) {
+		for(el = el.parentNode; el; el = el.parentNode) {
+			var desc = EnhancedDescriptor.all[el.uniqueID];
+			if (desc && (desc.state.enhanced || desc.state.needEnhance)) return el;
+		}
+		return null;
+	};
+
+	/*
+		Discard the element call handlers & cleaners, unlist it if enhanced, remove from DOM
+	*/
+	HTMLElement.discard = function(el,leaveInDom) {
+
+		this.query(el).discard();
+
+		if (!leaveInDom) el.parentNode.removeChild(el);
+	};
+
 	
 	//TODO element cleaner must remove .el references from listeners
 
@@ -973,28 +1088,103 @@
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
 
-	function _ElementPlacement(el,track) {
-		this.el = el;
+	function _ElementPlacement(el,track,calcBounds) {
+		this.bounds = {};
 		this.style = {};
-		this.track = track || ["visibility","marginLeft","marginRight","marginTop","marginBottom"];
-		this.compute();
+		this.track = track || ["display","visibility","marginLeft","marginRight","marginTop","marginBottom"];
+		this.calcBounds = calcBounds;
+
+		this.compute(el || null);
 	}
 	var ElementPlacement = essential.declare("ElementPlacement",Generator(_ElementPlacement));
 
-	_ElementPlacement.prototype.compute = function() {
-		this.bounds = this.el.getBoundingClientRect();
-		for(var i=0,s; !!(s = this.track[i]); ++i) {
-			this.style[s] = this._compute(s);
+	_ElementPlacement.prototype.setElement = function(newEl) {
+		this.el = newEl;
+		this.computes = [];
+
+		//TODO dedicated compute functions
+		if (this.el && this.el.currentStyle &&(document.defaultView == undefined || document.defaultView.getComputedStyle == undefined)) {
+			this._setComputed = this._setComputedIE;
+			this._compute = this._computeIE;
+		}
+		if (document.body.getBoundingClientRect().width == undefined) {
+			this._bounds = this._boundsIE;
+		}
+
+		if (this.calcBounds === false) this._bounds = function() {};
+
+		this.doCompute = !(this.el == null || this.el.nodeType !== 1);
+
+		this.computes = this._getComputes(this.track);
+	};
+
+	_ElementPlacement.prototype.setTrack = function(track) {
+		this.track = track;
+		this.computes = this._getComputes(this.track);
+	};
+
+	_ElementPlacement.prototype._getComputes = function(names) {
+
+		var computes = [];
+		for(var i=0,s; this.doCompute && !!(s = names[i]); ++i) {
+			switch(s) {
+				case "display":
+				case "visibility":
+				// case "zIndex":
+				case "breakBefore":
+				case "breakAfter":
+					computes.push(this._compute_simple);
+					break;
+				default:
+					computes.push(this._compute);
+					break;
+			}
+		}
+		return computes;
+	};
+
+	_ElementPlacement.prototype.compute = function(newEl) {
+		if (newEl != undefined) this.setElement(newEl);
+
+		if (newEl == undefined || contains(document.body,newEl)) {
+
+			if (this.doCompute) {
+				if (this.calcBounds !== false) this._bounds();
+				this._setComputed();
+
+				for(var i=0,fn; !!(fn = this.computes[i]); ++i) {
+					this.style[this.track[i]] = fn.call(this,this.track[i]);
+				}
+			}
+		} 
+		// else ignore (could queue for compute)
+	};
+
+	_ElementPlacement.prototype.manually = function(names) {
+		var computes = this._getComputes(names);
+		this._setComputed();
+		for(var i=0,fn; fn = computes[i]; ++i) {
+			this.style[names[i]] = fn.call(this,names[i]);
 		}
 	};
 
-	_ElementPlacement.prototype.PIXEL = /^\d+(px)?$/i;
+	_ElementPlacement.prototype._bounds = function() {
+		this.bounds = this.el.getBoundingClientRect();
+	};
 
-	_ElementPlacement.prototype.CSS_PRECALCULATED_SIZES = {
+	_ElementPlacement.prototype._boundsIE = function() {
+		var bounds = this.el.getBoundingClientRect();
+		this.bounds = {
+			width: bounds.right - bounds.left, height: bounds.bottom - bounds.top,
+			left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom
+		};
+	};
+
+	_ElementPlacement.prototype.KEYWORDS = {
 		'medium':"2px"	
 	};
 
-	_ElementPlacement.prototype.CSS_PROPERTY_TYPES = {
+	_ElementPlacement.prototype.CSS_TYPES = {
 		'border-width':'size',
 		'border-left-width':'size',
 		'border-right-width':'size',
@@ -1033,7 +1223,7 @@
 		'lineHeight': 'top', 
 		'text-indent': 'size',
 		'textIndent': 'size',
-		
+
 		'width': 'size',
 		'height': 'top',
 		'max-width': 'size',
@@ -1050,7 +1240,15 @@
 		'bottom': 'top'
 	};
 
-	_ElementPlacement.prototype.CSS_PROPERTY_FROM_JS = {
+	_ElementPlacement.prototype.OFFSET_NAME = {
+		"left":"offsetLeft",
+		"width":"offsetWidth",
+		"top":"offsetTop",
+		"height":"offsetHeight"
+	};
+
+	//TODO generate based on currentStyle
+	_ElementPlacement.prototype.CSS_NAME = {
 		'backgroundColor':'background-color',
 		'backgroundImage':'background-image',
 		'backgroundPosition':'background-position',
@@ -1075,6 +1273,9 @@
 		'marginRight': 'margin-right',
 		'marginTop': 'margin-top',
 		'marginBottom': 'margin-bottom',
+
+		'breakBefore': 'break-before',
+		'breakAfter': 'break-after',
 		
 		'fontSize': 'font-size',
 		'lineHeight': 'line-height',
@@ -1082,7 +1283,8 @@
 		
 	};
 
-	_ElementPlacement.prototype.JS_PROPERTY_FROM_CSS = {
+	//TODO inverted CSS_NAME
+	_ElementPlacement.prototype.JS_NAME = {
 		'background-color':'backgroundColor',
 		'background-image':'backgroundImage',
 		'background-position':'backgroundPosition',
@@ -1107,6 +1309,11 @@
 		'margin-right':'marginRight',
 		'margin-top':'marginTop',
 		'margin-bottom':'marginBottom',
+
+		'break-before': 'breakBefore',
+		'break-after': 'breakAfter',
+		'alt breakBefore': 'pageBreakBefore',
+		'alt breakAfter': 'pageBreakAfter',
 		
 		'font-size':'fontSize',
 		'line-height':'lineHeight',
@@ -1127,8 +1334,8 @@ function _makeToPixelsIE(sProp)
 	var sPixelProp = "pixel" + sProp.substring(0,1).toUpperCase() + sProp.substring(1);
 
 	return function(eElement,sValue) {
-		var sInlineStyle = eElement.style[sProp];
-		var sRuntimeStyle = eElement.runtimeStyle[sProp];
+		var inlineStyle = eElement.style[sProp];
+		var runtimeStyle = eElement.runtimeStyle[sProp];
 		try
 		{
 			eElement.runtimeStyle[sProp] = eElement.currentStyle[sProp];
@@ -1139,55 +1346,67 @@ function _makeToPixelsIE(sProp)
 		{
 			
 		}
-		eElement.style[sProp] = sInlineStyle;
-		eElement.runtimeStyle[sProp] = sRuntimeStyle;
+		eElement.style[sProp] = inlineStyle;
+		eElement.runtimeStyle[sProp] = runtimeStyle;
 
 		return sValue;
 	};
 }
 
 
-	_ElementPlacement.prototype.TO_PIXELS_IE = {
-		"left": _makeToPixelsIE("left"),
-		"top": _makeToPixelsIE("top"),
-		"size": _makeToPixelsIE("left")
-	};
+_ElementPlacement.prototype.TO_PIXELS_IE = {
+	"left": _makeToPixelsIE("left"),
+	"top": _makeToPixelsIE("top"),
+	"size": _makeToPixelsIE("left")
+};
 
-function _correctChromeWebkitDimensionsBug(s,v) {
+_ElementPlacement.prototype._compute_simple = function(name) {
+	var altName = this.JS_NAME["alt "+name],
+		inlineStyle = this.el.style[name] || this.el.style[altName];
+	if (inlineStyle) return inlineStyle;
 
-	if(navigator.userAgent.toLowerCase().match(/chrome|webkit/) && (s === "left" || s === "right" || s === "top" || s === "bottom") && v === "auto")
-	{
-		return true;
+	if (this.el.currentStyle) {
+		return this.el.currentStyle[name] || this.el.currentStyle[altName];
+	} else {
+		return this._computed[name] || this._computed[altName]
 	}
-}
+};
 
-_ElementPlacement.prototype._compute = function(style)
+_ElementPlacement.prototype._setComputed = function()
+{
+	this._computed = document.defaultView.getComputedStyle(this.el, null);
+};
+
+_ElementPlacement.prototype._compute = function(name)
+{
+	var value = this._computed[name];
+	//TODO do this test at load to see if needed
+	if (typeof value == "string" && value.indexOf("%")>-1) {
+		value = this.el[this.OFFSET_NAME[name]] + "px";
+	}
+		
+	return value;
+};
+
+_ElementPlacement.prototype._setComputedIE = function()
+{
+};
+
+_ElementPlacement.prototype._computeIE = function(style)
 {
 	var value;
 	
-	style = this.JS_PROPERTY_FROM_CSS[style] || style;
-	if (this.el.currentStyle)
-	{
-		var v = this.el.currentStyle[style];
-		var sPrecalc = this.CSS_PRECALCULATED_SIZES[v];
-		if (sPrecalc !== undefined) return sPrecalc; 
-		if (this.PIXEL.test(v)) return v;
+	//TODO prepare this when setting track
+	style = this.JS_NAME[style] || style;
 
-		var fToPixels = this.TO_PIXELS_IE[this.CSS_PROPERTY_TYPES[style]];
-  		value = fToPixels? fToPixels(this.el, v) : v;
+	var v = this.el.currentStyle[style];
+	var sPrecalc = this.KEYWORDS[v];
+	if (sPrecalc !== undefined) return sPrecalc;
+	if (v == "0" || (v.substring(v.length-2) == "px")) return v; 
 
-	}
-	else if (document.defaultView)
-	{
-		value = document.defaultView.getComputedStyle(this.el, null)[style];
-	}
-	
-	//TODO fix bad performance overhead
-	if (!value || value === "" || _correctChromeWebkitDimensionsBug(style, value))
-	{
-		value = this.el.style[style];
-	}
-	
+	var fToPixels = this.TO_PIXELS_IE[this.CSS_TYPES[style]];
+		value = fToPixels? fToPixels(this.el, v) : v;
+		
 	return value;
 };
 

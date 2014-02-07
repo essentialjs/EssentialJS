@@ -1,5 +1,7 @@
 @import "../../essential";
+@import "bootstrap/variables"; // Modify this for custom colors, font-sizes, etc
 @import "variables";
+@import "bootstrap/mixins";
 @import "mixins";
 
 // Font Faces
@@ -8,14 +10,7 @@
 // CSS Reset
 @import "bootstrap/reset";
 
-// Core variables and mixins
-@import "bootstrap/variables"; // Modify this for custom colors, font-sizes, etc
-@import "bootstrap/mixins";
-
-// Grid system and page structure
-// @import "bootstrap/scaffolding";
-//@import "bootstrap/grid.less";
-//@import "bootstrap/layouts.less";
+html, body { height: 100%; }
 
 // Styled patterns and elements
 @import "bootstrap/type";
@@ -25,7 +20,6 @@
 
 // Alert Styles
 @import "bootstrap/alerts";
-
 
 // Components: common
 @import "bootstrap/sprites.less";
@@ -86,3 +80,60 @@
 	top: 20px;
 	bottom: 0; left:0; right:0;
 }
+
+.dialog-content table td {
+	width: 3em; text-align: center;
+}
+
+[role=dialog] {
+	position: fixed;
+
+	//top:100px; left:100px;
+	z-index: 500;
+
+	background-color: white;
+
+	border: 1px solid #aaa;
+
+	.box-shadow(8px 8px 12px rgba(50, 50, 50, 0.4));
+
+	&.state-active {
+		z-index: 600;
+	}
+
+	> header {
+		position:relative;
+		width: 100%;
+		height: 20px;
+		border-bottom: 1px solid #bbb;
+		margin-bottom: 6px;
+		cursor: default;
+
+		h5 {
+			padding: 3px;
+		}
+
+		[name=close] {
+			position: absolute;
+			top:0; right:0;
+			height: 100%;
+			background: transparent;
+			border: 0;
+			line-height: 1em;
+		}
+	}
+
+	.dialog-content {
+		/* change selector to allow role to be changed */
+		top-margin: 20px;
+		position: relative;
+		min-width: 200px;
+		min-height: 40px;
+		overflow-y: auto; //TODO scrolled
+
+		table {
+			margin: 1em;
+		}
+	}
+}
+

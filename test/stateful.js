@@ -8,8 +8,10 @@ test ("Creating StatefulResolver",function(){
 	ok(stateful);
 
 	var el = document.createElement("div");
+	if (el.uniqueID == undefined) el.uniqueID = 12345;
 	var stateful = StatefulResolver(el);
 	equal(el.stateful,stateful);
+	equal(el.stateful.uniqueID,el.uniqueID);
 })
 
 test("Destroying StatefulResolver",function(){
@@ -55,31 +57,86 @@ test("Initial stateful element state",function() {
 		'<span disabled></span>',
 		'<span aria-disabled="false"></span>',
 		'<span aria-disabled="true"></span>',
+
+		'<select><option>A</option><option selected>B</option></select>',
+		// row gridcell
+
+		'<button role="tab">Tab</button>',
+		'<button role="tab" aria-selected="selected">Tab</button>',
+		'<button role="tab" aria-selected="true">Tab</button>',
+
+		'<input required="required">',
+		'<input aria-required="true" aria-invalid="true">',
+		'<input aria-invalid="other">',
+		'<input hidden="hidden">',
+		'<input aria-hidden="true">',
+
+		'<button aria-pressed="true"></button>',
+		'<button aria-pressed="false"></button>',
+		'<button></button>',
+
 		'');
 	var statefulDiv = StatefulResolver(el,true);
 
 	equal(statefulDiv("state.disabled","undefined"),false);
 	equal(statefulDiv("state.readOnly","undefined"),false);
-	equal(statefulDiv("state.hidden","undefined"),undefined);
-	equal(statefulDiv("state.required","undefined"),undefined);
-	equal(statefulDiv("state.expanded","undefined"),undefined);
+	equal(statefulDiv("state.hidden","undefined"),false);
+	equal(statefulDiv("state.required","undefined"),false);
+	equal(statefulDiv("state.expanded","undefined"),false);
 	equal(statefulDiv("state.checked","undefined"),undefined);
 
-	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false);
+	equal(StatefulResolver(el.firstChild,true)("state.checked","undefined"),false,"checked");
 	equal(StatefulResolver(el.childNodes[1],true)("state.checked","undefined"),true);
 	// equal(StatefulResolver(el.childNodes[2],true)("state.checked"),true); TODO should aria transfer to checked state
 	equal(StatefulResolver(el.childNodes[3],true)("state.checked","undefined"),true);
 
-	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false);
-	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true);
-	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true);
+	equal(StatefulResolver(el.childNodes[4],true)("state.expanded","undefined"),false,"aria-expanded = false");
+	equal(StatefulResolver(el.childNodes[5],true)("state.expanded","undefined"),true,"aria-expanded = true");
+	equal(StatefulResolver(el.childNodes[6],true)("state.expanded","undefined"),true,"aria-expanded = expanded");
 
-	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true);
+	equal(StatefulResolver(el.childNodes[7],true)("state.disabled","undefined"),true,"disabled");
 	equal(StatefulResolver(el.childNodes[8],true)("state.disabled","undefined"),false);
 	equal(StatefulResolver(el.childNodes[9],true)("state.disabled","undefined"),true);
 
-	//TODO hidden required
+	equal(el.childNodes[10].tagName,"SELECT");
+	equal(StatefulResolver(el.childNodes[10].firstChild,true)("state.selected","undefined"),false,"selected");
+	equal(StatefulResolver(el.childNodes[10].firstChild.nextSibling,true)("state.selected","undefined"),true,"selected option 2");
+
+	// debugger;
+	equal(el.childNodes[11].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[11],true)("state.selected","undefined"),false);
+	equal(el.childNodes[12].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[12],true)("state.selected","undefined"),true);
+	equal(el.childNodes[13].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[13],true)("state.selected","undefined"),true,"button with aria-selected=true");
+
+	//TODO role: gridcell row tab
+
+	equal(el.childNodes[14].tagName,"INPUT");
+	equal(StatefulResolver(el.childNodes[14])("state.required","undefined"),true);
+	equal(StatefulResolver(el.childNodes[15])("state.required","undefined"),true);
+	equal(StatefulResolver(el.childNodes[15])("state.invalid","undefined"),true);
+	equal(StatefulResolver(el.childNodes[16])("state.required","undefined"),false);
+	equal(StatefulResolver(el.childNodes[16])("state.hidden","undefined"),false);
+	equal(StatefulResolver(el.childNodes[16])("state.invalid","undefined"),true);
+	//TODO combobox gridcell listbox radiogroup spinbutton textbox tree
+
+	equal(el.childNodes[17].tagName,"INPUT");
+	equal(StatefulResolver(el.childNodes[17])("state.hidden","undefined"),true);
+	equal(StatefulResolver(el.childNodes[18])("state.hidden","undefined"),true);
+
+	equal(el.childNodes[19].tagName,"BUTTON");
+	equal(StatefulResolver(el.childNodes[19])("state.pressed","undefined"),true);
+	equal(StatefulResolver(el.childNodes[20])("state.pressed","undefined"),false);
+	equal(StatefulResolver(el.childNodes[21])("state.pressed","undefined"),false);
+
+	// tristate ?
+
 })
+
+		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
+		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
+
 
 test("Stateful element state",function(){
 	var StatefulResolver = Resolver("essential::StatefulResolver::");
@@ -87,16 +144,16 @@ test("Stateful element state",function(){
 	var el = document.createElement("div");
 	var stateful = StatefulResolver(el,true);
 
-	ok(! stateful("state.disabled","undefined"));
+	ok(! stateful("state.disabled","undefined"),"disabled undefined");
 	stateful.set("state.disabled",true);
-	ok(!el.disabled,"The disabled property should not be applied to avoid IE styling");
+	if (navigator.userAgent.indexOf(" MSIE ") == -1) ok(!el.disabled,"The disabled property should not be applied to avoid IE styling");
 	equal(el.getAttribute("aria-disabled"),"disabled");
 	equal(el.className,"state-disabled");
 	stateful.set("state.disabled",false);
 	ok(!el.disabled,"The disabled property should still be unaffected");
 	equal(el.className,"");
 
-	ok(! stateful("state.readOnly","undefined"));
+	ok(! stateful("state.readOnly","undefined"),"readOnly undefined");
 	stateful.set("state.readOnly",true);
 	ok(el.readOnly);
 	equal(el.className,"state-readOnly");
@@ -104,28 +161,47 @@ test("Stateful element state",function(){
 	ok(!el.readOnly);
 	equal(el.className,"");
 
-	ok(! stateful("state.hidden","undefined"));
+	ok(! stateful("state.hidden","undefined"),"hidden undefined");
 	stateful.set("state.hidden",true);
-	ok(el.hidden || (el.getAttribute("hidden") == "hidden"));
+	ok(el.hidden || (el.getAttribute("hidden") == "true"));
 	equal(el.className,"state-hidden");
 	stateful.set("state.hidden",false);
 	ok(!el.hidden);
 	equal(el.className,"");
 
-	ok(! stateful("state.required","undefined"));
+	ok(! stateful("state.required","undefined"),"required undefined");
 	stateful.set("state.required",true);
-	ok(el.required || (el.getAttribute("required") == "required"));
-	equal(el.getAttribute("aria-required"),"required");
+	ok(el.required || (el.getAttribute("required") == "true"));
+	equal(el.getAttribute("aria-required"),"true");
 	equal(el.className,"state-required");
 	stateful.set("state.required",false);
 	ok(!el.required);
 	equal(el.getAttribute("required"),null);
 	equal(el.className,"");
 
+	ok(! stateful("state.selected","undefined"));
+	stateful.set("state.selected",true);
+	ok((el.getAttribute("aria-selected") == "true"));
+	// equal(el.className,"state-selected");
+	stateful.set("state.selected",false);
+	equal(el.getAttribute("aria-selected"),null);
+	// ok(!el.selected);
+	// equal(el.className,"");
+
+	//TODO role: option tab gridcell row
+
+
+	ok(! stateful("state.pressed","undefined"));
+	stateful.set("state.pressed",true);
+	ok((el.getAttribute("aria-pressed") == "true"));
+	// equal(el.className,"state-pressed");
+	stateful.set("state.pressed",false);
+	equal(el.getAttribute("aria-pressed"),null);
+
 	ok(! stateful("state.expanded","undefined"));
 	stateful.set("state.expanded",true);
-	ok(el.expanded || (el.getAttribute("expanded") == "expanded"));
-	equal(el.getAttribute("aria-expanded"),"expanded");
+	ok(el.expanded || (el.getAttribute("aria-expanded") == "true"));
+	equal(el.getAttribute("aria-expanded"),"true");
 	equal(el.className,"state-expanded");
 	stateful.set("state.expanded",false);
 	ok(!el.required);

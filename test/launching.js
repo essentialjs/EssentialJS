@@ -1,4 +1,10 @@
-module('launching page');
+module('launching page', {
+	"teardown": function() {
+		Generator.discardRestricted();
+		Resolver("essential::EnhancedDescriptor::").discardAll();
+		
+	}
+});
 
 test("Page Resolver",function(){
 	ok(Resolver.page,"Page resolver present")
@@ -22,6 +28,76 @@ test("Page Resolver",function(){
 
 })
 
+var INIT_PAGE_STATE	= {
+	"livepage": false,
+	"authenticated": true,
+	"authorised": true,
+	"connected": true,
+	"preloading": false,
+	"loading": true,
+	"loadingConfig": false,
+	"loadingScripts": false,
+	"configured": true,
+	"launching": false, 
+	"launched": false
+};
+
+test('roles are enhanced when no page state is preset',function() {
+
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
+		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
+		pageResolver = Resolver("page"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+	// var appConfig = ApplicationConfig();
+
+	ok(! pageResolver("state.livepage"));
+	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
+	pageResolver.set("enabledRoles.test321",true);	
+	pageResolver.set("handlers.init.test321",function(el,role,config) {
+		el.setAttribute("test321","321");
+	});
+
+	var div = HTMLElement("div",{ "role":"test321" },'');
+	DescriptorQuery(div).queue(); // queue for enhancement
+
+	// DescriptorQuery(div)[0]._init();
+	pageResolver.set("state.livepage",true);
+
+	equal(div.getAttribute("test321"),"321");
+	ok(! pageResolver("state.loading"), "loading is done on livepage by default");
+	ok(pageResolver("state.launching"), "after loading launching is automatically entered");
+	ok(! pageResolver("state.launched"), "it is up to the application to flag launching complete");
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+	// ok(pageResolver("state.livepage"));
+
+	pageResolver.set("handlers.init.test321",undefined);
+	pageResolver.set("state.livepage",false);
+});
+
+test('Some states can be changed without instantiating ApplicationConfig',function() {
+
+	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		// DescriptorQuery = Resolver("essential::DescriptorQuery::"),
+		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
+		pageResolver = Resolver("page"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+
+	equal(ApplicationConfig.info.existing[0],undefined,"ApplicationConfig not already there when testing");
+
+	ok(! pageResolver("state.livepage"));
+	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
+
+	pageResolver.set("state.authenticated",false);
+	pageResolver.set("state.authorised",false);
+
+	equal(ApplicationConfig.info.existing[0],undefined,"Existing ApplicationConfig");
+	pageResolver.set("state.authenticated",true);
+	// pageResolver.set("state.authorised",true);
+})
+
 // var ApplicationConfig = Resolver("essential")("ApplicationConfig");
 // ApplicationConfig.restrict({ singleton:true });
 
@@ -30,9 +106,15 @@ test("ApplicationConfig",function(){
 
 	var configRequired = Resolver("essential::configRequired::");
 	var configLoaded = Resolver("essential::configLoaded::");
-	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
+	var ApplicationConfig = Resolver("essential::ApplicationConfig::"),
+		pageResolver = Resolver("page");
+
+	ok(! pageResolver("state.livepage"));
+	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
+
 	var ac = ApplicationConfig();
 	// equal(document.body.stateful,Resolver.page);
+	equal( Resolver("page")(["pagesById",ac.uniquePageID]), ac );
 
 	// application/config
 	equal(ac.config("launched.charset"),"utf-8","launched.charset");
@@ -118,11 +200,15 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		equal(config["b"],"b","body data-role attribute");
 		equal(config["c"],"c","body application/config");
 
-		var config = page.getConfig(page.head);
-		ok(config);
-		equal(config["1"],"1","head data-role attribute");
-		equal(config["2"],"2","head data-role attribute");
-		equal(config["3"],"3","head application/config");
+		// if (navigator.userAgent.indexOf(" MSIE ") == -1) {
+			var config = page.getConfig(page.head);
+			ok(config);
+			equal(config["1"],"1","head data-role attribute");
+			equal(config["2"],"2","head data-role attribute");
+			equal(config["3"],"3","head application/config");
+		// }
+
+		page.destroy();
 
 		clearInterval(interval);
 		start();

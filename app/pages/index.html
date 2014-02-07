@@ -1,5 +1,162 @@
 <html>
 <body>
-<div role="template"></div>
+	<div role="toolbar" action="dialogs" style="height:30px; padding-left:40px; margin-right:300px;">
+		<span style="display:block;position:absolute;left:0;height:100%;font-size:2em;color:#e0e0e0;">&#12283;</span>
+	<button name="new">New Dialog</button>
+	<button name="new-html5">HTML5 Controls</button>
+	</div>
+
+	<section role="dummy" data-role="'template':'#blank-tpl'"></section>
+
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false,'placement':{'top':10,'right':250}"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-role':'application','content-config':{'template':'#test-content'},'inline':false,'tile':true"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-content','inline':false,'tile':true"></div>
+	<div role="dialog" data-role="'template':'#test-dialog','content-template':'#test-html5','inline':false,'tile':true"></div>
+
+	<div role="dialog" data-role="'template':'#test-dialog','content-role':'application','inline':false,'tile':true">
+		<h2>Lead</h2>
+		<div style="position:relative;height:6em;">
+		<div role="scrolled" data-role="'template':'#test-content'" class="aSide" style="width:230px; height:100px;">
+			TODO configure grow to avoid scrolling
+		</div>
+		</div>
+		<script type="application/init">
+			parentElement.appendChild(document.createTextNode(' Done init script for dialog. '));
+		</script>
+	</div>
+
+
+	<div role="template" id="blank-tpl">The is a lazy template</div>
+
+	<div role="template" id="test-dialog">
+		<header>
+		<h5>Dialog Title</h5>
+		<button name="close">&times;</button>
+		</header>
+
+		<div role="content">
+		</div>
+
+		<footer>...</footer>
+	</div>
+
+	<div role="template" id="test-content">
+		<h3>3rd. level</h3>
+		<dl>
+			<dt>AAAAA</dt> <dd>BBBBBBBBBBB</dd>
+			<dt>AAAAA</dt> <dd>BBBBBBBBBBB</dd>
+			<dt>AAAAA</dt> <dd>BBBBBBBBBBB</dd>
+			<dt>AAAAA</dt> <dd>BBBBBBBBBBB</dd>
+			<dt>AAAAA</dt> <dd>BBBBBBBBBBB</dd>
+			<dt>AAAAA</dt> <dd>BBBBBBBBBBB</dd>
+		</dl>
+
+		<table role="table">
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+			<tr><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+		</table>
+	</div>
+
+	<div role="template" id="test-html5">
+
+	  <div class="span4">
+
+	    <label>Select</label>
+	    <select><option>Select</option><option>Option 2</option><option>Option 3</option></select>
+	    <hr>
+
+	    <label>textarea</label><textarea>Textarea</textarea>
+	    <hr>
+
+	    <label>text</label><input type="text" value="Text input">
+	    <hr>
+
+	    <label>password</label><input type="password" value="Password input">
+	    <hr>
+
+	    <label>checkbox</label><input type="checkbox" value="">
+	    <hr>
+
+	    <label>radio</label><input type="radio" value="">
+	    <hr>
+
+	    <label>button</label><input type="button" value="Button">
+	    <hr>
+
+	    <label>submit</label><input type="submit" value="Submit">
+	    <hr>
+
+	    <label>reset</label><input type="reset" value="Reset">
+	  </div><!-- /span4 -->
+	  <div class="span4">
+
+	    <label>file</label><input type="file" value="">
+	    <hr>
+
+	    <label>hidden</label><input type="hidden" value="hidden">
+	    <hr>
+
+	    <label>image</label><input type="image" value="">
+	    <hr>
+
+	    <label>datetime</label><input type="datetime" value="">
+	    <hr>
+
+	    <label>datetime-local</label><input type="datetime-local" value="">
+	    <hr>
+
+	    <label>date</label><input type="date" value="">
+	    <hr>
+
+	    <label>month</label><input type="month" value="">
+	    <hr>
+
+	    <label>time</label><input type="time" value="">
+	    <hr>
+
+	    <label>week</label><input type="week" value="">
+	  </div><!-- /span4 -->
+
+	  <div class="span4">
+
+	    <label>number</label>
+	    <input type="number" value="">
+
+	    <hr>
+
+	    <label>range</label>
+	    <input type="range" value="">
+
+	    <hr>
+
+	    <label>email</label>
+	    <input type="email" value="">
+
+	    <hr>
+
+	    <label>url</label>
+	    <input type="url" value="">
+
+	    <hr>
+
+	    <label>search</label>
+	    <input type="search" value="">
+
+	    <hr>
+
+	    <label>tel</label>
+	    <input type="tel" value="">
+
+	    <hr>
+
+	    <label>color</label>
+	    <input type="color" value="">
+
+	  </div><!-- /span4 -->
+
+	</div>
+
 </body>
 </html>

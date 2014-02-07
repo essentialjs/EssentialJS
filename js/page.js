@@ -8,18 +8,16 @@
 		console = essential("console"),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
-		arrayContains = essential("arrayContains"),
+		ensureCleaner = essential("ensureCleaner"),
 		escapeJs = essential("escapeJs"),
 		HTMLElement = essential("HTMLElement"),
-		baseUrl = location.href.substring(0,location.href.split("?")[0].lastIndexOf("/")+1),
 		serverUrl = location.protocol + "//" + location.host,
 		HTMLScriptElement = essential("HTMLScriptElement"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		sizingElements = essential("sizingElements"),
-		enhancedElements = essential("enhancedElements"),
 		enhancedWindows = essential("enhancedWindows");
 	var contains = essential("contains"),
-		createHTMLDocument = essential("createHTMLDocument");
+		importHTMLDocument = essential("importHTMLDocument");
 
 	var COPY_ATTRS = ["rel","href","media","type","src","lang","defer","async","name","content","http-equiv","charset"];
 	var EMPTY_TAGS = { "link":true, "meta":true, "base":true, "img":true, "br":true, "hr":true, "input":true, "param":true };
@@ -63,7 +61,7 @@
 			return;
 		}
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
@@ -74,7 +72,7 @@
 	*/
 	function reflectAria(el,key,value) {
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -85,13 +83,13 @@
 	*/
 	function reflectAttributeAria(el,key,value) {
 		if (value) {
-			el.setAttribute(key,key);
+			el.setAttribute(key,this["true"] || "true");
 		} else {
 			el.removeAttribute(key);
 		}
 
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -102,13 +100,13 @@
 			el[key] = !!value;
 		} else {
 			if (value) {
-				el.setAttribute(key,key);
+				el.setAttribute(key,this["true"] || "true");
 			} else {
 				el.removeAttribute(key);
 			}
 		}
 		if (value) {
-			el.setAttribute("aria-"+key,key);
+			el.setAttribute("aria-"+key,this["true"] || "true");
 		} else {
 			el.removeAttribute("aria-"+key);
 		}
@@ -117,6 +115,27 @@
 	function reflectAriaProp(el,key,value) {
 		el[this.property] = value;
 	}
+
+	function reflectBoolean(el,key,value) {
+		// html5: html5 property/attribute name
+		// aria: aria property name
+		if (this.html5 !== false && typeof el[this.html5 || key] == "boolean") {
+			el[this.html5] = !!value;
+		} 
+		// Set aria prop or leave it to the attribute ?
+		if (this.aria && typeof el[this.aria] == "boolean") {
+			el[this.aria] = !!value;
+		} 
+
+		if (value) {
+			if (this.aria) el.setAttribute("aria-"+key,this["true"] || "true");
+			el.setAttribute(this.html5,this["true"] || "true");
+		} else {
+			if (this.aria) el.removeAttribute("aria-"+key);
+			el.removeAttribute(this.html5);
+		}
+	}
+
 
 	function readPropertyAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result;
@@ -149,6 +168,25 @@
 		return result;
 	}
 
+	function readBoolean(el,key) {
+		// html5: html5 property/attribute name
+		// aria: aria property name
+		if (this.html5 !== false && typeof el[this.html5 || key] == "boolean") {
+			if (el[this.html5]) return true;
+		} 
+		if (this.aria && typeof el[this.aria] == "boolean") {
+			if (el[this.aria]) return true;
+		} 
+
+		var value = el.getAttribute("aria-"+key), result;
+		if (value != null) result = value != "false" && value != ""; 
+
+		value = el.getAttribute(this.html5 || key);
+		if (value != null) result = value != "false" && value != ""; 
+
+		return !!result;
+	}
+
 	function readAria(el,key) {
 		var value = el.getAttribute("aria-"+key), result;
 		if (value != null) result = value != "false" && value != ""; 
@@ -160,30 +198,29 @@
 	}
 
 	var state_treatment = {
-		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
+		disabled: { index: 0, reflect: reflectPropertyAria, read: readPropertyAria, "default":false, property:"ariaDisabled", "true":"disabled" }, // IE hardcodes a disabled text shadow for buttons and anchors
 		readOnly: { index: 1, read: readPropertyAria, "default":false, reflect: reflectProperty },
-		hidden: { index: 2, reflect: reflectAttribute, read: readAttributeAria }, // Aria all elements
-		required: { index: 3, reflect: reflectAttributeAria, read: readAttributeAria, property:"ariaRequired" },
-		expanded: { index: 4, reflect: reflectAttributeAria, read: readAria, property:"ariaExpanded" }, //TODO ariaExpanded
-		checked: { index:5, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" } //TODO ariaChecked ?
+		hidden: { index: 2, reflect: reflectBoolean, read: readBoolean, aria:"ariaHidden", html5:"hidden" }, // Aria all elements
+		required: { index: 3, reflect: reflectBoolean, read: readBoolean, aria:"ariaRequired", html5:"required" },
+		invalid: { index: 4, reflect: reflectBoolean, read: readBoolean, aria:"ariaInvalid", html5:false },
+		expanded: { index: 5, reflect: reflectBoolean, read: readBoolean, aria:"ariaExpanded" }, //TODO ariaExpanded
+		checked: { index: 6, reflect:reflectProperty, read: readPropertyAria, property:"ariaChecked" }, //TODO ariaChecked ?
+		pressed: { index: 7, reflect: reflectBoolean, read: readBoolean, aria:"ariaPressed", html5:false },
+		selected: { index: 8, reflect: reflectBoolean, read: readBoolean, "default":false, aria:"ariaSelected", html5:"selected" },
+		active: { index: 9, reflect:reflectAttribute, read: readAttribute } //TODO custom attribute: "data-active"
 
 		//TODO inert
 		//TODO draggable
 		//TODO contenteditable
 		//TODO tooltip
 		//TODO hover
-		//TODO down ariaPressed
-		//TODO ariaHidden
+		//TODO down 
 		//TODO ariaDisabled
-		//TODO ariaSelected
-
-		//TODO aria-hidden all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-hidden
-		//TODO aria-invalid all elements http://www.w3.org/TR/wai-aria/states_and_properties#aria-invalid
 
 		/*TODO IE aria props
 			string:
-			ariaPressed ariaSelected ariaSecret ariaRequired ariaRelevant ariaReadonly ariaLive
-			ariaInvalid ariaHidden ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
+			ariaPressed ariaSecret ariaRelevant ariaReadonly ariaLive
+			ariaBusy ariaActivedescendant ariaFlowto ariaDisabled
 		*/
 
 		//TODO restricted/forbidden tie in with session specific permissions
@@ -240,6 +277,7 @@
 	ClassForState.prototype.hidden = "state-hidden";
 	ClassForState.prototype.required = "state-required";
 	ClassForState.prototype.expanded = "state-expanded";
+	ClassForState.prototype.active = "state-active";
 
 	function ClassForNotState() {
 
@@ -249,6 +287,7 @@
 	ClassForNotState.prototype.hidden = "";
 	ClassForNotState.prototype.required = "";
 	ClassForNotState.prototype.expanded = "";
+	ClassForNotState.prototype.active = "";
 
 	function make_Stateful_fireAction(el) {
 		return function() {
@@ -261,11 +300,10 @@
 
 	function Stateful_reflectStateOn(el,useAsSource) {
 		var stateful = el.stateful = this;
-		if (el._cleaners == undefined) el._cleaners = [];
 		//TODO consider when to clean body element
-		if (!arrayContains(el._cleaners,statefulCleaner)) el._cleaners.push(statefulCleaner); 
+		ensureCleaner(el,statefulCleaner);
 		if (useAsSource != false) readElementState(el,stateful("state"));
-		stateful.on("change","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
+		stateful.on("change reflect","state",el,reflectElementState); //TODO "livechange", queues up calls while not live
 		if (!nativeClassList) {
 			el.classList = DOMTokenList();
 			DOMTokenList_mixin(el.classList,el.className);
@@ -306,7 +344,10 @@
 		stateful.fireAction = make_Stateful_fireAction(el);
 		stateful.reflectStateOn = Stateful_reflectStateOn;
 
-		if (el) stateful.reflectStateOn(el);
+		if (el) {
+			stateful.reflectStateOn(el);
+			stateful.uniqueID = el.uniqueID;
+		}
 		
 		return stateful;
 	}
@@ -323,6 +364,7 @@
 	pageResolver.reference("state").mixin({
 		"livepage": false,
 		"background": false, // is the page running in the background
+		"managed": false, // managed by a main window
 		"authenticated": true,
 		"authorised": true,
 		"connected": true,
@@ -341,6 +383,14 @@
 		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+
+	Resolver("translations").on("change bind","locale",function(ev) {
+		var s = ev.value.split("-");
+		if (s.length == 1) s = ev.value.split("_");
+		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+	});
+
+
 	pageResolver.reference("connection").mixin({
 		"loadingProgress": "",
 		"status": "connected",
@@ -349,11 +399,31 @@
 		"logStatus": false
 	});
 
+	pageResolver.declare("enabledRoles",{});
 	pageResolver.declare("handlers.init",{});
 	pageResolver.declare("handlers.enhance",{});
 	pageResolver.declare("handlers.sizing",{});
 	pageResolver.declare("handlers.layout",{});
 	pageResolver.declare("handlers.discard",{});
+
+	pageResolver.declare("templates",{});
+
+	// Object.defineProperty(pageResolver.namespace,'handlers',{
+	// 	get: function() { return pageResolver.namespace.__handlers; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.__handlers = value;
+	// 	}
+	// });
+
+	// Object.defineProperty(pageResolver("handlers"),'enhance',{
+	// 	get: function() { return pageResolver.namespace.handlers.__enhance; },
+	// 	set: function(value) {
+	// 		debugger;
+	// 		pageResolver.namespace.handlers.__enhance = value;
+	// 	}
+	// });
+
 
 	pageResolver.reference("map.class.state").mixin({
 		authenticated: "authenticated",
@@ -368,23 +438,43 @@
 		authenticated: "login"
 	});
 
+    var NEXT_PAGE_ID = 1;
+    function getUniquePageID(doc) {
+    	if (doc.uniquePageID==undefined) {
+    		doc.uniquePageID = NEXT_PAGE_ID++;
+    	}
+    	return doc.uniquePageID;
+    }
+    getUniquePageID(document);
+
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
 		for(var n in state_treatment) triggers[n] = true;
 		for(var n in stateful("map.class.state")) triggers[n] = true;
 		for(var n in stateful("map.class.notstate")) triggers[n] = true;
 		for(var n in triggers) {
-			stateful.reference("state."+n,"null").trigger("change");
+			stateful.reference("state."+n,"null").trigger("reflect");
 		}
 	};
+
+
+	/* Active Element (pagewide) */
+	var oldActiveElement = null;
+	pageResolver.set("activeElement",null);
+	pageResolver.reference("activeElement").on("change",function(ev){
+		if (oldActiveElement) StatefulResolver(oldActiveElement).set("state.active",false);
+		if (ev.value) StatefulResolver(ev.value,true).set("state.active",true);
+		oldActiveElement = ev.value;
+	});
+
 
 	/*
 		Area Activation
 	*/
-	var _activeAreaName,_liveAreas=false;
+	var _activeAreaName;
 
 	function activateArea(areaName) {
-		if (! _liveAreas) { //TODO switch to pageResolver("livepage")
+		if (! pageResolver("state.livepage")) { //TODO switch to pageResolver("livepage")
 			_activeAreaName = areaName;
 			return;
 		}
@@ -404,11 +494,7 @@
 	}
 	essential.set("getActiveArea",getActiveArea);
 
-	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-
-	function bringLive() {
-		// var ap = ApplicationConfig(); //TODO factor this and possibly _liveAreas out
-
+	function launchWindows() {
 		for(var i=0,w; w = enhancedWindows[i]; ++i) if (w.openWhenReady) {
 			w.openNow();
 			delete w.openWhenReady;
@@ -416,25 +502,12 @@
 		EnhancedWindow.prototype.open = EnhancedWindow.prototype.openNow;
 
 		//TODO if waiting for initial page src postpone this
-
-		// Allow the browser to render the page, preventing initial transitions
-		_liveAreas = true;
-		pageResolver.set("state.livepage",true);
-
 	}
-
-	function onPageLoad(ev) {
-		_liveAreas = true;
-		pageResolver.set("state.livepage",true);
-	}
-
-	if (!_essentialTesting) {
-		if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-		else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
-	}
+	essential.set("launchWindows",launchWindows);
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
 	Resolver("page").declare("pages",{});
+	Resolver("page").declare("pagesById",{});
 	Resolver("page").declare("state.requiredPages",0);
 
 	function _Scripted() {
@@ -515,7 +588,8 @@
 
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
-		var el = this.document.getElementById(keys[0]);
+		// var el = this.document.getElementById(keys[0]);
+		var el = this.document.body.querySelector("#"+keys[0]); //TODO API
 		if (el && keys.length > 1) el = el.getElementByName(keys[1]);
 		return el;
 	};
@@ -528,7 +602,13 @@
 		if (element.id) {
 			return this._getElementRoleConfig(element,element.id);
 		}
-		var name = element.getAttribute("name");
+		var name;
+		try {
+			name = element.getAttribute("name");
+		}
+		catch(ex) { // access denied
+			return null;
+		}
 		if (name) {
 			var p = element.parentNode;
 			while(p && p.tagName) {
@@ -541,6 +621,23 @@
 		return this._getElementRoleConfig(element);
 	};
 
+	_Scripted.prototype.doInitScripts = function() {
+		var inits = this.inits();
+		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
+			// this.currently = s
+			try {
+				this.context["element"] = s;
+				this.context["parentElement"] = s.parentElement || s.parentNode;
+				with(this.context) eval(s.text);
+				s.done = true;
+			} catch(ex) {
+				// debugger;
+			} //TODO only ignore ex.ignore
+		}
+		this.context["this"] = undefined;
+	};
+
+	//TODO move to DescriptorQuery, move when improving scroller
 	_Scripted.prototype._prep = function(el,context) {
 
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -551,7 +648,8 @@
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
 				if (desc) {
-					// if (sizingElement) sizingElements[desc.uniqueId] = desc;
+					if (context.list) context.list.push(desc);
+					// if (sizingElement) sizingElements[desc.uniqueID] = desc;
 					desc.layouterParent = context.layouter;
 					if (desc.conf.layouter) {
 						context.layouter = desc;
@@ -559,7 +657,7 @@
 				} else {
 
 				}
-				if (desc==null || !desc.contentManaged) this._prep(e,{layouter:context.layouter});
+				if (desc==null || !desc.state.contentManaged) this._prep(e,{layouter:context.layouter,list:context.list});
 			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
@@ -577,7 +675,7 @@
 
 	function delayedScriptOnload(scriptRel) {
 		function delayedOnload(ev) {
-			var el = this;
+			var el = this, src = el.getAttribute("src");
 			var name = el.getAttribute("name");
 			if (name) {
 				ApplicationConfig().modules[name] = true;
@@ -585,11 +683,13 @@
 			setTimeout(function(){
 				// make sure it's not called before script executes
 				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				if (scripts[el.src.replace(baseUrl,"")] != undefined) {
+				//console.info("script",el.getAttribute("src"),el.src,scriptRel);
+
+				if (scripts[src] != undefined) {
 					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(baseUrl,"")],false);
+					pageResolver.set(["state","loadingScriptsUrl",src],false);
 				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
-					// absolute url
+					//TODO absolute url
 					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
 				}
 			},0);
@@ -621,12 +721,12 @@
 				attrs["type"] = l.getAttribute("type") || "text/javascript";
 				attrs["src"] = l.getAttribute("src");
 				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
-				attrs["base"] = baseUrl;
+				attrs["base"] = essential("baseUrl");
 				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
 				//attrs["id"] = l.getAttribute("script-id");
 				attrs["onload"] = delayedScriptOnload(l.rel);
 
-				var relSrc = attrs["src"].replace(baseUrl,"");
+				var relSrc = attrs["src"].replace(essential("baseUrl"),"");
 				l.attrs = attrs;
 				if (l.rel == "preload") {
 					var langOk = true;
@@ -669,7 +769,7 @@
 
 	function _SubPage(appConfig) {
 		// subpage application/config and enhanced element descriptors
-		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers") });
+		this.resolver = Resolver({ "config":{}, "descriptors":{}, "handlers":pageResolver("handlers"), "enabledRoles":pageResolver("enabledRoles") });
 		this.document = document;
 		_Scripted.call(this);
 
@@ -677,6 +777,19 @@
 		this.body = document.createElement("DIV");
 	}
 	var SubPage = Generator(_SubPage,{"prototype":_Scripted.prototype});
+
+	SubPage.prototype.destroy = function() {
+		if (this.applied) this.unapplyBody();
+		this.head = undefined;
+		this.body = undefined;
+		this.document = undefined;
+		if (this.url) {
+			delete Resolver("page::pages::")[this.url];
+		}
+		if (this.uniquePageID) {
+			delete Resolver("page::pagesById::")[this.uniquePageID];
+		}
+	};
 
 	SubPage.prototype.page = function(url) {
 		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
@@ -733,7 +846,9 @@
     }
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
-		var doc = this.document = createHTMLDocument(text);
+		var doc = this.document = importHTMLDocument(text);
+		this.uniquePageID = getUniquePageID(doc);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -754,8 +869,12 @@
 		this.documentLoaded = true;
 	};
 
-	SubPage.prototype.parseHTML = function(text) {
-		var doc = this.document = createHTMLDocument(text);
+	//TODO should it be(head,body,options) ?
+	SubPage.prototype.parseHTML = function(text,text2) {
+		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
+		var doc = this.document = importHTMLDocument(head,text);
+		this.uniquePageID = getUniquePageID(doc);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -779,7 +898,9 @@
 		// 	this.head = doc.head;
 		// 	this.body = doc.body;
 		// }
+		if (this.applied) return;
 
+		var applied = this.applied = [];
 		while(e) {
 			// insert before the first permanent, or at the end
 			if (fc == null) {
@@ -787,10 +908,18 @@
 			} else {
 				db.insertBefore(e,fc);
 			}
+			applied.push(e);
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
-		this.applied = true;
-		enhanceUnhandledElements();
+
+		this.doInitScripts();
+
+		//TODO put descriptors in reheating them
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+		enhanceUnfinishedElements();
 	};
 
 	SubPage.prototype.unapplyBody = function() {
@@ -798,21 +927,21 @@
 			pc = null,
 			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
 
-		while(e) {
-			if (e.permanent) {
-				// not part of subpage
-				e = e.previousElementSibling || e.previousSibling;
-			} else {
-				if (pc == null) {
-					this.body.appendChild(e);
-				} else {
-					this.body.insertBefore(e,pc)
-				}
-				pc = e;
-			}
-			e = db.lastElementChild!==undefined? db.lastElementChild : db.lastChild;
+		if (this.applied == null) return;
+		var applied = this.applied;
+		this.applied = null;
+
+		//TODO pull the descriptors out, freeze them
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
 		}
-		this.applied = false;
+		enhanceUnfinishedElements();
+		//TODO move descriptors out
+
+		// move out of main page body into subpage body
+		for(var i=0,e; e = applied[i]; ++i) this.body.appendChild(e);
+
 	};
 
 	SubPage.prototype.doesElementApply = function(el) {
@@ -838,9 +967,10 @@
 			base = link.attrs.base;
 			if (this.doesElementApply(link)) p.push( outerHtml(link) );
 		}
-		if (base) base = '<base href="'+base+'">';
+		if (this.options && this.options["track main"]) p.push('<meta name="track main" content="true">');
+		if (base) p.push('<base href="'+base+'">');
 		p.push('</head>');
-		return escapeJs(this.headPrefix.join("") + base + p.join(""));
+		return escapeJs(this.headPrefix.join("") + p.join(""));
 
 	};
 
@@ -859,7 +989,7 @@
 			'javascript:document.write("',
 			'<html><!-- From Main Window -->',
 			this.getHeadHtml(),
-			this.getBodyHtml(),
+			this.getBodyHtml(),//.replace("</body>",'<script>debugger;Resolver("essential::_queueDelayedAssets::")();</script></body>'),
 			'</html>',
 			'");'
 		];
@@ -879,38 +1009,27 @@
 			pageResolver.set(["state","online"],online);	
 		}
 	}
-	pageResolver.updateOnlineStatus = updateOnlineStatus;
-
+	essential.set("updateOnlineStatus",updateOnlineStatus);
 
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
+		//TODO kill it on document, it's a generator not a fixed number, pagesByName
+		this.uniquePageID = getUniquePageID(document);
+		Resolver("page").set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
 		_Scripted.call(this);
-
-		updateOnlineStatus();
-		if (this.body.addEventListener) {
-			this.body.addEventListener("online",updateOnlineStatus);
-			this.body.addEventListener("offline",updateOnlineStatus);
-		
-			if (window.applicationCache) applicationCache.addEventListener("error", updateOnlineStatus);
-		} else if (this.body.attachEvent) {
-			// IE8
-			this.body.attachEvent("online",updateOnlineStatus);
-			this.body.attachEvent("offline",updateOnlineStatus);
-		}
 
 		// copy state presets for backwards compatibility
 		var state = this.resolver.reference("state","undefined");
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		document.documentElement.lang = this.state("lang");
-		state.on("change",this,this.onStateChange);
 		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
 		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
-		this.pages = this.resolver.reference("pages",{ generator:SubPage});
+		this.pages = this.resolver.reference("pages",{ generator:SubPage });
 		SubPage.prototype.appConfig = this;
 
 		pageResolver.reflectStateOn(document.body,false);
@@ -919,14 +1038,35 @@
 		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
-		this._markPermanents();
+		this._markPermanents(); 
+		this.applied = true; // descriptors are always applied
+		var descs = this.resolver("descriptors");
+		for(var n in descs) {
+			EnhancedDescriptor.unfinished[n] = descs[n];
+		}
+
 		var bodySrc = document.body.getAttribute("data-src") || document.body.getAttribute("src");
 		if (bodySrc) this._requiredPage(bodySrc);
-
-		if (!_essentialTesting) setTimeout(bringLive,60); 
 	}
 
-	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{"prototype":_Scripted.prototype}) );
+	var ApplicationConfig = essential.set("ApplicationConfig", Generator(_ApplicationConfig,{
+		"prototype": _Scripted.prototype,
+		"discarded": function(ac) {
+
+			delete Resolver("page::pagesById::")[ac.uniquePageID];
+
+			//TODO blank member vars config on generator
+			ac.document = null;
+			ac.head = null;
+			ac.body = null;
+			ac.resolver = null;
+			ac.config = null;
+			ac.resources = null;
+			ac.inits = null;
+			// ac.pages = null;
+			// ac.state = null;
+		}
+	}) );
 	
 	// preset on instance (old api)
 	ApplicationConfig.presets.declare("state", { });
@@ -955,6 +1095,7 @@
 		return this.resolver("authenticated-area","null") || "authenticated";
 	};
 
+	//TODO sure we want to support many content strings?
 	ApplicationConfig.prototype.page = function(url,options,content,content2) {
 		//this.pages.declare(key,value);
 		var page = this.pages()[url]; //TODO options in reference onundefined:generator & generate
@@ -1003,56 +1144,76 @@
 		return page;
 	};
 
-	function enhanceUnhandledElements() {
-		var statefuls = ApplicationConfig(); // Ensure that config is present
-		//var handlers = DocumentRoles.presets("handlers");
-		//TODO listener to presets -> Doc Roles additional handlers
-		var dr = essential("DocumentRoles")()
-		// dr._enhance_descs(enhancedElements);
-		var descs = statefuls.resolver("descriptors");
-		dr._enhance_descs(descs);
-		dr._enhance_descs(descs);
-		
-		//TODO pendingDescriptors and descriptors
+	function enhanceUnfinishedElements() {
+		var handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
 
-		//TODO time to default_enhance yet?
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
+			if (desc && !desc.state.initDone) desc._init();
+		}
 
-		//TODO enhance active page
-		var pages = pageResolver("pages");
-		for(var n in pages) {
-			var page = pages[n];
-			if (page.applied) {
-				var descs = page.resolver("descriptors");
-				dr._enhance_descs(descs);
+		for(var n in EnhancedDescriptor.unfinished) {
+			var desc = EnhancedDescriptor.unfinished[n];
+
+			//TODO speed up outstanding enhance check
+			if (desc) {
+				if (desc.page.applied) {
+					// enhance elements of applied subpage
+
+					desc.ensureStateful();
+					desc._tryEnhance(handlers,enabledRoles);
+					desc._tryMakeLayouter(""); //TODO key?
+					desc._tryMakeLaidout(""); //TODO key?
+
+					if (desc.conf.sizingElement) sizingElements[n] = desc;
+					if (!desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				} else {
+					// freeze in unapplied subpage
+					//TODO & reheat
+					// if (desc.state.needEnhance && true/*TODO need others?*/) EnhancedDescriptor.unfinished[n] = undefined;
+				}
 			}
 		}
 	}
+	EnhancedDescriptor.enhanceUnfinished = enhanceUnfinishedElements;
 
-	ApplicationConfig.prototype.onStateChange = function(ev) {
+	pageResolver.on("change","state", onStateChange);
+
+	function onStateChange(ev) {
+		var b = ev.base;
 		switch(ev.symbol) {
-			case "livepage":
-				var ap = ev.data;
-				//if (ev.value == true) ap.reflectState();
-				ev.data.doInitScripts();
-				if (_activeAreaName) {
-					activateArea(_activeAreaName);
-				} else {
-					if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-					else activateArea(ap.getIntroductionArea());
+			case "livepage": 
+				if (ev.value) {
+					var ap = ApplicationConfig();
+
+					if (!b.loadingScripts && !b.loadingConfig) {
+						--ev.inTrigger;
+						this.set("state.loading",false);
+						++ev.inTrigger;
+					} else {
+						ap.doInitScripts();
+						enhanceUnfinishedElements();
+					}
+					if (_activeAreaName) {
+						activateArea(_activeAreaName);
+					} else {
+						if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
+						else activateArea(ap.getIntroductionArea());
+					}
 				}
 				break;
 			case "loadingScripts":
 			case "loadingConfig":
 				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
 				--ev.inTrigger;
-				this.set("state.loading",ev.base.loadingScripts || ev.base.loadingConfig);
+				this.set("state.loading",b.loadingScripts || b.loadingConfig);
 				++ev.inTrigger;
 				break;
 
 			case "preloading":
 				if (! ev.value) {
-					for(var n in ev.base.loadingScriptsUrl) {
-						var link = ev.base.loadingScriptsUrl[n];
+					for(var n in b.loadingScriptsUrl) {
+						var link = b.loadingScriptsUrl[n];
 						if (link.rel == "pastload" && !link.added) {
 							var langOk = true;
 							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
@@ -1065,46 +1226,56 @@
 
 			case "loading":
 				if (ev.value == false) {
+					var ap = ApplicationConfig();
+
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					ap.doInitScripts();	
+					enhanceUnfinishedElements();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
-					if (ev.base.configured == true && ev.base.authenticated == true 
-						&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+					if (b.configured && b.authenticated 
+						&& b.authorised && b.connected && !b.launched) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
 						if (document.body) essential("instantiatePageSingletons")();
-						enhanceUnhandledElements();
+						enhanceUnfinishedElements();
 					}
 				} 
 				break;
 			case "authenticated":
-				var ap = ev.data;
-				if (ev.base.authenticated) activateArea(ap.getAuthenticatedArea());
-				else activateArea(ap.getIntroductionArea());
+				if (ev.base.livepage) {
+					var ap = ApplicationConfig();
+
+					if (b.authenticated) activateArea(ap.getAuthenticatedArea());
+					else activateArea(ap.getIntroductionArea());
+				}
 				// no break
 			case "authorised":
 			case "configured":
-				if (ev.base.loading == false && ev.base.configured == true && ev.base.authenticated == true 
-					&& ev.base.authorised == true && ev.base.connected == true && ev.base.launched == false) {
+				if ( !b.loading && b.configured && b.authenticated 
+					&& b.authorised && b.connected && !b.launched) {
 					this.set("state.launching",true);
+
+					var ap = ApplicationConfig();
+
 					// do the below as recursion is prohibited
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
+					ap.doInitScripts();	
+					enhanceUnfinishedElements();
 				}
 				break;			
 			case "launching":
 			case "launched":
 				if (ev.value == true) {
+					var ap = ApplicationConfig();
+
 					if (document.body) essential("instantiatePageSingletons")();
-					ev.data.doInitScripts();	
-					enhanceUnhandledElements();
-					if (ev.symbol == "launched" && ev.base.requiredPages == 0) this.set("state.launching",false);
+					ap.doInitScripts();	
+					enhanceUnfinishedElements();
+					if (ev.symbol == "launched" && b.requiredPages == 0) this.set("state.launching",false);
 				}
 				break;
 			case "requiredPages":
-				if (ev.value == 0 && !ev.base.launching) {
+				if (ev.value == 0 && !b.launching) {
 					this.set("state.launching",false);
 				}
 				break
@@ -1113,10 +1284,15 @@
 				break;
 			
 			default:
-				if (ev.base.loading==false && ev.base.launching==false && ev.base.launched==false) {
+				if (b.loading==false && b.launching==false && b.launched==false) {
 					if (document.body) essential("instantiatePageSingletons")();
 				}
 		}
+
+		// should this be configurable in the future?
+        if (b.launched && (!b.authorised || !b.authenticated) && b.autoUnlaunch !== false) {
+            this.set("state.launched",false);
+        }
 	};
 
 	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
@@ -1158,29 +1334,19 @@
 		this.resolver.set(["state",whichState],v);
 	};
 
+	//TODO split list of permanent and those with page, put it in subpage
 	ApplicationConfig.prototype._markPermanents = function() 
 	{
 		var e = document.body.firstElementChild!==undefined? document.body.firstElementChild : document.body.firstChild;
 		while(e) {
-			e.permanent = true;
+			try {
+				e.permanent = true;
+			} catch(ex) {
+				//TODO handle text elements
+				// will probably have to be a managed list of permanent elements or uniqueID
+			}
 			e = e.nextElementSibling!==undefined? e.nextElementSibling : e.nextSibling;
 		}
-	};
-
-	ApplicationConfig.prototype.doInitScripts = function() {
-		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
-			// this.currently = s
-			try {
-				this.context["element"] = s;
-				this.context["parentElement"] = s.parentElement || s.parentNode;
-				with(this.context) eval(s.text);
-				s.done = true;
-			} catch(ex) {
-				// debugger;
-			} //TODO only ignore ex.ignore
-		}
-		this.context["this"] = undefined;
 	};
 
 	// iBooks HTML widget
@@ -1195,13 +1361,29 @@
 	}
 
 	function onmessage(ev) {
-		var data = JSON.parse(ev.data);
-		if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
-			placement.setOptions(data.enhanced.options);
-			placement.setMain(data.enhanced.main);
-			placement.track();
+		if (ev.data) {
+			var data = JSON.parse(ev.data);
+			if (data && data.enhanced && data.enhanced.main.width && data.enhanced.main.height) {
+				placement.setOptions(data.enhanced.options);
+				placement.setMain(data.enhanced.main);
+				placement.track();
+			}
 		}
+		//TODO else foreign message, or IE support?
 	} 
+
+	function placementBroadcaster() {
+		placement.measure();
+		for(var i=0,w; w = enhancedWindows[i]; ++i) {
+			w.notify();
+		}
+		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
+		placement.notifyNeeded = false;
+	}
+
+	function trackMainWindow() {
+		placement.track();
+	}
 
 	var placement = {
 		x: undefined, y: undefined,
@@ -1275,46 +1457,49 @@
 			this.y = y;
 			this.width = width;
 			this.height = height;
+		},
+
+		"startTrackMain": function() {
+			if (this.mainTracker) return;
+
+			this.mainTracker = setInterval(trackMainWindow,250);
+
+			if (window.postMessage) {
+				if (window.addEventListener) {
+					window.addEventListener("message",onmessage,false);
+
+				} else if (window.attachEvent) {
+					window.attachEvent("onmessage",onmessage);
+				}
+			}
+		},
+		"stopTrackMain": function() {
+			if (!this.mainTracker) return;
+
+			clearInterval(this.mainTracker);
+			this.mainTracker = null;
+
+			if (window.postMessage) {
+				if (window.removeEventListener) {
+					window.removeEventListener("message",onmessage);
+
+				} else if (window.attachEvent) {
+					window.deattachEvent("onmessage",onmessage);
+				}
+			}
+		},
+
+		"ensureBroadcaster": function() {
+			if (this.broadcaster) return;
+
+			placement.measure();
+			placement.notifyNeeded = false;
+			this.broadcaster = setInterval(placementBroadcaster,250);
 		}
 	};
-	placement.measure();
-	placement.notifyNeeded = false;
+
 	essential.declare("placement",placement);
 
-	//TODO make this testable
-	placement.broadcaster = setInterval(function() {
-		placement.measure();
-		for(var i=0,w; w = enhancedWindows[i]; ++i) {
-			w.notify();
-		}
-		if (placement.notifyNeeded) ;//TODO hide elements if zero, show if pack from zero
-		placement.notifyNeeded = false;
-	},250);
-
-
-	function trackMainWindow() {
-		placement.track();
-	}
-
-	// tracking main window
-	if (window.opener) {
-
-		// TODO might not be needed
-		setInterval(trackMainWindow,250);
-
-		if (window.postMessage) {
-			if (window.addEventListener) {
-				window.addEventListener("message",onmessage,false);
-
-			} else if (window.attachEvent) {
-				window.attachEvent("onmessage",onmessage);
-
-			}
-			//TODO removeEvent
-		}
-
-
-	}
 
 	function EnhancedWindow(url,name,options,index) {
 		this.name = name;
@@ -1324,6 +1509,8 @@
 		this.index = index;
 		this.width = this.options.width || 100;
 		this.height = this.options.height || 500;
+
+		placement.ensureBroadcaster();
 	}
 
 	EnhancedWindow.prototype.override = function(url,options) {

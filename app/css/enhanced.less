@@ -36,17 +36,10 @@ body {
 	.scrollbarLayout();
 	.scrollbarColor();
 
-	// debugging purposes
-	.horz-scroller,
-	.vert-scroller {
-		background-color: lightblue;
-		>header, >footer { background-color: lightblue; }
-	}
-
 }
 
 .leftSide {
-	left:0; right:55%; margin-right: 20px;
+	left:0; right:65%; margin-right: 20px;
 
 	table {
 		margin: 30px;
@@ -63,6 +56,13 @@ body {
 
 .rightSide {
 	right:0; width:55%;
+
+	// debugging purposes
+	.horz-scroller.obscured,
+	.vert-scroller.obscured {
+		background-color: lightblue;
+		>header { background-color: lightblue; }
+	}
 }
 
 [role=scrolled] {

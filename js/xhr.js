@@ -1,4 +1,4 @@
-/**
+/*!
 * XMLHttpRequest.js Copyright (C) 2011 Sergey Ilinsky (http://www.ilinsky.com)
 *
 * This work is free software; you can redistribute it and/or modify

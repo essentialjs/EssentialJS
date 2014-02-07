@@ -7,16 +7,17 @@
   <meta content="Novo Bank" name="description">
   <meta content="Henrik Vendelbo" name="author">
 
-	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled templated">
+  <meta name="text selection" content="input textarea">
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled templated table">
   <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
   <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
-
+  <base href="/app/">
 	<link rel="stylesheet" href="css/basic.css" media="screen">
   <link rel="stylesheet" href="css/enhanced.css" media="screen">
 
 	<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
-	<script type="text/javascript" src="../js/modernizr.js"></script>
+	<script type="text/javascript" src="../js/modernizr.min.js"></script>
 	<script type="text/javascript" src="../js/json2.js"></script>
 	<script type="text/javascript" src="../js/resolver.js"></script>
   <script type="text/javascript" src="../js/generator.js"></script>
@@ -44,9 +45,9 @@
   </script>
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload" subpage="false"></script>
 
-  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations">
-  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations">
-  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations">
+  <link rel="preload" type="text/javascript" lang="en" src="js/en.translations.js">
+  <link rel="preload" type="text/javascript" lang="de" src="js/de.translations.js">
+  <link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations.js">
 
   <link rel="preload" src="js/jquery-1.7.2.min.js" type="text/javascript">
 
@@ -62,7 +63,7 @@
 
     declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
 
-    page("/from-config/side",{},'<h1>Demo</h1><p>This is a sample side window.</p>');
+    page("/from-config/side",{ "track main":true },'<h1>Demo</h1><p>This is a sample side window.</p>');
   </script>
 
 </head>
