@@ -779,7 +779,7 @@ function Resolver(name_andor_expr,ns,options)
         } else {
             names = name.split("::");
             if (names.length > 1) {
-                return Resolver(names.shift()).declare(names[0],value,onundefined);
+                return Resolver(names.shift()).remove(names[0],onundefined);
             }
             names = name.split(".");
         }
@@ -789,10 +789,10 @@ function Resolver(name_andor_expr,ns,options)
         delete base[symbol];
 
         var ref = resolver.references[name];
-        if (ref) ref._callListener("change",names,base,symbol,value);
+        if (ref) ref._callListener("change",names,base,symbol,undefined);
         var parentName = names.join(".");
         var parentRef = resolver.references[parentName];
-        if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+        if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
         return oldValue;
     };
     

@@ -157,6 +157,15 @@ test('Resolve defined and undefined reference',function(){
 test('Resolver set/declare value',function(){
 	var resolver = Resolver({});
 
+	resolver.on("change","a.b",function(){});
+	resolver.on("change","a.b.c",function(){});
+	resolver.on("change","d.e",function(){});
+	resolver.on("change","d.e.f",function(){});
+	resolver.on("change","g.h",function(){});
+	resolver.on("change","g.h.i",function(){});
+	resolver.on("change","k.l",function(){});
+	resolver.on("change","k.l.m",function(){});
+
 	var abc_value = resolver.set("a.b.c","abc");
 	strictEqual(abc_value,"abc","returned value from set");
 	equal(resolver("a.b.c"), "abc");	
@@ -205,6 +214,8 @@ test('Resolver remove value',function(){
 
 	resolver.set("a.b.c","abc");
 	equal(resolver("a.b.c"), "abc");	
+	resolver.on("change","a.b",function(){});
+	resolver.on("change","a.b.c",function(){});
 	var abc_value = resolver.remove("a.b.c");
 	strictEqual(abc_value,"abc","returned value from remove");
 	equal(resolver("a.b.c","undefined"), undefined);	
