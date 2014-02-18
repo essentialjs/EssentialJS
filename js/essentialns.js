@@ -1145,6 +1145,25 @@
 	};
 */
 
+	// roles that have a prepare handler can tweak the original DOM content
+	function prepareDomWithRole() {
+
+		var pageResolver = Resolver("page"),
+			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
+
+		if (handlers.prepare) {
+			for(var n in enabledRoles) {
+				var prepare = handlers.prepare[n];
+				if (prepare) {
+					var withRole = document.body.querySelectorAll("[role="+n+ "]");
+					for(var i=0,el; el = withRole[i]; ++i) {
+						prepare(el,n);
+					}
+				}
+			}
+		}
+	}
+
 	function branchDescs(el) {
 		var descs = [];
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
@@ -1212,6 +1231,7 @@
 			essential.set("_queueDelayedAssets",function(){});
 
 			instantiatePageSingletons();
+			prepareDomWithRole();
 		}
 		catch(ex) {
 			proxyConsole.error("Failed to launch delayed assets and singletons",ex);

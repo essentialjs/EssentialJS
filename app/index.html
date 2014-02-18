@@ -8,7 +8,7 @@
   <meta content="Henrik Vendelbo" name="author">
 
   <meta name="text selection" content="input textarea">
-	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled template table">
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled template table resolved">
   <meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
   <meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
 	
@@ -83,6 +83,12 @@
       <button name="history" role="button"><span class="icon"></span><label>History</label></button>
 
       <a href="pages/scrolling.html" rel="subpage" role="link">Scrolling</a>
+    </nav>
+
+    <nav role="resolved">
+      <span data-resolve="text: page::connection.status"></span>
+      <span data-resolve="text: page::connection.loadingProgress"></span>
+      <span>  {{ page::connection.detail }}. </span>
     </nav>
 
     <nav action="navigation/account" data-role='"templateId":"account", "presentationModel":"app.account.Account"' id="account" role="navigation">
