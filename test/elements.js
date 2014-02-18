@@ -1052,6 +1052,33 @@ test("impl copyAttributes",function() {
 	equal(dest.getAttribute("data-state"),"ds");
 });
 
+
+test("describe attributes",function() {
+
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var div = HTMLElement("div",{
+		"data-resolve":"text:a.b.c; text2:page::d.e; text3 : x.y; test4:    page::q.j;translate-prefix: com.data."
+	});
+
+	var policy = {
+		DECORATORS: {
+			"data-resolve": {
+				props:true
+			}
+		}
+	};
+
+	var attrs = HTMLElement.fn.describeAttributes(div,policy);
+	ok(attrs["data-resolve"]);
+	equal(attrs["data-resolve"].props.text,"a.b.c");
+	equal(attrs["data-resolve"].props.text2,"page::d.e");
+	equal(attrs["data-resolve"].props.text3,"x.y");
+	equal(attrs["data-resolve"].props.text4,"page::q.j");
+	equal(attrs["data-resolve"].props["translate-prefix"],"com.data.");
+});
+
+
 test("Define a list of templates using DescriptorQuery([])",function() {
 
 	var HTMLElement = Resolver("essential::HTMLElement::"),

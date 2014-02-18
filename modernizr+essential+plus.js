@@ -6974,6 +6974,15 @@ function(scripts) {
 	    
 	};
 
+	function parseProps(value) {
+		var parts = value.split(";"), props = {};
+		for(var i=0,prop,part; part = parts[i]; ++i) {
+			prop = part.split(":");
+			props[ prop.shift().replace(/ /g,"") ] = prop.join(":").replace(/^ +/,"");
+		}
+		return props;
+	}
+
 	/**
 	 * @param el Template Element with attributes
 	 * @param decorators Map of objects specifying decorator functions and category attributes
@@ -6994,6 +7003,11 @@ function(scripts) {
 	        	    is_simple: decorators[name].simple
 	        	};
 	        	
+	        	if (decorators[name].props) {
+	        		//TODO catch parse failure and flag it in mAttributes
+	        		mAttribute.props = parseProps(value);
+	        	}
+
 	        	// *entry:mapping references decoding
 	            if (decorators[name].refs) { //TODO review the flag to filter on !!!
 	            	var pParts = [];
@@ -7157,7 +7171,6 @@ function(scripts) {
 	    this.copyAttributes(stream.root,top);
 	    (top.impl || this).enhance(top);
 	};
-
 
 
 	function _queueDelayedAssets()
