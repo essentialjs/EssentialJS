@@ -593,15 +593,13 @@
 
 .ie-drop-shadow(@shadowBlurLength, @color, @direction: 180)
 {
-	/* For IE 8 */
+	// For IE 8 
 	-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=@{shadowBlurLength}, Direction=@{direction}, Color='@{color}')";
-	/* For IE 5.5 - 7 */
+	// For IE 5.5 - 7 
 	filter: ~"progid:DXImageTransform.Microsoft.Shadow(Strength=@{shadowBlurLength}, Direction=@{direction}, Color='@{color}')";
 }
 
-/*
-	Style radio and checkbox
-*/
+//	Style radio and checkbox
 .neatTick(@size: 28px,@dot-size: 15px) {
 
 	&[type=checkbox],
