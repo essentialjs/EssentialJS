@@ -7192,6 +7192,50 @@ function(scripts) {
 	    (top.impl || this).enhance(top);
 	};
 
+	function renderParts(resolver) {
+		var parts = [];
+		for(var j=0,isVar = false, part; part = this.parts[j]; ++j, isVar = !isVar) {
+			parts.push(isVar? resolver(part) : part);
+		}
+		this.node.nodeValue = parts.join("");
+	}
+
+	HTMLElement.fn.findTextSubstitutions = function(el) {
+		var texts = [];
+		for(var j=0,t; t = el.childNodes[j]; ++j) if (t.nodeName == "#text") {
+			var curlz = t.nodeValue.indexOf("{{");
+			if (curlz>=0) {
+				var parts = t.nodeValue.split(/{{|}}/);
+				for(var l=0,isVar=false,p; p = parts[l]; ++l, isVar = !isVar) {
+					if (isVar) parts[l] = p.replace(/^ +/,"").replace(/ +$/,"");
+				}
+				texts.push({
+					node: t,
+					parts: parts,
+					renderText: renderParts
+				});
+			}
+		}
+		return texts;
+	};
+
+	function renderSelector(resolver) {
+		this.node.nodeValue = resolver(this.selector);
+	}
+
+	HTMLElement.fn.makeTextSubstitution = function(el,selector) {
+		if (el.childNodes.length === 0 || el.childNodes[0].nodeName !== "#text") {
+			var t = document.createTextNode("");
+			if (el.childNodes.length) el.insertBeforeChild(t,el.childNodes[0]);
+			else el.appendChild(t);
+		}
+		return {
+			node: el.childNodes[0],
+			selector: selector,
+			renderText: renderSelector
+		};
+	};
+
 
 	function _queueDelayedAssets()
 	{

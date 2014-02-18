@@ -28,65 +28,30 @@
 
 		// use el.stateful for resolver
 		function renderTexts(attrs,resolver) {
-			for(var i=0,t; t = attrs.texts[i]; ++i) t.render.call(t,resolver);
-		}
-
-		function renderSelector(resolver) {
-			this.node.nodeValue = resolver(this.selector);
-		}
-		function renderParts(resolver) {
-			var parts = [];
-			for(var j=0,isVar = false, part; part = this.parts[j]; ++j, isVar = !isVar) {
-				parts.push(isVar? resolver(part) : part);
-			}
-			this.node.nodeValue = parts.join("");
+			for(var i=0,t; t = attrs.texts[i]; ++i) t.renderText.call(t,resolver);
 		}
 
 		for(var i=0,ce; ce = els[i]; ++i) {
 			var attrs = HTMLElement.fn.describeAttributes(ce,policy),
-				dataResolve = attrs["data-resolve"], q = false;
+				dataResolve = attrs["data-resolve"];
 
 			attrs.texts = [];
 
 			if (dataResolve) {
-				q = true;
 
 				if (dataResolve.props.text) {
-					if (ce.childNodes.length === 0 || ce.childNodes[0].nodeName !== "#text") {
-						var t = document.createTextNode("");
-						if (ce.childNodes.length) ce.insertBeforeChild(t,ce.childNodes[0]);
-						else ce.appendChild(t);
-					}
-					attrs.texts.push({
-						node: ce.childNodes[0],
-						selector: dataResolve.props.text,
-						render: renderSelector
-					});
+					attrs.texts.push(HTMLElement.fn.makeTextSubstitution(ce,dataResolve.props.text));
 				}
 				if (dataResolve.props.html) {
-					//TODO
+					//TODO makeHtmlSubstitution
 				}
 			} 
-			if (dataResolve == null || (dataResolve.props.text === undefined && dataResolve.props.html === undefined)) {
+			if (attrs.texts.length === 0) {
 				// nested text if not in attribute
-				for(var j=0,t; t = ce.childNodes[j]; ++j) if (t.nodeName == "#text") {
-					var curlz = t.nodeValue.indexOf("{{");
-					if (curlz>=0) {
-						q = true;
-						var parts = t.nodeValue.split(/{{|}}/);
-						for(var l=0,isVar=false,p; p = parts[l]; ++l, isVar = !isVar) {
-							if (isVar) parts[l] = p.replace(/^ +/,"").replace(/ +$/,"");
-						}
-						attrs.texts.push({
-							node: t,
-							parts: parts,
-							render: renderParts
-						});
-					}
-				}
+				attrs.texts = attrs.texts.concat(HTMLElement.fn.findTextSubstitutions(ce));
 			}
 
-			if (q) {
+			if (attrs.texts.length || dataResolve) {
 				attrs.el = ce;
 				queued.push(attrs);
 				renderTexts(attrs,pageResolver);
@@ -99,7 +64,17 @@
 
 	Resolver("page").declare("handlers.enhance.resolved", function(el,role,config,context) {
 		//TODO register listeners and call on bind
+
+		function textUpdaters(attrs,resolver) {
+			for(var i=0,t; t = attrs.texts[i]; ++i) {
+				t.renderText.call(t,resolver);
+			}
+		}
+
 		if (el.queued) {
+			for(var i=0,q; q = el.queued[i]; ++i) {
+				textUpdaters(q,el.stateful);
+			}
 			//TODO update on any part change
 			//TODO update state.blank
 			el.queued = undefined;
