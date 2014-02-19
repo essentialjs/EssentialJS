@@ -122,7 +122,7 @@
   
   <div class="loading-indicator" data-role="'zIndex':20" role="spinner">
   </div>
-  <output data-proxy="html: body.connection.loadingProgress" id="loadingProgress"></output>
+  <output role="resolved" id="loadingProgress">{{ page::connection.loadingProgress }}</output>
 
   <nav role="navigation" action="navigation/lang"> 
     <a name="en">English</a> ◦ 

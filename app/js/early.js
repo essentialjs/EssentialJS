@@ -24,21 +24,32 @@
 	};
 
 	Resolver("page").declare("handlers.prepare.resolved", function(el,role) {
-		var els = el.getElementsByTagName("*"), text = [], queued = el.queued = [];
+		var els = el.getElementsByTagName("*"), text = [], 
+			queued = el.queued = [],
+			attrs, dataResolve;
 
-		// use el.stateful for resolver
-		function renderTexts(attrs,resolver) {
-			for(var i=0,t; t = attrs.texts[i]; ++i) t.renderText.call(t,resolver);
+		attrs = HTMLElement.fn.describeAttributes(el,policy);
+		attrs.texts = [];
+		//TODO support data-resolve on root element ?
+
+		if (attrs.texts.length === 0) {
+			attrs.texts = attrs.texts.concat(HTMLElement.fn.findTextSubstitutions(el));
+		}
+
+		if (attrs.texts.length || dataResolve) {
+			attrs.el = el;
+			queued.push(attrs);
+			for(var i=0,t; t = attrs.texts[i]; ++i) t.renderText.call(t,pageResolver);
+			//TODO renderAttrs class title placeholder
 		}
 
 		for(var i=0,ce; ce = els[i]; ++i) {
-			var attrs = HTMLElement.fn.describeAttributes(ce,policy),
-				dataResolve = attrs["data-resolve"];
+			attrs = HTMLElement.fn.describeAttributes(ce,policy);
+			dataResolve = attrs["data-resolve"];
 
 			attrs.texts = [];
 
 			if (dataResolve) {
-
 				if (dataResolve.props.text) {
 					attrs.texts.push(HTMLElement.fn.makeTextSubstitution(ce,dataResolve.props.text));
 				}
@@ -54,9 +65,8 @@
 			if (attrs.texts.length || dataResolve) {
 				attrs.el = ce;
 				queued.push(attrs);
-				renderTexts(attrs,pageResolver);
+				for(var i=0,t; t = attrs.texts[i]; ++i) t.renderText.call(t,pageResolver);
 				//TODO renderAttrs class title placeholder
-
 			}
 		}
 
@@ -65,9 +75,21 @@
 	Resolver("page").declare("handlers.enhance.resolved", function(el,role,config,context) {
 		//TODO register listeners and call on bind
 
+		function textRefresher(t,resolver) {
+			return function(ev) {
+				t.renderText.call(t,resolver);
+			};
+		}
+
 		function textUpdaters(attrs,resolver) {
 			for(var i=0,t; t = attrs.texts[i]; ++i) {
 				t.renderText.call(t,resolver);
+				for(var j=0,s; s = t.selectors[i]; ++i) if (s.indexOf("::")>=0) {
+					var parts = s.split("::");
+					Resolver(parts[0]).on("change",parts[1],textRefresher(t,resolver));
+				} else {
+					resolver.on("change",s,textRefresher(t,resolver));
+				}
 			}
 		}
 

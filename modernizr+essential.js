@@ -7205,13 +7205,18 @@ function(scripts) {
 		for(var j=0,t; t = el.childNodes[j]; ++j) if (t.nodeName == "#text") {
 			var curlz = t.nodeValue.indexOf("{{");
 			if (curlz>=0) {
-				var parts = t.nodeValue.split(/{{|}}/);
-				for(var l=0,isVar=false,p; p = parts[l]; ++l, isVar = !isVar) {
-					if (isVar) parts[l] = p.replace(/^ +/,"").replace(/ +$/,"");
+				var parts = t.nodeValue.split(/{{|}}/),
+					selectors = [];
+				for(var l=0,isVar=false,p; l<parts.length; ++l, isVar = !isVar) {
+					p = parts[l];
+					if (isVar) {
+						selectors.push(parts[l] = p.replace(/^ +/,"").replace(/ +$/,""));
+					}
 				}
 				texts.push({
 					node: t,
 					parts: parts,
+					selectors: selectors,
 					renderText: renderParts
 				});
 			}
@@ -7220,7 +7225,7 @@ function(scripts) {
 	};
 
 	function renderSelector(resolver) {
-		this.node.nodeValue = resolver(this.selector);
+		this.node.nodeValue = resolver(this.selectors[0]);
 	}
 
 	HTMLElement.fn.makeTextSubstitution = function(el,selector) {
@@ -7231,7 +7236,7 @@ function(scripts) {
 		}
 		return {
 			node: el.childNodes[0],
-			selector: selector,
+			selectors: [selector],
 			renderText: renderSelector
 		};
 	};
