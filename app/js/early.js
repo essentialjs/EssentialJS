@@ -65,7 +65,7 @@
 			if (attrs.texts.length || dataResolve) {
 				attrs.el = ce;
 				queued.push(attrs);
-				for(var i=0,t; t = attrs.texts[i]; ++i) t.renderText.call(t,pageResolver);
+				for(var j=0,t; t = attrs.texts[j]; ++j) t.renderText.call(t,pageResolver);
 				//TODO renderAttrs class title placeholder
 			}
 		}
