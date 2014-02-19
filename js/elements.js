@@ -600,7 +600,8 @@
 
 	function renderParts(resolver) {
 		var parts = [];
-		for(var j=0,isVar = false, part; part = this.parts[j]; ++j, isVar = !isVar) {
+		for(var j=0,isVar = false, part; j<this.parts.length; ++j, isVar = !isVar) {
+			part = this.parts[j];
 			parts.push(isVar? resolver(part) : part);
 		}
 		this.node.nodeValue = parts.join("");
