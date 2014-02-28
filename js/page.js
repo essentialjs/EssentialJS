@@ -536,7 +536,8 @@
 				ex.ignore = true;
 				throw ex;	
 			} 
-		}
+		},
+		"modules": _Scripted.prototype.modules
 	};
 
 	_Scripted.prototype._gather = Scripted_gather;
