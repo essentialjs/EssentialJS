@@ -3954,10 +3954,9 @@ Generator.discardRestricted = function()
 					
 				case "src":
 					if (_from[n] !== undefined) {
-						e[n] = _from[n];
 						if (/cachebuster=/.test(_from[n])) {
-							e[n] = e[n].replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
-						}
+							e[n] = _from[n].replace(/cachebuster=*[0-9]/,"cachebuster="+ String(new Date().getTime()));
+						} else e[n] = _from[n];
 					}
 					break;
 
