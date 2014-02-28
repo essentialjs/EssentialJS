@@ -5102,74 +5102,126 @@ _ElementPlacement.prototype._computeIE = function(style)
 		return delayedOnload;       
 	}
 
-	_Scripted.prototype._queueAssets = function() {
-
-		var links = this.document.getElementsByTagName("link");
-
-		//TODO differentiate on type == "text/javascript"
-		for(var i=0,l; l=links[i]; ++i) switch(l.rel) {
-			case "stylesheet":
-				this.resources().push(l);
-				break;			
-			case "pastload":
-			case "preload":
-				//TODO differentiate on lang
-				var attrsStr = l.getAttribute("attrs");
-				var attrs = {};
-				if (attrsStr) {
-					try {
-						eval("attrs = {" + attrsStr + "}");
-					} catch(ex) {
-						//TODO
-					}
-				}
-				attrs["type"] = l.getAttribute("type") || "text/javascript";
-				attrs["src"] = l.getAttribute("src");
-				attrs["name"] = l.getAttribute("data-name") || l.getAttribute("name") || undefined;
-				attrs["base"] = essential("baseUrl");
-				attrs["subpage"] = (l.getAttribute("subpage") == "false" || l.getAttribute("data-subpage") == "false")? false:true;
-				//attrs["id"] = l.getAttribute("script-id");
-				attrs["onload"] = delayedScriptOnload(l.rel);
-
-				var relSrc = attrs["src"].replace(essential("baseUrl"),"");
-				l.attrs = attrs;
-				if (l.rel == "preload") {
-					var langOk = true;
-					if (l.lang) langOk = (l.lang == this.resolver("state.lang"));
-					if (langOk) {
-						this.resolver.set(["state","preloading"],true);
-						this.resolver.set(["state","loadingScripts"],true);
-						this.resolver.set(["state","loadingScriptsUrl",relSrc],l); 
-						this.body.appendChild(HTMLScriptElement(attrs));
-						l.added = true;
-					} 
-				} else {
-					var langOk = true;
-					if (l.lang) langOk = (l.lang == this.resolver("state.lang"));
-					if (langOk) {
-						this.resolver.set(["state","loadingScripts"],true);
-						this.resolver.set(["state","loadingScriptsUrl",relSrc],l); 
-					} 
-				}
-				break;
-		}
-		if (! this.resolver(["state","preloading"])) {
-			var scripts = this.resolver(["state","loadingScriptsUrl"]);
-			for(var n in scripts) {
-				var link = scripts[n];
-				if (link.rel == "pastload") {
-					var langOk = true;
-					if (link.lang) langOk = (link.lang == this.resolver("state.lang"));
-					if (langOk) {
-						this.body.appendChild(HTMLScriptElement(link.attrs));
-						link.added = true;
-					} 
+	function updateScripts(doc,state) {
+		function addScript(rel) {
+			for(var n in state.loadingScriptsUrl) {
+				var link = state.loadingScriptsUrl[n];
+				if (link && link.rel == rel && !link.added) {
+					HTMLScriptElement(link.attrs);
+					link.added = true;
 				}
 			}
 		}
 
+		addScript("preload");
+		if (! state.preloading) { addScript("pastload"); 
+			if (state.authenticated) addScript("protected"); 
+		}
+	}
+
+	function describeLink(link,lang) {
+
+		var attrsStr = link.getAttribute("attrs");
+		var attrs = {};
+		if (attrsStr) {
+			try {
+				eval("attrs = {" + attrsStr + "}");
+			} catch(ex) {
+				//TODO
+			}
+		}
+		attrs["rel"] = link.rel;
+		attrs["type"] = link.type || link.getAttribute("type") || "text/javascript";
+		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || undefined;
+		attrs["base"] = essential("baseUrl");
+		attrs["subpage"] = (link.getAttribute("subpage") == "false" || link.getAttribute("data-subpage") == "false")? false:true;
+		//attrs["id"] = link.getAttribute("script-id");
+		attrs["onload"] = delayedScriptOnload(link.rel);
+
+		attrs["src"] = (link.getAttribute("src") || "").replace(essential("baseUrl"),"");
+		attrs["langOk"] = (lang && link.lang)? (link.lang == lang) : true;
+
+		switch(attrs.rel) {
+			case "preload":
+			case "pastload":
+			case "protected":
+				if (attrs.langOk && attrs.type == "text/javascript") {
+					attrs.tagName = "script";
+					attrs["append to"] = link.ownerDocument.body; //?? or delayed assign
+				}
+				//TODO XHR for others
+				break;
+		}
+
+		return attrs;
+	}
+
+
+	_Scripted.prototype._queueAssets = function() {
+
+		var links = this.document.getElementsByTagName("link");
+
+		var lang = this.resolver("state.lang");
+		//TODO support text/html use base subpage functionality
+
+		for(var i=0,l; l=links[i]; ++i) {
+			var attrs = l.attrs = describeLink(l,lang);
+			switch(l.rel) {
+				case "stylesheet":
+					this.resources().push(l);
+					break;			
+				case "protected":
+				case "pastload":
+					if (attrs.tagName == "script") {
+						this.resolver.set(["state","loadingScripts"],true);
+						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
+					} 
+					break;
+
+				case "preload":
+					if (attrs.tagName == "script") {
+						this.resolver.set(["state","preloading"],true);
+						this.resolver.set(["state","loadingScripts"],true);
+						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
+						HTMLScriptElement(attrs);
+						l.added = true;
+					} 
+					break;
+			}
+		}
+		updateScripts(document,this.resolver("state"));
 	};
 
+	pageResolver.on("change","state.loadingScriptsUrl",onLoadingScripts);
+	pageResolver.on("change","state.loadingConfigUrl",onLoadingConfig);
+
+	function onLoadingScripts(ev) {
+		var loadingScriptsUrl = this("state.loadingScriptsUrl"), loadingScripts = false, preloading = false;
+		for(var url in loadingScriptsUrl) {
+			var link = loadingScriptsUrl[url];
+
+			if (link) { loadingScripts = true; if (link.rel == "preload") preloading = true; }
+		}
+		this.set("state.loadingScripts",loadingScripts);
+		this.set("state.preloading",preloading);
+		if (ev.value==false) {
+			// finished loading a script
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	}
+
+	function onLoadingConfig(ev) {
+		var loadingConfigUrl = this("state.loadingConfigUrl"), loadingConfig = false;
+			
+		for(var url in loadingConfigUrl) {
+			if (loadingConfigUrl[url]) loadingConfig = true;
+		}
+		this.set("state.loadingConfig",loadingConfig);
+		if (ev.value==false) {
+			// finished loading a config
+			if (document.body) essential("instantiatePageSingletons")();
+		}
+	};
 
 
 	function _SubPage(appConfig) {
@@ -5279,7 +5331,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
 		this.uniquePageID = getUniquePageID(doc);
-		Resolver("page").set(["pagesById",this.uniquePageID],this);
+		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
@@ -5420,7 +5472,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.resolver = pageResolver;
 		//TODO kill it on document, it's a generator not a fixed number, pagesByName
 		this.uniquePageID = getUniquePageID(document);
-		Resolver("page").set(["pagesById",this.uniquePageID],this);
+		this.resolver.set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;
@@ -5431,8 +5483,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		for(var n in this.state) state.set(n,this.state[n]);
 		this.state = state;
 		document.documentElement.lang = this.state("lang");
-		this.resolver.on("change","state.loadingScriptsUrl",this,this.onLoadingScripts);
-		this.resolver.on("change","state.loadingConfigUrl",this,this.onLoadingConfig);
 
 		this.pages = this.resolver.reference("pages",{ generator:SubPage });
 		SubPage.prototype.appConfig = this;
@@ -5616,23 +5666,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 				break;
 
 			case "preloading":
-				if (! ev.value) {
-					for(var n in b.loadingScriptsUrl) {
-						var link = b.loadingScriptsUrl[n];
-						if (link.rel == "pastload" && !link.added) {
-							var langOk = true;
-							if (link.lang) langOk = (link.lang == pageResolver("state.lang"));
-							if (langOk) document.body.appendChild(HTMLScriptElement(link.attrs));
-							link.added = langOk;
-						}
-					}
-				}
+				updateScripts(document,b);
 				break;
 
 			case "loading":
 				if (ev.value == false) {
+					updateScripts(document,b);
 					var ap = ApplicationConfig();
-
 					if (document.body) essential("instantiatePageSingletons")();
 					ap.doInitScripts();	
 					enhanceUnfinishedElements();
@@ -5647,9 +5687,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 				} 
 				break;
 			case "authenticated":
-				if (ev.base.livepage) {
+				if (b.livepage) {
+					updateScripts(document,b);
 					var ap = ApplicationConfig();
-
 					if (b.authenticated) activateArea(ap.getAuthenticatedArea());
 					else activateArea(ap.getIntroductionArea());
 				}
@@ -5698,38 +5738,6 @@ _ElementPlacement.prototype._computeIE = function(style)
         if (b.launched && (!b.authorised || !b.authenticated) && b.autoUnlaunch !== false) {
             this.set("state.launched",false);
         }
-	};
-
-	ApplicationConfig.prototype.onLoadingScripts = function(ev) {
-		var loadingScriptsUrl = this("state.loadingScriptsUrl");
-			
-		var loadingScripts = false;
-		var preloading = false;
-		for(var url in loadingScriptsUrl) {
-			var link = loadingScriptsUrl[url];
-			if (link.rel == "preload") preloading = true;
-			if (link) loadingScripts = true;
-		}
-		this.set("state.loadingScripts",loadingScripts);
-		this.set("state.preloading",preloading);
-		if (ev.value==false) {
-			// finished loading a script
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	};
-
-	ApplicationConfig.prototype.onLoadingConfig = function(ev) {
-		var loadingConfigUrl = this("state.loadingConfigUrl");
-			
-		var loadingConfig = false;
-		for(var url in loadingConfigUrl) {
-			if (loadingConfigUrl[url]) loadingConfig = true;
-		}
-		this.set("state.loadingConfig",loadingConfig);
-		if (ev.value==false) {
-			// finished loading a config
-			if (document.body) essential("instantiatePageSingletons")();
-		}
 	};
 
 	ApplicationConfig.prototype.isPageState = function(whichState) {
