@@ -1,5 +1,20 @@
 (function(){
-	var console = Resolver("essential")("console");
+	var console = Resolver("essential")("console"),
+		pageState = Resolver("page::state");
+
+	var loggedIn = Resolver("demo-session::loggedIn");
+	loggedIn.declare(false);
+	loggedIn.on("change",function() {
+		if (loggedIn()) {
+			// log in
+			pageState.set("authenticated",true);
+		} else {
+			// log out
+			pageState.set("authenticated",false);
+			pageState.set("launched",false);
+		}
+	});
+	loggedIn.stored("load change unload","local");
 
 	//
 	// listeners for logging when scripts/config are loaded
