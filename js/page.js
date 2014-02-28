@@ -387,7 +387,7 @@
 	Resolver("translations").on("change bind","locale",function(ev) {
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");
-		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+		if (Resolver.exists("page")) pageResolver.set("state.lang",s[0]);
 	});
 
 
@@ -506,9 +506,9 @@
 	essential.set("launchWindows",launchWindows);
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
-	Resolver("page").declare("pages",{});
-	Resolver("page").declare("pagesById",{});
-	Resolver("page").declare("state.requiredPages",0);
+	pageResolver.declare("pages",{});
+	pageResolver.declare("pagesById",{});
+	pageResolver.declare("state.requiredPages",0);
 
 	function _Scripted() {
 		// the derived has to define resolver before this
@@ -1016,7 +1016,7 @@
 		this.resolver = pageResolver;
 		//TODO kill it on document, it's a generator not a fixed number, pagesByName
 		this.uniquePageID = getUniquePageID(document);
-		Resolver("page").set(["pagesById",this.uniquePageID],this);
+		this.resolver.set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;
 		this.body = this.document.body;

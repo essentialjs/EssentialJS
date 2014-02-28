@@ -4791,7 +4791,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	Resolver("translations").on("change bind","locale",function(ev) {
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");
-		if (Resolver.exists("page")) Resolver("page").set("state.lang",s[0]);
+		if (Resolver.exists("page")) pageResolver.set("state.lang",s[0]);
 	});
 
 
@@ -4910,9 +4910,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 	essential.set("launchWindows",launchWindows);
 
 	// page state & sub pages instances of _Scripted indexed by logical URL / id
-	Resolver("page").declare("pages",{});
-	Resolver("page").declare("pagesById",{});
-	Resolver("page").declare("state.requiredPages",0);
+	pageResolver.declare("pages",{});
+	pageResolver.declare("pagesById",{});
+	pageResolver.declare("state.requiredPages",0);
 
 	function _Scripted() {
 		// the derived has to define resolver before this
@@ -5253,7 +5253,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
 		this.uniquePageID = getUniquePageID(doc);
-		Resolver("page").set(["pagesById",this.uniquePageID],this);
+		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
