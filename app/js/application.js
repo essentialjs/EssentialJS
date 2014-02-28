@@ -1,0 +1,2 @@
+
+alert("Protected Application Starting");

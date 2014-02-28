@@ -5119,7 +5119,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		}
 
 		addScript("preload");
-		if (! state.preloading) { addScript("pastload"); 
+		if (! state.preloading) { addScript("load"); 
 			if (state.authenticated) addScript("protected"); 
 		}
 	}
@@ -5148,7 +5148,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 		switch(attrs.rel) {
 			case "preload":
-			case "pastload":
+			case "load":
 			case "protected":
 				if (attrs.langOk && attrs.type == "text/javascript") {
 					attrs.tagName = "script";
@@ -5176,7 +5176,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 					this.resources().push(l);
 					break;			
 				case "protected":
-				case "pastload":
+				case "load":
 					if (attrs.tagName == "script") {
 						this.resolver.set(["state","loadingScripts"],true);
 						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
@@ -5573,6 +5573,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	ApplicationConfig.prototype._requiredPage = function(src)
 	{
+		//TODO allow marking it as protected
 		//TODO if already there page.applyBody();
 		var page = this.loadPage(src,true);
 		this.bodySrc = src;

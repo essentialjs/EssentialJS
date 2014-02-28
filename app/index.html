@@ -21,10 +21,11 @@
 
 	<link rel="preload" type="text/javascript" src="js/jquery-1.7.2.min.js" >
 
-	<link rel="pastload" type="text/javascript" src="js/knockout.js">
-	<link rel="pastload" type="text/javascript" src="js/raphael.min.js" name="raphael">
+	<link rel="load" type="text/javascript" src="js/knockout.js">
+	<link rel="load" type="text/javascript" src="js/raphael.min.js" name="raphael">
 	<link rel="preload" type="text/javascript" src="js/raphael-resources.js">
-	<link rel="pastload" type="text/javascript" src="js/frontend.js" subpage="false">
+	<link rel="load" type="text/javascript" src="js/frontend.js" subpage="false">
+	<link rel="protected" type="text/javascript" src="js/application.js" subpage="false">
 
 	<script type="application/config">
 		declare("logo",{"charset": "utf-8"});
@@ -54,7 +55,7 @@
 	<script src="js/auth-state.js?cachebuster=0" type="text/javascript" id="cookie-reload"></script>
 
 </head>
-<body class="loading" src="pages/index.html" role="application" data-role='"generator":"DemoApplication"'>
+<body class="loading" nono-src="pages/index.html" role="application" data-role='"generator":"DemoApplication"'>
 	<div id="menu-driven">
 		
 		<article role="presentation" id="main-stage">
@@ -166,7 +167,7 @@
 		 </form>
 	</div>
 
-	<!-- early stuff before the pastload/load scripts -->
+	<!-- early stuff before the load scripts -->
 	<script type="text/javascript" src="js/early.js"></script>
 
 	<script type="text/javascript">
