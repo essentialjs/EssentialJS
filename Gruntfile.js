@@ -79,12 +79,39 @@ module.exports = function(grunt) {
         ],
         dest: 'modernizr+essential+plus.js'
       },
+
+      essentialMin: {
+        options: {
+          banner: "",
+          stripBanners: false
+        },
+        src: [
+          'js/modernizr-prefix.js',
+          'js/modernizr-custom.js',
+          'essential.min.js'
+        ],
+        dest: 'modernizr+essential.min.js'
+      }
     },
 
 
     uglify: {
       options: {
         banner: '<%= banner %>'
+      },
+      essential: {
+        src: [
+          'js/resolver.js',
+          'js/generator.js',
+          'js/essentialns.js',
+          'js/dom.js',
+          'js/page.js',
+          'js/xhr.js',
+          'js/elements.js',
+          'js/roles.js',
+          'js/configured.js'
+        ],
+        dest: 'essential.min.js'
       },
       build: {
         src: 'src/<%= pkg.name %>.js',
@@ -292,7 +319,7 @@ module.exports = function(grunt) {
   grunt.registerTask('default', ['connect','open','concurrent']);
   grunt.registerTask('install', ['exec:bowerinstall','modernizr','copy:mediaelement']);
   grunt.registerTask('build', ['modernizr','jshint','copy:mediaelement',
-    'qunit','concat','uglify']);
+    'qunit','concat','uglify','concat:essentialMin']);
   grunt.registerTask('serve', ['jekyll:dev']);
 
 };
