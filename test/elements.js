@@ -1058,7 +1058,7 @@ test("describe attributes",function() {
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	var div = HTMLElement("div",{
-		"data-resolve":"text:a.b.c; text2:page::d.e; text3 : x.y; test4:    page::q.j;translate-prefix: com.data."
+		"data-resolve":"text:a.b.c; text2:page::d.e; text3 : x.y; text4:    page::q.j;translate-prefix: com.data."
 	});
 
 	var policy = {
