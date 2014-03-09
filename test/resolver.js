@@ -47,6 +47,7 @@ test ("Named resolver",function(){
 
 test("Window resolver",function(){
 	var win = Resolver("window");
+	equal(Resolver(window),win);
 	equal(win.namespace,window);
 	equal(win("Array"),Array);
 	equal(win("Boolean"),Boolean);
@@ -70,6 +71,7 @@ test("Window resolver",function(){
 test("Document resolver",function(){
 	var doc = Resolver(document);
 
+	equal(Resolver("document"),doc);
 	equal(doc.namespace,document);
 	equal(doc("all"),document.all);
 	equal(doc("forms"),document.forms);
@@ -191,8 +193,8 @@ test('Resolver set/declare value',function(){
 	var opq = resolver.declare(["o",null,"q"],"opq");
 	equal(resolver(["o",null,"q"]),"opq")
 
-	resolver.set("a.b",false);
-	strictEqual(resolver("a.b"),false);
+	resolver.set("a.b",null);
+	strictEqual(resolver("a.b"),null);
 	throws(function() {
 		resolver("a.b.c");
 	});

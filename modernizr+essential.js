@@ -94,6 +94,8 @@ function Resolver(name_andor_expr,ns,options)
     case "object":
         // Resolver({})
         // Resolver({},{options})
+        if (name_andor_expr === window && Resolver.window) return Resolver.window;
+        if (name_andor_expr === document && Resolver.document) return Resolver.document;
         options = ns || {};
         ns = name_andor_expr;
         break;
@@ -998,6 +1000,8 @@ Resolver.exists = function(name) {
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
+Resolver(document, {name:"document"});
+
 
 function Generator(mainConstr,options)
 {
