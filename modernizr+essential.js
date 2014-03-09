@@ -3980,6 +3980,7 @@ Generator.discardRestricted = function()
 				case "id":
 				case "className":
 				case "rel":
+				case "async":
 				case "lang":
 				case "language":
 					if (_from[n] !== undefined) e[n] = _from[n]; 
