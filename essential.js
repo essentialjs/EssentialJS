@@ -2146,6 +2146,7 @@ Generator.discardRestricted = function()
 		this.state.needEnhance = !this.state.enhanced;
 
 		if (this.state.enhanced) {
+			//TODO mark when it was enhanced so auto-discard can be equivalent
 			var controller = this.getController();
 			if (controller) {
 				if (controller.enhanced) controller.enhanced(this.el,this.instance,this.config,this.context);
@@ -7784,6 +7785,7 @@ function(scripts) {
 	}
 	pageResolver.set("handlers.layout.dialog",layout_dialog);
 
+	//TODO turn into destroy_dialog so it happens before the discard of other elements, or slightly before
 	function discard_dialog(el,role,instance) {
 		var existing = 0, dialogs = DescriptorQuery("[role=dialog]");
 		for(var i=0,d; d = dialogs[i]; ++i) {
@@ -7794,6 +7796,7 @@ function(scripts) {
 			dialog_top = initial_top;
 			dialog_left = initial_left;
 		} 
+		if (el.parentElement) el.parentElement.removeChild(el);
 	}
 	pageResolver.set("handlers.discard.dialog",discard_dialog);
 

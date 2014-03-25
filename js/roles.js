@@ -317,6 +317,7 @@
 	}
 	pageResolver.set("handlers.layout.dialog",layout_dialog);
 
+	//TODO turn into destroy_dialog so it happens before the discard of other elements, or slightly before
 	function discard_dialog(el,role,instance) {
 		var existing = 0, dialogs = DescriptorQuery("[role=dialog]");
 		for(var i=0,d; d = dialogs[i]; ++i) {
@@ -327,6 +328,7 @@
 			dialog_top = initial_top;
 			dialog_left = initial_left;
 		} 
+		if (el.parentElement) el.parentElement.removeChild(el);
 	}
 	pageResolver.set("handlers.discard.dialog",discard_dialog);
 
