@@ -1688,9 +1688,8 @@ Generator.discardRestricted = function()
 
 		cleaners._inrecurse = (cleaners._inrecurse || 0) + 1;
 
-		for(var child=el.firstElementChild!==undefined? el.firstElementChild : el.firstChild; child; 
-			child = child.nextElementSibling!==undefined? child.nextElementSibling : child.nextSibling) {
-			if (child.nodeType == 1) cleanRecursively(child,unwind,true); //TODO perhaps run through .children instead
+		for(var i=0, children=el.children, child; child=children[i]; ++i) {
+			if (child.nodeType == 1) cleanRecursively(child,unwind,true);
 		}
 
 		if (cleanMe) callCleaners(el);
@@ -2152,6 +2151,7 @@ Generator.discardRestricted = function()
 		this.state.needEnhance = !this.state.enhanced;
 
 		if (this.state.enhanced) {
+			//TODO mark when it was enhanced so auto-discard can be equivalent
 			var controller = this.getController();
 			if (controller) {
 				if (controller.enhanced) controller.enhanced(this.el,this.instance,this.config,this.context);
@@ -4662,7 +4662,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			// extra state
 		}
 
-		var mapClass = el.stateful("map.class","undefined");
+		var mapClass = el.stateful? el.stateful("map.class","undefined") : null;
 		if (mapClass) {
 			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
 			var bits = (symbolState||"").split("%");

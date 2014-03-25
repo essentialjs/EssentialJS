@@ -248,7 +248,7 @@
 			// extra state
 		}
 
-		var mapClass = el.stateful("map.class","undefined");
+		var mapClass = el.stateful? el.stateful("map.class","undefined") : null;
 		if (mapClass) {
 			var symbolState = mapClass.state[event.symbol],symbolNotState = mapClass.notstate[event.symbol];
 			var bits = (symbolState||"").split("%");
