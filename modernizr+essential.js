@@ -4058,7 +4058,7 @@ Generator.discardRestricted = function()
 
 		this.query(el).discard();
 
-		if (!leaveInDom) el.parentNode.removeChild(el);
+		if (!leaveInDom && el.parentNode) el.parentNode.removeChild(el);
 	};
 
 	
