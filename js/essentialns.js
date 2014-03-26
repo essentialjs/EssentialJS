@@ -451,6 +451,9 @@
 				var conf = essential("ApplicationConfig")().getConfig(e), role = e.getAttribute("role");
 				// var sizingElement = false;
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
+
+				//TODO if not enabledRole skip
+
 				var desc = EnhancedDescriptor(e,role,conf);
 				var add = true;
 				if (fn) add = fn(e,desc,conf);
@@ -498,6 +501,9 @@
 		this.onlyBranch();
 
 		var conf = essential("ApplicationConfig")().getConfig(this.el), role = this.el.getAttribute("role");
+
+				//TODO if not enabledRole skip
+				
 		var desc = EnhancedDescriptor(this.el,role,conf);
 		if (desc) this.shift(desc);
 		return this;
@@ -997,10 +1003,13 @@
 	// Get the enhanced descriptor for and element
 	function EnhancedDescriptor(el,role,conf,force,page) {
 		var uniqueID = el.uniqueID;
-		if (uniqueID == undefined) uniqueID = el.uniqueID = ++lastUniqueID;
+		if (uniqueID == undefined) uniqueID = el.uniqueID = lastUniqueID+1;
 		var desc = enhancedElements[uniqueID];
 		if (desc && !force) return desc;
+
+		// TODO (enhancedRole[role])
 		if (!force && role==null && conf==null && arguments.length>=3) return null;
+		++lastUniqueID; // only increase new descriptors
 
 		if (page == undefined) {
 			var pageResolver = Resolver("page");
