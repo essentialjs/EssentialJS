@@ -4,7 +4,7 @@
 
 	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
-		console = essential("console"),
+		log = essential("console")(),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		statefulCleaner = essential("statefulCleaner"),
@@ -165,7 +165,7 @@
 		dialog_next_down = initial_top;
 
 	function enhance_dialog(el,role,config,context) {
-		// TODO if (config['invalid-config']) console.log()
+		// TODO if (config['invalid-config']) log.log()
 
 		var configTemplate = config.template,
 			contentTemplate = config['content-template'], 
@@ -603,7 +603,7 @@
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
-				//console.log("mouse out of scrolled.");
+				//log.log("mouse out of scrolled.");
 			},30);
 		}
 
@@ -642,9 +642,9 @@
 
 			var chain = parentChain(ev.target);
 			var preventLeft = preventWheel && ev.deltaX > 0 && chain.every(function(el) { return el.scrollLeft == 0; });
-			// if (preventLeft) console.log("prevent left scroll ");
+			// if (preventLeft) log.log("prevent left scroll ");
 			var preventTop = preventWheel && ev.deltaY > 0 && chain.every(function(el) { return el.scrollTop == 0; });
-			// if (preventTop) console.log("prevent top scroll ");
+			// if (preventTop) log.log("prevent top scroll ");
 
 			var prevent = false;
 
@@ -654,7 +654,7 @@
 				if (ev.deltaY != 0) {
 					var max = Math.max(0, this.stateful("pos.scrollHeight","0") - this.offsetHeight);
 					var top = this.stateful("pos.scrollTop","0");
-					// console.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
+					// log.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
 					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
 					prevent = true;
@@ -747,7 +747,7 @@
 				var y = Math.min( Math.max(movement.startY + movement.factorY*(ev.pageY - movement.startPageY),movement.minY), movement.maxY );
 				var x = Math.min( Math.max(movement.startX + movement.factorX*(ev.pageX - movement.startPageX),movement.minX), movement.maxX );
 				movement.track(ev,x,y);
-				// console.log(movement.factorX,movement.factorY)
+				// log.log(movement.factorX,movement.factorY)
 			},
 			"click": function(ev) {
 				ev.preventDefault();

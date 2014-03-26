@@ -4,7 +4,7 @@
 		templates = pageResolver("templates"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
-		console = essential("console");
+		log = essential("console")();
 
 	var HTMLElement = Resolver("essential::HTMLElement::");
 	var DialogAction = Resolver("essential::DialogAction::");
@@ -170,7 +170,7 @@
 	}))
 
 	function _DemoApplication(el,role,config) {
-		console.log("Initialized DemoApplication on",el);
+		log.log("Initialized DemoApplication on",el);
 	}
 	Resolver().declare("DemoApplication",_DemoApplication);
 

@@ -564,7 +564,7 @@ function Resolver(name_andor_expr,ns,options)
             //TODO if (ref is defined)
             try {
                 localStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) { console.warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
+            } catch(ex) { Resolver("essential::console::")().warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
         }
         function store_cookie(ref) {
             if (ref._reading_cookie) return; //TODO only if same cookie

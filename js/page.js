@@ -5,7 +5,7 @@
 !function(Scripted_gather) {
 
 	var essential = Resolver("essential",{}),
-		console = essential("console"),
+		log = essential("console")(),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
 		ensureCleaner = essential("ensureCleaner"),
@@ -580,7 +580,7 @@
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
 			for(var n in map) config[n] = map[n];
 		} catch(ex) {
-			console.debug("Invalid config: ",dataRole,ex);
+			log.debug("Invalid config: ",dataRole,ex);
 			config["invalid-config"] = dataRole;
 		}
 
@@ -845,7 +845,7 @@
 	};
 
 	SubPage.prototype.page = function(url) {
-		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
+		log.error("SubPage application/config cannot define pages ("+url+")",this.url);
 	};
 
 	// keep a head prefix with meta tags for iframe/window subpages
@@ -1056,7 +1056,7 @@
 	}
 
 	function updateOnlineStatus(ev) {
-		//console.log("online status",navigator.onLine,ev);
+		//log.log("online status",navigator.onLine,ev);
 		var online = navigator.onLine;
 		if (online != undefined) {
 			pageResolver.set(["state","online"],online);	
@@ -1629,7 +1629,7 @@ function(scripts) {
 				try {
 					with(this) eval(s.text);
 				} catch(ex) {
-					Resolver("essential::console").error("Failed to parse application/config",s.text);
+					Resolver("essential::console::")().error("Failed to parse application/config",s.text);
 				}
 				break;
 			case "application/init": 

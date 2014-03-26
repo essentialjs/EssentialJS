@@ -2,20 +2,21 @@
 	var essential = Resolver("essential"),
 		pageResolver = Resolver("page"),
 		pageState = pageResolver.reference("state"),
+		pageModules = pageResolver.reference("modules");
 		templates = pageResolver("templates"),
 		ApplicationConfig = essential("ApplicationConfig"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		DescriptorQuery = essential("DescriptorQuery"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
-		console = essential("console");
+		log = essential("console")();
 
 	/*
 		Put your application code here
 	*/
 
 	function _CoreFactory() {
-		console.log("constructed Core Factory");
+		log.log("constructed Core Factory");
 	}
 
 	var CoreFactory = Generator(_CoreFactory).restrict({ singleton: true, lifecycle: "page" });
@@ -23,24 +24,24 @@
 
 	// role="presentation", enhanced after the initial page is rendered when frontend.js has been loaded.
 	var PresentationLoader = Resolver(window).set("app.application.PresentationLoader",Generator(function(){
-		console.log("constructed presentation loader");
+		log.log("constructed presentation loader");
 	}));
 	PresentationLoader.restrict({ singleton: true, lifecycle: "page" })
 
 	PresentationLoader.enhance_presentation = function(el,role,config,context) 
 	{
-		console.log("enhancing presentation",el.uniqueID);
+		log.log("enhancing presentation",el.uniqueID);
 	};
 
 	PresentationLoader.layout_presentation = function(el,layout,instance) 
 	{
-		console.log("layout presentation",el.uniqueID);
+		log.log("layout presentation",el.uniqueID);
 	};
 	PresentationLoader.layout_presentation.throttle = 200;
 
 	PresentationLoader.discard_presentation = function(el,role,instance) 
 	{
-		console.log("discard presentation",el.uniqueID);
+		log.log("discard presentation",el.uniqueID);
 		if (instance) {
 			if (instance.onClose) {
 				instance.onClose();
@@ -63,7 +64,7 @@
 	function frontend_post_loading() {
 		// do things here that depends on all scripts and configs being loaded
 
-		console.log("frontend_post_loading");
+		log.log("frontend_post_loading");
 
 		// delayed receipt of the authorisation and permissions information.
 		setTimeout(function(){
@@ -146,7 +147,7 @@ Layouter.variant("multisection",Generator(function(key,el,conf) {
 		}			
 	}
 
-	// console.log("multisection laid out",this.sizing,left,right);
+	// log.log("multisection laid out",this.sizing,left,right);
 
 	for(var i = 0, c; c = centered[i]; ++i) {
 		c.style.left = left+"px";
@@ -232,7 +233,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	EnhancedTable.prototype._enableVertScrolling = function(desc)
 	{
 		desc.stateful.on("change","pos.scrollTop",this,function(ev) {
-			// console.log("vert offset",ev.value);
+			// log.log("vert offset",ev.value);
 			ev.data._showRows(ev.value,desc.stateful);
 		});
 
@@ -271,7 +272,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 	function enhance_table(el,role,config,context)
 	{
-		console.log("Enhancing table",el.uniqueID);
+		log.log("Enhancing table",el.uniqueID);
 		return new EnhancedTable(el,role,config);
 
 	}
@@ -291,7 +292,7 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 
 	function discard_table(el,role,instance)
 	{
-		console.log("Discarding table",el.uniqueID);
+		log.log("Discarding table",el.uniqueID);
 	}
 
 	Resolver("page").declare("handlers.enhance.table", enhance_table);
@@ -395,6 +396,6 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	// Resolver("page").declare("handlers.layout.dialog", layout_dialog);
 	// Resolver("page").declare("handlers.discard.dialog", discard_dialog);
 
-	console.log("frontend.js finished load execution");
+	log.log("frontend.js finished load execution");
 
 })();

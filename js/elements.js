@@ -4,7 +4,7 @@
 
 	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
-		console = essential("console"),
+		log = essential("console")(),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
@@ -660,7 +660,7 @@
 
 		// }
 
-		if (pageResolver(["state","loadingScripts"])) console.debug("loading phased scripts");
+		if (pageResolver(["state","loadingScripts"])) log.debug("loading phased scripts");
 
 		var metas = document.getElementsByTagName("meta");
 		for(var i=0,m; m = metas[i]; ++i) {

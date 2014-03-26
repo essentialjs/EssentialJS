@@ -1,5 +1,5 @@
 (function(){
-	var console = Resolver("essential")("console"),
+	var log = Resolver("essential::console::")(),
 		pageState = Resolver("page::state");
 
 	var loggedIn = Resolver("demo-session::loggedIn");
@@ -21,25 +21,27 @@
 	// demo purposes only
 	Resolver("page").on("change","state",function(ev){
 		switch(ev.symbol) {
-			case "livepage": if (ev.value) console.log("Page now live, builtin roles enhanced"); break;
-			case "loading": if (ev.value==false) console.log("Loading of scripts and config complete"); break;
-			case "configured": if (ev.value == true) console.log("Loading done, application configured"); break;
+			case "livepage": if (ev.value) log.log("Page now live, builtin roles enhanced"); break;
+			case "loading": if (ev.value==false) log.log("Loading of scripts and config complete"); break;
+			case "configured": if (ev.value == true) log.log("Loading done, application configured"); break;
 		}
 	});
-	Resolver("page").on("change","state.loadingScriptsUrl",function(ev){
-		if (ev.value == false) console.log("loaded script: ",ev.symbol)
+	Resolver("document").on("change","modules",function(ev){
+		if (ev.value == false) log.log("added script: ",ev.symbol)
 	});
+	//TODO "added", "loaded"
+	
 	Resolver("page").on("change","state.loadingConfigUrl",function(ev){
-		if (ev.value == false) console.log("loaded config: ",ev.symbol)
+		if (ev.value == false) log.log("loaded config: ",ev.symbol)
 	});
 	Resolver("page").on("change","state.authorised",function(ev){
-		if (ev.value == true) console.log("Loading of permissions done");
+		if (ev.value == true) log.log("Loading of permissions done");
 	});
 	Resolver("page").on("change","state.launching",function(ev){
-		if (ev.value == true) console.log("Launching application");
+		if (ev.value == true) log.log("Launching application");
 	});
 	Resolver("page").on("change","state.launched",function(ev){
-		if (ev.value == true) console.log("Application launched.");
+		if (ev.value == true) log.log("Application launched.");
 	});
 
 })();

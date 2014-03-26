@@ -1,5 +1,5 @@
 /*!
-    Essential JavaScript - v0.4.0 ❀ http://essentialjs.com
+    Essential JavaScript - v0.5.0 ❀ http://essentialjs.com
     Copyright (c) 2011-2014 Henrik Vendelbo
 
     This program is free software: you can redistribute it and/or modify it under the terms of
@@ -586,7 +586,7 @@ function Resolver(name_andor_expr,ns,options)
             //TODO if (ref is defined)
             try {
                 localStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) { console.warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
+            } catch(ex) { Resolver("essential::console::")().warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
         }
         function store_cookie(ref) {
             if (ref._reading_cookie) return; //TODO only if same cookie
@@ -2758,63 +2758,76 @@ Generator.discardRestricted = function()
 		}
 	}
 
-	var proxyConsole = essential.declare("console",{});
-	function setStubConsole() {
-		function no_logging(level,parts) {}
- 
-		proxyConsole["log"] = function() { 
-			no_logging("none",arguments); };
-		proxyConsole["trace"] = function() { 
-			no_logging("trace",arguments); };
-		proxyConsole["debug"] = function() { 
-			no_logging("debug",arguments); };
-		proxyConsole["info"] = function() { 
-			no_logging("info",arguments); };
-		proxyConsole["warn"] = function() { 
-			no_logging("warn",arguments); };
-		proxyConsole["error"] = function() { 
-			no_logging("error",arguments); };
-		proxyConsole["group"] = function() { 
-			no_logging("group",arguments); };
-		proxyConsole["groupEnd"] = function() { 
-			no_logging("groupEnd",arguments); };
+	// get active console
+	// - modern browsers return window.console
+	// - IE8/9 return stub that always works
+	// - Can be overridden with custom impl
+	// usage
+	// > var mylog = Resolver("essential::console::")();
+	// > mylog.log("hello");
+	var proxyConsole = essential.set("console",function() {
+		return proxyConsole.custom || window.console&&window.console.debug&&window.console || ie8Console;
+	});
+	proxyConsole.custom = null;
+	proxyConsole.destination = {};
+
+	// make custom logger
+	// - the destination named can be set to silent
+	// - destination.queue can be set to array instance to dump logs
+	// - destination.queue.push can be customised to make streaming/file loggers
+	// - destination.defaultLevel can be set to override level
+	proxyConsole.logger = function(dest,level) {
+		var _dest = essential.declare(["console","destination",dest],{}), _con = proxyConsole();
+		return function() {
+			if (_dest.silent) return;
+			//TODO optionally add destination name to end of logged line
+			_con[_dest.defaultLevel || level].apply(_con,arguments);
+			//TODO push to level / push combination
+
+			if (_dest.queue && typeof _dest.queue.push == "function") {
+				_dest.queue.push([].concat(arguments));
+			}
+		};
+	};
+
+	var stubConsole = {
+		log: function() { this.nil("log",arguments); },
+		trace: function() { this.nil("trace",arguments); },
+		debug: function() { this.nil("debug",arguments); },
+		info: function() { this.nil("info",arguments); },
+		warn: function() { this.nil("warn",arguments); },
+		error: function() { this.nil("error",arguments); },
+		group: function() { this.nil("group",arguments); },
+		groupEnd: function() { this.nil("groupEnd",arguments); },
+		nil: function(level,parts) {}
+	};
+	var setStubConsole = essential.declare("setStubConsole",function(stub) {
+		proxyConsole.custom = stub || stubConsole;
+	});
+
+	function _ielog(name) {
+		return function() {
+			if (window.console) console[name](Array.prototype.join.call(arguments," "));
+		};
 	}
-	essential.declare("setStubConsole",setStubConsole);
- 
-	function setWindowConsole() {
-		proxyConsole["log"] = function() { 
-			window.console.log.apply(window.console,arguments); };
-		proxyConsole["trace"] = function() { 
-			window.console.trace(); };
-		proxyConsole["debug"] = function() { 
-			(window.console.debug || window.console.info).apply(window.console,arguments); };
-		proxyConsole["info"] = function() { 
-			window.console.info.apply(window.console,arguments); };
-		proxyConsole["warn"] = function() { 
-			window.console.warn.apply(window.console,arguments); };
-		proxyConsole["error"] = function() { 
-			window.console.error.apply(window.console,arguments); };
- 
-		if (window.console.debug == undefined) {
-			// IE8
-			proxyConsole["log"] = function(m) { 
-				window.console.log(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["trace"] = function(m) { 
-				window.console.trace(); };
-			proxyConsole["debug"] = function(m) { 
-				window.console.log(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["info"] = function(m) { 
-				window.console.info(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["warn"] = function(m) { 
-				window.console.warn(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["error"] = function(m) { 
-				window.console.error(Array.prototype.join.call(arguments," ")); };
-		}
-	}
-	essential.declare("setWindowConsole",setWindowConsole);
-	
-	if (window.console) setWindowConsole();
-	else setStubConsole();
+
+	var id8Console = {
+		log: _ielog("log"),
+		trace: _ielog("trace"),
+		debug: _ielog("debug"),
+		info: _ielog("info"),
+		warn: _ielog("warn"),
+		error: _ielog("error"),
+		group: _ielog("group"),
+		groupEnd: _ielog("groupEnd")
+	};
+	//TODO start out with object that queues, switch to _ielog when window.console is first seen
+
+
+	var setWindowConsole = essential.declare("setWindowConsole",function() {
+		proxyConsole.custom = null;
+	});
+
 
 	function htmlEscape(str) {
 		if (str == null) return str;
@@ -3011,7 +3024,7 @@ Generator.discardRestricted = function()
 !function() {
 
 	var essential = Resolver("essential",{}),
-		console = essential("console"),
+		log = essential("console")(),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
 
@@ -3592,7 +3605,7 @@ Generator.discardRestricted = function()
 		absDelta = Math.abs(delta);
 		absDeltaXY = Math.max(Math.abs(deltaY),Math.abs(deltaX));
 
-		// console.log("deltas",{x:deltaX,y:deltaY},"scrollLeft",this.target.scrollLeft);
+		// log.log("deltas",{x:deltaX,y:deltaY},"scrollLeft",this.target.scrollLeft);
 
 		/*
 		var delta = this.delta;
@@ -3712,7 +3725,7 @@ Generator.discardRestricted = function()
 			this.type = src.type;
 			var r = EVENTS[src.type];
 			if (r) r.copy.call(this,src);
-			else console.warn("unhandled essential event",src.type,src);
+			else log.warn("unhandled essential event",src.type,src);
 		}
 	}
 	_MutableEvent.prototype.relatedTarget = null;
@@ -4428,7 +4441,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 !function(Scripted_gather) {
 
 	var essential = Resolver("essential",{}),
-		console = essential("console"),
+		log = essential("console")(),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
 		ensureCleaner = essential("ensureCleaner"),
@@ -5003,7 +5016,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
 			for(var n in map) config[n] = map[n];
 		} catch(ex) {
-			console.debug("Invalid config: ",dataRole,ex);
+			log.debug("Invalid config: ",dataRole,ex);
 			config["invalid-config"] = dataRole;
 		}
 
@@ -5268,7 +5281,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	};
 
 	SubPage.prototype.page = function(url) {
-		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
+		log.error("SubPage application/config cannot define pages ("+url+")",this.url);
 	};
 
 	// keep a head prefix with meta tags for iframe/window subpages
@@ -6052,7 +6065,7 @@ function(scripts) {
 				try {
 					with(this) eval(s.text);
 				} catch(ex) {
-					Resolver("essential::console").error("Failed to parse application/config",s.text);
+					Resolver("essential::console::")().error("Failed to parse application/config",s.text);
 				}
 				break;
 			case "application/init": 
@@ -6621,7 +6634,7 @@ function(scripts) {
 
 	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
-		console = essential("console"),
+		log = essential("console")(),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		ApplicationConfig = essential("ApplicationConfig"),
@@ -7277,7 +7290,7 @@ function(scripts) {
 
 		// }
 
-		if (pageResolver(["state","loadingScripts"])) console.debug("loading phased scripts");
+		if (pageResolver(["state","loadingScripts"])) log.debug("loading phased scripts");
 
 		var metas = document.getElementsByTagName("meta");
 		for(var i=0,m; m = metas[i]; ++i) {
@@ -7486,7 +7499,7 @@ function(scripts) {
 
 	var essential = Resolver("essential",{}),
 		ObjectType = essential("ObjectType"),
-		console = essential("console"),
+		log = essential("console")(),
 		MutableEvent = essential("MutableEvent"),
 		StatefulResolver = essential("StatefulResolver"),
 		statefulCleaner = essential("statefulCleaner"),
@@ -7647,7 +7660,7 @@ function(scripts) {
 		dialog_next_down = initial_top;
 
 	function enhance_dialog(el,role,config,context) {
-		// TODO if (config['invalid-config']) console.log()
+		// TODO if (config['invalid-config']) log.log()
 
 		var configTemplate = config.template,
 			contentTemplate = config['content-template'], 
@@ -8085,7 +8098,7 @@ function(scripts) {
 					enhanced.vert.hide();
 					enhanced.horz.hide();
 				}
-				//console.log("mouse out of scrolled.");
+				//log.log("mouse out of scrolled.");
 			},30);
 		}
 
@@ -8124,9 +8137,9 @@ function(scripts) {
 
 			var chain = parentChain(ev.target);
 			var preventLeft = preventWheel && ev.deltaX > 0 && chain.every(function(el) { return el.scrollLeft == 0; });
-			// if (preventLeft) console.log("prevent left scroll ");
+			// if (preventLeft) log.log("prevent left scroll ");
 			var preventTop = preventWheel && ev.deltaY > 0 && chain.every(function(el) { return el.scrollTop == 0; });
-			// if (preventTop) console.log("prevent top scroll ");
+			// if (preventTop) log.log("prevent top scroll ");
 
 			var prevent = false;
 
@@ -8136,7 +8149,7 @@ function(scripts) {
 				if (ev.deltaY != 0) {
 					var max = Math.max(0, this.stateful("pos.scrollHeight","0") - this.offsetHeight);
 					var top = this.stateful("pos.scrollTop","0");
-					// console.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
+					// log.log("vert delta",ev.deltaY, top, max, this.stateful("pos.scrollHeight"),this.offsetHeight);
 					top = Math.min(max,Math.max(0, top - ev.deltaY));
 					this.stateful.set("pos.scrollTop",top);
 					prevent = true;
@@ -8229,7 +8242,7 @@ function(scripts) {
 				var y = Math.min( Math.max(movement.startY + movement.factorY*(ev.pageY - movement.startPageY),movement.minY), movement.maxY );
 				var x = Math.min( Math.max(movement.startX + movement.factorX*(ev.pageX - movement.startPageX),movement.minX), movement.maxX );
 				movement.track(ev,x,y);
-				// console.log(movement.factorX,movement.factorY)
+				// log.log(movement.factorX,movement.factorY)
 			},
 			"click": function(ev) {
 				ev.preventDefault();

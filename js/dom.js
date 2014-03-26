@@ -1,7 +1,7 @@
 !function() {
 
 	var essential = Resolver("essential",{}),
-		console = essential("console"),
+		log = essential("console")(),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		isIE = navigator.userAgent.indexOf("; MSIE ") > -1 && navigator.userAgent.indexOf("; Trident/") > -1;
 
@@ -582,7 +582,7 @@
 		absDelta = Math.abs(delta);
 		absDeltaXY = Math.max(Math.abs(deltaY),Math.abs(deltaX));
 
-		// console.log("deltas",{x:deltaX,y:deltaY},"scrollLeft",this.target.scrollLeft);
+		// log.log("deltas",{x:deltaX,y:deltaY},"scrollLeft",this.target.scrollLeft);
 
 		/*
 		var delta = this.delta;
@@ -702,7 +702,7 @@
 			this.type = src.type;
 			var r = EVENTS[src.type];
 			if (r) r.copy.call(this,src);
-			else console.warn("unhandled essential event",src.type,src);
+			else log.warn("unhandled essential event",src.type,src);
 		}
 	}
 	_MutableEvent.prototype.relatedTarget = null;

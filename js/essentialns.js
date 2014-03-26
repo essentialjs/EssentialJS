@@ -1351,63 +1351,76 @@
 		}
 	}
 
-	var proxyConsole = essential.declare("console",{});
-	function setStubConsole() {
-		function no_logging(level,parts) {}
- 
-		proxyConsole["log"] = function() { 
-			no_logging("none",arguments); };
-		proxyConsole["trace"] = function() { 
-			no_logging("trace",arguments); };
-		proxyConsole["debug"] = function() { 
-			no_logging("debug",arguments); };
-		proxyConsole["info"] = function() { 
-			no_logging("info",arguments); };
-		proxyConsole["warn"] = function() { 
-			no_logging("warn",arguments); };
-		proxyConsole["error"] = function() { 
-			no_logging("error",arguments); };
-		proxyConsole["group"] = function() { 
-			no_logging("group",arguments); };
-		proxyConsole["groupEnd"] = function() { 
-			no_logging("groupEnd",arguments); };
+	// get active console
+	// - modern browsers return window.console
+	// - IE8/9 return stub that always works
+	// - Can be overridden with custom impl
+	// usage
+	// > var mylog = Resolver("essential::console::")();
+	// > mylog.log("hello");
+	var proxyConsole = essential.set("console",function() {
+		return proxyConsole.custom || window.console&&window.console.debug&&window.console || ie8Console;
+	});
+	proxyConsole.custom = null;
+	proxyConsole.destination = {};
+
+	// make custom logger
+	// - the destination named can be set to silent
+	// - destination.queue can be set to array instance to dump logs
+	// - destination.queue.push can be customised to make streaming/file loggers
+	// - destination.defaultLevel can be set to override level
+	proxyConsole.logger = function(dest,level) {
+		var _dest = essential.declare(["console","destination",dest],{}), _con = proxyConsole();
+		return function() {
+			if (_dest.silent) return;
+			//TODO optionally add destination name to end of logged line
+			_con[_dest.defaultLevel || level].apply(_con,arguments);
+			//TODO push to level / push combination
+
+			if (_dest.queue && typeof _dest.queue.push == "function") {
+				_dest.queue.push([].concat(arguments));
+			}
+		};
+	};
+
+	var stubConsole = {
+		log: function() { this.nil("log",arguments); },
+		trace: function() { this.nil("trace",arguments); },
+		debug: function() { this.nil("debug",arguments); },
+		info: function() { this.nil("info",arguments); },
+		warn: function() { this.nil("warn",arguments); },
+		error: function() { this.nil("error",arguments); },
+		group: function() { this.nil("group",arguments); },
+		groupEnd: function() { this.nil("groupEnd",arguments); },
+		nil: function(level,parts) {}
+	};
+	var setStubConsole = essential.declare("setStubConsole",function(stub) {
+		proxyConsole.custom = stub || stubConsole;
+	});
+
+	function _ielog(name) {
+		return function() {
+			if (window.console) console[name](Array.prototype.join.call(arguments," "));
+		};
 	}
-	essential.declare("setStubConsole",setStubConsole);
- 
-	function setWindowConsole() {
-		proxyConsole["log"] = function() { 
-			window.console.log.apply(window.console,arguments); };
-		proxyConsole["trace"] = function() { 
-			window.console.trace(); };
-		proxyConsole["debug"] = function() { 
-			(window.console.debug || window.console.info).apply(window.console,arguments); };
-		proxyConsole["info"] = function() { 
-			window.console.info.apply(window.console,arguments); };
-		proxyConsole["warn"] = function() { 
-			window.console.warn.apply(window.console,arguments); };
-		proxyConsole["error"] = function() { 
-			window.console.error.apply(window.console,arguments); };
- 
-		if (window.console.debug == undefined) {
-			// IE8
-			proxyConsole["log"] = function(m) { 
-				window.console.log(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["trace"] = function(m) { 
-				window.console.trace(); };
-			proxyConsole["debug"] = function(m) { 
-				window.console.log(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["info"] = function(m) { 
-				window.console.info(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["warn"] = function(m) { 
-				window.console.warn(Array.prototype.join.call(arguments," ")); };
-			proxyConsole["error"] = function(m) { 
-				window.console.error(Array.prototype.join.call(arguments," ")); };
-		}
-	}
-	essential.declare("setWindowConsole",setWindowConsole);
-	
-	if (window.console) setWindowConsole();
-	else setStubConsole();
+
+	var id8Console = {
+		log: _ielog("log"),
+		trace: _ielog("trace"),
+		debug: _ielog("debug"),
+		info: _ielog("info"),
+		warn: _ielog("warn"),
+		error: _ielog("error"),
+		group: _ielog("group"),
+		groupEnd: _ielog("groupEnd")
+	};
+	//TODO start out with object that queues, switch to _ielog when window.console is first seen
+
+
+	var setWindowConsole = essential.declare("setWindowConsole",function() {
+		proxyConsole.custom = null;
+	});
+
 
 	function htmlEscape(str) {
 		if (str == null) return str;
