@@ -1001,15 +1001,15 @@
 	var lastUniqueID = 555;
 
 	// Get the enhanced descriptor for and element
+	//TODO move to put this function on the document resolver for the page
 	function EnhancedDescriptor(el,role,conf,force,page) {
-		var uniqueID = el.uniqueID;
-		if (uniqueID == undefined) uniqueID = el.uniqueID = lastUniqueID+1;
-		var desc = enhancedElements[uniqueID];
-		if (desc && !force) return desc;
+		// forced replacement, or called with parameters to make a descriptor, so not a lookup
+		var makeIt = force || ((role || conf) && arguments.length>=3);
+		if (el.uniqueID === undefined && makeIt) el.uniqueID = ++lastUniqueID;
 
-		// TODO (enhancedRole[role])
-		if (!force && role==null && conf==null && arguments.length>=3) return null;
-		++lastUniqueID; // only increase new descriptors
+		var uniqueID = el.uniqueID;
+		var desc = enhancedElements[uniqueID];
+		if (desc || !makeIt) return desc;
 
 		if (page == undefined) {
 			var pageResolver = Resolver("page");
