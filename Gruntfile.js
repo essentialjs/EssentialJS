@@ -33,6 +33,7 @@ module.exports = function(grunt) {
         src: [
           'js/resolver.js',
           'js/generator.js',
+          'js/config.js',
           'js/essentialns.js',
           'js/dom.js',
           'js/page.js',
@@ -50,6 +51,7 @@ module.exports = function(grunt) {
           'js/modernizr-custom.js',
           'js/resolver.js',
           'js/generator.js',
+          'js/config.js',
           'js/essentialns.js',
           'js/dom.js',
           'js/page.js',
@@ -67,6 +69,7 @@ module.exports = function(grunt) {
           'js/modernizr-custom.js',
           'js/resolver.js',
           'js/generator.js',
+          'js/config.js',
           'js/essentialns.js',
           'js/dom.js',
           'js/page.js',
@@ -103,6 +106,7 @@ module.exports = function(grunt) {
         src: [
           'js/resolver.js',
           'js/generator.js',
+          'js/config.js',
           'js/essentialns.js',
           'js/dom.js',
           'js/page.js',

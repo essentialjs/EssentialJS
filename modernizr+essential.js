@@ -1406,6 +1406,21 @@ Generator.discardRestricted = function()
 };
 
 
+Resolver.config = function(loadTime) {
+
+};
+
+Resolver.document.declare("enhanced", {
+	enabledRoles: {},
+	handlers: {},
+	config: {},
+	inits: [],
+	modules: {},
+	templates: {},
+	descriptors: {}
+});
+
+// set("bodyResolver")
 // types for describing generator arguments and generated properties
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/

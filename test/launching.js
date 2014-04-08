@@ -46,10 +46,8 @@ test('roles are enhanced when no page state is preset',function() {
 
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
 		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
-		ApplicationConfig = Resolver("essential::ApplicationConfig::"),
 		pageResolver = Resolver("page"),
 		HTMLElement = Resolver("essential::HTMLElement::");
-	// var appConfig = ApplicationConfig();
 
 	ok(! pageResolver("state.livepage"));
 	pageResolver.reference("state").mixin(INIT_PAGE_STATE);

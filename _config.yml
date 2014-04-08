@@ -10,6 +10,7 @@ modules :
   essential:
     - js/license.txt
     - js/resolver.js
+    - js/config.js
     - js/generator.js
     - js/essentialns.js
     - js/dom.js
