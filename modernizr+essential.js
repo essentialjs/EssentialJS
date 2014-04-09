@@ -261,13 +261,6 @@ function Resolver(name_andor_expr,ns,options)
     resolver.get = resolver;
     resolver.named = options.name;
     if (options.name) Resolver[options.name] = resolver;
-    if (forDoc) {
-        Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
-        resolver.uniquePageID = ns.uniquePageID;
-    } else if (forEl) {
-        Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
-        resolver.uniqueID = ns.uniqueID;
-    }
     resolver.namespace = arguments[0]; // should be possible to change to 'ns'
     resolver.references = { };
 
@@ -984,6 +977,15 @@ function Resolver(name_andor_expr,ns,options)
     	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
     }
 
+    if (forDoc) {
+        Resolver.applyEnhancedDocDefaults(resolver);
+        Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
+        resolver.uniquePageID = ns.uniquePageID;
+    } else if (forEl) {
+        Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
+        resolver.uniqueID = ns.uniqueID;
+    }
+
     return resolver;
 }
 
@@ -1065,6 +1067,20 @@ Resolver.functionProxy = function(src) {
             "};"
         )
     );
+};
+
+Resolver.applyEnhancedDocDefaults = function(resolver) {
+    var enh = resolver.namespace.enhanced = resolver.namespace.enhanced || {};
+    enh.enabledRoles = enh.enabledRoles || {};
+    enh.handlers = enh.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
+    enh.config = enh.config || {}; // from config scripts
+    enh.inits = enh.inits || {}; // init scripts
+    enh.modules = enh.modules || {};
+    enh.templates = enh.templates || {};
+    enh.descriptors = enh.descriptors || {};
+
+    enh.lang = document.documentElement.lang || "en";
+    enh.locale = "en-us";
 };
 
 Resolver({},{ name:"default" });
@@ -1475,15 +1491,7 @@ Generator.discardRestricted = function()
 };
 
 
-Resolver.document.set("enhanced", { //TODO back to declare
-	enabledRoles: {},
-	handlers: { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} },
-	config: {},
-	inits: [],
-	modules: {},
-	templates: {},
-	descriptors: {}
-});
+
 
 // set("bodyResolver")
 

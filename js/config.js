@@ -1,12 +1,4 @@
-Resolver.document.set("enhanced", { //TODO back to declare
-	enabledRoles: {},
-	handlers: { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} },
-	config: {},
-	inits: [],
-	modules: {},
-	templates: {},
-	descriptors: {}
-});
+
 
 // set("bodyResolver")
 
