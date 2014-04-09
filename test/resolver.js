@@ -68,6 +68,33 @@ test("Window resolver",function(){
 	window.global_api = undefined; // clean up
 })
 
+test("Unique ID lookups",function() {
+
+	var me1 = {nodeType:1}, me2 = {nodeType:1}, me3 = {nodeType:1}, me4 = {nodeType:1};
+	var md1 = {nodeType:9}, md2 = {nodeType:9}, md3 = {nodeType:9}, md4 = {nodeType:9};
+
+	// els
+	Resolver.getByUniqueID(Resolver.forEl, me1);
+	equal( me1.uniqueID, undefined );
+	Resolver.getByUniqueID(Resolver.forEl, me2, true);
+	equal( typeof me2.uniqueID, "number" );
+
+	Resolver.setByUniqueID( Resolver.forEl, me1, Resolver({}) );
+	equal( typeof me1.uniqueID, "number" );
+	equal(Resolver.getByUniqueID(Resolver.forEl, me1), Resolver.forEl[ me1.uniqueID ]);
+
+	// docs
+	Resolver.getByUniqueID(Resolver.forDoc, md1);
+	equal( md1.uniquePageID, undefined );
+	Resolver.getByUniqueID(Resolver.forDoc, md2, true);
+	equal( typeof md2.uniquePageID, "number" );
+
+	Resolver.setByUniqueID( Resolver.forEl, md1, Resolver({}) );
+	equal( typeof md1.uniquePageID, "number" );
+	equal(Resolver.getByUniqueID(Resolver.forEl, md1), Resolver.forEl[ md1.uniquePageID ]);
+
+})
+
 test("Document resolver",function(){
 	var doc = Resolver(document);
 
@@ -79,6 +106,22 @@ test("Document resolver",function(){
 	doc.set("global_api.a.b.func",function(){ return "return"});
 	equal(document.global_api.a.b.func(),"return");
 })
+
+test("Custom Document Resolver",function() {
+
+	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
+
+	var doc = createHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
+	var r1 = Resolver(doc);
+	var r2 = Resolver(doc);
+	notEqual(r1,Resolver("document"),"Custom document resolver is not the main document resolver");
+	equal(r1,r2,"document resolvers will use previously created");
+
+	var doc = createHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
+	var r3 = Resolver(doc);
+	notEqual(r3,Resolver("document"),"Custom document resolver is not the main document resolver");
+	notEqual(r3,r1,"document resolvers are unique to the document")
+});
 
 test('Namespace and package creation',function(){
   	expect(7);

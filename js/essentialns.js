@@ -1000,6 +1000,8 @@
 	// used to emulate IE uniqueID property
 	var lastUniqueID = 555;
 
+	//TODO Resolver.setByUniqueID
+
 	// Get the enhanced descriptor for and element
 	//TODO move to put this function on the document resolver for the page
 	function EnhancedDescriptor(el,role,conf,force,page) {

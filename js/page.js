@@ -435,15 +435,6 @@
 		authenticated: "login"
 	});
 
-    var NEXT_PAGE_ID = 1;
-    function getUniquePageID(doc) {
-    	if (doc.uniquePageID==undefined) {
-    		doc.uniquePageID = NEXT_PAGE_ID++;
-    	}
-    	return doc.uniquePageID;
-    }
-    getUniquePageID(document);
-
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
 		for(var n in state_treatment) triggers[n] = true;
@@ -724,7 +715,8 @@
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
-		this.uniquePageID = getUniquePageID(doc);
+		Resolver(doc);
+		this.uniquePageID = doc.uniquePageID;
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
@@ -750,7 +742,8 @@
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
-		this.uniquePageID = getUniquePageID(doc);
+		Resolver(doc);
+		this.uniquePageID = doc.uniquePageID;
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
@@ -892,7 +885,7 @@
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
 		//TODO kill it on document, it's a generator not a fixed number, pagesByName
-		this.uniquePageID = getUniquePageID(document);
+		this.uniquePageID = document.uniquePageID;
 		this.resolver.set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;

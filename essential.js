@@ -25,6 +25,8 @@ function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
+    var forDoc = false, forEl = false;
+
 	switch(typeof(name_andor_expr)) {
 	case "undefined":
 		// Resolver()
@@ -89,8 +91,18 @@ function Resolver(name_andor_expr,ns,options)
     case "object":
         // Resolver({})
         // Resolver({},{options})
+        forDoc = (name_andor_expr.nodeType === 9);
+        forEl = (name_andor_expr.nodeType !== undefined && !forDoc);
         if (name_andor_expr === window && Resolver.window) return Resolver.window;
-        if (name_andor_expr === document && Resolver.document) return Resolver.document;
+        else if (forDoc) {
+            var existing = Resolver.getByUniqueID(Resolver.forDoc,name_andor_expr);
+            if (existing) return existing;
+        }
+        //if (name_andor_expr === document && Resolver.document) return Resolver.document;
+        else if (forEl) {
+            var existing = Resolver.getByUniqueID(Resolver.forEl,name_andor_expr);
+            if (existing) return existing;
+        }
         options = ns || {};
         ns = name_andor_expr;
         break;
@@ -244,7 +256,14 @@ function Resolver(name_andor_expr,ns,options)
     resolver.get = resolver;
     resolver.named = options.name;
     if (options.name) Resolver[options.name] = resolver;
-    resolver.namespace = arguments[0];
+    if (forDoc) {
+        Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
+        resolver.uniquePageID = ns.uniquePageID;
+    } else if (forEl) {
+        Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
+        resolver.uniqueID = ns.uniqueID;
+    }
+    resolver.namespace = arguments[0]; // should be possible to change to 'ns'
     resolver.references = { };
 
     var VALID_LISTENERS = {
@@ -962,6 +981,34 @@ function Resolver(name_andor_expr,ns,options)
 
     return resolver;
 }
+
+Resolver.forEl = {}; // for unique elements
+Resolver.forDoc = {}; // for unique documents
+
+Resolver.__lastUniqueID = 345;
+
+Resolver.getByUniqueID = function(map,el,forceID) {
+    if (el.nodeType === 9) {
+        if (el.uniquePageID === undefined && forceID) el.uniquePageID = ++Resolver.__lastUniqueID;
+        if (el.uniquePageID !== undefined) return map[el.uniquePageID];
+    } else {
+        if (el.uniqueID === undefined && forceID) el.uniqueID = ++Resolver.__lastUniqueID;
+        if (el.uniqueID !== undefined) return map[el.uniqueID];
+    }
+
+    return null;
+};
+
+Resolver.setByUniqueID = function(map,el,value) {
+    if (el.nodeType === 9) {
+        if (el.uniquePageID === undefined) el.uniquePageID = ++Resolver.__lastUniqueID;
+        map[el.uniquePageID] = value;
+    } else {
+        if (el.uniqueID === undefined) el.uniqueID = ++Resolver.__lastUniqueID;
+        map[el.uniqueID] = value;
+    }
+};
+
 
 Resolver.readloads = [];
 Resolver.storeunloads = [];
@@ -2529,6 +2576,8 @@ Resolver.config = function(el,script) {
 
 	// used to emulate IE uniqueID property
 	var lastUniqueID = 555;
+
+	//TODO Resolver.setByUniqueID
 
 	// Get the enhanced descriptor for and element
 	//TODO move to put this function on the document resolver for the page
@@ -5297,15 +5346,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		authenticated: "login"
 	});
 
-    var NEXT_PAGE_ID = 1;
-    function getUniquePageID(doc) {
-    	if (doc.uniquePageID==undefined) {
-    		doc.uniquePageID = NEXT_PAGE_ID++;
-    	}
-    	return doc.uniquePageID;
-    }
-    getUniquePageID(document);
-
 	StatefulResolver.updateClass = function(stateful,el) {
 		var triggers = {};
 		for(var n in state_treatment) triggers[n] = true;
@@ -5606,7 +5646,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
-		this.uniquePageID = getUniquePageID(doc);
+		Resolver(doc);
+		this.uniquePageID = doc.uniquePageID;
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
