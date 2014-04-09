@@ -298,7 +298,7 @@
 		var appConfig = Resolver("essential::ApplicationConfig::")();
 
 		for(var i=0,c; c = el.children[i]; ++i) {
-			var role = c.getAttribute("role"), conf = appConfig.getConfig(c) || {};
+			var role = c.getAttribute("role"), conf = Resolver.config(c) || {};
 			var se = this.sizingElement(el,el,c,role,conf);
 			if (se) {
 				// set { sizingElement:true } on conf?
@@ -381,7 +381,7 @@
 			if (typeof el.length == "number") {
 				for(var i=0,e; e = el[i]; ++i) {
 
-					var conf = ac.getConfig(e), role = e.getAttribute("role");
+					var conf = Resolver.config(e), role = e.getAttribute("role");
 					var desc = EnhancedDescriptor(e,role,conf,false,ac);
 					if (desc) q.push(desc);
 				}
@@ -389,7 +389,7 @@
 				//TODO third param context ? integrate with desc.context
 				//TODO identify existing descriptors
 
-				var conf = essential("ApplicationConfig")().getConfig(el), role = el.getAttribute("role");
+				var conf = Resolver.config(el), role = el.getAttribute("role");
 				var desc = EnhancedDescriptor(el,role,conf);
 				if (desc) q.push(desc);
 			}
@@ -448,7 +448,7 @@
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
-				var conf = essential("ApplicationConfig")().getConfig(e), role = e.getAttribute("role");
+				var conf = Resolver.config(e), role = e.getAttribute("role");
 				// var sizingElement = false;
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 
@@ -500,7 +500,7 @@
 	DescriptorQuery.fn.withBranch = function() {
 		this.onlyBranch();
 
-		var conf = essential("ApplicationConfig")().getConfig(this.el), role = this.el.getAttribute("role");
+		var conf = Resolver.config(this.el), role = this.el.getAttribute("role");
 
 				//TODO if not enabledRole skip
 				
@@ -1212,8 +1212,6 @@
 
 
 
-	essential.set("_queueDelayedAssets",function(){});
-
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 	var _readyFired = _essentialTesting;
 
@@ -1236,11 +1234,10 @@
 		Resolver.loadReadStored();
 
 		try {
-			essential("_queueDelayedAssets")();
-			essential.set("_queueDelayedAssets",function(){});
-
+			//TODO ap config _queueAssets
 			instantiatePageSingletons();
 			prepareDomWithRole();
+			//TODO flag module "dom" as ready
 		}
 		catch(ex) {
 			proxyConsole.error("Failed to launch delayed assets and singletons",ex);

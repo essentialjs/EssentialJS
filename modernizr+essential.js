@@ -998,6 +998,28 @@ Resolver.exists = function(name) {
     return this[name] != undefined;
 };
 
+Resolver.functionProxy = function(src) {
+
+   // When executing the Function constructor, we are going
+    // to wrap the source code in a WITH keyword block that
+    // allows the THIS context to extend the local scope of
+    // the function.
+    //
+    // NOTE: This works without a nested self-executing
+    // function. I put it in there simply because it makes me
+    // feel a little more comfortable with the use of the
+    // WITH keyword.
+    return(
+        Function(
+            "with (this){" +
+                "return(" +
+                    "(function(){" + src + "})()" +
+                ");" +
+            "};"
+        )
+    );
+};
+
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
 Resolver(document, {name:"document"});
@@ -1406,13 +1428,9 @@ Generator.discardRestricted = function()
 };
 
 
-Resolver.config = function(loadTime) {
-
-};
-
-Resolver.document.declare("enhanced", {
+Resolver.document.set("enhanced", { //TODO back to declare
 	enabledRoles: {},
-	handlers: {},
+	handlers: { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} },
 	config: {},
 	inits: [],
 	modules: {},
@@ -1421,6 +1439,101 @@ Resolver.document.declare("enhanced", {
 });
 
 // set("bodyResolver")
+
+/* 
+	Resolver.config(document,'declare(..); declare("..")');
+	var conf = Resolver.config(el)
+*/
+Resolver.config = function(el,script) {
+	var log = Resolver("essential::console::")();
+	var _singleQuotesRe = new RegExp("'","g");
+
+
+	function _getRoleConfig(resolver, el,key) {
+		//TODO cache the config on element.stateful
+
+		var config = null, doc = resolver.namespace,
+			ref = resolver.reference("enhanced.config","null");
+
+		// mixin the declared config
+		if (key) {
+			var declared = ref(key);
+			if (declared) {
+				config = {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		if (el == doc.body) {
+			var declared = ref("body");
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+		else if (el == doc.head) {
+			var declared = ref("head");
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+		}
+
+		// mixin the data-role
+		var dataRole = el.getAttribute("data-role");
+		if (dataRole) try {
+			config = config || {};
+			//TODO alternate CSS like syntax
+			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+			for(var n in map) config[n] = map[n];
+		} catch(ex) {
+			log.debug("Invalid config: ",dataRole,ex);
+			config["invalid-config"] = dataRole;
+		}
+
+		return config;
+	}
+
+
+	var doc = el.nodeType == 9? el : el.ownerDocument, docResolver = Resolver(doc);
+	if (docResolver == null) return null; // if not known document
+
+	if (script) {
+		if (typeof script == "string") script = Resolver.functionProxy(script);
+		var context = docResolver.reference("enhanced.config");
+		//TODO extend the reference with additional api
+		try {
+			script.call(context);
+		} catch(ex) {
+			Resolver("essential::console::")().error("Failed to parse application/config",s.text);
+		}
+
+	} else {
+		if (el.id) {
+			return _getRoleConfig(docResolver, el,el.id);
+		}
+		var name;
+		try {
+			name = el.getAttribute("name");
+		}
+		catch(ex) { // access denied
+			return null;
+		}
+		if (name) {
+			var p = el.parentNode;
+			while(p && p.tagName) {
+				if (p.id) {
+					return _getRoleConfig(docResolver, el,p.id + "." + name);
+				} 
+				p = p.parentNode;
+			} 
+		}
+		return _getRoleConfig(docResolver, el);
+	}
+};
+
+
+
 // types for describing generator arguments and generated properties
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -1720,7 +1833,7 @@ Resolver.document.declare("enhanced", {
 		var appConfig = Resolver("essential::ApplicationConfig::")();
 
 		for(var i=0,c; c = el.children[i]; ++i) {
-			var role = c.getAttribute("role"), conf = appConfig.getConfig(c) || {};
+			var role = c.getAttribute("role"), conf = Resolver.config(c) || {};
 			var se = this.sizingElement(el,el,c,role,conf);
 			if (se) {
 				// set { sizingElement:true } on conf?
@@ -1803,7 +1916,7 @@ Resolver.document.declare("enhanced", {
 			if (typeof el.length == "number") {
 				for(var i=0,e; e = el[i]; ++i) {
 
-					var conf = ac.getConfig(e), role = e.getAttribute("role");
+					var conf = Resolver.config(e), role = e.getAttribute("role");
 					var desc = EnhancedDescriptor(e,role,conf,false,ac);
 					if (desc) q.push(desc);
 				}
@@ -1811,7 +1924,7 @@ Resolver.document.declare("enhanced", {
 				//TODO third param context ? integrate with desc.context
 				//TODO identify existing descriptors
 
-				var conf = essential("ApplicationConfig")().getConfig(el), role = el.getAttribute("role");
+				var conf = Resolver.config(el), role = el.getAttribute("role");
 				var desc = EnhancedDescriptor(el,role,conf);
 				if (desc) q.push(desc);
 			}
@@ -1870,7 +1983,7 @@ Resolver.document.declare("enhanced", {
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
-				var conf = essential("ApplicationConfig")().getConfig(e), role = e.getAttribute("role");
+				var conf = Resolver.config(e), role = e.getAttribute("role");
 				// var sizingElement = false;
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 
@@ -1922,7 +2035,7 @@ Resolver.document.declare("enhanced", {
 	DescriptorQuery.fn.withBranch = function() {
 		this.onlyBranch();
 
-		var conf = essential("ApplicationConfig")().getConfig(this.el), role = this.el.getAttribute("role");
+		var conf = Resolver.config(this.el), role = this.el.getAttribute("role");
 
 				//TODO if not enabledRole skip
 				
@@ -4125,6 +4238,269 @@ Resolver.document.declare("enhanced", {
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
+	function addHeadScript(text) {
+
+		if (false) {
+			HTMLElement("script",{
+				"append to": document.head
+			},text);	
+		}
+		else document.write('<script>'+text+'</'+'script>')
+
+	}
+
+	function describeLink(link,lang) {
+
+		var attrsStr = link.getAttribute("attrs");
+		var attrs = {};
+		if (attrsStr) {
+			try {
+				eval("attrs = {" + attrsStr + "}");
+			} catch(ex) {
+				//TODO
+			}
+		}
+		attrs["rel"] = link.rel;
+		attrs["stage"] = link.getAttribute("stage") || undefined;
+		attrs["type"] = link.type || link.getAttribute("type") || "text/javascript";
+		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || undefined;
+		attrs["base"] = essential("baseUrl");
+		attrs["subpage"] = (link.getAttribute("subpage") == "false" || link.getAttribute("data-subpage") == "false")? false:true;
+		//attrs["id"] = link.getAttribute("script-id");
+		attrs["onload"] = flagLoaded;
+
+		attrs["src"] = (link.href || link.getAttribute("src") || "").replace(essential("baseUrl"),"");
+
+		switch(attrs.type) {
+			case "text/javascript":
+				attrs.stage = "loading";
+				break;
+			case "text/javascript+preloading":
+			case "text/javascript+authenticated":
+				var s = attrs.type.split("+");
+				attrs.type = s[0];
+				attrs.stage = s[1];
+				break;
+
+			//TODO XHR for others
+		}
+
+		return attrs;
+	}
+
+	function flagLoaded() {
+		var name = this.getAttribute("data-module"), 
+			module = Resolver("document")(["enhanced","modules",name]);
+
+		setTimeout(function(){
+			module.setLoaded();
+		},0);
+	}
+
+	function Module(name) {this.name=name;}
+
+	Module.prototype.scriptMarkup = function(subpage) {
+		var loaded = "Resolver('document')(['enhanced','modules',this.getAttribute('data-module')]).setLoaded();",
+			attr = subpage? "" : " defer";
+		return '<script src="' + this.attrs.src + '" data-module="'+ this.name +'" onload="'+loaded+'"'+attr+'></'+'script>';
+	};
+
+	Module.prototype.addScript = function() {
+		document.write(this.scriptMarkup());
+		this.added = true;
+		console.log("added script",this.name);
+	};
+
+	Module.prototype.addScriptAsync = function() {
+		// var src = this.attrs.src;
+		this.attrs["append to"] = this.link.ownerDocument.head;
+		// this.attrs.src = undefined;
+		this.attrs.async = false;
+
+		HTMLScriptElement(this.attrs);
+		this.added = true;
+		console.log("added script",this.name);
+	};
+
+	var pendingScripts = [];
+	var firstScript = document.scripts[0];
+
+	// Watch scripts load in IE
+	function stateChange() {
+	  // Execute as many scripts in order as we can
+	  while (pendingScripts[0] && pendingScripts[0].readyState == 'loaded') {
+	    var pendingScript = pendingScripts.shift();
+	    // avoid future loading events from this script (eg, if src changes)
+	    pendingScript.onreadystatechange = null;
+	    // can't just appendChild, old IE bug if element isn't closed
+	    firstScript.parentNode.insertBefore(pendingScript, firstScript);
+	    flagLoaded.call(pendingScript);
+	  }
+	}	
+
+	Module.prototype.addScriptIE = function() {
+
+    	var script = document.createElement('script');
+	    pendingScripts.push(script);
+	    // listen for state changes
+	    script.onreadystatechange = stateChange;
+	    // must set src AFTER adding onreadystatechange listener
+	    // else we’ll miss the loaded event for cached scripts
+	    script.src = src;
+		this.added = true;
+	};
+
+	if (firstScript) {
+		if ('async' in firstScript) Module.prototype.addScript = Module.prototype.addScriptAsync;
+		else if (firstScript.readyState) Module.prototype.addScript = Module.prototype.addScriptIE;
+	} 
+
+	Module.prototype.queueHead = function(stage,lang) {
+		if (this.loaded || this.added) return;
+
+		var langOk = (lang && this.link.lang)? (this.link.lang == lang) : true; //TODO test on add script
+		if (this.attrs.stage==stage && langOk) this.addScript();
+	};
+	Module.prototype.setLoaded = function() {
+		this.loaded = true;
+		//TODO update pageResolver
+		Resolver("document").reflectModules();
+		if (document.body) essential("instantiatePageSingletons")();
+		console.log("loaded ",this.name);
+		//TODO perhaps more
+	};
+
+	Resolver("document").reflectModules = function() {
+		var modules = this.namespace.enhanced.modules;
+		var flags = { loadingScripts:false, launchingScripts:false };
+		for(var n in modules) {
+			var m = modules[n];
+			if (m.attrs.type == "text/javascript" && m.added && !m.loaded) {
+				if (m.attrs.stage=="preloading") flags.loadingScripts = true;
+				else flags[m.attrs.stage + "Scripts"] = true;
+			}
+			//TODO other types of modules
+		}
+
+		Resolver("page::state").mixin(flags);
+	};
+
+	function queueModule(link,attrs) {
+		var name = attrs.name || attrs.src; 
+
+		var module = Resolver("document").declare(["enhanced","modules",name],new Module(name));
+		module.link = link;
+		module.attrs = attrs;
+		module.attrs["data-module"] = module.name;
+	}
+
+	function useBuiltins(list) {
+		for(var i=0,r; r = list[i]; ++i) Resolver("page").set(["enabledRoles",r],true);
+	}
+
+	function scanHead(doc) {
+		var doc = doc || document, head = doc.head;
+
+		//TODO support text/html use base subpage functionality
+
+		for(var i=0,he; he = head.children[i]; ++i) if (!he.__applied__) switch(he.tagName){
+			case "meta":
+			case "META":
+				var attrs = describeLink(he);
+				switch(attrs.name) {
+					case "enhanced roles":
+						useBuiltins((he.getAttribute("content") || "").split(" "));
+						break;
+
+					case "track main":
+						if (this.opener) {
+							// document.appstate.set("state.managed",true);
+							// docResolver.set("essential.state.managed",true);
+							pageResolver.set("state.managed",true);
+						}
+						break;
+
+					case "lang cookie":
+						break;
+					// enhanced roles
+					// enhanced tags
+					// text selection
+					// track main
+				}
+				//TODO get lang from cookie
+				he.__applied__ = true;
+				break;
+
+			case "link":
+			case "LINK":
+				switch(he.rel) {
+					// case "stylesheet":
+					// 	this.resources().push(l);
+					// 	break;			
+					case "subresource":
+					//case "preload":
+					//case "load":
+					//case "protected":
+					//case "stylesheet":
+						queueModule(he,describeLink(he));
+						break;
+				}
+				he.__applied__ = true;
+				break;
+
+			case "script":
+			case "SCIPT":
+				break;
+		}
+/*
+		var metas = document.getElementsByTagName("meta");
+		for(var i=0,m; m = metas[i]; ++i) {
+			switch((m.getAttribute("name") || "").toLowerCase()) {
+				case "text selection":
+
+					//TODO dom ready
+					textSelection((m.getAttribute("content") || "").split(" "));
+					break;
+			}
+		}
+*/
+	Resolver("document").reflectModules();
+
+	// default is english (perhaps make it configurable)
+	if (document.head.lang == "") document.head.lang = "en";
+	}
+
+	function queueHead() {
+		// Resolver("page").set("state.loading",true);
+		// Resolver("page").set("state.preloading",true);
+		scanHead();
+
+		var modules = Resolver("document::modules::");
+		for(var n in modules) {
+			modules[n].queueHead("preloading",document.head.lang);
+		}		
+		addHeadScript('Resolver("essential::sealHead::")();');
+	}
+	essential.set("queueHead",queueHead);
+
+	function sealHead() {
+		scanHead();
+		// Resolver("page").set("state.preloading",false);
+
+		//?? headSealed,true
+
+		var modules = Resolver("document::modules::");
+		for(var n in modules) {
+			modules[n].queueHead("loading",document.head.lang);
+		}		
+
+		var doc = doc || document, head = doc.head;
+
+
+		//TODO head.setAttribute("lang",lang);		
+	}
+	essential.set("sealHead",sealHead);
+
 
 	function _ElementPlacement(el,track,calcBounds) {
 		this.bounds = {};
@@ -5095,7 +5471,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
-				var conf = this.getConfig(e), role = e.getAttribute("role");
+				var conf = Resolver.config(e), role = e.getAttribute("role");
 				// var sizingElement = false;
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
@@ -5537,7 +5913,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
 
-		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
+		// body can now be configured in script
+		var conf = Resolver.config(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
 		this._markPermanents(); 
@@ -6077,18 +6454,15 @@ function(scripts) {
 	for(var i=0,s; s = scripts[i]; ++i) {
 		switch(s.getAttribute("type")) {
 			case "application/config":
-				try {
-					with(this) eval(s.text);
-				} catch(ex) {
-					Resolver("essential::console::")().error("Failed to parse application/config",s.text);
-				}
+				//TODO move
+				Resolver.config(s.ownerDocument, s.text);
 				break;
 			case "application/init": 
 				inits.push(s);
 				break;
 			default:
 				var name = s.getAttribute("name");
-				if (name && s.getAttribute("src") == null) this.modules[name] = true; 
+				if (name && s.getAttribute("src") == null) enhancedResolver.set("modules",name,true); 
 				//TODO onload if src to flag that module is loaded
 				if (s.parentNode == document.head) {
 					resources.push(s);

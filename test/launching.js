@@ -85,6 +85,7 @@ test('Some states can be changed without instantiating ApplicationConfig',functi
 
 	equal(ApplicationConfig.info.existing[0],undefined,"ApplicationConfig not already there when testing");
 
+	// debugger;
 	ok(! pageResolver("state.livepage"));
 	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
 
@@ -184,7 +185,7 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		ok(mainStage);
 		equal(mainStage.id,"main-stage");
 
-		var config = page.getConfig(mainStage);
+		var config = Resolver.config(mainStage);
 		ok(config);
 		equal(config["introduction-area"],"intro");
 		equal(config["authenticated-area"],"explorer");
@@ -192,14 +193,14 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		equal(config["type"],"vertical");
 		deepEqual(config["sizes"],[100,50]);
 
-		var config = page.getConfig(page.body);
+		var config = Resolver.config(page.body);
 		ok(config);
 		equal(config["a"],"a","body data-role attribute");
 		equal(config["b"],"b","body data-role attribute");
 		equal(config["c"],"c","body application/config");
 
 		// if (navigator.userAgent.indexOf(" MSIE ") == -1) {
-			var config = page.getConfig(page.head);
+			var config = Resolver.config(page.head);
 			ok(config);
 			equal(config["1"],"1","head data-role attribute");
 			equal(config["2"],"2","head data-role attribute");
@@ -265,11 +266,11 @@ test("Loading Sequence",function() {
 
 	//TODO scan page to identify two links
 	pageResolver.set(["state","loadingScripts"],true);
-	pageResolver.set(["state","loadingScriptsUrl",l1.src],l1); 
+	// pageResolver.set(["state","loadingScriptsUrl",l1.src],l1); 
 	pageResolver.set(["state","loadingScripts"],true);
-	pageResolver.set(["state","loadingScriptsUrl",l2.src],l2); 
+	// pageResolver.set(["state","loadingScriptsUrl",l2.src],l2); 
 
-	pageResolver.set(["state","loadingScriptsUrl",l1.src],false); 
+	// pageResolver.set(["state","loadingScriptsUrl",l1.src],false); 
 
 	ok(pageState.loading);
 

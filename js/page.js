@@ -5,6 +5,7 @@
 !function(Scripted_gather) {
 
 	var essential = Resolver("essential",{}),
+		enhancedResolver = Resolver("document::enhanced"),
 		log = essential("console")(),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
@@ -356,10 +357,10 @@
 	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
 
 	// application/config declarations on the main page
-	pageResolver.declare("config",{});
+	pageResolver.declare("config",Resolver("document::enhanced.config::"));
 
 	// descriptors for elements on main page to enhance
-	pageResolver.declare("descriptors",{});
+	pageResolver.declare("descriptors",Resolver("document::enhanced.descriptors::"));
 
 	pageResolver.reference("state").mixin({
 		"livepage": false,
@@ -380,9 +381,10 @@
 
 		"lang": document.documentElement.lang || "en",
 
-		"loadingScriptsUrl": {},
 		"loadingConfigUrl": {}
 		});
+
+	Resolver("document").reflectModules();
 
 	Resolver("translations").on("change bind","locale",function(ev) {
 		var s = ev.value.split("-");
@@ -399,14 +401,9 @@
 		"logStatus": false
 	});
 
-	pageResolver.declare("enabledRoles",{});
-	pageResolver.declare("handlers.init",{});
-	pageResolver.declare("handlers.enhance",{});
-	pageResolver.declare("handlers.sizing",{});
-	pageResolver.declare("handlers.layout",{});
-	pageResolver.declare("handlers.discard",{});
-
-	pageResolver.declare("templates",{});
+	pageResolver.declare("enabledRoles",Resolver("document::enhanced.enabledRoles::"));
+	pageResolver.declare("handlers",Resolver("document::enhanced.handlers::"));
+	pageResolver.declare("templates",Resolver("document::enhanced.templates::"));
 
 	// Object.defineProperty(pageResolver.namespace,'handlers',{
 	// 	get: function() { return pageResolver.namespace.__handlers; },
@@ -519,6 +516,7 @@
 		this.inits = this.resolver.reference("inits");
 	}
 
+	//TODO migrate to Resolver.config support
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
 		if (typeof value == "object") {
@@ -527,66 +525,21 @@
 		}
 	}; 
 
-	_Scripted.prototype.modules = { "domReady":true };	// keep track of what modules are loaded
-
 	_Scripted.prototype.context = {
 		"require": function(path) {
-			if (this.modules[path] == undefined) {
+			if (enhancedResolver("modules")[path] == undefined) {
 				var ex = new Error("Missing module '" + path + "'");
 				ex.ignore = true;
 				throw ex;	
 			} 
 		},
-		"modules": _Scripted.prototype.modules
+		"modules": enhancedResolver("modules")
 	};
 
+	//TODO change
 	_Scripted.prototype._gather = Scripted_gather;
 
-	var _singleQuotesRe = new RegExp("'","g");
-
-	_Scripted.prototype._getElementRoleConfig = function(element,key) {
-		//TODO cache the config on element.stateful
-
-		var config = null;
-
-		// mixin the declared config
-		if (key) {
-			var declared = this.config(key);
-			if (declared) {
-				config = {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-
-		if (element == this.body) {
-			var declared = this.config("body");
-			if (declared) {
-				config = config || {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-		else if (element == this.head) {
-			var declared = this.config("head");
-			if (declared) {
-				config = config || {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-
-		// mixin the data-role
-		var dataRole = element.getAttribute("data-role");
-		if (dataRole) try {
-			config = config || {};
-			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			for(var n in map) config[n] = map[n];
-		} catch(ex) {
-			log.debug("Invalid config: ",dataRole,ex);
-			config["invalid-config"] = dataRole;
-		}
-
-		return config;
-	};
-
+	//config related, TODO review
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
 		// var el = this.document.getElementById(keys[0]);
@@ -597,29 +550,6 @@
 
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
-	};
-
-	_Scripted.prototype.getConfig = function(element) {
-		if (element.id) {
-			return this._getElementRoleConfig(element,element.id);
-		}
-		var name;
-		try {
-			name = element.getAttribute("name");
-		}
-		catch(ex) { // access denied
-			return null;
-		}
-		if (name) {
-			var p = element.parentNode;
-			while(p && p.tagName) {
-				if (p.id) {
-					return this._getElementRoleConfig(element,p.id + "." + name);
-				} 
-				p = p.parentNode;
-			} 
-		}
-		return this._getElementRoleConfig(element);
 	};
 
 	_Scripted.prototype.doInitScripts = function() {
@@ -644,7 +574,7 @@
 		var e = el.firstElementChild!==undefined? el.firstElementChild : el.firstChild;
 		while(e) {
 			if (e.attributes) {
-				var conf = this.getConfig(e), role = e.getAttribute("role");
+				var conf = Resolver.config(e), role = e.getAttribute("role");
 				// var sizingElement = false;
 				// if (context.layouter) sizingElement = context.layouter.sizingElement(el,e,role,conf);
 				var desc = EnhancedDescriptor(e,role,conf,false,this);
@@ -1086,7 +1016,8 @@
 		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
 
-		var conf = this.getConfig(this.body), role = this.body.getAttribute("role");
+		// body can now be configured in script
+		var conf = Resolver.config(this.body), role = this.body.getAttribute("role");
 		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
 		this._markPermanents(); 
@@ -1119,9 +1050,6 @@
 		}
 	}) );
 	
-	// preset on instance (old api)
-	ApplicationConfig.presets.declare("state", { });
-
 	ApplicationConfig.prototype.getIntroductionArea = function() {
 		var pages = this.resolver("pages");
 		for(var n in pages) {
@@ -1626,18 +1554,15 @@ function(scripts) {
 	for(var i=0,s; s = scripts[i]; ++i) {
 		switch(s.getAttribute("type")) {
 			case "application/config":
-				try {
-					with(this) eval(s.text);
-				} catch(ex) {
-					Resolver("essential::console::")().error("Failed to parse application/config",s.text);
-				}
+				//TODO move
+				Resolver.config(s.ownerDocument, s.text);
 				break;
 			case "application/init": 
 				inits.push(s);
 				break;
 			default:
 				var name = s.getAttribute("name");
-				if (name && s.getAttribute("src") == null) this.modules[name] = true; 
+				if (name && s.getAttribute("src") == null) enhancedResolver.set("modules",name,true); 
 				//TODO onload if src to flag that module is loaded
 				if (s.parentNode == document.head) {
 					resources.push(s);

@@ -976,6 +976,28 @@ Resolver.exists = function(name) {
     return this[name] != undefined;
 };
 
+Resolver.functionProxy = function(src) {
+
+   // When executing the Function constructor, we are going
+    // to wrap the source code in a WITH keyword block that
+    // allows the THIS context to extend the local scope of
+    // the function.
+    //
+    // NOTE: This works without a nested self-executing
+    // function. I put it in there simply because it makes me
+    // feel a little more comfortable with the use of the
+    // WITH keyword.
+    return(
+        Function(
+            "with (this){" +
+                "return(" +
+                    "(function(){" + src + "})()" +
+                ");" +
+            "};"
+        )
+    );
+};
+
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
 Resolver(document, {name:"document"});
