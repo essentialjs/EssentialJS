@@ -1,4 +1,8 @@
 module('launching page', {
+	"setup": function() {
+		//TODO scan and apply script and meta
+	},
+
 	"teardown": function() {
 		Generator.discardRestricted();
 		Resolver("essential::EnhancedDescriptor::").discardAll();
@@ -40,6 +44,11 @@ test("Page Resolver",function(){
 
 });
 
+function set_cookie(doc,id,value,expires) {
+
+    doc.cookie = id+"="+encodeURI(value)+(expires||"")+"; path=/";
+}
+
 test('HTML head is scanned correctly', function() {
 	var essential = Resolver('essential'),
 		queueHead = essential('queueHead'),
@@ -48,10 +57,37 @@ test('HTML head is scanned correctly', function() {
 		translations = Resolver("translations"),
 		HTMLElement = Resolver("essential::HTMLElement::");
 
+	set_cookie(document,"locale","en-us");
 	queueHead(document,false);
 	equal(document.defaultLang,"en"); //TODO defaultLocale in translations instead?
 	equal(translations("defaultLocale"),"en-us"); // guess it can't be tested...
 	equal(pageResolver("state.lang"),"en");
+
+
+	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
+
+	//TODO can the domain be set for custom document? avoids conflicting cookies
+	var doc = createHTMLDocument([
+		'<!DOCTYPE html><html>',
+		'<head id="a1" attr="a1"><meta charset="utf-8">',
+		'<meta name="locale cookie" content="locale">',
+		'</head>',
+		'<body id="a2" attr="a2"></body>',
+		'</html>'].join(""));
+	// debugger;
+	set_cookie(doc,"locale","fr-fr");
+	var r = Resolver(doc);
+	queueHead(doc,false);
+	equal(typeof r("enhanced"), "object","Custom Document Enhanced");
+	equal(r("enhanced.lang",null),"fr");
+	equal(r("enhanced.locale",null),"fr-fr");
+
+	set_cookie(doc,"locale","de-CH");
+	// debugger;
+	queueHead(doc,false);
+	equal(typeof r("enhanced"), "object","Custom Document Enhanced");
+	equal(r("enhanced.lang",null),"de");
+	equal(r("enhanced.locale",null),"de-CH");
 });
 
 var INIT_PAGE_STATE	= {

@@ -2821,8 +2821,6 @@ Resolver.config = function(el,script) {
 		}
 		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
 
-		//TODO derive state.lang and locale from html.lang
-		
 		Resolver.loadReadStored();
 
 		try {
@@ -3027,6 +3025,10 @@ Resolver.config = function(el,script) {
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
+
+	Resolver("document").on("change","enhanced.locale",function(ev) {
+		translations.set("locale",ev.value);
+	});
 
 	/*
 		locales.de = { chain:"en" }
@@ -4315,16 +4317,17 @@ Resolver.config = function(el,script) {
 				//TODO
 			}
 		}
-		attrs["rel"] = link.rel;
-		attrs["stage"] = link.getAttribute("stage") || undefined;
-		attrs["type"] = link.type || link.getAttribute("type") || "text/javascript";
-		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || undefined;
+		attrs["rel"] = link.rel || attrs.rel;
+		attrs["stage"] = link.getAttribute("stage") || attrs.stage || undefined;
+		attrs["type"] = link.type || link.getAttribute("type") || attrs.type || "text/javascript";
+		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || attrs.name || undefined;
+		attrs["content"] = link.getAttribute("content") || attrs.content || undefined;
 		attrs["base"] = essential("baseUrl");
 		attrs["subpage"] = (link.getAttribute("subpage") == "false" || link.getAttribute("data-subpage") == "false")? false:true;
 		//attrs["id"] = link.getAttribute("script-id");
 		attrs["onload"] = flagLoaded;
 
-		attrs["src"] = (link.href || link.getAttribute("src") || "").replace(essential("baseUrl"),"");
+		attrs["src"] = (link.href || link.getAttribute("src") || attrs.src || "").replace(essential("baseUrl"),"");
 
 		switch(attrs.type) {
 			case "text/javascript":
@@ -4466,17 +4469,17 @@ Resolver.config = function(el,script) {
     }
 
 	function scanHead(doc) {
-		var head = doc.head;
+		var head = doc.head, resolver = Resolver(doc);
 
 		//TODO support text/html use base subpage functionality
 
-		for(var i=0,he; he = head.children[i]; ++i) if (!he.__applied__) switch(he.tagName){
+		for(var i=0,he; he = head.children[i]; ++i) switch(he.tagName){
 			case "meta":
 			case "META":
 				var attrs = describeLink(he);
 				switch(attrs.name) {
 					case "enhanced roles":
-						useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
+						if (!he.__applied__) useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
 						break;
 
 					//TODO enhanced tags
@@ -4490,16 +4493,14 @@ Resolver.config = function(el,script) {
 						break;
 
 					case "text selection":
-						textSelection((m.getAttribute("content") || "").split(" "));
+						if (!he.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
 						break;
 
 					case "lang cookie":
 			            var value = readCookie(doc,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                //TODO enhancedResolver( lang )
-			                //TODO enhancedResolver( locale )
-			                Resolver("page").set("state.lang",value);
+			                resolver.set("enhanced.lang",value);
 			            }
 						break;
 
@@ -4507,7 +4508,9 @@ Resolver.config = function(el,script) {
 			            var value = readCookie(doc,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                Resolver("translations").set("locale",value);
+			                resolver.set("enhanced.locale",value);
+			                var s = value.toLowerCase().replace("_","-").split("-");
+			                resolver.set("enhanced.lang",s[0]);
 			            }
 						break;
 
@@ -4526,7 +4529,7 @@ Resolver.config = function(el,script) {
 					//case "load":
 					//case "protected":
 					//case "stylesheet":
-						queueModule(he,describeLink(he));
+						if (!he.__applied__) queueModule(he,describeLink(he));
 						break;
 				}
 				he.__applied__ = true;
@@ -4534,6 +4537,7 @@ Resolver.config = function(el,script) {
 
 			case "script":
 			case "SCIPT":
+				// if (!he.__applied__) 
 				break;
 		}
 
@@ -5297,12 +5301,13 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"loading": true,
 		"loadingConfig": false,
 		"loadingScripts": false,
+		"launchingScripts": false,
 		"configured": true,
 		"fullscreen": false,
 		"launching": false, 
 		"launched": false,
 
-		"lang": document.documentElement.lang || "en",
+		"lang": enhancedResolver("lang"),
 
 		"loadingConfigUrl": {}
 		});
@@ -5313,6 +5318,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");
 		if (Resolver.exists("page")) pageResolver.set("state.lang",s[0]);
+	});
+
+	Resolver("document").on("change","enhanced.lang",function(ev) {
+		if (Resolver.exists("page")) pageResolver.set("state.lang",ev.value);
 	});
 
 

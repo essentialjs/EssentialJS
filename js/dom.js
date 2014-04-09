@@ -1119,16 +1119,17 @@
 				//TODO
 			}
 		}
-		attrs["rel"] = link.rel;
-		attrs["stage"] = link.getAttribute("stage") || undefined;
-		attrs["type"] = link.type || link.getAttribute("type") || "text/javascript";
-		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || undefined;
+		attrs["rel"] = link.rel || attrs.rel;
+		attrs["stage"] = link.getAttribute("stage") || attrs.stage || undefined;
+		attrs["type"] = link.type || link.getAttribute("type") || attrs.type || "text/javascript";
+		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || attrs.name || undefined;
+		attrs["content"] = link.getAttribute("content") || attrs.content || undefined;
 		attrs["base"] = essential("baseUrl");
 		attrs["subpage"] = (link.getAttribute("subpage") == "false" || link.getAttribute("data-subpage") == "false")? false:true;
 		//attrs["id"] = link.getAttribute("script-id");
 		attrs["onload"] = flagLoaded;
 
-		attrs["src"] = (link.href || link.getAttribute("src") || "").replace(essential("baseUrl"),"");
+		attrs["src"] = (link.href || link.getAttribute("src") || attrs.src || "").replace(essential("baseUrl"),"");
 
 		switch(attrs.type) {
 			case "text/javascript":
@@ -1270,17 +1271,17 @@
     }
 
 	function scanHead(doc) {
-		var head = doc.head;
+		var head = doc.head, resolver = Resolver(doc);
 
 		//TODO support text/html use base subpage functionality
 
-		for(var i=0,he; he = head.children[i]; ++i) if (!he.__applied__) switch(he.tagName){
+		for(var i=0,he; he = head.children[i]; ++i) switch(he.tagName){
 			case "meta":
 			case "META":
 				var attrs = describeLink(he);
 				switch(attrs.name) {
 					case "enhanced roles":
-						useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
+						if (!he.__applied__) useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
 						break;
 
 					//TODO enhanced tags
@@ -1294,16 +1295,14 @@
 						break;
 
 					case "text selection":
-						textSelection((m.getAttribute("content") || "").split(" "));
+						if (!he.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
 						break;
 
 					case "lang cookie":
 			            var value = readCookie(doc,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                //TODO enhancedResolver( lang )
-			                //TODO enhancedResolver( locale )
-			                Resolver("page").set("state.lang",value);
+			                resolver.set("enhanced.lang",value);
 			            }
 						break;
 
@@ -1311,7 +1310,9 @@
 			            var value = readCookie(doc,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                Resolver("translations").set("locale",value);
+			                resolver.set("enhanced.locale",value);
+			                var s = value.toLowerCase().replace("_","-").split("-");
+			                resolver.set("enhanced.lang",s[0]);
 			            }
 						break;
 
@@ -1330,7 +1331,7 @@
 					//case "load":
 					//case "protected":
 					//case "stylesheet":
-						queueModule(he,describeLink(he));
+						if (!he.__applied__) queueModule(he,describeLink(he));
 						break;
 				}
 				he.__applied__ = true;
@@ -1338,6 +1339,7 @@
 
 			case "script":
 			case "SCIPT":
+				// if (!he.__applied__) 
 				break;
 		}
 

@@ -374,12 +374,13 @@
 		"loading": true,
 		"loadingConfig": false,
 		"loadingScripts": false,
+		"launchingScripts": false,
 		"configured": true,
 		"fullscreen": false,
 		"launching": false, 
 		"launched": false,
 
-		"lang": document.documentElement.lang || "en",
+		"lang": enhancedResolver("lang"),
 
 		"loadingConfigUrl": {}
 		});
@@ -390,6 +391,10 @@
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");
 		if (Resolver.exists("page")) pageResolver.set("state.lang",s[0]);
+	});
+
+	Resolver("document").on("change","enhanced.lang",function(ev) {
+		if (Resolver.exists("page")) pageResolver.set("state.lang",ev.value);
 	});
 
 

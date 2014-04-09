@@ -1231,8 +1231,6 @@
 		}
 		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
 
-		//TODO derive state.lang and locale from html.lang
-		
 		Resolver.loadReadStored();
 
 		try {
@@ -1437,6 +1435,10 @@
 	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
+
+	Resolver("document").on("change","enhanced.locale",function(ev) {
+		translations.set("locale",ev.value);
+	});
 
 	/*
 		locales.de = { chain:"en" }
