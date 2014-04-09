@@ -648,40 +648,6 @@
 		};
 	};
 
-
-	function _queueDelayedAssets()
-	{
-		//TODO move this to pageResolver("state.ready")
-		var config = ApplicationConfig();//TODO move the state transitions here
-		config._queueAssets();
-
-		// var scripts = document.head.getElementsByTagName("script");
-		// for(var i=0,s; s = scripts[i]; ++i) {
-
-		// }
-
-		if (pageResolver(["state","loadingScripts"])) log.debug("loading phased scripts");
-
-		var metas = document.getElementsByTagName("meta");
-		for(var i=0,m; m = metas[i]; ++i) {
-			switch((m.getAttribute("name") || "").toLowerCase()) {
-				case "text selection":
-					textSelection((m.getAttribute("content") || "").split(" "));
-					break;
-				case "enhanced roles":
-					useBuiltins((m.getAttribute("content") || "").split(" "));
-					break;
-				case "track main":
-					if (this.opener) {
-						pageResolver.set("state.managed",true);
-					}
-					break;
-			}
-		}
-	}
-	essential.set("_queueDelayedAssets",_queueDelayedAssets);
-
-
 	function configRequired(url)
 	{
 		pageResolver.set(["state","loadingConfig"],true);
@@ -823,29 +789,6 @@
 		}
 	}
 	essential.declare("enhanceStatefulFields",enhanceStatefulFields);
-
-	function useBuiltins(list) {
-		for(var i=0,r; r = list[i]; ++i) pageResolver.set(["enabledRoles",r],true);
-	}
-
-	function textSelection(tags) {
-		var pass = {};
-		for(var i=0,n; n = tags[i]; ++i) {
-			pass[n] = true;
-			pass[n.toUpperCase()] = true;
-		}
-		addEventListeners(document.body, {
-			"selectstart": function(ev) {
-				ev = MutableEvent(ev);
-				var allow = false;
-				for(var el = ev.target; el; el = el.parentNode) {
-					if (pass[el.tagName || ""]) allow = true;
-				} 
-				if (!allow) ev.preventDefault();
-				return allow;
-			}
-		});
-	}
 
 	var _scrollbarSize;
 	function scrollbarSize() {

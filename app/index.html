@@ -7,6 +7,7 @@
 	<meta content="Novo Bank" name="description">
 	<meta content="Henrik Vendelbo" name="author">
 
+	<meta name="lang cookie" content="LANG">
 	<meta name="text selection" content="input textarea">
 	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled template table resolved">
 	<meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
@@ -15,17 +16,17 @@
 	<link rel="stylesheet" href="css/basic.css" media="screen">
 	<link rel="stylesheet" href="css/enhanced.css" media="screen">
 
-	<link rel="preload" type="text/javascript" lang="en" src="js/en.translations.js">
-	<link rel="preload" type="text/javascript" lang="de" src="js/de.translations.js">
-	<link rel="preload" type="text/javascript" lang="de-CH" src="js/de_CH.translations.js">
+	<link rel="subresource" type="text/javascript+preloading" lang="en" src="js/en.translations.js">
+	<link rel="subresource" type="text/javascript+preloading" lang="de" src="js/de.translations.js">
+	<link rel="subresource" type="text/javascript+preloading" lang="de-CH" src="js/de_CH.translations.js">
 
-	<link rel="preload" type="text/javascript" src="js/jquery-1.7.2.min.js" >
+	<link rel="subresource" type="text/javascript+preloading" src="js/jquery-1.7.2.min.js" >
 
-	<link rel="load" type="text/javascript" src="js/knockout.js">
-	<link rel="load" type="text/javascript" src="js/raphael.min.js" name="raphael">
-	<link rel="preload" type="text/javascript" src="js/raphael-resources.js">
-	<link rel="load" type="text/javascript" src="js/frontend.js" subpage="false">
-	<link rel="protected" type="text/javascript" src="js/application.js" subpage="false">
+	<link rel="subresource" type="text/javascript" src="js/knockout.js">
+	<link rel="subresource" type="text/javascript" src="js/raphael.min.js" name="raphael">
+	<link rel="subresource" type="text/javascript+preloading" src="js/raphael-resources.js">
+	<link rel="subresource" type="text/javascript" src="js/frontend.js" subpage="false">
+	<link rel="subresource" type="text/javascript+authenticated" src="js/application.js" subpage="false">
 
 	<script type="application/config">
 		declare("logo",{"charset": "utf-8"});

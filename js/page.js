@@ -509,11 +509,11 @@
 
 	function _Scripted() {
 		// the derived has to define resolver before this
-		this.config = this.resolver.reference("config","undefined");
+		this.config = this.resolver.reference("config","undefined"); // obsolete
 		this.resolver.declare("resources",[]);
 		this.resources = this.resolver.reference("resources");
 		this.resolver.declare("inits",[]);
-		this.inits = this.resolver.reference("inits");
+		this.inits = this.resolver.reference("inits"); // obsolete
 	}
 
 	//TODO migrate to Resolver.config support
@@ -599,35 +599,14 @@
 	*/
 	_Scripted.prototype.prepareEnhance = function() {
 
+		//TODO change
+
 		this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
 		this._prep(this.body,{});
 	};
 
-	function delayedScriptOnload(scriptRel) {
-		function delayedOnload(ev) {
-			var el = this, src = el.getAttribute("src");
-			var name = el.getAttribute("name");
-			if (name) {
-				ApplicationConfig().modules[name] = true;
-			}
-			setTimeout(function(){
-				// make sure it's not called before script executes
-				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				//console.info("script",el.getAttribute("src"),el.src,scriptRel);
-
-				if (scripts[src] != undefined) {
-					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",src],false);
-				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
-					//TODO absolute url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
-				}
-			},0);
-		}
-		return delayedOnload;       
-	}
-
+	//TODO remove
 	function updateScripts(doc,state) {
 		function addScript(rel) {
 			for(var n in state.loadingScriptsUrl) {
@@ -639,102 +618,17 @@
 			}
 		}
 
-		addScript("preload");
-		if (! state.preloading) { addScript("load"); 
-			if (state.authenticated) addScript("protected"); 
+
+		if (! state.loading) { 
+			if (state.authenticated && state.launching) addScript("protected"); 
 		}
 	}
-
-	function describeLink(link,lang) {
-
-		var attrsStr = link.getAttribute("attrs");
-		var attrs = {};
-		if (attrsStr) {
-			try {
-				eval("attrs = {" + attrsStr + "}");
-			} catch(ex) {
-				//TODO
-			}
-		}
-		attrs["rel"] = link.rel;
-		attrs["type"] = link.type || link.getAttribute("type") || "text/javascript";
-		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || undefined;
-		attrs["base"] = essential("baseUrl");
-		attrs["subpage"] = (link.getAttribute("subpage") == "false" || link.getAttribute("data-subpage") == "false")? false:true;
-		//attrs["id"] = link.getAttribute("script-id");
-		attrs["onload"] = delayedScriptOnload(link.rel);
-
-		attrs["src"] = (link.getAttribute("src") || "").replace(essential("baseUrl"),"");
-		attrs["langOk"] = (lang && link.lang)? (link.lang == lang) : true;
-
-		switch(attrs.rel) {
-			case "preload":
-			case "load":
-			case "protected":
-				if (attrs.langOk && attrs.type == "text/javascript") {
-					attrs.tagName = "script";
-					attrs["append to"] = link.ownerDocument.body; //?? or delayed assign
-				}
-				//TODO XHR for others
-				break;
-		}
-
-		return attrs;
-	}
-
 
 	_Scripted.prototype._queueAssets = function() {
-
-		var links = this.document.getElementsByTagName("link");
-
-		var lang = this.resolver("state.lang");
-		//TODO support text/html use base subpage functionality
-
-		for(var i=0,l; l=links[i]; ++i) {
-			var attrs = l.attrs = describeLink(l,lang);
-			switch(l.rel) {
-				case "stylesheet":
-					this.resources().push(l);
-					break;			
-				case "protected":
-				case "load":
-					if (attrs.tagName == "script") {
-						this.resolver.set(["state","loadingScripts"],true);
-						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
-					} 
-					break;
-
-				case "preload":
-					if (attrs.tagName == "script") {
-						this.resolver.set(["state","preloading"],true);
-						this.resolver.set(["state","loadingScripts"],true);
-						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
-						HTMLScriptElement(attrs);
-						l.added = true;
-					} 
-					break;
-			}
-		}
-		updateScripts(document,this.resolver("state"));
+		//TODO additional links queue in modules
 	};
 
-	pageResolver.on("change","state.loadingScriptsUrl",onLoadingScripts);
 	pageResolver.on("change","state.loadingConfigUrl",onLoadingConfig);
-
-	function onLoadingScripts(ev) {
-		var loadingScriptsUrl = this("state.loadingScriptsUrl"), loadingScripts = false, preloading = false;
-		for(var url in loadingScriptsUrl) {
-			var link = loadingScriptsUrl[url];
-
-			if (link) { loadingScripts = true; if (link.rel == "preload") preloading = true; }
-		}
-		this.set("state.loadingScripts",loadingScripts);
-		this.set("state.preloading",preloading);
-		if (ev.value==false) {
-			// finished loading a script
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	}
 
 	function onLoadingConfig(ev) {
 		var loadingConfigUrl = this("state.loadingConfigUrl"), loadingConfig = false;
@@ -936,19 +830,20 @@
 		return true;
 	};
 
+	//TODO emit modules injection
 	SubPage.prototype.getHeadHtml = function() {
-		var resources = ApplicationConfig().resources(),
-			loadingScriptsUrl = ApplicationConfig().resolver("state.loadingScriptsUrl"),
+		var links = document.getElementsByTagName("link"),
+			modules = enhancedResolver("modules"),
 			p = [],
 			base = "";
 
-		for(var i=0,r; r = resources[i]; ++i) {
-			if (this.doesElementApply(r)) p.push( outerHtml(r) );
+		for(var i=0,l; l = links[i]; ++i) {
+			if (l.rel == "stylesheet" && this.doesElementApply(l)) p.push( outerHtml(l) );
 		}
-		for(var u in loadingScriptsUrl) {
-			var link = loadingScriptsUrl[u];
-			base = link.attrs.base;
-			if (this.doesElementApply(link)) p.push( outerHtml(link) );
+		for(var u in modules) {
+			var module = modules[u];
+			base = module.attrs.base;
+			if (this.doesElementApply(module)) p.push( module.scriptMarkup(true) );
 		}
 		if (this.options && this.options["track main"]) p.push('<meta name="track main" content="true">');
 		if (base) p.push('<base href="'+base+'">');
@@ -1546,6 +1441,7 @@
 	essential.declare("openWindow",openWindow);
 
 }(
+//TODO dom.js	
 // need with context not supported in strict mode
 function(scripts) {
 	var resources = this.resources();

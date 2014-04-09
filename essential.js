@@ -4231,14 +4231,15 @@ Resolver.config = function(el,script) {
 	}
 	essential.set("HTMLScriptElement",HTMLScriptElement);
 
-	function addHeadScript(text) {
+	function addHeadScript(text,doc) {
 
+		//TODO support adding to other sub-documents
 		if (false) {
 			HTMLElement("script",{
-				"append to": document.head
+				"append to": doc.head
 			},text);	
 		}
-		else document.write('<script>'+text+'</'+'script>')
+		else doc.write('<script>'+text+'</'+'script>')
 
 	}
 
@@ -4363,6 +4364,7 @@ Resolver.config = function(el,script) {
 		//TODO perhaps more
 	};
 
+	//TODO on all document resolvers
 	Resolver("document").reflectModules = function() {
 		var modules = this.namespace.enhanced.modules;
 		var flags = { loadingScripts:false, launchingScripts:false };
@@ -4387,12 +4389,23 @@ Resolver.config = function(el,script) {
 		module.attrs["data-module"] = module.name;
 	}
 
-	function useBuiltins(list) {
-		for(var i=0,r; r = list[i]; ++i) Resolver("page").set(["enabledRoles",r],true);
+	function useBuiltins(doc,list) {
+		for(var i=0,r; r = list[i]; ++i) Resolver(doc).set(["enhanced","enabledRoles",r],true);
 	}
 
+    function readCookie(doc,id) {
+        var wEQ = id + "=";
+        var ca = doc.cookie.split(';');
+        for(var i=0;i < ca.length;i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(wEQ) == 0) return c.substring(wEQ.length,c.length);
+        }
+        return undefined;
+    }
+
 	function scanHead(doc) {
-		var doc = doc || document, head = doc.head;
+		var head = doc.head;
 
 		//TODO support text/html use base subpage functionality
 
@@ -4402,25 +4415,42 @@ Resolver.config = function(el,script) {
 				var attrs = describeLink(he);
 				switch(attrs.name) {
 					case "enhanced roles":
-						useBuiltins((he.getAttribute("content") || "").split(" "));
+						useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
 						break;
+
+					//TODO enhanced tags
 
 					case "track main":
 						if (this.opener) {
 							// document.appstate.set("state.managed",true);
 							// docResolver.set("essential.state.managed",true);
-							pageResolver.set("state.managed",true);
+							Resolver("page").set("state.managed",true);
 						}
 						break;
 
-					case "lang cookie":
+					case "text selection":
+						textSelection((m.getAttribute("content") || "").split(" "));
 						break;
-					// enhanced roles
-					// enhanced tags
-					// text selection
-					// track main
+
+					case "lang cookie":
+			            var value = readCookie(doc,attrs.content);
+			            if (value != undefined) {
+			                value = decodeURI(value);
+			                //TODO enhancedResolver( lang )
+			                //TODO enhancedResolver( locale )
+			                Resolver("page").set("state.lang",value);
+			            }
+						break;
+
+					case "locale cookie":
+			            var value = readCookie(doc,attrs.content);
+			            if (value != undefined) {
+			                value = decodeURI(value);
+			                Resolver("translations").set("locale",value);
+			            }
+						break;
+
 				}
-				//TODO get lang from cookie
 				he.__applied__ = true;
 				break;
 
@@ -4445,54 +4475,66 @@ Resolver.config = function(el,script) {
 			case "SCIPT":
 				break;
 		}
-/*
-		var metas = document.getElementsByTagName("meta");
-		for(var i=0,m; m = metas[i]; ++i) {
-			switch((m.getAttribute("name") || "").toLowerCase()) {
-				case "text selection":
 
-					//TODO dom ready
-					textSelection((m.getAttribute("content") || "").split(" "));
-					break;
-			}
-		}
-*/
-	Resolver("document").reflectModules();
+		Resolver("document").reflectModules();
 
-	// default is english (perhaps make it configurable)
-	if (document.head.lang == "") document.head.lang = "en";
+		// default is english (perhaps make it configurable)
+		if (doc.documentElement.lang == "") doc.documentElement.lang = "en";
+		if (doc.defaultLang == undefined) doc.defaultLang = doc.documentElement.lang;
 	}
 
-	function queueHead() {
+	function queueHead(doc,addSeal) {
 		// Resolver("page").set("state.loading",true);
 		// Resolver("page").set("state.preloading",true);
-		scanHead();
+		scanHead(doc);
 
-		var modules = Resolver("document::modules::");
+		var modules = Resolver(doc)("modules");
 		for(var n in modules) {
-			modules[n].queueHead("preloading",document.head.lang);
+			modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
-		addHeadScript('Resolver("essential::sealHead::")();');
+		if (addSeal !== false) addHeadScript('Resolver("essential::sealHead::")(document);',doc);
 	}
 	essential.set("queueHead",queueHead);
 
-	function sealHead() {
-		scanHead();
+	function sealHead(doc) {
+		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
 
 		//?? headSealed,true
 
-		var modules = Resolver("document::modules::");
+		var modules = Resolver(doc)("modules");
 		for(var n in modules) {
-			modules[n].queueHead("loading",document.head.lang);
+			modules[n].queueHead("loading",document.documentElement.lang);
 		}		
 
 		var doc = doc || document, head = doc.head;
 
 
-		//TODO head.setAttribute("lang",lang);		
+		//TODO doc.documentElement.setAttribute("lang",lang);		
 	}
 	essential.set("sealHead",sealHead);
+
+	function textSelection(tags) {
+		var pass = {};
+		for(var i=0,n; n = tags[i]; ++i) {
+			pass[n] = true;
+			pass[n.toUpperCase()] = true;
+		}
+
+		//TODO Resolver.enhanceDocument(doc)
+		//TODO test that this works, and register it regardless, just change the config
+		addEventListeners(document.documentElement, {
+			"selectstart": function(ev) {
+				ev = MutableEvent(ev);
+				var allow = false;
+				for(var el = ev.target; el; el = el.parentNode) {
+					if (pass[el.tagName || ""]) allow = true;
+				} 
+				if (!allow) ev.preventDefault();
+				return allow;
+			}
+		}, true); // capture
+	}
 
 
 	function _ElementPlacement(el,track,calcBounds) {
@@ -5458,102 +5500,17 @@ _ElementPlacement.prototype._computeIE = function(style)
 			}
 		}
 
-		addScript("preload");
-		if (! state.preloading) { addScript("load"); 
-			if (state.authenticated) addScript("protected"); 
+
+		if (! state.loading) { 
+			if (state.authenticated && state.launching) addScript("protected"); 
 		}
 	}
-
-	function describeLink(link,lang) {
-
-		var attrsStr = link.getAttribute("attrs");
-		var attrs = {};
-		if (attrsStr) {
-			try {
-				eval("attrs = {" + attrsStr + "}");
-			} catch(ex) {
-				//TODO
-			}
-		}
-		attrs["rel"] = link.rel;
-		attrs["type"] = link.type || link.getAttribute("type") || "text/javascript";
-		attrs["name"] = link.getAttribute("data-name") || link.getAttribute("name") || undefined;
-		attrs["base"] = essential("baseUrl");
-		attrs["subpage"] = (link.getAttribute("subpage") == "false" || link.getAttribute("data-subpage") == "false")? false:true;
-		//attrs["id"] = link.getAttribute("script-id");
-		attrs["onload"] = delayedScriptOnload(link.rel);
-
-		attrs["src"] = (link.getAttribute("src") || "").replace(essential("baseUrl"),"");
-		attrs["langOk"] = (lang && link.lang)? (link.lang == lang) : true;
-
-		switch(attrs.rel) {
-			case "preload":
-			case "load":
-			case "protected":
-				if (attrs.langOk && attrs.type == "text/javascript") {
-					attrs.tagName = "script";
-					attrs["append to"] = link.ownerDocument.body; //?? or delayed assign
-				}
-				//TODO XHR for others
-				break;
-		}
-
-		return attrs;
-	}
-
 
 	_Scripted.prototype._queueAssets = function() {
-
-		var links = this.document.getElementsByTagName("link");
-
-		var lang = this.resolver("state.lang");
-		//TODO support text/html use base subpage functionality
-
-		for(var i=0,l; l=links[i]; ++i) {
-			var attrs = l.attrs = describeLink(l,lang);
-			switch(l.rel) {
-				case "stylesheet":
-					this.resources().push(l);
-					break;			
-				case "protected":
-				case "load":
-					if (attrs.tagName == "script") {
-						this.resolver.set(["state","loadingScripts"],true);
-						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
-					} 
-					break;
-
-				case "preload":
-					if (attrs.tagName == "script") {
-						this.resolver.set(["state","preloading"],true);
-						this.resolver.set(["state","loadingScripts"],true);
-						this.resolver.set(["state","loadingScriptsUrl",attrs["src"]],l); 
-						HTMLScriptElement(attrs);
-						l.added = true;
-					} 
-					break;
-			}
-		}
-		updateScripts(document,this.resolver("state"));
+		//TODO additional links queue in modules
 	};
 
-	pageResolver.on("change","state.loadingScriptsUrl",onLoadingScripts);
 	pageResolver.on("change","state.loadingConfigUrl",onLoadingConfig);
-
-	function onLoadingScripts(ev) {
-		var loadingScriptsUrl = this("state.loadingScriptsUrl"), loadingScripts = false, preloading = false;
-		for(var url in loadingScriptsUrl) {
-			var link = loadingScriptsUrl[url];
-
-			if (link) { loadingScripts = true; if (link.rel == "preload") preloading = true; }
-		}
-		this.set("state.loadingScripts",loadingScripts);
-		this.set("state.preloading",preloading);
-		if (ev.value==false) {
-			// finished loading a script
-			if (document.body) essential("instantiatePageSingletons")();
-		}
-	}
 
 	function onLoadingConfig(ev) {
 		var loadingConfigUrl = this("state.loadingConfigUrl"), loadingConfig = false;
@@ -7589,40 +7546,6 @@ function(scripts) {
 			renderText: renderSelector
 		};
 	};
-
-
-	function _queueDelayedAssets()
-	{
-		//TODO move this to pageResolver("state.ready")
-		var config = ApplicationConfig();//TODO move the state transitions here
-		config._queueAssets();
-
-		// var scripts = document.head.getElementsByTagName("script");
-		// for(var i=0,s; s = scripts[i]; ++i) {
-
-		// }
-
-		if (pageResolver(["state","loadingScripts"])) log.debug("loading phased scripts");
-
-		var metas = document.getElementsByTagName("meta");
-		for(var i=0,m; m = metas[i]; ++i) {
-			switch((m.getAttribute("name") || "").toLowerCase()) {
-				case "text selection":
-					textSelection((m.getAttribute("content") || "").split(" "));
-					break;
-				case "enhanced roles":
-					useBuiltins((m.getAttribute("content") || "").split(" "));
-					break;
-				case "track main":
-					if (this.opener) {
-						pageResolver.set("state.managed",true);
-					}
-					break;
-			}
-		}
-	}
-	essential.set("_queueDelayedAssets",_queueDelayedAssets);
-
 
 	function configRequired(url)
 	{

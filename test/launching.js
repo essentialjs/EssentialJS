@@ -6,15 +6,27 @@ module('launching page', {
 	}
 });
 
+test("Document Resolver", function() {
+	ok(Resolver.document,"Document resolver present");
+	equal(Resolver.document.namespace,document,"Document resolver is for document");
+
+	var docResolver = Resolver("document");
+	equal(docResolver("enhanced.config.launched.charset"),"utf-8");
+	equal(docResolver("enhanced.config.login.charset"),"utf-8");
+	equal(docResolver("enhanced.config.logo.charset"),"utf-8");
+});
+
 test("Page Resolver",function(){
+	// parts are obsolete
+
 	ok(Resolver.page,"Page resolver present")
 	equal(typeof Resolver.page("state"),"object")
-	equal(typeof Resolver.page("config"),"object")
+	// equal(typeof Resolver.page("config"),"object")
 
 	var pageResolver = Resolver("page");
-	equal(pageResolver("config.launched.charset"),"utf-8");
-	equal(pageResolver("config.login.charset"),"utf-8");
-	equal(pageResolver("config.logo.charset"),"utf-8");
+	// equal(pageResolver("config.launched.charset"),"utf-8");
+	// equal(pageResolver("config.login.charset"),"utf-8");
+	// equal(pageResolver("config.logo.charset"),"utf-8");
 
 	// default state
 	equal(pageResolver("state.authenticated"),true,"authenticated");
@@ -26,7 +38,21 @@ test("Page Resolver",function(){
 	equal(pageResolver("state.launched"),false,"launched");
 	equal(pageResolver("state.livepage"),false,"livepage");
 
-})
+});
+
+test('HTML head is scanned correctly', function() {
+	var essential = Resolver('essential'),
+		queueHead = essential('queueHead'),
+		enhancedResolver = Resolver("document::enhanced"),
+		pageResolver = Resolver("page"),
+		translations = Resolver("translations"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+
+	queueHead(document,false);
+	equal(document.defaultLang,"en"); //TODO defaultLocale in translations instead?
+	equal(translations("defaultLocale"),"en-us"); // guess it can't be tested...
+	equal(pageResolver("state.lang"),"en");
+});
 
 var INIT_PAGE_STATE	= {
 	"livepage": false,
@@ -46,13 +72,14 @@ test('roles are enhanced when no page state is preset',function() {
 
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
 		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
+		enhancedResolver = Resolver("document::enhanced"),
 		pageResolver = Resolver("page"),
 		HTMLElement = Resolver("essential::HTMLElement::");
 
 	ok(! pageResolver("state.livepage"));
 	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
-	pageResolver.set("enabledRoles.test321",true);	
-	pageResolver.set("handlers.init.test321",function(el,role,config) {
+	enhancedResolver.set("enabledRoles.test321",true);	
+	enhancedResolver.set("handlers.init.test321",function(el,role,config) {
 		el.setAttribute("test321","321");
 	});
 
@@ -116,10 +143,10 @@ test("ApplicationConfig",function(){
 	equal( Resolver("page")(["pagesById",ac.uniquePageID]), ac );
 
 	// application/config
-	equal(ac.config("launched.charset"),"utf-8","launched.charset");
-	equal(ac.config("login.charset"),"utf-8","login.charset");
-	equal(ac.config("logo.charset"),"utf-8","logo.charset");
-	equal(ac.config("unknown.charset"),undefined,"unknown.charset");
+	// equal(ac.config("launched.charset"),"utf-8","launched.charset");
+	// equal(ac.config("login.charset"),"utf-8","login.charset");
+	// equal(ac.config("logo.charset"),"utf-8","logo.charset");
+	// equal(ac.config("unknown.charset"),undefined,"unknown.charset");
 
 	// default state
 	equal(ac.state("authenticated"),true,"authenticated");
