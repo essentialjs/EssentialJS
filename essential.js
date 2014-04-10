@@ -4578,11 +4578,12 @@ Resolver.config = function(el,script) {
 	essential.set("queueHead",queueHead);
 
 	function sealHead(doc) {
+		if (doc.enhanced && doc.enhanced.headSealed) return;
 		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
 
 		Resolver("document").reflectModules();
-
+		doc.enhanced.headSealed = true;
 		//?? headSealed,true
 
 		var modules = Resolver(doc)("modules");
@@ -4593,13 +4594,13 @@ Resolver.config = function(el,script) {
 		var doc = doc || document, head = doc.head;
 
 		//TODO mark other scripts
-		//TODO doc.documentElement.setAttribute("lang",lang);		
 	}
 	essential.set("sealHead",sealHead);
 
 	// consider switch to sealDoc(doc,sealHead,sealBody)
 	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
 	function sealBody(doc) {
+		sealHead(doc);
 		var scripts = doc.body.getElementsByTagName("script");
 		scanElements(doc,scripts);
 

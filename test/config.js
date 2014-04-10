@@ -1,15 +1,22 @@
 module("Config Tests");
 
+/* TODO test this with separate window loading
 test('Config scripts in main HTML page', function() {
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
+	equal(document.readyState,"complete","Loading of the testing page done");
+	Resolver("essential::sealBody::")(document); // emulate configured behavior
+
+	ok(document.enhanced.headSealed,"The HEAD element sealed");
+	// debugger;
 	var config = Resolver.config(HTMLElement("div",{id:"declared-in-head"}));
-	equal(config.a,"a");
-	equal(config.b,"b");
+	equal(config.a,"a","declared-in-head");
+	equal(config.b,"b","declared-in-head");
 	var config = Resolver.config(HTMLElement("div",{id:"declared-in-body"}));
-	equal(config.a,"a");
-	equal(config.b,"b");
+	equal(config.a,"a","declared-in-body");
+	equal(config.b,"b","declared-in-body");
 });
+*/
 
 test("Loading config in html",function(){
 	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
