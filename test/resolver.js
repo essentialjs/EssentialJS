@@ -109,7 +109,8 @@ test("Document resolver",function(){
 
 test("Custom Document Resolver",function() {
 
-	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
+	var createHTMLDocument = Resolver("essential::createHTMLDocument::"),
+		importHTMLDocument = Resolver("essential::importHTMLDocument::");
 
 	var doc = createHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
 	var r1 = Resolver(doc);
@@ -121,6 +122,19 @@ test("Custom Document Resolver",function() {
 	var r3 = Resolver(doc);
 	notEqual(r3,Resolver("document"),"Custom document resolver is not the main document resolver");
 	notEqual(r3,r1,"document resolvers are unique to the document")
+
+
+	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
+	var r1 = Resolver(doc);
+	var r2 = Resolver(doc);
+	notEqual(r1,Resolver("document"),"Custom document resolver is not the main document resolver");
+	equal(r1,r2,"document resolvers will use previously created");
+
+	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
+	var r3 = Resolver(doc);
+	notEqual(r3,Resolver("document"),"Custom document resolver is not the main document resolver");
+	notEqual(r3,r1,"document resolvers are unique to the document")
+
 });
 
 test('Namespace and package creation',function(){
