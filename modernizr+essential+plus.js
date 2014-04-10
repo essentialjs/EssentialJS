@@ -764,8 +764,6 @@ function Resolver(name_andor_expr,ns,options)
         return get;
     };
 
-
-
     resolver.on = function(type,selector,data,callback) 
     {
     	switch(arguments.length) {
@@ -2820,6 +2818,7 @@ Resolver.config = function(el,script) {
 		Resolver.loadReadStored();
 
 		try {
+			Resolver("document::readyState").trigger("change");
 			//TODO ap config _queueAssets
 			instantiatePageSingletons();
 			prepareDomWithRole();
@@ -4470,18 +4469,16 @@ Resolver.config = function(el,script) {
         return undefined;
     }
 
-	function scanHead(doc) {
-		var head = doc.head, resolver = Resolver(doc), inits = resolver("enhanced.inits");
+    function scanElements(doc,els) {
+    	var resolver = Resolver(doc), inits = resolver("enhanced.inits"); 
 
-		//TODO support text/html use base subpage functionality
-
-		for(var i=0,he; he = head.children[i]; ++i) switch(he.tagName){
+		for(var i=0,el; el = els[i]; ++i) switch(el.tagName){
 			case "meta":
 			case "META":
-				var attrs = describeLink(he);
+				var attrs = describeLink(el);
 				switch(attrs.name) {
 					case "enhanced roles":
-						if (!he.__applied__) useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
+						if (!el.__applied__) useBuiltins(doc, (el.getAttribute("content") || "").split(" "));
 						break;
 
 					//TODO enhanced tags
@@ -4495,7 +4492,7 @@ Resolver.config = function(el,script) {
 						break;
 
 					case "text selection":
-						if (!he.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
+						if (!el.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
 						break;
 
 					case "lang cookie":
@@ -4517,12 +4514,12 @@ Resolver.config = function(el,script) {
 						break;
 
 				}
-				he.__applied__ = true;
+				el.__applied__ = true;
 				break;
 
 			case "link":
 			case "LINK":
-				switch(he.rel) {
+				switch(el.rel) {
 					// case "stylesheet":
 					// 	this.resources().push(l);
 					// 	break;			
@@ -4531,31 +4528,38 @@ Resolver.config = function(el,script) {
 					//case "load":
 					//case "protected":
 					//case "stylesheet":
-						if (!he.__applied__) queueModule(he,describeLink(he));
+						if (!el.__applied__) queueModule(el,describeLink(el));
 						break;
 				}
-				he.__applied__ = true;
+				el.__applied__ = true;
 				break;
 
 			case "script":
 			case "SCRIPT":
-				var attrs = describeLink(he);
-				if (!he.__applied__) switch(attrs.type) {
+				var attrs = describeLink(el);
+				if (!el.__applied__) switch(attrs.type) {
 					case "application/config":
-						Resolver.config(doc, he.text);
+						Resolver.config(doc, el.text);
 						break;
 					case "application/init": 
-						inits.push(he);
+						inits.push(el);
 						break;
 					default:
 						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
 						break;
 				}
-				he.__applied__ = true;
+				el.__applied__ = true;
 				break;
 		}
 
-		Resolver("document").reflectModules();
+    }
+
+	function scanHead(doc) {
+		var resolver = Resolver(doc), inits = resolver("enhanced.inits");
+
+		//TODO support text/html use base subpage functionality
+
+		scanElements(doc, doc.head.children);
 
 		// default is english (perhaps make it configurable)
 		if (doc.documentElement.lang == "") doc.documentElement.lang = "en";
@@ -4566,6 +4570,8 @@ Resolver.config = function(el,script) {
 		// Resolver("page").set("state.loading",true);
 		// Resolver("page").set("state.preloading",true);
 		scanHead(doc);
+
+		Resolver("document").reflectModules();
 
 		var modules = Resolver(doc)("modules");
 		for(var n in modules) {
@@ -4579,6 +4585,8 @@ Resolver.config = function(el,script) {
 		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
 
+		Resolver("document").reflectModules();
+
 		//?? headSealed,true
 
 		var modules = Resolver(doc)("modules");
@@ -4588,10 +4596,25 @@ Resolver.config = function(el,script) {
 
 		var doc = doc || document, head = doc.head;
 
-
+		//TODO mark other scripts
 		//TODO doc.documentElement.setAttribute("lang",lang);		
 	}
 	essential.set("sealHead",sealHead);
+
+	// consider switch to sealDoc(doc,sealHead,sealBody)
+	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
+	function sealBody(doc) {
+		var scripts = doc.body.getElementsByTagName("script");
+		scanElements(doc,scripts);
+
+		Resolver("document").reflectModules();
+
+		var modules = Resolver(doc)("modules");
+		for(var n in modules) {
+			modules[n].queueHead("loading",document.documentElement.lang);
+		}		
+	}
+	essential.set("sealBody",sealBody);
 
 	function textSelection(tags) {
 		var pass = {};
@@ -4943,7 +4966,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 /*
 	StatefulResolver and ApplicationConfig
 */
-!function(Scripted_gather) {
+!function() {
 
 	var essential = Resolver("essential",{}),
 		enhancedResolver = Resolver("document::enhanced"),
@@ -5473,9 +5496,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"modules": enhancedResolver("modules")
 	};
 
-	//TODO change
-	_Scripted.prototype._gather = Scripted_gather;
-
 	//config related, TODO review
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
@@ -5536,35 +5556,15 @@ _ElementPlacement.prototype._computeIE = function(style)
 	*/
 	_Scripted.prototype.prepareEnhance = function() {
 
-		this._gather(this.head.getElementsByTagName("script"));
-		this._gather(this.body.getElementsByTagName("script"));		
+		//TODO change
+
+		//TODO call prepare handlers and identify the elements to enhance
+		// DescriptorQuery(this.body).withBranch().queue();
+
 		this._prep(this.body,{});
 	};
 
-	function delayedScriptOnload(scriptRel) {
-		function delayedOnload(ev) {
-			var el = this, src = el.getAttribute("src");
-			var name = el.getAttribute("name");
-			if (name) {
-				ApplicationConfig().modules[name] = true;
-			}
-			setTimeout(function(){
-				// make sure it's not called before script executes
-				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				//console.info("script",el.getAttribute("src"),el.src,scriptRel);
-
-				if (scripts[src] != undefined) {
-					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",src],false);
-				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
-					//TODO absolute url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
-				}
-			},0);
-		}
-		return delayedOnload;       
-	}
-
+	//TODO remove
 	function updateScripts(doc,state) {
 		function addScript(rel) {
 			for(var n in state.loadingScriptsUrl) {
@@ -5686,12 +5686,14 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.uniquePageID = doc.uniquePageID;
 		// no queueHead, so preloading scripts are ignored
 		essential("sealHead")(doc);
+		essential("sealBody")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
 		this.prepareEnhance(); //TODO essential sealBody
+		// DescriptorQuery(this.body).withBranch().queue();
 
 		if (this.requiredForLaunch) {
 			var requiredPages = pageResolver("state.requiredPages") - 1;
@@ -5715,6 +5717,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.uniquePageID = doc.uniquePageID;
 		// no queueHead, so preloading scripts are ignored
 		essential("sealHead")(doc);
+		essential("sealBody")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
@@ -5722,6 +5725,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
 		this.prepareEnhance(); //TODO essential sealBody
+		// DescriptorQuery(this.body).withBranch().queue();
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -5743,6 +5747,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 
+		var subResolver = Resolver(this.document);
+		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
 		this.doInitScripts();
 
 		//TODO put descriptors in reheating them
@@ -5867,6 +5873,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
+		// DescriptorQuery(this.body).withBranch().queue();
 
 		// body can now be configured in script
 		var conf = Resolver.config(this.body), role = this.body.getAttribute("role");
@@ -6397,33 +6404,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	}
 	essential.declare("openWindow",openWindow);
 
-}(
-// need with context not supported in strict mode
-function(scripts) {
-	var resources = this.resources();
-	var inits = this.inits();
-
-	for(var i=0,s; s = scripts[i]; ++i) {
-		switch(s.getAttribute("type")) {
-			case "application/config":
-				//TODO move
-				Resolver.config(s.ownerDocument, s.text);
-				break;
-			case "application/init": 
-				inits.push(s);
-				break;
-			default:
-				var name = s.getAttribute("name");
-				if (name && s.getAttribute("src") == null) enhancedResolver.set("modules",name,true); 
-				//TODO onload if src to flag that module is loaded
-				if (s.parentNode == document.head) {
-					resources.push(s);
-				}
-				break;
-		}
-	}
-}
-);
+}();
 
 /*!
 * XMLHttpRequest.js Copyright (C) 2011 Sergey Ilinsky (http://www.ilinsky.com)
@@ -8919,10 +8900,18 @@ function(scripts) {
 	pageResolver.set("handlers.discard.scrolled",discard_scrolled);
 	
 }();
+Resolver("essential::queueHead::")(document);
+
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
 
 Resolver("page").set("liveTimeout",60);
 //TODO clearInterval on unload
+
+Resolver("document").on("change","readyState",function(ev) {
+	if (ev.value == "complete") {
+		Resolver("essential::sealBody::")(document);
+	}
+});
 
 !function() {
 	function onPageLoad(ev) {

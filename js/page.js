@@ -2,7 +2,7 @@
 /*
 	StatefulResolver and ApplicationConfig
 */
-!function(Scripted_gather) {
+!function() {
 
 	var essential = Resolver("essential",{}),
 		enhancedResolver = Resolver("document::enhanced"),
@@ -532,9 +532,6 @@
 		"modules": enhancedResolver("modules")
 	};
 
-	//TODO change
-	_Scripted.prototype._gather = Scripted_gather;
-
 	//config related, TODO review
 	_Scripted.prototype.getElement = function(key) {
 		var keys = key.split(".");
@@ -597,8 +594,9 @@
 
 		//TODO change
 
-		// this._gather(this.head.getElementsByTagName("script"));
-		this._gather(this.body.getElementsByTagName("script"));		
+		//TODO call prepare handlers and identify the elements to enhance
+		// DescriptorQuery(this.body).withBranch().queue();
+
 		this._prep(this.body,{});
 	};
 
@@ -724,12 +722,14 @@
 		this.uniquePageID = doc.uniquePageID;
 		// no queueHead, so preloading scripts are ignored
 		essential("sealHead")(doc);
+		essential("sealBody")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
 		this.prepareEnhance(); //TODO essential sealBody
+		// DescriptorQuery(this.body).withBranch().queue();
 
 		if (this.requiredForLaunch) {
 			var requiredPages = pageResolver("state.requiredPages") - 1;
@@ -753,6 +753,7 @@
 		this.uniquePageID = doc.uniquePageID;
 		// no queueHead, so preloading scripts are ignored
 		essential("sealHead")(doc);
+		essential("sealBody")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
@@ -760,6 +761,7 @@
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
 		this.prepareEnhance(); //TODO essential sealBody
+		// DescriptorQuery(this.body).withBranch().queue();
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -907,6 +909,7 @@
 
 		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
+		// DescriptorQuery(this.body).withBranch().queue();
 
 		// body can now be configured in script
 		var conf = Resolver.config(this.body), role = this.body.getAttribute("role");
@@ -1437,31 +1440,4 @@
 	}
 	essential.declare("openWindow",openWindow);
 
-}(
-//TODO dom.js	
-// need with context not supported in strict mode
-function(scripts) {
-	var resources = this.resources();
-	var inits = this.inits();
-
-	for(var i=0,s; s = scripts[i]; ++i) {
-		switch(s.getAttribute("type")) {
-			case "application/config":
-				//TODO move
-				Resolver.config(s.ownerDocument, s.text);
-				break;
-			case "application/init": 
-				inits.push(s);
-				break;
-			default:
-				var name = s.getAttribute("name");
-				if (name && s.getAttribute("src") == null) enhancedResolver.set("modules",name,true); 
-				//TODO onload if src to flag that module is loaded
-				if (s.parentNode == document.head) {
-					resources.push(s);
-				}
-				break;
-		}
-	}
-}
-);
+}();

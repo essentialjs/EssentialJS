@@ -9,11 +9,8 @@
     declare("logo",{"charset": "utf-8"});
     declare("login",{"charset": "utf-8"});
     declare("launched",{"charset": "utf-8"});
-
-    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
-
-    //page("/from-config/side",{},'<h1>Demo</h1><p>This is a sample side window.</p>');
   </script>
+
 
   <style>
   *[role=tabpanel] {
@@ -84,6 +81,12 @@
       </div>
 
   </div>
+
+  <script type="application/config">
+    declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+
+    //page("/from-config/side",{},'<h1>Demo</h1><p>This is a sample side window.</p>');
+  </script>
 
 </body>
 </html>

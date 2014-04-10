@@ -1,5 +1,16 @@
 module("Config Tests");
 
+test('Config scripts in main HTML page', function() {
+	var HTMLElement = Resolver("essential::HTMLElement::");
+
+	var config = Resolver.config(HTMLElement("div",{id:"declared-in-head"}));
+	equal(config.a,"a");
+	equal(config.b,"b");
+	var config = Resolver.config(HTMLElement("div",{id:"declared-in-body"}));
+	equal(config.a,"a");
+	equal(config.b,"b");
+});
+
 test("Loading config in html",function(){
 	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");

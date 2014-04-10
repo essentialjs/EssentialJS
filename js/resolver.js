@@ -742,8 +742,6 @@ function Resolver(name_andor_expr,ns,options)
         return get;
     };
 
-
-
     resolver.on = function(type,selector,data,callback) 
     {
     	switch(arguments.length) {

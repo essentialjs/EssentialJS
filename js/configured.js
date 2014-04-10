@@ -1,7 +1,15 @@
+Resolver("essential::queueHead::")(document);
+
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
 
 Resolver("page").set("liveTimeout",60);
 //TODO clearInterval on unload
+
+Resolver("document").on("change","readyState",function(ev) {
+	if (ev.value == "complete") {
+		Resolver("essential::sealBody::")(document);
+	}
+});
 
 !function() {
 	function onPageLoad(ev) {

@@ -1276,18 +1276,16 @@
         return undefined;
     }
 
-	function scanHead(doc) {
-		var head = doc.head, resolver = Resolver(doc), inits = resolver("enhanced.inits");
+    function scanElements(doc,els) {
+    	var resolver = Resolver(doc), inits = resolver("enhanced.inits"); 
 
-		//TODO support text/html use base subpage functionality
-
-		for(var i=0,he; he = head.children[i]; ++i) switch(he.tagName){
+		for(var i=0,el; el = els[i]; ++i) switch(el.tagName){
 			case "meta":
 			case "META":
-				var attrs = describeLink(he);
+				var attrs = describeLink(el);
 				switch(attrs.name) {
 					case "enhanced roles":
-						if (!he.__applied__) useBuiltins(doc, (he.getAttribute("content") || "").split(" "));
+						if (!el.__applied__) useBuiltins(doc, (el.getAttribute("content") || "").split(" "));
 						break;
 
 					//TODO enhanced tags
@@ -1301,7 +1299,7 @@
 						break;
 
 					case "text selection":
-						if (!he.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
+						if (!el.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
 						break;
 
 					case "lang cookie":
@@ -1323,12 +1321,12 @@
 						break;
 
 				}
-				he.__applied__ = true;
+				el.__applied__ = true;
 				break;
 
 			case "link":
 			case "LINK":
-				switch(he.rel) {
+				switch(el.rel) {
 					// case "stylesheet":
 					// 	this.resources().push(l);
 					// 	break;			
@@ -1337,31 +1335,38 @@
 					//case "load":
 					//case "protected":
 					//case "stylesheet":
-						if (!he.__applied__) queueModule(he,describeLink(he));
+						if (!el.__applied__) queueModule(el,describeLink(el));
 						break;
 				}
-				he.__applied__ = true;
+				el.__applied__ = true;
 				break;
 
 			case "script":
 			case "SCRIPT":
-				var attrs = describeLink(he);
-				if (!he.__applied__) switch(attrs.type) {
+				var attrs = describeLink(el);
+				if (!el.__applied__) switch(attrs.type) {
 					case "application/config":
-						Resolver.config(doc, he.text);
+						Resolver.config(doc, el.text);
 						break;
 					case "application/init": 
-						inits.push(he);
+						inits.push(el);
 						break;
 					default:
 						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
 						break;
 				}
-				he.__applied__ = true;
+				el.__applied__ = true;
 				break;
 		}
 
-		Resolver("document").reflectModules();
+    }
+
+	function scanHead(doc) {
+		var resolver = Resolver(doc), inits = resolver("enhanced.inits");
+
+		//TODO support text/html use base subpage functionality
+
+		scanElements(doc, doc.head.children);
 
 		// default is english (perhaps make it configurable)
 		if (doc.documentElement.lang == "") doc.documentElement.lang = "en";
@@ -1372,6 +1377,8 @@
 		// Resolver("page").set("state.loading",true);
 		// Resolver("page").set("state.preloading",true);
 		scanHead(doc);
+
+		Resolver("document").reflectModules();
 
 		var modules = Resolver(doc)("modules");
 		for(var n in modules) {
@@ -1384,6 +1391,8 @@
 	function sealHead(doc) {
 		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
+
+		Resolver("document").reflectModules();
 
 		//?? headSealed,true
 
@@ -1398,6 +1407,21 @@
 		//TODO doc.documentElement.setAttribute("lang",lang);		
 	}
 	essential.set("sealHead",sealHead);
+
+	// consider switch to sealDoc(doc,sealHead,sealBody)
+	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
+	function sealBody(doc) {
+		var scripts = doc.body.getElementsByTagName("script");
+		scanElements(doc,scripts);
+
+		Resolver("document").reflectModules();
+
+		var modules = Resolver(doc)("modules");
+		for(var n in modules) {
+			modules[n].queueHead("loading",document.documentElement.lang);
+		}		
+	}
+	essential.set("sealBody",sealBody);
 
 	function textSelection(tags) {
 		var pass = {};

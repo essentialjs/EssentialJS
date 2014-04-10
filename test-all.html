@@ -30,6 +30,7 @@ declare("launched",{"charset": "utf-8"});
 declare("test-scripted",{"abc":"def", "from-script":true, "charset": "utf-8"});
 declare("test-both-ways",{"test":"test", "charset": "utf-8"});
 declare("test-scripted.username",{ "default-value":"123" });
+declare("declared-in-head",{"a":"a","b":"b"});
 </script>
 
 <script type="text/javascript" src="app/js/jquery-1.7.2.min.js"></script>
@@ -68,6 +69,9 @@ br.page { break-after: always; page-break-after: always;}
 	<ol id="qunit-tests"></ol>
 	<div id="qunit-fixture">test markup</div>
 
+	<script type="application/config">
+	declare("declared-in-body",{"a":"a","b":"b"});
+	</script>
 	<template id="abcd">hello<span>there</span>how<b>are</b>you doing</template>
 	</body>
 </html>

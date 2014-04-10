@@ -1234,6 +1234,7 @@
 		Resolver.loadReadStored();
 
 		try {
+			Resolver("document::readyState").trigger("change");
 			//TODO ap config _queueAssets
 			instantiatePageSingletons();
 			prepareDomWithRole();
