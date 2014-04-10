@@ -138,12 +138,15 @@
 	 */
 	function importHTMLDocument(head,body) {
 
-		var doc = {},
+		var doc = {}, // perhaps make DocumentFragment instead
 			markup = _combineHeadAndBody(head,body),
 			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 
 		try {
 			var ext = _createStandardsDoc(markup);
+			doc.nodeType = ext.nodeType;
+			doc.pseudoDocument = true;
+			doc.documentElement = ext.documentElement;
 			if (document.adoptNode) {
 				doc.head = document.adoptNode(ext.head);
 				doc.body = document.adoptNode(ext.body);
@@ -159,6 +162,9 @@
 			if (ext.head === undefined) ext.head = ext.body.previousSibling;
 
 			doc.uniqueID = ext.uniqueID;
+			doc.documentElement = ext.documentElement;
+			doc.nodeType = ext.nodeType;
+			doc.pseudoDocument = true;
 			doc.head = ext.head;
 			doc.body = _importNode(document,ext.body,true);
 
@@ -1271,7 +1277,7 @@
     }
 
 	function scanHead(doc) {
-		var head = doc.head, resolver = Resolver(doc);
+		var head = doc.head, resolver = Resolver(doc), inits = resolver("enhanced.inits");
 
 		//TODO support text/html use base subpage functionality
 
@@ -1338,8 +1344,20 @@
 				break;
 
 			case "script":
-			case "SCIPT":
-				// if (!he.__applied__) 
+			case "SCRIPT":
+				var attrs = describeLink(he);
+				if (!he.__applied__) switch(attrs.type) {
+					case "application/config":
+						Resolver.config(doc, he.text);
+						break;
+					case "application/init": 
+						inits.push(he);
+						break;
+					default:
+						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
+						break;
+				}
+				he.__applied__ = true;
 				break;
 		}
 
@@ -1376,7 +1394,7 @@
 
 		var doc = doc || document, head = doc.head;
 
-
+		//TODO mark other scripts
 		//TODO doc.documentElement.setAttribute("lang",lang);		
 	}
 	essential.set("sealHead",sealHead);

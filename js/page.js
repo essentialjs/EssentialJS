@@ -597,7 +597,7 @@
 
 		//TODO change
 
-		this._gather(this.head.getElementsByTagName("script"));
+		// this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
 		this._prep(this.body,{});
 	};
@@ -722,12 +722,14 @@
 		var doc = this.document = importHTMLDocument(text);
 		Resolver(doc);
 		this.uniquePageID = doc.uniquePageID;
+		// no queueHead, so preloading scripts are ignored
+		essential("sealHead")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
-		this.prepareEnhance();
+		this.prepareEnhance(); //TODO essential sealBody
 
 		if (this.requiredForLaunch) {
 			var requiredPages = pageResolver("state.requiredPages") - 1;
@@ -749,13 +751,15 @@
 		var doc = this.document = importHTMLDocument(head,text);
 		Resolver(doc);
 		this.uniquePageID = doc.uniquePageID;
+		// no queueHead, so preloading scripts are ignored
+		essential("sealHead")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
-		this.prepareEnhance();
+		this.prepareEnhance(); //TODO essential sealBody
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -763,16 +767,6 @@
 			db = document.body,
 			fc = db.firstElementChild!==undefined? db.firstElementChild : db.firstChild;
 
-
-		//TODO import the elements ? or only allow getElement for a while
-		// try {
-		// 	this.head = document.importNode(doc.head,true);
-		// 	this.body = document.importNode(doc.body,true);
-		// }
-		// catch(ex) {
-		// 	this.head = doc.head;
-		// 	this.body = doc.body;
-		// }
 		if (this.applied) return;
 
 		var applied = this.applied = [];
@@ -787,6 +781,8 @@
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 
+		var subResolver = Resolver(this.document);
+		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
 		this.doInitScripts();
 
 		//TODO put descriptors in reheating them
@@ -805,6 +801,9 @@
 		if (this.applied == null) return;
 		var applied = this.applied;
 		this.applied = null;
+
+		var subResolver = Resolver(this.document);
+		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],undefined);
 
 		//TODO pull the descriptors out, freeze them
 		var descs = this.resolver("descriptors");

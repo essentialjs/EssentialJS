@@ -1063,5 +1063,5 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
-Resolver(document, {name:"document"});
+Resolver(document, {name:"document"}).declare("enhanced.appliedConfig",{});
 

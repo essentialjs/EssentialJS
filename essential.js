@@ -1080,7 +1080,7 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
-Resolver(document, {name:"document"});
+Resolver(document, {name:"document"}).declare("enhanced.appliedConfig",{});
 
 
 function Generator(mainConstr,options)
@@ -1503,31 +1503,27 @@ Resolver.config = function(el,script) {
 		//TODO cache the config on element.stateful
 
 		var config = null, doc = resolver.namespace,
-			ref = resolver.reference("enhanced.config","null");
+			ref = resolver.reference("enhanced.config","null"),
+			appliedConfig = resolver("enhanced.appliedConfig");
+
+		function eitherConfig(key) {
+			for(var n in appliedConfig) 
+				if (appliedConfig[n] && appliedConfig[n][key]) return appliedConfig[n][key];
+			return ref(key);
+		}
+
+		function mixinConfig(config,key) {
+			var declared = eitherConfig(key);
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+			return config;
+		}
 
 		// mixin the declared config
-		if (key) {
-			var declared = ref(key);
-			if (declared) {
-				config = {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-
-		if (el == doc.body) {
-			var declared = ref("body");
-			if (declared) {
-				config = config || {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-		else if (el == doc.head) {
-			var declared = ref("head");
-			if (declared) {
-				config = config || {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
+		if (key) config = mixinConfig(config,key);
+		if (el.nodeName == "HEAD" || el.nodeName == "BODY") config = mixinConfig(config,el.nodeName.toLowerCase());
 
 		// mixin the data-role
 		var dataRole = el.getAttribute("data-role");
@@ -3340,12 +3336,15 @@ Resolver.config = function(el,script) {
 	 */
 	function importHTMLDocument(head,body) {
 
-		var doc = {},
+		var doc = {}, // perhaps make DocumentFragment instead
 			markup = _combineHeadAndBody(head,body),
 			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
 
 		try {
 			var ext = _createStandardsDoc(markup);
+			doc.nodeType = ext.nodeType;
+			doc.pseudoDocument = true;
+			doc.documentElement = ext.documentElement;
 			if (document.adoptNode) {
 				doc.head = document.adoptNode(ext.head);
 				doc.body = document.adoptNode(ext.body);
@@ -3361,6 +3360,9 @@ Resolver.config = function(el,script) {
 			if (ext.head === undefined) ext.head = ext.body.previousSibling;
 
 			doc.uniqueID = ext.uniqueID;
+			doc.documentElement = ext.documentElement;
+			doc.nodeType = ext.nodeType;
+			doc.pseudoDocument = true;
 			doc.head = ext.head;
 			doc.body = _importNode(document,ext.body,true);
 
@@ -4465,7 +4467,7 @@ Resolver.config = function(el,script) {
     }
 
 	function scanHead(doc) {
-		var head = doc.head, resolver = Resolver(doc);
+		var head = doc.head, resolver = Resolver(doc), inits = resolver("enhanced.inits");
 
 		//TODO support text/html use base subpage functionality
 
@@ -4532,8 +4534,20 @@ Resolver.config = function(el,script) {
 				break;
 
 			case "script":
-			case "SCIPT":
-				// if (!he.__applied__) 
+			case "SCRIPT":
+				var attrs = describeLink(he);
+				if (!he.__applied__) switch(attrs.type) {
+					case "application/config":
+						Resolver.config(doc, he.text);
+						break;
+					case "application/init": 
+						inits.push(he);
+						break;
+					default:
+						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
+						break;
+				}
+				he.__applied__ = true;
 				break;
 		}
 
@@ -5427,13 +5441,14 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	function _Scripted() {
 		// the derived has to define resolver before this
-		this.config = this.resolver.reference("config","undefined");
+		this.config = this.resolver.reference("config","undefined"); // obsolete
 		this.resolver.declare("resources",[]);
 		this.resources = this.resolver.reference("resources");
 		this.resolver.declare("inits",[]);
-		this.inits = this.resolver.reference("inits");
+		this.inits = this.resolver.reference("inits"); // obsolete
 	}
 
+	//TODO migrate to Resolver.config support
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
 		if (typeof value == "object") {
@@ -5516,35 +5531,14 @@ _ElementPlacement.prototype._computeIE = function(style)
 	*/
 	_Scripted.prototype.prepareEnhance = function() {
 
-		this._gather(this.head.getElementsByTagName("script"));
+		//TODO change
+
+		// this._gather(this.head.getElementsByTagName("script"));
 		this._gather(this.body.getElementsByTagName("script"));		
 		this._prep(this.body,{});
 	};
 
-	function delayedScriptOnload(scriptRel) {
-		function delayedOnload(ev) {
-			var el = this, src = el.getAttribute("src");
-			var name = el.getAttribute("name");
-			if (name) {
-				ApplicationConfig().modules[name] = true;
-			}
-			setTimeout(function(){
-				// make sure it's not called before script executes
-				var scripts = pageResolver(["state","loadingScriptsUrl"]);
-				//console.info("script",el.getAttribute("src"),el.src,scriptRel);
-
-				if (scripts[src] != undefined) {
-					// relative url
-					pageResolver.set(["state","loadingScriptsUrl",src],false);
-				} else if (scripts[el.src.replace(serverUrl,"")] != undefined) {
-					//TODO absolute url
-					pageResolver.set(["state","loadingScriptsUrl",el.src.replace(serverUrl,"")],false);
-				}
-			},0);
-		}
-		return delayedOnload;       
-	}
-
+	//TODO remove
 	function updateScripts(doc,state) {
 		function addScript(rel) {
 			for(var n in state.loadingScriptsUrl) {
@@ -5607,7 +5601,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	};
 
 	SubPage.prototype.page = function(url) {
-		console.error("SubPage application/config cannot define pages ("+url+")",this.url);
+		log.error("SubPage application/config cannot define pages ("+url+")",this.url);
 	};
 
 	// keep a head prefix with meta tags for iframe/window subpages
@@ -5664,12 +5658,14 @@ _ElementPlacement.prototype._computeIE = function(style)
 		var doc = this.document = importHTMLDocument(text);
 		Resolver(doc);
 		this.uniquePageID = doc.uniquePageID;
+		// no queueHead, so preloading scripts are ignored
+		essential("sealHead")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
-		this.prepareEnhance();
+		this.prepareEnhance(); //TODO essential sealBody
 
 		if (this.requiredForLaunch) {
 			var requiredPages = pageResolver("state.requiredPages") - 1;
@@ -5689,14 +5685,17 @@ _ElementPlacement.prototype._computeIE = function(style)
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
-		this.uniquePageID = getUniquePageID(doc);
+		Resolver(doc);
+		this.uniquePageID = doc.uniquePageID;
+		// no queueHead, so preloading scripts are ignored
+		essential("sealHead")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
-		this.prepareEnhance();
+		this.prepareEnhance(); //TODO essential sealBody
 	};
 
 	SubPage.prototype.applyBody = function() {
@@ -5704,16 +5703,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 			db = document.body,
 			fc = db.firstElementChild!==undefined? db.firstElementChild : db.firstChild;
 
-
-		//TODO import the elements ? or only allow getElement for a while
-		// try {
-		// 	this.head = document.importNode(doc.head,true);
-		// 	this.body = document.importNode(doc.body,true);
-		// }
-		// catch(ex) {
-		// 	this.head = doc.head;
-		// 	this.body = doc.body;
-		// }
 		if (this.applied) return;
 
 		var applied = this.applied = [];
@@ -5728,6 +5717,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 
+		var subResolver = Resolver(this.document);
+		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
 		this.doInitScripts();
 
 		//TODO put descriptors in reheating them
@@ -5746,6 +5737,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 		if (this.applied == null) return;
 		var applied = this.applied;
 		this.applied = null;
+
+		var subResolver = Resolver(this.document);
+		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],undefined);
 
 		//TODO pull the descriptors out, freeze them
 		var descs = this.resolver("descriptors");
@@ -5831,7 +5825,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	function _ApplicationConfig() {
 		this.resolver = pageResolver;
 		//TODO kill it on document, it's a generator not a fixed number, pagesByName
-		this.uniquePageID = getUniquePageID(document);
+		this.uniquePageID = document.uniquePageID;
 		this.resolver.set(["pagesById",this.uniquePageID],this);
 		this.document = document;
 		this.head = this.document.head || this.document.body.previousSibling;

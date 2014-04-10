@@ -15,31 +15,27 @@ Resolver.config = function(el,script) {
 		//TODO cache the config on element.stateful
 
 		var config = null, doc = resolver.namespace,
-			ref = resolver.reference("enhanced.config","null");
+			ref = resolver.reference("enhanced.config","null"),
+			appliedConfig = resolver("enhanced.appliedConfig");
+
+		function eitherConfig(key) {
+			for(var n in appliedConfig) 
+				if (appliedConfig[n] && appliedConfig[n][key]) return appliedConfig[n][key];
+			return ref(key);
+		}
+
+		function mixinConfig(config,key) {
+			var declared = eitherConfig(key);
+			if (declared) {
+				config = config || {};
+				for(var n in declared) config[n] = declared[n];
+			}
+			return config;
+		}
 
 		// mixin the declared config
-		if (key) {
-			var declared = ref(key);
-			if (declared) {
-				config = {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-
-		if (el == doc.body) {
-			var declared = ref("body");
-			if (declared) {
-				config = config || {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
-		else if (el == doc.head) {
-			var declared = ref("head");
-			if (declared) {
-				config = config || {};
-				for(var n in declared) config[n] = declared[n];
-			}
-		}
+		if (key) config = mixinConfig(config,key);
+		if (el.nodeName == "HEAD" || el.nodeName == "BODY") config = mixinConfig(config,el.nodeName.toLowerCase());
 
 		// mixin the data-role
 		var dataRole = el.getAttribute("data-role");
