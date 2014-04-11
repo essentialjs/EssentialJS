@@ -1045,6 +1045,19 @@ Resolver.exists = function(name) {
     return this[name] != undefined;
 };
 
+
+Resolver.docMethod = function(name,fn) {
+    Resolver.docMethod.fn[name] = fn;
+    //TODO extend .docExec prototype
+    for(var id in Resolver.forDoc) {
+        var resolver = Resolver.forDoc[id],
+            icp = resolver.InitContext.prototype;
+        if (resolver[name] === undefined) resolver[name] = fn;
+        if (icp[name] === undefined) icp[name] = fn.bind(resolver);
+    }
+};
+Resolver.docMethod.fn = {};
+
 Resolver.functionProxy = function(src) {
 
    // When executing the Function constructor, we are going
@@ -1071,8 +1084,26 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
     var enh = resolver.namespace.enhanced = resolver.namespace.enhanced || {};
     enh.enabledRoles = enh.enabledRoles || {};
     enh.handlers = enh.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
+
     enh.config = enh.config || {}; // from config scripts
-    enh.inits = enh.inits || {}; // init scripts
+    resolver.InitContext = function(el) { 
+        this.element = el; 
+        if (el) this.parentElement = el.parentElement || el.parentNode;
+        this.document = resolver.namespace;
+        this.resolver = resolver;
+    };
+    resolver.InitContext.prototype = {
+        modules: enh.modules
+    };
+    // this._setDocMethods(resolver);
+    var icp = resolver.InitContext.prototype,fn;
+    for(var n in Resolver.docMethod.fn) {
+        fn = Resolver.docMethod.fn[n];
+        if (resolver[n] === undefined) resolver[n] = fn;
+        if (icp[n] === undefined) icp[n] = fn.bind(resolver);
+    }
+
+    enh.inits = enh.inits || []; // init scripts
     enh.modules = enh.modules || {};
     enh.templates = enh.templates || {};
     enh.descriptors = enh.descriptors || {};
@@ -1080,6 +1111,9 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
     enh.lang = document.documentElement.lang || "en";
     enh.locale = "en-us";
 };
+
+// Resolver._setDocMethods = function(resolver) {
+// };
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
@@ -1492,6 +1526,27 @@ Generator.discardRestricted = function()
 
 
 // set("bodyResolver")
+
+Resolver.docMethod("require",function(path) {
+    if (this("enhanced.modules")[path] == undefined) {
+        var ex = new Error("Missing module '" + path + "'");
+        ex.ignore = true;
+        throw ex;   
+    } 
+});
+
+	//TODO resolver.exec("callInits",null)
+Resolver.docMethod("callInits",function() {
+	var inits = this("enhanced.inits");
+	for(var i=0,fn; fn = inits[i]; ++i) if (!fn.done) {
+		try {
+			fn.call(fn.context || {});
+			fn.done = true;
+		} catch(ex) {
+			// debugger;
+		} //TODO only ignore ex.ignore
+	}
+});
 
 /* 
 	Resolver.config(document,'declare(..); declare("..")');
@@ -4516,10 +4571,14 @@ Resolver.config = function(el,script) {
 				var attrs = describeLink(el);
 				if (!el.__applied__) switch(attrs.type) {
 					case "application/config":
+						//TODO try catch log for parse errors
 						Resolver.config(doc, el.text);
 						break;
 					case "application/init": 
-						inits.push(el);
+						//TODO try catch log for parse errors
+						var init = Resolver.functionProxy(el.text);
+						init.context = new resolver.InitContext(el);
+						inits.push(init);
 						break;
 					default:
 						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
@@ -5450,8 +5509,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.config = this.resolver.reference("config","undefined"); // obsolete
 		this.resolver.declare("resources",[]);
 		this.resources = this.resolver.reference("resources");
-		this.resolver.declare("inits",[]);
-		this.inits = this.resolver.reference("inits"); // obsolete
 	}
 
 	//TODO migrate to Resolver.config support
@@ -5462,17 +5519,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 			if (value["authenticated-area"]) this.resolver.declare("authenticated-area",value["authenticated-area"]);
 		}
 	}; 
-
-	_Scripted.prototype.context = {
-		"require": function(path) {
-			if (enhancedResolver("modules")[path] == undefined) {
-				var ex = new Error("Missing module '" + path + "'");
-				ex.ignore = true;
-				throw ex;	
-			} 
-		},
-		"modules": enhancedResolver("modules")
-	};
 
 	//config related, TODO review
 	_Scripted.prototype.getElement = function(key) {
@@ -5485,22 +5531,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
-	};
-
-	_Scripted.prototype.doInitScripts = function() {
-		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
-			// this.currently = s
-			try {
-				this.context["element"] = s;
-				this.context["parentElement"] = s.parentElement || s.parentNode;
-				with(this.context) eval(s.text);
-				s.done = true;
-			} catch(ex) {
-				// debugger;
-			} //TODO only ignore ex.ignore
-		}
-		this.context["this"] = undefined;
 	};
 
 	//TODO move to DescriptorQuery, move when improving scroller
@@ -5725,9 +5755,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 
+		// debugger;
 		var subResolver = Resolver(this.document);
 		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
-		this.doInitScripts();
+		subResolver.callInits();
 
 		//TODO put descriptors in reheating them
 		var descs = this.resolver("descriptors");
@@ -5881,7 +5912,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 			ac.resolver = null;
 			ac.config = null;
 			ac.resources = null;
-			ac.inits = null;
 			// ac.pages = null;
 			// ac.state = null;
 		}

@@ -11,6 +11,13 @@
     declare("launched",{"charset": "utf-8"});
   </script>
 
+  <script type="application/init">
+    // element parentElement
+    document.head.headInitScriptContext = {
+      element: element,
+      parentElement: parentElement
+    };
+  </script>
 
   <style>
   *[role=tabpanel] {
@@ -79,6 +86,14 @@
           <div role="content presentation">
           </div>
       </div>
+
+    <script type="application/init">
+      // element parentElement
+      document.head.bodyInitScriptContext = {
+        element: element,
+        parentElement: parentElement
+      };
+    </script>
 
   </div>
 

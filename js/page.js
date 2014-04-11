@@ -508,8 +508,6 @@
 		this.config = this.resolver.reference("config","undefined"); // obsolete
 		this.resolver.declare("resources",[]);
 		this.resources = this.resolver.reference("resources");
-		this.resolver.declare("inits",[]);
-		this.inits = this.resolver.reference("inits"); // obsolete
 	}
 
 	//TODO migrate to Resolver.config support
@@ -520,17 +518,6 @@
 			if (value["authenticated-area"]) this.resolver.declare("authenticated-area",value["authenticated-area"]);
 		}
 	}; 
-
-	_Scripted.prototype.context = {
-		"require": function(path) {
-			if (enhancedResolver("modules")[path] == undefined) {
-				var ex = new Error("Missing module '" + path + "'");
-				ex.ignore = true;
-				throw ex;	
-			} 
-		},
-		"modules": enhancedResolver("modules")
-	};
 
 	//config related, TODO review
 	_Scripted.prototype.getElement = function(key) {
@@ -543,22 +530,6 @@
 
 	_Scripted.prototype.declare = function(key,value) {
 		this.config.declare(key,value);
-	};
-
-	_Scripted.prototype.doInitScripts = function() {
-		var inits = this.inits();
-		for(var i=0,s; s = inits[i]; ++i) if (s.parentNode && !s.done) {
-			// this.currently = s
-			try {
-				this.context["element"] = s;
-				this.context["parentElement"] = s.parentElement || s.parentNode;
-				with(this.context) eval(s.text);
-				s.done = true;
-			} catch(ex) {
-				// debugger;
-			} //TODO only ignore ex.ignore
-		}
-		this.context["this"] = undefined;
 	};
 
 	//TODO move to DescriptorQuery, move when improving scroller
@@ -783,9 +754,10 @@
 			e = this.body.firstElementChild!==undefined? this.body.firstElementChild : this.body.firstChild;
 		}
 
+		// debugger;
 		var subResolver = Resolver(this.document);
 		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
-		this.doInitScripts();
+		subResolver.callInits();
 
 		//TODO put descriptors in reheating them
 		var descs = this.resolver("descriptors");
@@ -939,7 +911,6 @@
 			ac.resolver = null;
 			ac.config = null;
 			ac.resources = null;
-			ac.inits = null;
 			// ac.pages = null;
 			// ac.state = null;
 		}

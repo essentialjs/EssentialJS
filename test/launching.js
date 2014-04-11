@@ -10,6 +10,8 @@ module('launching page', {
 	}
 });
 
+//TODO application/init in main page and sub page
+
 test("Document Resolver", function() {
 	ok(Resolver.document,"Document resolver present");
 	equal(Resolver.document.namespace,document,"Document resolver is for document");
@@ -244,6 +246,8 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		ok(page.head);
 		ok(page.body);
 
+		equal(Resolver(page.document)("enhanced.inits.length"),2,"Two init scripts in with-config.html");
+
 		var mainStage = page.getElement("main-stage");
 		ok(mainStage);
 		equal(mainStage.id,"main-stage");
@@ -272,13 +276,15 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		equal(config["b"],"b","body data-role attribute");
 		equal(config["c"],"c","body application/config");
 
-		// if (navigator.userAgent.indexOf(" MSIE ") == -1) {
 		var config = Resolver.config(page.head);
 		ok(config);
 		equal(config["1"],"1","head data-role attribute");
 		equal(config["2"],"2","head data-role attribute");
 		equal(config["3"],"3","head application/config");
-		// }
+
+		ok(page.head.headInitScriptContext,"loaded head script context");
+		ok(page.head.bodyInitScriptContext, "loaded body script context");
+		// equal()
 
 		page.destroy(); // will unapply
 

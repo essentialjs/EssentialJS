@@ -105,6 +105,9 @@ test("Document resolver",function(){
 
 	doc.set("global_api.a.b.func",function(){ return "return"});
 	equal(document.global_api.a.b.func(),"return");
+
+	equal(typeof doc.callInits,"function","callInits function");
+	equal(typeof doc.InitContext.prototype.require,"function","InitContext require function");
 })
 
 test("Custom Document Resolver",function() {
@@ -122,7 +125,8 @@ test("Custom Document Resolver",function() {
 	var r3 = Resolver(doc);
 	notEqual(r3,Resolver("document"),"Custom document resolver is not the main document resolver");
 	notEqual(r3,r1,"document resolvers are unique to the document")
-
+	equal(typeof r1.callInits,"function","callInits function");
+	equal(typeof r1.InitContext.prototype.require,"function","InitContext require function");
 
 	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"></body></html>');
 	var r1 = Resolver(doc);
@@ -134,6 +138,8 @@ test("Custom Document Resolver",function() {
 	var r3 = Resolver(doc);
 	notEqual(r3,Resolver("document"),"Custom document resolver is not the main document resolver");
 	notEqual(r3,r1,"document resolvers are unique to the document")
+	equal(typeof r1.callInits,"function","callInits function");
+	equal(typeof r1.InitContext.prototype.require,"function","InitContext require function");
 
 });
 

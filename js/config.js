@@ -2,6 +2,27 @@
 
 // set("bodyResolver")
 
+Resolver.docMethod("require",function(path) {
+    if (this("enhanced.modules")[path] == undefined) {
+        var ex = new Error("Missing module '" + path + "'");
+        ex.ignore = true;
+        throw ex;   
+    } 
+});
+
+	//TODO resolver.exec("callInits",null)
+Resolver.docMethod("callInits",function() {
+	var inits = this("enhanced.inits");
+	for(var i=0,fn; fn = inits[i]; ++i) if (!fn.done) {
+		try {
+			fn.call(fn.context || {});
+			fn.done = true;
+		} catch(ex) {
+			// debugger;
+		} //TODO only ignore ex.ignore
+	}
+});
+
 /* 
 	Resolver.config(document,'declare(..); declare("..")');
 	var conf = Resolver.config(el)

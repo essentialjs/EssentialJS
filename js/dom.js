@@ -1323,10 +1323,14 @@
 				var attrs = describeLink(el);
 				if (!el.__applied__) switch(attrs.type) {
 					case "application/config":
+						//TODO try catch log for parse errors
 						Resolver.config(doc, el.text);
 						break;
 					case "application/init": 
-						inits.push(el);
+						//TODO try catch log for parse errors
+						var init = Resolver.functionProxy(el.text);
+						init.context = new resolver.InitContext(el);
+						inits.push(init);
 						break;
 					default:
 						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 

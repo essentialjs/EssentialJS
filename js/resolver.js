@@ -1023,6 +1023,19 @@ Resolver.exists = function(name) {
     return this[name] != undefined;
 };
 
+
+Resolver.docMethod = function(name,fn) {
+    Resolver.docMethod.fn[name] = fn;
+    //TODO extend .docExec prototype
+    for(var id in Resolver.forDoc) {
+        var resolver = Resolver.forDoc[id],
+            icp = resolver.InitContext.prototype;
+        if (resolver[name] === undefined) resolver[name] = fn;
+        if (icp[name] === undefined) icp[name] = fn.bind(resolver);
+    }
+};
+Resolver.docMethod.fn = {};
+
 Resolver.functionProxy = function(src) {
 
    // When executing the Function constructor, we are going
@@ -1049,8 +1062,26 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
     var enh = resolver.namespace.enhanced = resolver.namespace.enhanced || {};
     enh.enabledRoles = enh.enabledRoles || {};
     enh.handlers = enh.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
+
     enh.config = enh.config || {}; // from config scripts
-    enh.inits = enh.inits || {}; // init scripts
+    resolver.InitContext = function(el) { 
+        this.element = el; 
+        if (el) this.parentElement = el.parentElement || el.parentNode;
+        this.document = resolver.namespace;
+        this.resolver = resolver;
+    };
+    resolver.InitContext.prototype = {
+        modules: enh.modules
+    };
+    // this._setDocMethods(resolver);
+    var icp = resolver.InitContext.prototype,fn;
+    for(var n in Resolver.docMethod.fn) {
+        fn = Resolver.docMethod.fn[n];
+        if (resolver[n] === undefined) resolver[n] = fn;
+        if (icp[n] === undefined) icp[n] = fn.bind(resolver);
+    }
+
+    enh.inits = enh.inits || []; // init scripts
     enh.modules = enh.modules || {};
     enh.templates = enh.templates || {};
     enh.descriptors = enh.descriptors || {};
@@ -1058,6 +1089,9 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
     enh.lang = document.documentElement.lang || "en";
     enh.locale = "en-us";
 };
+
+// Resolver._setDocMethods = function(resolver) {
+// };
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
