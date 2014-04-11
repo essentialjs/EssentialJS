@@ -429,7 +429,7 @@
 	}
 
 
-	function AllEvents() {}
+	function AllEvents(type,init,copy) { this.type=type;this.init=init;this.copy=copy; }
 	AllEvents.prototype.__ = function(m) { if (m) for(var n in m) this[n] = m[n]; };
 	AllEvents.prototype.cancelable = true;
 	AllEvents.prototype.create = createEventDOM;
@@ -445,58 +445,35 @@
 	function MouseEvents(m) {
 		this.__(m);
 	}
-	MouseEvents.prototype = new AllEvents();
-	MouseEvents.prototype.type = "MouseEvents";
-	MouseEvents.prototype.init = initMouseEvent;
-	MouseEvents.prototype.copy = copyMouseEvent;
-
+	MouseEvents.prototype = new AllEvents("MouseEvents",initMouseEvent,copyMouseEvent);
 
 	function MouseOverOutEvents(m) {
 		this.__(m);
 	}
-	MouseOverOutEvents.prototype = new AllEvents();
-	MouseOverOutEvents.prototype.type = "MouseEvents";
-	MouseOverOutEvents.prototype.init = initMouseEvent;
-	MouseOverOutEvents.prototype.copy = copyMouseEventOverOut;
-
+	MouseOverOutEvents.prototype = new AllEvents("MouseEvents",initMouseEvent,copyMouseEventOverOut);
 
 	function KeyEvents(m) {
 		this.__(m);
 	}
-	KeyEvents.prototype = new AllEvents();
-	KeyEvents.prototype.type = "KeyboardEvent";
-	KeyEvents.prototype.init = initEvent;
-	KeyEvents.prototype.copy = copyKeyEvent;
-
+	KeyEvents.prototype = new AllEvents("KeyboardEvent",initEvent,copyKeyEvent);
 	
 	function InputEvents(m) {
 		this.__(m);
 	}
-	InputEvents.prototype = new AllEvents();
-	InputEvents.prototype.type = "FocusEvent";
-	InputEvents.prototype.init = initFocusEvent;
+	InputEvents.prototype = new AllEvents("FocusEvent",initFocusEvent,copyInputEvent);
 	InputEvents.prototype.cancelable = false;
-	InputEvents.prototype.copy = copyInputEvent;
-
 
 	function FocusEvents(m) {
 		this.__(m);
 	}
-	FocusEvents.prototype = new AllEvents();
-	FocusEvents.prototype.type = "FocusEvent";
-	FocusEvents.prototype.init = initFocusEvent;
+	FocusEvents.prototype = new AllEvents("FocusEvent",initFocusEvent,copyInputEvent);
 	FocusEvents.prototype.cancelable = false;
-	FocusEvents.prototype.copy = copyInputEvent;
-
 
 	function UIEvents(m) {
 		this.__(m);
 	}
-	UIEvents.prototype = new AllEvents();
-	UIEvents.prototype.type = "UIEvent";
-	UIEvents.prototype.init = initUIEvent;
+	UIEvents.prototype = new AllEvents("UIEvent",initUIEvent,copyNavigateEvent);
 	UIEvents.prototype.cancelable = false;
-	UIEvents.prototype.copy = copyNavigateEvent;
 
 
 	var BUTTON_MAP = { "1":0, "2":2, "4":1 };
