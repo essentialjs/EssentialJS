@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]--><!--[if lt IE 7 ]><html class="no-js ie6" lang="en"><![endif]--><!--[if IE 7 ]><html class="no-js ie7" lang="en"><![endif]--><!--[if IE 8 ]><html class="no-js ie8" lang="en"><![endif]--><!--[if (gte IE 9)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]--><head>
+	<meta charset="utf-8">
+	<meta content="chrome=1,IE=10" http-equiv="X-UA-Compatible">
+	<meta content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" name="SKYPE_TOOLBAR">
+	<title>Demo App</title>
+	<meta content="Novo Bank" name="description">
+	<meta content="Henrik Vendelbo" name="author">
+
+	<meta name="lang cookie" content="win-lang">
+	<meta name="text selection" content="input textarea">
+	<meta name="enhanced roles" content="dialog toolbar menubar menu navigation spinner application scrolled template table resolved">
+	<meta name="enhanced document tags" content="body" purpose="Elements that are enhanced if they dont have a role"> 
+	<meta name="enhanced tags in document" content="output" purpose="tags in the body or other document tags that will be enhanced with default handlers">
+	
+	<link rel="stylesheet" href="/app/css/basic.css" media="screen">
+	<link rel="stylesheet" href="/app/css/enhanced.css" media="screen">
+
+	<link rel="subresource" type="text/javascript+preloading" lang="en" src="/app/js/en.translations.js">
+	<link rel="subresource" type="text/javascript+preloading" lang="de" src="/app/js/de.translations.js">
+	<link rel="subresource" type="text/javascript+preloading" lang="de-CH" src="/app/js/de_CH.translations.js">
+
+	<link rel="subresource" type="text/javascript+preloading" src="/app/js/jquery-1.7.2.min.js" >
+
+	<link rel="subresource" type="text/javascript" src="js/raphael.min.js" name="raphael">
+	<link rel="subresource" type="text/javascript+authenticated" src="js/application.js" subpage="false">
+
+	<script type="application/config">
+		declare("logo",{"charset": "utf-8"});
+		declare("login",{"charset": "utf-8"});
+		declare("launched",{"charset": "utf-8"});
+
+		declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
+	</script>
+
+	<!-- essential and modernizr should be only regular script in head -->
+	<script type="text/javascript" src="/js/modernizr-prefix.js"></script>
+	<script type="text/javascript" src="/js/modernizr.min.js"></script>
+
+	<script type="text/javascript" src="/js/resolver.js"></script>
+	<script type="text/javascript" src="/js/config.js"></script>
+	<script type="text/javascript" src="/js/generator.js"></script>
+	<script type="text/javascript" src="/js/essentialns.js"></script>
+	<script type="text/javascript" src="/js/dom.js"></script>
+	<script type="text/javascript" src="/js/page.js"></script>
+	<script type="text/javascript" src="/js/xhr.js"></script>
+	<script type="text/javascript" src="/js/elements.js"></script>
+	<script type="text/javascript" src="/js/roles.js"></script>
+	<script type="text/javascript" src="/js/configured.js"></script>
+</head>
+<body class="loading" >
+	<article role="presentation" id="main-stage">
+	</article>
+
+	 <header>
+		<nav action="navigation/logo" role="navigation">
+			<button name="menu" role="button"></button>
+			<script type="application/init">
+			require("raphael");
+			</script>
+		</nav>
+		<nav action="navigation/application" role="navigation">
+			<button name="designer" role="button"><span class="icon"></span><label>Designer</label></button>
+			<button name="explorer" role="button"><span class="icon"></span><label>Explorer</label></button>
+			<button name="ongoing" role="button"><span class="icon"></span><label>Ongoing</label></button>
+			<button name="history" role="button"><span class="icon"></span><label>History</label></button>
+
+			<a href="pages/scrolling.html" rel="subpage" role="link">Scrolling</a>
+		</nav>
+
+		<nav role="resolved">
+			<span data-resolve="text: page::connection.status"></span>
+			<span data-resolve="text: page::connection.loadingProgress"></span>
+			<span>  {{ page::connection.detail }}. </span>
+		</nav>
+
+	 </header>
+
+	<footer>© Right Here Inc
+	</footer>
+	
+</body>
+</html>

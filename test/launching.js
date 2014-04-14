@@ -307,6 +307,24 @@ if (location.protocol == "http:") asyncTest("Application Config SubPage not foun
 	}},100);
 });
 
+if (location.protocol == "http:") asyncTest("Launch in Window",function() {
+
+	var win = window.open("/test/pages/launch-win.html");
+
+	win.focus();
+	win.onload = function(){
+		var doc = win.document;
+		equal(win.Resolver.window.namespace, win, "Launched window");
+		equal(win.Resolver.document.namespace, doc, "Launched document");
+
+
+		setTimeout(function(){
+			win.close();
+			start();
+		},100);
+	};
+});
+
 
 //TODO require in config scripts
 
