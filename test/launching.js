@@ -59,11 +59,11 @@ test('HTML head is scanned correctly', function() {
 		translations = Resolver("translations"),
 		HTMLElement = Resolver("essential::HTMLElement::");
 
-	set_cookie(document,"locale","en-us");
+	set_cookie(document,"test-locale","en-US");
 	queueHead(document,false);
-	equal(document.defaultLang,"en"); //TODO defaultLocale in translations instead?
-	equal(translations("defaultLocale"),"en-us"); // guess it can't be tested...
-	equal(pageResolver("state.lang"),"en");
+	equal(document.defaultLang,"en","Default lang english"); //TODO defaultLocale in translations instead?
+	equal(translations("defaultLocale"),"en-US","Default locale english"); // guess it can't be tested...
+	equal(pageResolver("state.lang"),"en","Page state lang English");
 
 
 	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
@@ -72,24 +72,25 @@ test('HTML head is scanned correctly', function() {
 	var doc = createHTMLDocument([
 		'<!DOCTYPE html><html>',
 		'<head id="a1" attr="a1"><meta charset="utf-8">',
-		'<meta name="locale cookie" content="locale">',
+		'<meta name="locale cookie" content="test-locale">',
 		'</head>',
 		'<body id="a2" attr="a2"></body>',
 		'</html>'].join(""));
 	// debugger;
-	set_cookie(doc,"locale","fr-fr");
+	set_cookie(doc,"test-locale","fr-FR");
+	set_cookie(document,"test-locale","fr-FR"); // funny browser behavior, hack it
 	var r = Resolver(doc);
 	queueHead(doc,false);
 	equal(typeof r("enhanced"), "object","Custom Document Enhanced");
-	equal(r("enhanced.lang",null),"fr");
-	equal(r("enhanced.locale",null),"fr-fr");
+	equal(r("enhanced.lang",null),"fr","Document lang French");
+	equal(r("enhanced.locale",null),"fr-FR","Document locale French");
 
-	set_cookie(doc,"locale","de-CH");
-	// debugger;
+	set_cookie(doc,"test-locale","de-CH");
+	set_cookie(document,"test-locale","de-CH"); // funny browser behavior, hack it
 	queueHead(doc,false);
 	equal(typeof r("enhanced"), "object","Custom Document Enhanced");
-	equal(r("enhanced.lang",null),"de");
-	equal(r("enhanced.locale",null),"de-CH");
+	equal(r("enhanced.lang",null),"de","Document lang Deutsch");
+	equal(r("enhanced.locale",null),"de-CH","Document locale Schweizer Deutch");
 });
 
 var INIT_PAGE_STATE	= {

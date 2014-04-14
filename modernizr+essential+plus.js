@@ -4528,7 +4528,7 @@ Resolver.config = function(el,script) {
 						break;
 
 					case "lang cookie":
-			            var value = readCookie(doc,attrs.content);
+			            var value = readCookie(doc,attrs.content) || readCookie(document, attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
 			                resolver.set("enhanced.lang",value);
@@ -4536,7 +4536,7 @@ Resolver.config = function(el,script) {
 						break;
 
 					case "locale cookie":
-			            var value = readCookie(doc,attrs.content);
+			            var value = readCookie(doc,attrs.content) || readCookie(document,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
 			                resolver.set("enhanced.locale",value);
