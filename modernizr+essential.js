@@ -4526,7 +4526,7 @@ Resolver.config = function(el,script) {
 						break;
 
 					case "text selection":
-						if (!el.__applied__) textSelection((m.getAttribute("content") || "").split(" "));
+						if (!el.__applied__) textSelection((el.getAttribute("content") || "").split(" "));
 						break;
 
 					case "lang cookie":
