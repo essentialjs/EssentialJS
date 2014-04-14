@@ -309,6 +309,8 @@ if (location.protocol == "http:") asyncTest("Application Config SubPage not foun
 
 if (location.protocol == "http:") asyncTest("Launch in Window",function() {
 
+	set_cookie(document,"win-lang","de");
+
 	var win = window.open("/test/pages/launch-win.html");
 
 	win.focus();
@@ -316,6 +318,48 @@ if (location.protocol == "http:") asyncTest("Launch in Window",function() {
 		var doc = win.document;
 		equal(win.Resolver.window.namespace, win, "Launched window");
 		equal(win.Resolver.document.namespace, doc, "Launched document");
+		ok(win.Resolver("document::enhanced.headSealed::"),"Sealed the head before page is loaded");
+		ok(win.Resolver("document::enhanced.bodySealed::"),"Sealed the body before page is loaded");
+
+		ok(win.Resolver("document::enhanced.enabledRoles.application::"),"application");
+		ok(win.Resolver("document::enhanced.enabledRoles.navigation::"),"navigation");
+		ok(win.Resolver("document::enhanced.enabledRoles.template::"),"template");
+		ok(win.Resolver("document::enhanced.enabledRoles.menu::"),"menu");
+
+		equal(win.Resolver("document::enhanced.lang::"),"de","Got Cookie language");
+		equal(win.Resolver("page::state.lang::"),"de","cookie lang -> state.lang");
+		equal(win.Resolver("translations::locale::"),"en-US","default locale -> translations locale");
+
+		equal(win.Resolver("document::enhanced.config.logo.charset::"), "utf-8");
+		equal(win.Resolver("document::enhanced.config.login.charset::"), "utf-8");
+		equal(win.Resolver("document::enhanced.config.launched.charset::"), "utf-8");
+
+		equal(win.Resolver("document::enhanced.inits.length::"), 2); // head init
+
+		equal(win.Resolver("document::flagged.headInit::"),"head init called");
+		equal(win.Resolver("document::enhanced.inits.0.done::"),true);
+		// equal(win.Resolver("document::enhanced.inits.0.el::"),document.head);
+		// equal(win.Resolver("document::enhanced.inits.0.script.tagName::"),"script");
+
+		equal(win.Resolver("document::flagged.bodyInit::"),"body init called","body init called, raphael is loaded");
+		equal(win.Resolver("document::enhanced.inits.1.done::"),true);
+		// equal(win.Resolver("document::enhanced.inits.1.el::"),document.head);
+		// equal(win.Resolver("document::enhanced.inits.1.script.tagName::"),"script");
+
+		ok(win.Resolver("document")(["enhanced","modules","/app/js/de.translations.js"]), "de translations");
+		ok(win.Resolver("document")(["enhanced","modules","/app/js/en.translations.js"]), "en translations");
+		ok(win.Resolver("document")(["enhanced","modules","raphael"]), "raphael");
+
+		ok(win.Resolver("page::state.livepage::"),"Page is Live when loaded");
+
+// debugger;
+		// console.log(win.Resolver("document::enhanced.modules::"));
+		// deepEqual(win.Resolver("document::enhanced.config.logo::"), {"charset": "utf-8"});
+		// deepEqual(win.Resolver("document::enhanced.config.login::"), {"charset": "utf-8"});
+		// deepEqual(win.Resolver("document::enhanced.config.launched::"), {"charset": "utf-8"});
+
+
+		// declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
 
 
 		setTimeout(function(){

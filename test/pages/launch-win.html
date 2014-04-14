@@ -33,6 +33,10 @@
 		declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});
 	</script>
 
+	<script type="application/init">
+		Resolver("document").set("flagged.headInit","head init called");
+	</script>
+
 	<!-- essential and modernizr should be only regular script in head -->
 	<script type="text/javascript" src="/js/modernizr-prefix.js"></script>
 	<script type="text/javascript" src="/js/modernizr.min.js"></script>
@@ -57,6 +61,7 @@
 			<button name="menu" role="button"></button>
 			<script type="application/init">
 			require("raphael");
+			Resolver("document").set("flagged.bodyInit","body init called");
 			</script>
 		</nav>
 		<nav action="navigation/application" role="navigation">

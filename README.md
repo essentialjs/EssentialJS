@@ -59,6 +59,12 @@ The demos are intended to remain as such and are therefore covered by an AGPL li
 
 Recent releases
 
+### 0.6.0
+
+Resolver("document") used to track document loading,modules,resources
+document.onreadystatechange is used as the main loading progress mechanism.
+
+
 ### 0.5.0
 
 The queuing of links and meta tags in the head is reworked to be more efficient.
@@ -66,4 +72,5 @@ The queuing of links and meta tags in the head is reworked to be more efficient.
 Resolver("essential::console::")() gets active console. Custom console can be set.
 Resolver("essential::console.logger::")(destination,level) gets specific console logger for destination
 Destinations can be routed to custom queue dump or routing push method.
+
 

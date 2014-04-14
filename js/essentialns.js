@@ -1217,24 +1217,15 @@
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 	var _readyFired = _essentialTesting;
 
-	function fireDomReady()
+	Resolver("document")._ready = function()
 	{
 		if (_readyFired) return;
 		_readyFired = true;
 
-		var liveTimeout = Resolver("page::liveTimeout","null");
-		if (liveTimeout) {
-			// Allow the browser to render the page, preventing initial transitions
-			setTimeout(function() {
-				Resolver("page").set("state.livepage",true);
-			},liveTimeout);
-		}
-		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
-
+		//TODO only support stored in head, after that immediately load
 		Resolver.loadReadStored();
 
 		try {
-			Resolver("document::readyState").trigger("change");
 			//TODO ap config _queueAssets
 			instantiatePageSingletons();
 			prepareDomWithRole();
@@ -1243,12 +1234,11 @@
 		catch(ex) {
 			proxyConsole.error("Failed to launch delayed assets and singletons",ex);
 		}
-	}
-	function fireLoad()
-	{
+	};
 
-	}
-	function fireUnload()
+	Resolver("document")._load = function() {};
+
+	Resolver("document")._unload = function()
 	{
 		//TODO singleton deconstruct / before discard?
 
@@ -1256,20 +1246,15 @@
 
 		Generator.discardRestricted();
 
-		//TODO move to configured
-		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
-		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
 		enhancedWindows.discardAll();
 
-		for(var n in Resolver) {
-			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
-		}
+		//TODO Resolver resetPageState method
 		Resolver("page").set("state.launched",false);
 		Resolver("page").set("state.livepage",false);
 		Resolver("page").set("pages",null);
 		Resolver("page").set("pagesById",null);
-	}
+	};
 
 	// iBooks HTML widget
 	if (window.widget) {
@@ -1278,74 +1263,24 @@
 		};
 	}
 
-    function doScrollCheck() {
-      try {
-        // If IE is used, use the trick by Diego Perini
-        // http://javascript.nwbox.com/IEContentLoaded/
-        win.document.documentElement.doScroll("left");
-      } catch(e) {
-        setTimeout(doScrollCheck, 1);
-        return;
-      }
+	function fireReadyStateChange() {
 
-      // and execute any waiting functions
-      fireDomReady();
-    }  
-
-	function listenForDomReady() 
-	{
-	    // Mozilla, Opera and webkit nightlies currently support this event
-	    if (win.document.addEventListener) {
-	      var DOMContentLoaded = function() {
-	        win.document.removeEventListener("DOMContentLoaded", DOMContentLoaded, false);
-	        fireDomReady();
-	      };
-	      
-	      win.document.addEventListener("DOMContentLoaded", DOMContentLoaded, false);
-	      win.addEventListener("load", fireDomReady, false); // fallback
-	      
-	      // If IE event model is used
-	    } else if (win.document.attachEvent) {
-	      
-	      var onreadystatechange = function() {
-	        if (win.document.readyState === "complete") {
-	          win.document.detachEvent("onreadystatechange", onreadystatechange);
-	          fireDomReady();
-	        }
-	      };
-	      
-	      win.document.attachEvent("onreadystatechange", onreadystatechange);
-	      win.attachEvent("onload", fireDomReady); // fallback
-
-	      // If IE and not a frame, continually check to see if the document is ready
-	      var toplevel = false;
-
-	      try {
-	        toplevel = win.frameElement == null;
-	      } catch(e) {}
-
-	      // The DOM ready check for Internet Explorer
-	      if (win.document.documentElement.doScroll && toplevel) {
-	        doScrollCheck();
-	      }
-	    } 
+		Resolver("document::readyState").trigger("change");
 	}
-
 
 	if (window.device) {
 		//TODO PhoneGap support
 	}
 	else {
-		listenForDomReady();		
+		if (document.readyState === "complete") {
+			fireDomReady();
+			fireReadyStateChange();
+		} 
+
 		if (win.addEventListener) {
-			win.addEventListener("load",fireLoad,false);
+			win.document.addEventListener("readystatechange",fireReadyStateChange,false);
 		} else {
-			win.attachEvent("onload",fireLoad);
-		}
-		if (win.addEventListener) {
-			win.addEventListener("unload",fireUnload,false);
-		} else {
-			win.attachEvent("onunload",fireUnload);
+			win.document.attachEvent("onreadystatechange",fireReadyStateChange);
 		}
 	}
 

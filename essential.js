@@ -8912,28 +8912,59 @@ Resolver("page").set("liveTimeout",60);
 //TODO clearInterval on unload
 
 Resolver("document").on("change","readyState",function(ev) {
-	if (ev.value == "complete") {
-		Resolver("essential::sealBody::")(document);
+	switch(ev.value) {
+		case "loaded":
+			Resolver("essential::sealHead::")(win.document);
+			break;
+
+		case "interactive":
+			Resolver("essential::sealBody::")(document);
+			Resolver("document")._ready();
+
+			var liveTimeout = Resolver("page::liveTimeout","null");
+			if (liveTimeout) {
+				// Allow the browser to render the page, preventing initial transitions
+				setTimeout(function() {
+					Resolver("page").set("state.livepage",true);
+				},liveTimeout);
+			}
+			else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
+			break;
+
+		case "complete":
+			Resolver("page").set("state.livepage",true);
+			Resolver("essential::sealBody::")(document);
+			Resolver("document")._load();
+			break;
 	}
 });
 
 !function() {
-	function onPageLoad(ev) {
-		Resolver("page").set("state.livepage",true);
+
+var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+	enhancedWindows = Resolver("essential::enhancedWindows::"),
+	placement = Resolver("essential::placement::"),
+	defaultButtonClick = Resolver("essential::defaultButtonClick::"),
+	pageResolver = Resolver("page"),
+	updateOnlineStatus = Resolver("essential::updateOnlineStatus::");
+
+
+function onPageUnLoad(ev) {
+
+	if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
+	EnhancedDescriptor.maintainer = null;
+
+	Resolver("document")._unload();
+
+	for(var n in Resolver) {
+		if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
 	}
-	if (window.addEventListener) window.addEventListener("load",onPageLoad,false);
-	else if (window.attachEvent) window.attachEvent("onload",onPageLoad);
-}();
+}
+if (window.addEventListener) window.addEventListener("unload",onPageUnLoad,false);
+else if (window.attachEvent) window.attachEvent("onunload",onPageUnLoad);
 
 
 Resolver("page::state.livepage").on("change",function(ev) {
-	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
-		enhancedWindows = Resolver("essential::enhancedWindows::"),
-		placement = Resolver("essential::placement::"),
-		defaultButtonClick = Resolver("essential::defaultButtonClick::"),
-		pageResolver = Resolver("page"),
-		updateOnlineStatus = Resolver("essential::updateOnlineStatus::");
-
 	function resizeTriggersReflow(ev) {
 		EnhancedDescriptor.refreshAll();
 		enhancedWindows.notifyAll(ev);
@@ -9006,3 +9037,4 @@ Resolver("page::state.managed").on("change",function(ev) {
 	}
 });
 
+}();
