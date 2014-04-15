@@ -1920,7 +1920,7 @@ Resolver.config = function(el,script) {
 
 		cleaners._inrecurse = (cleaners._inrecurse || 0) + 1;
 
-		for(var i=0, children=el.children, child; child=children[i]; ++i) {
+		for(var i=0, children=el.children, child; child=children && children[i]; ++i) {
 			if (child.nodeType == 1) cleanRecursively(child,unwind,true);
 		}
 
