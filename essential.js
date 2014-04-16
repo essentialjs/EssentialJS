@@ -2851,24 +2851,15 @@ Resolver.config = function(el,script) {
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 	var _readyFired = _essentialTesting;
 
-	function fireDomReady()
+	Resolver("document")._ready = function()
 	{
 		if (_readyFired) return;
 		_readyFired = true;
 
-		var liveTimeout = Resolver("page::liveTimeout","null");
-		if (liveTimeout) {
-			// Allow the browser to render the page, preventing initial transitions
-			setTimeout(function() {
-				Resolver("page").set("state.livepage",true);
-			},liveTimeout);
-		}
-		else if (liveTimeout == 0) Resolver("page").set("state.livepage",true);
-
+		//TODO only support stored in head, after that immediately load
 		Resolver.loadReadStored();
 
 		try {
-			Resolver("document::readyState").trigger("change");
 			//TODO ap config _queueAssets
 			instantiatePageSingletons();
 			prepareDomWithRole();
@@ -2877,12 +2868,11 @@ Resolver.config = function(el,script) {
 		catch(ex) {
 			proxyConsole.error("Failed to launch delayed assets and singletons",ex);
 		}
-	}
-	function fireLoad()
-	{
+	};
 
-	}
-	function fireUnload()
+	Resolver("document")._load = function() {};
+
+	Resolver("document")._unload = function()
 	{
 		//TODO singleton deconstruct / before discard?
 
