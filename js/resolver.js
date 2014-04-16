@@ -954,7 +954,7 @@ function Resolver(name_andor_expr,ns,options)
     }
 
     if (forDoc) {
-        Resolver.applyEnhancedDocDefaults(resolver);
+        Resolver._docDefaults(resolver);
         Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
         resolver.uniquePageID = ns.uniquePageID;
     } else if (forEl) {
@@ -1058,12 +1058,12 @@ Resolver.functionProxy = function(src) {
     );
 };
 
-Resolver.applyEnhancedDocDefaults = function(resolver) {
-    var enh = resolver.namespace.enhanced = resolver.namespace.enhanced || {};
-    enh.enabledRoles = enh.enabledRoles || {};
-    enh.handlers = enh.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
+Resolver._docDefaults = function(resolver) {
+    var esn = resolver.namespace.essential = resolver.namespace.essential || {};
+    esn.enabledRoles = esn.enabledRoles || {};
+    esn.handlers = esn.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
 
-    enh.config = enh.config || {}; // from config scripts
+    esn.config = esn.config || {}; // from config scripts
     resolver.InitContext = function(el) { 
         this.element = el; 
         if (el) this.parentElement = el.parentElement || el.parentNode;
@@ -1071,7 +1071,7 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
         this.resolver = resolver;
     };
     resolver.InitContext.prototype = {
-        modules: enh.modules
+        modules: esn.modules
     };
     // this._setDocMethods(resolver);
     var icp = resolver.InitContext.prototype,fn;
@@ -1081,13 +1081,13 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
         if (icp[n] === undefined) icp[n] = fn.bind(resolver);
     }
 
-    enh.inits = enh.inits || []; // init scripts
-    enh.modules = enh.modules || {};
-    enh.templates = enh.templates || {};
-    enh.descriptors = enh.descriptors || {};
+    esn.inits = esn.inits || []; // init scripts
+    esn.modules = esn.modules || {};
+    esn.templates = esn.templates || {};
+    esn.descriptors = esn.descriptors || {};
 
-    enh.lang = document.documentElement.lang || "en";
-    enh.locale = "en-us";
+    esn.lang = document.documentElement.lang || "en";
+    esn.locale = "en-us";
 };
 
 // Resolver._setDocMethods = function(resolver) {
@@ -1095,5 +1095,5 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
-Resolver(document, {name:"document"}).declare("enhanced.appliedConfig",{});
+Resolver(document, {name:"document"}).declare("essential.appliedConfig",{});
 

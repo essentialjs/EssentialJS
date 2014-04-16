@@ -971,7 +971,7 @@ function Resolver(name_andor_expr,ns,options)
     }
 
     if (forDoc) {
-        Resolver.applyEnhancedDocDefaults(resolver);
+        Resolver._docDefaults(resolver);
         Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
         resolver.uniquePageID = ns.uniquePageID;
     } else if (forEl) {
@@ -1075,12 +1075,12 @@ Resolver.functionProxy = function(src) {
     );
 };
 
-Resolver.applyEnhancedDocDefaults = function(resolver) {
-    var enh = resolver.namespace.enhanced = resolver.namespace.enhanced || {};
-    enh.enabledRoles = enh.enabledRoles || {};
-    enh.handlers = enh.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
+Resolver._docDefaults = function(resolver) {
+    var esn = resolver.namespace.essential = resolver.namespace.essential || {};
+    esn.enabledRoles = esn.enabledRoles || {};
+    esn.handlers = esn.handlers || { init:{}, enhance:{}, sizing:{}, layout:{}, discard:{} };
 
-    enh.config = enh.config || {}; // from config scripts
+    esn.config = esn.config || {}; // from config scripts
     resolver.InitContext = function(el) { 
         this.element = el; 
         if (el) this.parentElement = el.parentElement || el.parentNode;
@@ -1088,7 +1088,7 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
         this.resolver = resolver;
     };
     resolver.InitContext.prototype = {
-        modules: enh.modules
+        modules: esn.modules
     };
     // this._setDocMethods(resolver);
     var icp = resolver.InitContext.prototype,fn;
@@ -1098,13 +1098,13 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
         if (icp[n] === undefined) icp[n] = fn.bind(resolver);
     }
 
-    enh.inits = enh.inits || []; // init scripts
-    enh.modules = enh.modules || {};
-    enh.templates = enh.templates || {};
-    enh.descriptors = enh.descriptors || {};
+    esn.inits = esn.inits || []; // init scripts
+    esn.modules = esn.modules || {};
+    esn.templates = esn.templates || {};
+    esn.descriptors = esn.descriptors || {};
 
-    enh.lang = document.documentElement.lang || "en";
-    enh.locale = "en-us";
+    esn.lang = document.documentElement.lang || "en";
+    esn.locale = "en-us";
 };
 
 // Resolver._setDocMethods = function(resolver) {
@@ -1112,7 +1112,7 @@ Resolver.applyEnhancedDocDefaults = function(resolver) {
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
-Resolver(document, {name:"document"}).declare("enhanced.appliedConfig",{});
+Resolver(document, {name:"document"}).declare("essential.appliedConfig",{});
 
 
 function Generator(mainConstr,options)
@@ -1523,7 +1523,7 @@ Generator.discardRestricted = function()
 // set("bodyResolver")
 
 Resolver.docMethod("require",function(path) {
-    if (this("enhanced.modules")[path] == undefined) {
+    if (this("essential.modules")[path] == undefined) {
         var ex = new Error("Missing module '" + path + "'");
         ex.ignore = true;
         throw ex;   
@@ -1532,7 +1532,7 @@ Resolver.docMethod("require",function(path) {
 
 	//TODO resolver.exec("callInits",null)
 Resolver.docMethod("callInits",function() {
-	var inits = this("enhanced.inits");
+	var inits = this("essential.inits");
 	for(var i=0,fn; fn = inits[i]; ++i) if (!fn.done) {
 		try {
 			fn.call(fn.context || {});
@@ -1556,8 +1556,8 @@ Resolver.config = function(el,script) {
 		//TODO cache the config on element.stateful
 
 		var config = null, doc = resolver.namespace,
-			ref = resolver.reference("enhanced.config","null"),
-			appliedConfig = resolver("enhanced.appliedConfig");
+			ref = resolver.reference("essential.config","null"),
+			appliedConfig = resolver("essential.appliedConfig");
 
 		function eitherConfig(key) {
 			for(var n in appliedConfig) 
@@ -1599,7 +1599,7 @@ Resolver.config = function(el,script) {
 
 	if (script) {
 		if (typeof script == "string") script = Resolver.functionProxy(script);
-		var context = docResolver.reference("enhanced.config");
+		var context = docResolver.reference("essential.config");
 		//TODO extend the reference with additional api
 		try {
 			script.call(context);
@@ -2880,20 +2880,15 @@ Resolver.config = function(el,script) {
 
 		Generator.discardRestricted();
 
-		//TODO move to configured
-		if (EnhancedDescriptor.maintainer) clearInterval(EnhancedDescriptor.maintainer);
-		EnhancedDescriptor.maintainer = null;
 		discardEnhancedElements();
 		enhancedWindows.discardAll();
 
-		for(var n in Resolver) {
-			if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
-		}
+		//TODO Resolver resetPageState method
 		Resolver("page").set("state.launched",false);
 		Resolver("page").set("state.livepage",false);
 		Resolver("page").set("pages",null);
 		Resolver("page").set("pagesById",null);
-	}
+	};
 
 	// iBooks HTML widget
 	if (window.widget) {
@@ -2902,74 +2897,24 @@ Resolver.config = function(el,script) {
 		};
 	}
 
-    function doScrollCheck() {
-      try {
-        // If IE is used, use the trick by Diego Perini
-        // http://javascript.nwbox.com/IEContentLoaded/
-        win.document.documentElement.doScroll("left");
-      } catch(e) {
-        setTimeout(doScrollCheck, 1);
-        return;
-      }
+	function fireReadyStateChange() {
 
-      // and execute any waiting functions
-      fireDomReady();
-    }  
-
-	function listenForDomReady() 
-	{
-	    // Mozilla, Opera and webkit nightlies currently support this event
-	    if (win.document.addEventListener) {
-	      var DOMContentLoaded = function() {
-	        win.document.removeEventListener("DOMContentLoaded", DOMContentLoaded, false);
-	        fireDomReady();
-	      };
-	      
-	      win.document.addEventListener("DOMContentLoaded", DOMContentLoaded, false);
-	      win.addEventListener("load", fireDomReady, false); // fallback
-	      
-	      // If IE event model is used
-	    } else if (win.document.attachEvent) {
-	      
-	      var onreadystatechange = function() {
-	        if (win.document.readyState === "complete") {
-	          win.document.detachEvent("onreadystatechange", onreadystatechange);
-	          fireDomReady();
-	        }
-	      };
-	      
-	      win.document.attachEvent("onreadystatechange", onreadystatechange);
-	      win.attachEvent("onload", fireDomReady); // fallback
-
-	      // If IE and not a frame, continually check to see if the document is ready
-	      var toplevel = false;
-
-	      try {
-	        toplevel = win.frameElement == null;
-	      } catch(e) {}
-
-	      // The DOM ready check for Internet Explorer
-	      if (win.document.documentElement.doScroll && toplevel) {
-	        doScrollCheck();
-	      }
-	    } 
+		Resolver("document::readyState").trigger("change");
 	}
-
 
 	if (window.device) {
 		//TODO PhoneGap support
 	}
 	else {
-		listenForDomReady();		
+		if (document.readyState === "complete") {
+			fireDomReady();
+			fireReadyStateChange();
+		} 
+
 		if (win.addEventListener) {
-			win.addEventListener("load",fireLoad,false);
+			win.document.addEventListener("readystatechange",fireReadyStateChange,false);
 		} else {
-			win.attachEvent("onload",fireLoad);
-		}
-		if (win.addEventListener) {
-			win.addEventListener("unload",fireUnload,false);
-		} else {
-			win.attachEvent("onunload",fireUnload);
+			win.document.attachEvent("onreadystatechange",fireReadyStateChange);
 		}
 	}
 
@@ -3061,7 +3006,7 @@ Resolver.config = function(el,script) {
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
 
-	Resolver("document").on("change","enhanced.locale",function(ev) {
+	Resolver("document").on("change","essential.locale",function(ev) {
 		translations.set("locale",ev.value);
 	});
 
@@ -4225,6 +4170,7 @@ Resolver.config = function(el,script) {
 				case "make stateful":
 					essential("StatefulResolver")(e,_from[n]);
 					break;
+				//TODO "set state" make stateful & mixin to "state."
 
 				// "type" IE9 el.type is readonly:
 
@@ -4366,7 +4312,7 @@ Resolver.config = function(el,script) {
 
 	function flagLoaded() {
 		var name = this.getAttribute("data-module"), 
-			module = Resolver("document")(["enhanced","modules",name]);
+			module = Resolver("document")(["essential","modules",name]);
 
 		setTimeout(function(){
 			module.setLoaded();
@@ -4376,7 +4322,7 @@ Resolver.config = function(el,script) {
 	function Module(name) {this.name=name;}
 
 	Module.prototype.scriptMarkup = function(subpage) {
-		var loaded = "Resolver('document')(['enhanced','modules',this.getAttribute('data-module')]).setLoaded();",
+		var loaded = "Resolver('document')(['essential','modules',this.getAttribute('data-module')]).setLoaded();",
 			attr = subpage? "" : " defer";
 		return '<script src="' + this.attrs.src + '" data-module="'+ this.name +'" onload="'+loaded+'"'+attr+'></'+'script>';
 	};
@@ -4446,7 +4392,7 @@ Resolver.config = function(el,script) {
 	};
 
 	Resolver.docMethod("reflectModules", function() {
-		var modules = this.namespace.enhanced.modules;
+		var modules = this.namespace.essential.modules;
 		var flags = { loadingScripts:false, launchingScripts:false };
 		for(var n in modules) {
 			var m = modules[n];
@@ -4458,19 +4404,19 @@ Resolver.config = function(el,script) {
 		}
 
 		Resolver("page::state").mixin(flags);
-	};
+	});
 
 	function queueModule(link,attrs) {
 		var name = attrs.name || attrs.src; 
 
-		var module = Resolver("document").declare(["enhanced","modules",name],new Module(name));
+		var module = Resolver("document").declare(["essential","modules",name],new Module(name));
 		module.link = link;
 		module.attrs = attrs;
 		module.attrs["data-module"] = module.name;
 	}
 
 	function useBuiltins(doc,list) {
-		for(var i=0,r; r = list[i]; ++i) Resolver(doc).set(["enhanced","enabledRoles",r],true);
+		for(var i=0,r; r = list[i]; ++i) Resolver(doc).set(["essential","enabledRoles",r],true);
 	}
 
     function readCookie(doc,id) {
@@ -4485,7 +4431,7 @@ Resolver.config = function(el,script) {
     }
 
     function scanElements(doc,els) {
-    	var resolver = Resolver(doc), inits = resolver("enhanced.inits"); 
+    	var resolver = Resolver(doc), inits = resolver("essential.inits"); 
 
 		for(var i=0,el; el = els[i]; ++i) switch(el.tagName){
 			case "meta":
@@ -4514,7 +4460,7 @@ Resolver.config = function(el,script) {
 			            var value = readCookie(doc,attrs.content) || readCookie(document, attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                resolver.set("enhanced.lang",value);
+			                resolver.set("essential.lang",value);
 			            }
 						break;
 
@@ -4522,9 +4468,9 @@ Resolver.config = function(el,script) {
 			            var value = readCookie(doc,attrs.content) || readCookie(document,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                resolver.set("enhanced.locale",value);
+			                resolver.set("essential.locale",value);
 			                var s = value.toLowerCase().replace("_","-").split("-");
-			                resolver.set("enhanced.lang",s[0]);
+			                resolver.set("essential.lang",s[0]);
 			            }
 						break;
 
@@ -4564,7 +4510,7 @@ Resolver.config = function(el,script) {
 						inits.push(init);
 						break;
 					default:
-						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
+						if (attrs.name && attrs.src == null) resolver.set("essential.modules",name,true); 
 						break;
 				}
 				el.__applied__ = true;
@@ -4574,7 +4520,7 @@ Resolver.config = function(el,script) {
     }
 
 	function scanHead(doc) {
-		var resolver = Resolver(doc), inits = resolver("enhanced.inits");
+		var resolver = Resolver(doc), inits = resolver("essential.inits");
 
 		//TODO support text/html use base subpage functionality
 
@@ -4592,7 +4538,7 @@ Resolver.config = function(el,script) {
 
 		Resolver(doc).reflectModules();
 
-		var modules = Resolver(doc)("enhanced.modules");
+		var modules = Resolver(doc)("essential.modules");
 		for(var n in modules) {
 			modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
@@ -4601,15 +4547,15 @@ Resolver.config = function(el,script) {
 	essential.set("queueHead",queueHead);
 
 	function sealHead(doc) {
-		if (doc.enhanced && doc.enhanced.headSealed) return;
+		if (doc.essential && doc.essential.headSealed) return;
 		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
 
 		Resolver(doc).reflectModules();
-		doc.enhanced.headSealed = true;
+		doc.essential.headSealed = true;
 		//?? headSealed,true
 
-		var modules = Resolver(doc)("enhanced.modules");
+		var modules = Resolver(doc)("essential.modules");
 		for(var n in modules) {
 			modules[n].queueHead("loading",document.documentElement.lang);
 		}		
@@ -4623,15 +4569,15 @@ Resolver.config = function(el,script) {
 	// consider switch to sealDoc(doc,sealHead,sealBody)
 	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
 	function sealBody(doc) {
-		if (doc.enhanced && doc.enhanced.bodySealed) return;
+		if (doc.essential && doc.essential.bodySealed) return;
 		sealHead(doc);
 		var scripts = doc.body.getElementsByTagName("script");
 		scanElements(doc,scripts); //TODO use doc.scripts instead?
 
 		Resolver(doc).reflectModules();
-		doc.enhanced.bodySealed = true;
+		doc.essential.bodySealed = true;
 
-		var modules = Resolver(doc)("enhanced.modules");
+		var modules = Resolver(doc)("essential.modules");
 		for(var n in modules) {
 			modules[n].queueHead("loading",document.documentElement.lang);
 		}		
@@ -4991,7 +4937,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 !function() {
 
 	var essential = Resolver("essential",{}),
-		enhancedResolver = Resolver("document::enhanced"),
+		essentialRef = Resolver("document::essential"),
 		log = essential("console")(),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
@@ -5343,10 +5289,10 @@ _ElementPlacement.prototype._computeIE = function(style)
 	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
 
 	// application/config declarations on the main page
-	pageResolver.declare("config",Resolver("document::enhanced.config::"));
+	pageResolver.declare("config",Resolver("document::essential.config::"));
 
 	// descriptors for elements on main page to enhance
-	pageResolver.declare("descriptors",Resolver("document::enhanced.descriptors::"));
+	pageResolver.declare("descriptors",Resolver("document::essential.descriptors::"));
 
 	pageResolver.reference("state").mixin({
 		"livepage": false,
@@ -5366,7 +5312,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"launching": false, 
 		"launched": false,
 
-		"lang": enhancedResolver("lang"),
+		"lang": essentialRef("lang"),
 
 		"loadingConfigUrl": {}
 		});
@@ -5379,7 +5325,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		if (Resolver.exists("page")) pageResolver.set("state.lang",s[0]);
 	});
 
-	Resolver("document").on("change","enhanced.lang",function(ev) {
+	Resolver("document").on("change","essential.lang",function(ev) {
 		if (Resolver.exists("page")) pageResolver.set("state.lang",ev.value);
 	});
 
@@ -5392,9 +5338,9 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"logStatus": false
 	});
 
-	pageResolver.declare("enabledRoles",Resolver("document::enhanced.enabledRoles::"));
-	pageResolver.declare("handlers",Resolver("document::enhanced.handlers::"));
-	pageResolver.declare("templates",Resolver("document::enhanced.templates::"));
+	pageResolver.declare("enabledRoles",Resolver("document::essential.enabledRoles::"));
+	pageResolver.declare("handlers",Resolver("document::essential.handlers::"));
+	pageResolver.declare("templates",Resolver("document::essential.templates::"));
 
 	// Object.defineProperty(pageResolver.namespace,'handlers',{
 	// 	get: function() { return pageResolver.namespace.__handlers; },
@@ -5742,7 +5688,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 
 		// debugger;
 		var subResolver = Resolver(this.document);
-		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
+		Resolver("document").set(["essential","appliedConfig",subResolver.uniquePageID],subResolver("essential.config"));
 		subResolver.callInits();
 
 		//TODO put descriptors in reheating them
@@ -5763,7 +5709,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this.applied = null;
 
 		var subResolver = Resolver(this.document);
-		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],undefined);
+		Resolver("document").set(["essential","appliedConfig",subResolver.uniquePageID],undefined);
 
 		//TODO pull the descriptors out, freeze them
 		var descs = this.resolver("descriptors");
@@ -5790,7 +5736,7 @@ _ElementPlacement.prototype._computeIE = function(style)
 	//TODO emit modules injection
 	SubPage.prototype.getHeadHtml = function() {
 		var links = document.getElementsByTagName("link"),
-			modules = enhancedResolver("modules"),
+			modules = essentialRef("modules"),
 			p = [],
 			base = "";
 

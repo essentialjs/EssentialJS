@@ -5,7 +5,7 @@
 !function() {
 
 	var essential = Resolver("essential",{}),
-		enhancedResolver = Resolver("document::enhanced"),
+		essentialRef = Resolver("document::essential"),
 		log = essential("console")(),
 		DOMTokenList = essential("DOMTokenList"),
 		MutableEvent = essential("MutableEvent"),
@@ -357,10 +357,10 @@
 	var pageResolver = StatefulResolver(null,{ name:"page", mapClassForState:true });
 
 	// application/config declarations on the main page
-	pageResolver.declare("config",Resolver("document::enhanced.config::"));
+	pageResolver.declare("config",Resolver("document::essential.config::"));
 
 	// descriptors for elements on main page to enhance
-	pageResolver.declare("descriptors",Resolver("document::enhanced.descriptors::"));
+	pageResolver.declare("descriptors",Resolver("document::essential.descriptors::"));
 
 	pageResolver.reference("state").mixin({
 		"livepage": false,
@@ -380,7 +380,7 @@
 		"launching": false, 
 		"launched": false,
 
-		"lang": enhancedResolver("lang"),
+		"lang": essentialRef("lang"),
 
 		"loadingConfigUrl": {}
 		});
@@ -393,7 +393,7 @@
 		if (Resolver.exists("page")) pageResolver.set("state.lang",s[0]);
 	});
 
-	Resolver("document").on("change","enhanced.lang",function(ev) {
+	Resolver("document").on("change","essential.lang",function(ev) {
 		if (Resolver.exists("page")) pageResolver.set("state.lang",ev.value);
 	});
 
@@ -406,9 +406,9 @@
 		"logStatus": false
 	});
 
-	pageResolver.declare("enabledRoles",Resolver("document::enhanced.enabledRoles::"));
-	pageResolver.declare("handlers",Resolver("document::enhanced.handlers::"));
-	pageResolver.declare("templates",Resolver("document::enhanced.templates::"));
+	pageResolver.declare("enabledRoles",Resolver("document::essential.enabledRoles::"));
+	pageResolver.declare("handlers",Resolver("document::essential.handlers::"));
+	pageResolver.declare("templates",Resolver("document::essential.templates::"));
 
 	// Object.defineProperty(pageResolver.namespace,'handlers',{
 	// 	get: function() { return pageResolver.namespace.__handlers; },
@@ -756,7 +756,7 @@
 
 		// debugger;
 		var subResolver = Resolver(this.document);
-		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],subResolver("enhanced.config"));
+		Resolver("document").set(["essential","appliedConfig",subResolver.uniquePageID],subResolver("essential.config"));
 		subResolver.callInits();
 
 		//TODO put descriptors in reheating them
@@ -777,7 +777,7 @@
 		this.applied = null;
 
 		var subResolver = Resolver(this.document);
-		Resolver("document").set(["enhanced","appliedConfig",subResolver.uniquePageID],undefined);
+		Resolver("document").set(["essential","appliedConfig",subResolver.uniquePageID],undefined);
 
 		//TODO pull the descriptors out, freeze them
 		var descs = this.resolver("descriptors");
@@ -804,7 +804,7 @@
 	//TODO emit modules injection
 	SubPage.prototype.getHeadHtml = function() {
 		var links = document.getElementsByTagName("link"),
-			modules = enhancedResolver("modules"),
+			modules = essentialRef("modules"),
 			p = [],
 			base = "";
 

@@ -1372,7 +1372,7 @@
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
 
-	Resolver("document").on("change","enhanced.locale",function(ev) {
+	Resolver("document").on("change","essential.locale",function(ev) {
 		translations.set("locale",ev.value);
 	});
 

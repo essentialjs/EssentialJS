@@ -7,7 +7,7 @@ test('Config scripts in main HTML page', function() {
 	equal(document.readyState,"complete","Loading of the testing page done");
 	Resolver("essential::sealBody::")(document); // emulate configured behavior
 
-	ok(document.enhanced.headSealed,"The HEAD element sealed");
+	ok(document.essential.headSealed,"The HEAD element sealed");
 	// debugger;
 	var config = Resolver.config(HTMLElement("div",{id:"declared-in-head"}));
 	equal(config.a,"a","declared-in-head");
@@ -19,7 +19,7 @@ test('Config scripts in main HTML page', function() {
 */
 
 test("Loading config in html",function(){
-	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
+	ok(Resolver.document && Resolver.document.namespace.essential.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	Resolver.config(document,
@@ -69,7 +69,7 @@ test("Loading config in html",function(){
 	//TODO css like syntax for data-role
 
 test("Application config using data-role",function() {
-	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
+	ok(Resolver.document && Resolver.document.namespace.essential.config);
 
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
@@ -88,7 +88,7 @@ test("Application config using data-role",function() {
 });
 
 test("Application config using script",function(){
-	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
+	ok(Resolver.document && Resolver.document.namespace.essential.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	Resolver.config(document,
@@ -108,7 +108,7 @@ test("Application config using script",function(){
 });
 
 test("Application config using script and data-role",function(){
-	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
+	ok(Resolver.document && Resolver.document.namespace.essential.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	Resolver.config(document,
@@ -127,7 +127,7 @@ test("Application config using script and data-role",function(){
 });
 
 test("More complex data-role definitions",function() {
-	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
+	ok(Resolver.document && Resolver.document.namespace.essential.config);
 
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
@@ -190,8 +190,12 @@ test("More complex data-role definitions",function() {
 
 });
 
+//TODO test application/init require
+
+
+
 test("Layout/laidout",function(){
-	ok(Resolver.document && Resolver.document.namespace.enhanced.config);
+	ok(Resolver.document && Resolver.document.namespace.essential.config);
 	ok(1,"TODO config for unmatched elements skipped");
 
 });

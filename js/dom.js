@@ -1132,7 +1132,7 @@
 
 	function flagLoaded() {
 		var name = this.getAttribute("data-module"), 
-			module = Resolver("document")(["enhanced","modules",name]);
+			module = Resolver("document")(["essential","modules",name]);
 
 		setTimeout(function(){
 			module.setLoaded();
@@ -1142,7 +1142,7 @@
 	function Module(name) {this.name=name;}
 
 	Module.prototype.scriptMarkup = function(subpage) {
-		var loaded = "Resolver('document')(['enhanced','modules',this.getAttribute('data-module')]).setLoaded();",
+		var loaded = "Resolver('document')(['essential','modules',this.getAttribute('data-module')]).setLoaded();",
 			attr = subpage? "" : " defer";
 		return '<script src="' + this.attrs.src + '" data-module="'+ this.name +'" onload="'+loaded+'"'+attr+'></'+'script>';
 	};
@@ -1212,7 +1212,7 @@
 	};
 
 	Resolver.docMethod("reflectModules", function() {
-		var modules = this.namespace.enhanced.modules;
+		var modules = this.namespace.essential.modules;
 		var flags = { loadingScripts:false, launchingScripts:false };
 		for(var n in modules) {
 			var m = modules[n];
@@ -1229,14 +1229,14 @@
 	function queueModule(link,attrs) {
 		var name = attrs.name || attrs.src; 
 
-		var module = Resolver("document").declare(["enhanced","modules",name],new Module(name));
+		var module = Resolver("document").declare(["essential","modules",name],new Module(name));
 		module.link = link;
 		module.attrs = attrs;
 		module.attrs["data-module"] = module.name;
 	}
 
 	function useBuiltins(doc,list) {
-		for(var i=0,r; r = list[i]; ++i) Resolver(doc).set(["enhanced","enabledRoles",r],true);
+		for(var i=0,r; r = list[i]; ++i) Resolver(doc).set(["essential","enabledRoles",r],true);
 	}
 
     function readCookie(doc,id) {
@@ -1251,7 +1251,7 @@
     }
 
     function scanElements(doc,els) {
-    	var resolver = Resolver(doc), inits = resolver("enhanced.inits"); 
+    	var resolver = Resolver(doc), inits = resolver("essential.inits"); 
 
 		for(var i=0,el; el = els[i]; ++i) switch(el.tagName){
 			case "meta":
@@ -1280,7 +1280,7 @@
 			            var value = readCookie(doc,attrs.content) || readCookie(document, attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                resolver.set("enhanced.lang",value);
+			                resolver.set("essential.lang",value);
 			            }
 						break;
 
@@ -1288,9 +1288,9 @@
 			            var value = readCookie(doc,attrs.content) || readCookie(document,attrs.content);
 			            if (value != undefined) {
 			                value = decodeURI(value);
-			                resolver.set("enhanced.locale",value);
+			                resolver.set("essential.locale",value);
 			                var s = value.toLowerCase().replace("_","-").split("-");
-			                resolver.set("enhanced.lang",s[0]);
+			                resolver.set("essential.lang",s[0]);
 			            }
 						break;
 
@@ -1330,7 +1330,7 @@
 						inits.push(init);
 						break;
 					default:
-						if (attrs.name && attrs.src == null) resolver.set("enhanced.modules",name,true); 
+						if (attrs.name && attrs.src == null) resolver.set("essential.modules",name,true); 
 						break;
 				}
 				el.__applied__ = true;
@@ -1340,7 +1340,7 @@
     }
 
 	function scanHead(doc) {
-		var resolver = Resolver(doc), inits = resolver("enhanced.inits");
+		var resolver = Resolver(doc), inits = resolver("essential.inits");
 
 		//TODO support text/html use base subpage functionality
 
@@ -1358,7 +1358,7 @@
 
 		Resolver(doc).reflectModules();
 
-		var modules = Resolver(doc)("enhanced.modules");
+		var modules = Resolver(doc)("essential.modules");
 		for(var n in modules) {
 			modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
@@ -1367,15 +1367,15 @@
 	essential.set("queueHead",queueHead);
 
 	function sealHead(doc) {
-		if (doc.enhanced && doc.enhanced.headSealed) return;
+		if (doc.essential && doc.essential.headSealed) return;
 		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
 
 		Resolver(doc).reflectModules();
-		doc.enhanced.headSealed = true;
+		doc.essential.headSealed = true;
 		//?? headSealed,true
 
-		var modules = Resolver(doc)("enhanced.modules");
+		var modules = Resolver(doc)("essential.modules");
 		for(var n in modules) {
 			modules[n].queueHead("loading",document.documentElement.lang);
 		}		
@@ -1389,15 +1389,15 @@
 	// consider switch to sealDoc(doc,sealHead,sealBody)
 	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
 	function sealBody(doc) {
-		if (doc.enhanced && doc.enhanced.bodySealed) return;
+		if (doc.essential && doc.essential.bodySealed) return;
 		sealHead(doc);
 		var scripts = doc.body.getElementsByTagName("script");
 		scanElements(doc,scripts); //TODO use doc.scripts instead?
 
 		Resolver(doc).reflectModules();
-		doc.enhanced.bodySealed = true;
+		doc.essential.bodySealed = true;
 
-		var modules = Resolver(doc)("enhanced.modules");
+		var modules = Resolver(doc)("essential.modules");
 		for(var n in modules) {
 			modules[n].queueHead("loading",document.documentElement.lang);
 		}		

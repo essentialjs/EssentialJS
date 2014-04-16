@@ -17,9 +17,9 @@ test("Document Resolver", function() {
 	equal(Resolver.document.namespace,document,"Document resolver is for document");
 
 	var docResolver = Resolver("document");
-	equal(docResolver("enhanced.config.launched.charset"),"utf-8");
-	equal(docResolver("enhanced.config.login.charset"),"utf-8");
-	equal(docResolver("enhanced.config.logo.charset"),"utf-8");
+	equal(docResolver("essential.config.launched.charset"),"utf-8");
+	equal(docResolver("essential.config.login.charset"),"utf-8");
+	equal(docResolver("essential.config.logo.charset"),"utf-8");
 });
 
 test("Page Resolver",function(){
@@ -54,7 +54,7 @@ function set_cookie(doc,id,value,expires) {
 test('HTML head is scanned correctly', function() {
 	var essential = Resolver('essential'),
 		queueHead = essential('queueHead'),
-		enhancedResolver = Resolver("document::enhanced"),
+		enhancedResolver = Resolver("document::essential"),
 		pageResolver = Resolver("page"),
 		translations = Resolver("translations"),
 		HTMLElement = Resolver("essential::HTMLElement::");
@@ -81,16 +81,16 @@ test('HTML head is scanned correctly', function() {
 	set_cookie(document,"test-locale","fr-FR"); // funny browser behavior, hack it
 	var r = Resolver(doc);
 	queueHead(doc,false);
-	equal(typeof r("enhanced"), "object","Custom Document Enhanced");
-	equal(r("enhanced.lang",null),"fr","Document lang French");
-	equal(r("enhanced.locale",null),"fr-FR","Document locale French");
+	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
+	equal(r("essential.lang",null),"fr","Document lang French");
+	equal(r("essential.locale",null),"fr-FR","Document locale French");
 
 	set_cookie(doc,"test-locale","de-CH");
 	set_cookie(document,"test-locale","de-CH"); // funny browser behavior, hack it
 	queueHead(doc,false);
-	equal(typeof r("enhanced"), "object","Custom Document Enhanced");
-	equal(r("enhanced.lang",null),"de","Document lang Deutsch");
-	equal(r("enhanced.locale",null),"de-CH","Document locale Schweizer Deutch");
+	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
+	equal(r("essential.lang",null),"de","Document lang Deutsch");
+	equal(r("essential.locale",null),"de-CH","Document locale Schweizer Deutch");
 });
 
 var INIT_PAGE_STATE	= {
@@ -111,7 +111,7 @@ test('roles are enhanced when no page state is preset',function() {
 
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
 		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
-		enhancedResolver = Resolver("document::enhanced"),
+		enhancedResolver = Resolver("document::essential"),
 		pageResolver = Resolver("page"),
 		HTMLElement = Resolver("essential::HTMLElement::");
 
@@ -247,7 +247,7 @@ if (location.protocol == "http:") asyncTest("Application Config loadPage of SubP
 		ok(page.head);
 		ok(page.body);
 
-		equal(Resolver(page.document)("enhanced.inits.length"),2,"Two init scripts in with-config.html");
+		equal(Resolver(page.document)("essential.inits.length"),2,"Two init scripts in with-config.html");
 
 		var mainStage = page.getElement("main-stage");
 		ok(mainStage);
@@ -318,45 +318,45 @@ if (location.protocol == "http:") asyncTest("Launch in Window",function() {
 		var doc = win.document;
 		equal(win.Resolver.window.namespace, win, "Launched window");
 		equal(win.Resolver.document.namespace, doc, "Launched document");
-		ok(win.Resolver("document::enhanced.headSealed::"),"Sealed the head before page is loaded");
-		ok(win.Resolver("document::enhanced.bodySealed::"),"Sealed the body before page is loaded");
+		ok(win.Resolver("document::essential.headSealed::"),"Sealed the head before page is loaded");
+		ok(win.Resolver("document::essential.bodySealed::"),"Sealed the body before page is loaded");
 
-		ok(win.Resolver("document::enhanced.enabledRoles.application::"),"application");
-		ok(win.Resolver("document::enhanced.enabledRoles.navigation::"),"navigation");
-		ok(win.Resolver("document::enhanced.enabledRoles.template::"),"template");
-		ok(win.Resolver("document::enhanced.enabledRoles.menu::"),"menu");
+		ok(win.Resolver("document::essential.enabledRoles.application::"),"application");
+		ok(win.Resolver("document::essential.enabledRoles.navigation::"),"navigation");
+		ok(win.Resolver("document::essential.enabledRoles.template::"),"template");
+		ok(win.Resolver("document::essential.enabledRoles.menu::"),"menu");
 
-		equal(win.Resolver("document::enhanced.lang::"),"de","Got Cookie language");
+		equal(win.Resolver("document::essential.lang::"),"de","Got Cookie language");
 		equal(win.Resolver("page::state.lang::"),"de","cookie lang -> state.lang");
 		equal(win.Resolver("translations::locale::"),"en-US","default locale -> translations locale");
 
-		equal(win.Resolver("document::enhanced.config.logo.charset::"), "utf-8");
-		equal(win.Resolver("document::enhanced.config.login.charset::"), "utf-8");
-		equal(win.Resolver("document::enhanced.config.launched.charset::"), "utf-8");
+		equal(win.Resolver("document::essential.config.logo.charset::"), "utf-8");
+		equal(win.Resolver("document::essential.config.login.charset::"), "utf-8");
+		equal(win.Resolver("document::essential.config.launched.charset::"), "utf-8");
 
-		equal(win.Resolver("document::enhanced.inits.length::"), 2); // head init
+		equal(win.Resolver("document::essential.inits.length::"), 2); // head init
 
 		equal(win.Resolver("document::flagged.headInit::"),"head init called");
-		equal(win.Resolver("document::enhanced.inits.0.done::"),true);
-		// equal(win.Resolver("document::enhanced.inits.0.el::"),document.head);
-		// equal(win.Resolver("document::enhanced.inits.0.script.tagName::"),"script");
+		equal(win.Resolver("document::essential.inits.0.done::"),true);
+		// equal(win.Resolver("document::essential.inits.0.el::"),document.head);
+		// equal(win.Resolver("document::essential.inits.0.script.tagName::"),"script");
 
 		equal(win.Resolver("document::flagged.bodyInit::"),"body init called","body init called, raphael is loaded");
-		equal(win.Resolver("document::enhanced.inits.1.done::"),true);
-		// equal(win.Resolver("document::enhanced.inits.1.el::"),document.head);
-		// equal(win.Resolver("document::enhanced.inits.1.script.tagName::"),"script");
+		equal(win.Resolver("document::essential.inits.1.done::"),true);
+		// equal(win.Resolver("document::essential.inits.1.el::"),document.head);
+		// equal(win.Resolver("document::essential.inits.1.script.tagName::"),"script");
 
-		ok(win.Resolver("document")(["enhanced","modules","/app/js/de.translations.js"]), "de translations");
-		ok(win.Resolver("document")(["enhanced","modules","/app/js/en.translations.js"]), "en translations");
-		ok(win.Resolver("document")(["enhanced","modules","raphael"]), "raphael");
+		ok(win.Resolver("document")(["essential","modules","/app/js/de.translations.js"]), "de translations");
+		ok(win.Resolver("document")(["essential","modules","/app/js/en.translations.js"]), "en translations");
+		ok(win.Resolver("document")(["essential","modules","raphael"]), "raphael");
 
 		ok(win.Resolver("page::state.livepage::"),"Page is Live when loaded");
 
 // debugger;
-		// console.log(win.Resolver("document::enhanced.modules::"));
-		// deepEqual(win.Resolver("document::enhanced.config.logo::"), {"charset": "utf-8"});
-		// deepEqual(win.Resolver("document::enhanced.config.login::"), {"charset": "utf-8"});
-		// deepEqual(win.Resolver("document::enhanced.config.launched::"), {"charset": "utf-8"});
+		// console.log(win.Resolver("document::essential.modules::"));
+		// deepEqual(win.Resolver("document::essential.config.logo::"), {"charset": "utf-8"});
+		// deepEqual(win.Resolver("document::essential.config.login::"), {"charset": "utf-8"});
+		// deepEqual(win.Resolver("document::essential.config.launched::"), {"charset": "utf-8"});
 
 
 		// declare("main-stage",{"area-names": ["intro","designer", "explorer","history"], "introduction-area":"intro", "authenticated-area":"explorer", "layouter": "area-stage"});

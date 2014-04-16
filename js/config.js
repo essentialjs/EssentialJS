@@ -3,7 +3,7 @@
 // set("bodyResolver")
 
 Resolver.docMethod("require",function(path) {
-    if (this("enhanced.modules")[path] == undefined) {
+    if (this("essential.modules")[path] == undefined) {
         var ex = new Error("Missing module '" + path + "'");
         ex.ignore = true;
         throw ex;   
@@ -12,7 +12,7 @@ Resolver.docMethod("require",function(path) {
 
 	//TODO resolver.exec("callInits",null)
 Resolver.docMethod("callInits",function() {
-	var inits = this("enhanced.inits");
+	var inits = this("essential.inits");
 	for(var i=0,fn; fn = inits[i]; ++i) if (!fn.done) {
 		try {
 			fn.call(fn.context || {});
@@ -36,8 +36,8 @@ Resolver.config = function(el,script) {
 		//TODO cache the config on element.stateful
 
 		var config = null, doc = resolver.namespace,
-			ref = resolver.reference("enhanced.config","null"),
-			appliedConfig = resolver("enhanced.appliedConfig");
+			ref = resolver.reference("essential.config","null"),
+			appliedConfig = resolver("essential.appliedConfig");
 
 		function eitherConfig(key) {
 			for(var n in appliedConfig) 
@@ -79,7 +79,7 @@ Resolver.config = function(el,script) {
 
 	if (script) {
 		if (typeof script == "string") script = Resolver.functionProxy(script);
-		var context = docResolver.reference("enhanced.config");
+		var context = docResolver.reference("essential.config");
 		//TODO extend the reference with additional api
 		try {
 			script.call(context);
