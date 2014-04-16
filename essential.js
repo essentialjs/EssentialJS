@@ -3263,7 +3263,6 @@ Resolver.config = function(el,script) {
 	if (base) {
 		var baseUrl = base.href;
 		if (baseUrl.charAt(baseUrl.length - 1) != "/") baseUrl += "/";
-		// debugger;
 		essential.set("baseUrl",baseUrl);
 	}
 
@@ -4444,7 +4443,6 @@ Resolver.config = function(el,script) {
 
 	Module.prototype.queueHead = function(stage,lang) {
 		if (this.loaded || this.added) return;
-
 		var langOk = (lang && this.link.lang)? (this.link.lang == lang) : true; //TODO test on add script
 		if (this.attrs.stage==stage && langOk) this.addScript();
 	};
@@ -4457,8 +4455,7 @@ Resolver.config = function(el,script) {
 		//TODO perhaps more
 	};
 
-	//TODO on all document resolvers
-	Resolver("document").reflectModules = function() {
+	Resolver.docMethod("reflectModules", function() {
 		var modules = this.namespace.enhanced.modules;
 		var flags = { loadingScripts:false, launchingScripts:false };
 		for(var n in modules) {
@@ -4603,9 +4600,9 @@ Resolver.config = function(el,script) {
 		// Resolver("page").set("state.preloading",true);
 		scanHead(doc);
 
-		Resolver("document").reflectModules();
+		Resolver(doc).reflectModules();
 
-		var modules = Resolver(doc)("modules");
+		var modules = Resolver(doc)("enhanced.modules");
 		for(var n in modules) {
 			modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
@@ -4618,11 +4615,11 @@ Resolver.config = function(el,script) {
 		scanHead(doc);
 		// Resolver("page").set("state.preloading",false);
 
-		Resolver("document").reflectModules();
+		Resolver(doc).reflectModules();
 		doc.enhanced.headSealed = true;
 		//?? headSealed,true
 
-		var modules = Resolver(doc)("modules");
+		var modules = Resolver(doc)("enhanced.modules");
 		for(var n in modules) {
 			modules[n].queueHead("loading",document.documentElement.lang);
 		}		
@@ -4636,13 +4633,15 @@ Resolver.config = function(el,script) {
 	// consider switch to sealDoc(doc,sealHead,sealBody)
 	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
 	function sealBody(doc) {
+		if (doc.enhanced && doc.enhanced.bodySealed) return;
 		sealHead(doc);
 		var scripts = doc.body.getElementsByTagName("script");
-		scanElements(doc,scripts);
+		scanElements(doc,scripts); //TODO use doc.scripts instead?
 
-		Resolver("document").reflectModules();
+		Resolver(doc).reflectModules();
+		doc.enhanced.bodySealed = true;
 
-		var modules = Resolver(doc)("modules");
+		var modules = Resolver(doc)("enhanced.modules");
 		for(var n in modules) {
 			modules[n].queueHead("loading",document.documentElement.lang);
 		}		

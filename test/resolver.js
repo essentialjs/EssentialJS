@@ -98,6 +98,7 @@ test("Unique ID lookups",function() {
 test("Document resolver",function(){
 	var doc = Resolver(document);
 
+	equal(Resolver(document),doc);
 	equal(Resolver("document"),doc);
 	equal(doc.namespace,document);
 	equal(doc("all"),document.all);
