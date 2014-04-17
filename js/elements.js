@@ -688,11 +688,10 @@
 
 			if (el.actionVariant[name]) el.actionVariant[name](el,ev);
 			else {
-				var sn = name.replace("-","_").replace(" ","_");
+				var sn = (name || "").replace("-","_").replace(" ","_");
 				if (el.actionVariant[sn]) el.actionVariant[sn](el,ev);
 			}
 			//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
-
 		} 
 		else {
 			el = HTMLElement.getEnhancedParent(ev.commandElement);
