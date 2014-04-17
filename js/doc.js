@@ -402,20 +402,17 @@ Resolver.config = function(el,script) {
 		if (doc.defaultLang == undefined) doc.defaultLang = doc.documentElement.lang;
 	}
 
-	function queueHead(doc,addSeal) {
-		// Resolver("page").set("state.loading",true);
-		// Resolver("page").set("state.preloading",true);
+	Resolver("document").queueHead = function(addSeal) {
+		var doc = this.namespace, essential = doc.essential;
 		scanHead(doc);
 
-		Resolver(doc).reflectModules();
+		this.reflectModules();
 
-		var modules = Resolver(doc)("essential.modules");
-		for(var n in modules) {
-			modules[n].queueHead("preloading",doc.documentElement.lang);
+		for(var n in essential.modules) {
+			essential.modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
 		if (addSeal !== false) addHeadScript('Resolver("document").seal();',doc);
 	}
-	essential.set("queueHead",queueHead);
 
 	Resolver.docMethod("seal",function(sealBody) {
 		var essential = this.namespace.essential, doc = this.namespace;

@@ -38,14 +38,15 @@ test("Page Resolver",function(){
 	// equal(pageResolver("config.logo.charset"),"utf-8");
 
 	// default state
+	equal(pageResolver("state.loading"),false,"loading");
 	equal(pageResolver("state.authenticated"),true,"authenticated");
 	equal(pageResolver("state.authorised"),true,"authorised");
 	equal(pageResolver("state.connected"),true,"connected");
 	equal(pageResolver("state.configured"),true,"configured");
 	equal(pageResolver("state.fullscreen"),false,"fullscreen");
-	equal(pageResolver("state.launching"),false,"launching");
+	equal(pageResolver("state.launching"),true,"launching");
 	equal(pageResolver("state.launched"),false,"launched");
-	equal(pageResolver("state.livepage"),false,"livepage");
+	equal(pageResolver("state.livepage"),false,"livepage"); // might run before onload....
 
 });
 
@@ -56,14 +57,13 @@ function set_cookie(doc,id,value,expires) {
 
 test('HTML head is scanned correctly', function() {
 	var essential = Resolver('essential'),
-		queueHead = essential('queueHead'),
 		enhancedResolver = Resolver("document::essential"),
 		pageResolver = Resolver("page"),
 		translations = Resolver("translations"),
 		HTMLElement = Resolver("essential::HTMLElement::");
 
 	set_cookie(document,"test-locale","en-US");
-	queueHead(document,false);
+	Resolver("document").queueHead(false);
 	equal(document.defaultLang,"en","Default lang english"); //TODO defaultLocale in translations instead?
 	equal(translations("defaultLocale"),"en-US","Default locale english"); // guess it can't be tested...
 	equal(pageResolver("state.lang"),"en","Page state lang English");
@@ -83,14 +83,14 @@ test('HTML head is scanned correctly', function() {
 	set_cookie(doc,"test-locale","fr-FR");
 	set_cookie(document,"test-locale","fr-FR"); // funny browser behavior, hack it
 	var r = Resolver(doc);
-	queueHead(doc,false);
+	Resolver("document").queueHead(false);
 	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
 	equal(r("essential.lang",null),"fr","Document lang French");
 	equal(r("essential.locale",null),"fr-FR","Document locale French");
 
 	set_cookie(doc,"test-locale","de-CH");
 	set_cookie(document,"test-locale","de-CH"); // funny browser behavior, hack it
-	queueHead(doc,false);
+	Resolver("document").queueHead(false);
 	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
 	equal(r("essential.lang",null),"de","Document lang Deutsch");
 	equal(r("essential.locale",null),"de-CH","Document locale Schweizer Deutch");

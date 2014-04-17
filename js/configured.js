@@ -1,4 +1,4 @@
-Resolver("essential::queueHead::")(document);
+Resolver("document").queueHead)();
 
 Resolver("essential::ApplicationConfig::").restrict({ "singleton":true, "lifecycle":"page" });
 
