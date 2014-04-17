@@ -1,2 +1,2 @@
 
-alert("Protected Application Starting");
+//alert("Protected Application Starting");
