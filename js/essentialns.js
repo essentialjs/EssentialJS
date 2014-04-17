@@ -1157,7 +1157,7 @@
 */
 
 	// roles that have a prepare handler can tweak the original DOM content
-	function prepareDomWithRole() {
+	Resolver.docMethod("prepareDomWithRole", function() {
 
 		var pageResolver = Resolver("page"),
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
@@ -1173,7 +1173,7 @@
 				}
 			}
 		}
-	}
+	});
 
 	function branchDescs(el) {
 		var descs = [];
@@ -1202,18 +1202,6 @@
 		//TODO clearInterval(placement.broadcaster) ?
 	};
 
-	function instantiatePageSingletons()
-	{
-		for(var i=0,g; g = Generator.restricted[i]; ++i) {
-			if (g.info.lifecycle == "page") { // TODO  && g.info.existing[g.info.identifier(..)] == undefined
-				g();
-			}
-		}
-	}
-	essential.set("instantiatePageSingletons",instantiatePageSingletons);
-
-
-
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 	var _readyFired = _essentialTesting;
 
@@ -1229,8 +1217,8 @@
 
 		try {
 			//TODO ap config _queueAssets
-			instantiatePageSingletons();
-			prepareDomWithRole();
+			Generator.instantiateSingletons("page");
+			this.prepareDomWithRole();
 			//TODO flag module "dom" as ready
 		}
 		catch(ex) {

@@ -114,6 +114,7 @@ Resolver.config = function(el,script) {
 !function() {
 	var essential = Resolver("essential"),
 		HTMLElement = essential("HTMLElement"),
+		HTMLScriptElement = essential("HTMLScriptElement"),
 		addEventListeners = essential("addEventListeners");
 
 	function addHeadScript(text,doc) {
@@ -243,14 +244,14 @@ Resolver.config = function(el,script) {
 	Resolver.docMethod("setModuleLoaded",function(name,loaded) {
 		this.set(["essential","modules",name,"loaded"], loaded==undefined? true:loaded);
 		this.reflectModules();
-		if (document.body) essential("instantiatePageSingletons")();
+		if (document.body) Generator.instantiateSingletons("page");
 	});
 
 	Resolver.docMethod("setResourceAvailable",function(name,available) {
 		if (this.namespace.essential.resources[name] == undefined) t
 		this.set(["essential","resources",name,"available"], available==undefined? true:available);
 		this.reflectModules();
-		if (document.body) essential("instantiatePageSingletons")();
+		if (document.body) Generator.instantiateSingletons("page"); // perhaps move to common place
 	});
 
 	Resolver.docMethod("reflectModules", function() {

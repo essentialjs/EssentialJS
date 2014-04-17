@@ -25,6 +25,7 @@ test("Document Resolver", function() {
 	ok(Resolver("document::essential.bodySealed::"),"Sealed the body before page is loaded");
 });
 
+// before head is finished
 test("Page Resolver",function(){
 	// parts are obsolete
 
@@ -52,7 +53,8 @@ function set_cookie(doc,id,value,expires) {
     doc.cookie = id+"="+encodeURI(value)+(expires||"")+"; path=/";
 }
 
-test('HTML head is scanned correctly', function() {
+// sealing head like library does
+test('HTML head is scanned & sealed correctly', function() {
 	var essential = Resolver('essential'),
 		enhancedResolver = Resolver("document::essential"),
 		pageResolver = Resolver("page"),
@@ -64,6 +66,9 @@ test('HTML head is scanned correctly', function() {
 	equal(document.defaultLang,"en","Default lang english"); //TODO defaultLocale in translations instead?
 	equal(translations("defaultLocale"),"en-US","Default locale english"); // guess it can't be tested...
 	equal(pageResolver("state.lang"),"en","Page state lang English");
+
+	Resolver("document").seal(false);
+	ok(!pageResolver("state.loading"),"Finished loading after sealing head with no links");
 });
 
 var INIT_PAGE_STATE	= {
@@ -80,7 +85,7 @@ var INIT_PAGE_STATE	= {
 	"launched": false
 };
 
-test('roles are enhanced when no page state is preset',function() {
+test('roles are enhanced when DOM is ready',function() {
 
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
 		DescriptorQuery = Resolver("essential::DescriptorQuery::"),

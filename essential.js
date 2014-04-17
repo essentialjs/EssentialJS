@@ -1504,6 +1504,15 @@ function Generator(mainConstr,options)
 	return generator;
 };
 
+Generator.instantiateSingletons	= function(lc)
+{
+	for(var i=0,g; g = Generator.restricted[i]; ++i) {
+		if (g.info.lifecycle == lc) { // TODO  && g.info.existing[g.info.identifier(..)] == undefined
+			g();
+		}
+	}
+};
+
 /* List of generators that have been restricted */
 Generator.restricted = [];
 Generator.ObjectGenerator = Generator(Object);
@@ -2677,7 +2686,7 @@ Generator.discardRestricted = function()
 */
 
 	// roles that have a prepare handler can tweak the original DOM content
-	function prepareDomWithRole() {
+	Resolver.docMethod("prepareDomWithRole", function() {
 
 		var pageResolver = Resolver("page"),
 			handlers = pageResolver("handlers"), enabledRoles = pageResolver("enabledRoles");
@@ -2693,7 +2702,7 @@ Generator.discardRestricted = function()
 				}
 			}
 		}
-	}
+	});
 
 	function branchDescs(el) {
 		var descs = [];
@@ -2722,18 +2731,6 @@ Generator.discardRestricted = function()
 		//TODO clearInterval(placement.broadcaster) ?
 	};
 
-	function instantiatePageSingletons()
-	{
-		for(var i=0,g; g = Generator.restricted[i]; ++i) {
-			if (g.info.lifecycle == "page") { // TODO  && g.info.existing[g.info.identifier(..)] == undefined
-				g();
-			}
-		}
-	}
-	essential.set("instantiatePageSingletons",instantiatePageSingletons);
-
-
-
 	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
 	var _readyFired = _essentialTesting;
 
@@ -2749,8 +2746,8 @@ Generator.discardRestricted = function()
 
 		try {
 			//TODO ap config _queueAssets
-			instantiatePageSingletons();
-			prepareDomWithRole();
+			Generator.instantiateSingletons("page");
+			this.prepareDomWithRole();
 			//TODO flag module "dom" as ready
 		}
 		catch(ex) {

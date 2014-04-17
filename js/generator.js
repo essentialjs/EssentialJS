@@ -394,6 +394,15 @@ function Generator(mainConstr,options)
 	return generator;
 };
 
+Generator.instantiateSingletons	= function(lc)
+{
+	for(var i=0,g; g = Generator.restricted[i]; ++i) {
+		if (g.info.lifecycle == lc) { // TODO  && g.info.existing[g.info.identifier(..)] == undefined
+			g();
+		}
+	}
+};
+
 /* List of generators that have been restricted */
 Generator.restricted = [];
 Generator.ObjectGenerator = Generator(Object);
