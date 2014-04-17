@@ -24,6 +24,11 @@ test("Sub Document Creations",function() {
 
 });
 
+function set_cookie(doc,id,value,expires) {
+
+    doc.cookie = id+"="+encodeURI(value)+(expires||"")+"; path=/";
+}
+
 test("Document Creations",function() {
 	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
 
@@ -77,6 +82,37 @@ test("Document Creations",function() {
 	var doc = createHTMLDocument(spans);
 	equal(doc.body.innerHTML.toLowerCase().replace(/"/g,""),spans.replace(/"/g,""));
 });
+
+// TODO should this be tested against iframes ?
+test('HTML head is scanned correctly', function() {
+
+	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
+
+	//TODO can the domain be set for custom document? avoids conflicting cookies
+	var doc = createHTMLDocument([
+		'<!DOCTYPE html><html>',
+		'<head id="a1" attr="a1"><meta charset="utf-8">',
+		'<meta name="locale cookie" content="test-locale">',
+		'</head>',
+		'<body id="a2" attr="a2"></body>',
+		'</html>'].join(""));
+	// debugger;
+	set_cookie(doc,"test-locale","fr-FR");
+	set_cookie(document,"test-locale","fr-FR"); // funny browser behavior, hack it
+	var r = Resolver(doc);
+	Resolver(doc).queueHead(false);
+	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
+	equal(r("essential.lang",null),"fr","Document lang French");
+	equal(r("essential.locale",null),"fr-FR","Document locale French");
+
+	set_cookie(doc,"test-locale","de-CH");
+	set_cookie(document,"test-locale","de-CH"); // funny browser behavior, hack it
+	Resolver(doc).queueHead(false);
+	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
+	equal(r("essential.lang",null),"de","Document lang Deutsch");
+	equal(r("essential.locale",null),"de-CH","Document locale Schweizer Deutch");
+});
+
 
 test("HTMLElement construction",function(){
 	var HTMLElement = Resolver("essential::HTMLElement::");

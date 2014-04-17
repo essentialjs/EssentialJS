@@ -402,24 +402,23 @@ Resolver.config = function(el,script) {
 		if (doc.defaultLang == undefined) doc.defaultLang = doc.documentElement.lang;
 	}
 
-	Resolver("document").queueHead = function(addSeal) {
+	Resolver.docMethod("queueHead", function(addSeal) {
 		var doc = this.namespace, essential = doc.essential;
 		scanHead(doc);
-
-		this.reflectModules();
 
 		for(var n in essential.modules) {
 			essential.modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
 		if (addSeal !== false) addHeadScript('Resolver("document").seal();',doc);
-	}
+
+		// this.reflectModules();	
+	});
 
 	Resolver.docMethod("seal",function(sealBody) {
 		var essential = this.namespace.essential, doc = this.namespace;
 
 		if (! essential.headSealed) {
 			scanHead(doc);
-			this.reflectModules();
 			for(var n in essential.modules) {
 				essential.modules[n].queueHead("loading",document.documentElement.lang);
 			}		
@@ -429,12 +428,12 @@ Resolver.config = function(el,script) {
 			var scripts = doc.body.getElementsByTagName("script");
 			scanElements(doc,scripts); //TODO use doc.scripts instead?
 
-			this.reflectModules();
 			for(var n in essential.modules) {
 				essential.modules[n].queueHead("loading",document.documentElement.lang);
 			}		
 			essential.bodySealed = true;
 		}
+		this.reflectModules();
 	});
 
 	function textSelection(tags) {

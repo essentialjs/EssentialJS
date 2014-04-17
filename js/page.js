@@ -380,8 +380,6 @@
 		"lang": essentialRef("lang")
 		});
 
-	Resolver("document").reflectModules();
-
 	Resolver("translations").on("change bind","locale",function(ev) {
 		var s = ev.value.split("-");
 		if (s.length == 1) s = ev.value.split("_");

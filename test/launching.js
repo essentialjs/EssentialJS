@@ -30,21 +30,18 @@ test("Page Resolver",function(){
 
 	ok(Resolver.page,"Page resolver present")
 	equal(typeof Resolver.page("state"),"object")
-	// equal(typeof Resolver.page("config"),"object")
 
+	// debugger;
 	var pageResolver = Resolver("page");
-	// equal(pageResolver("config.launched.charset"),"utf-8");
-	// equal(pageResolver("config.login.charset"),"utf-8");
-	// equal(pageResolver("config.logo.charset"),"utf-8");
 
 	// default state
-	equal(pageResolver("state.loading"),false,"loading");
+	equal(pageResolver("state.loading"),true,"loading");
 	equal(pageResolver("state.authenticated"),true,"authenticated");
 	equal(pageResolver("state.authorised"),true,"authorised");
 	equal(pageResolver("state.connected"),true,"connected");
 	equal(pageResolver("state.configured"),true,"configured");
 	equal(pageResolver("state.fullscreen"),false,"fullscreen");
-	equal(pageResolver("state.launching"),true,"launching");
+	equal(pageResolver("state.launching"),false,"launching");
 	equal(pageResolver("state.launched"),false,"launched");
 	equal(pageResolver("state.livepage"),false,"livepage"); // might run before onload....
 
@@ -67,33 +64,6 @@ test('HTML head is scanned correctly', function() {
 	equal(document.defaultLang,"en","Default lang english"); //TODO defaultLocale in translations instead?
 	equal(translations("defaultLocale"),"en-US","Default locale english"); // guess it can't be tested...
 	equal(pageResolver("state.lang"),"en","Page state lang English");
-
-
-	var createHTMLDocument = Resolver("essential::createHTMLDocument::");
-
-	//TODO can the domain be set for custom document? avoids conflicting cookies
-	var doc = createHTMLDocument([
-		'<!DOCTYPE html><html>',
-		'<head id="a1" attr="a1"><meta charset="utf-8">',
-		'<meta name="locale cookie" content="test-locale">',
-		'</head>',
-		'<body id="a2" attr="a2"></body>',
-		'</html>'].join(""));
-	// debugger;
-	set_cookie(doc,"test-locale","fr-FR");
-	set_cookie(document,"test-locale","fr-FR"); // funny browser behavior, hack it
-	var r = Resolver(doc);
-	Resolver("document").queueHead(false);
-	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
-	equal(r("essential.lang",null),"fr","Document lang French");
-	equal(r("essential.locale",null),"fr-FR","Document locale French");
-
-	set_cookie(doc,"test-locale","de-CH");
-	set_cookie(document,"test-locale","de-CH"); // funny browser behavior, hack it
-	Resolver("document").queueHead(false);
-	equal(typeof r("essential","undefined"), "object","Custom Document Enhanced");
-	equal(r("essential.lang",null),"de","Document lang Deutsch");
-	equal(r("essential.locale",null),"de-CH","Document locale Schweizer Deutch");
 });
 
 var INIT_PAGE_STATE	= {
