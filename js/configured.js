@@ -8,11 +8,10 @@ Resolver("page").set("liveTimeout",60);
 Resolver("document").on("change","readyState",function(ev) {
 	switch(ev.value) {
 		case "loaded":
-			Resolver("essential::sealHead::")(win.document);
+			Resolver("document").seal(false);
 			break;
 
 		case "interactive":
-			Resolver("essential::sealBody::")(document);
 			Resolver("document")._ready();
 
 			var liveTimeout = Resolver("page::liveTimeout","null");
@@ -26,7 +25,6 @@ Resolver("document").on("change","readyState",function(ev) {
 			break;
 
 		case "complete":
-			Resolver("page").set("state.livepage",true);
 			Resolver("essential::sealBody::")(document);
 			Resolver("document")._load();
 			break;

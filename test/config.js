@@ -5,7 +5,7 @@ test('Config scripts in main HTML page', function() {
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	equal(document.readyState,"complete","Loading of the testing page done");
-	Resolver("essential::sealBody::")(document); // emulate configured behavior
+	Resolver("document").seal(true); // emulate configured behavior
 
 	ok(document.essential.headSealed,"The HEAD element sealed");
 	// debugger;

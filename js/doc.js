@@ -413,47 +413,32 @@ Resolver.config = function(el,script) {
 		for(var n in modules) {
 			modules[n].queueHead("preloading",doc.documentElement.lang);
 		}		
-		if (addSeal !== false) addHeadScript('Resolver("essential::sealHead::")(document);',doc);
+		if (addSeal !== false) addHeadScript('Resolver("document").seal();',doc);
 	}
 	essential.set("queueHead",queueHead);
 
-	function sealHead(doc) {
-		if (doc.essential && doc.essential.headSealed) return;
-		scanHead(doc);
-		// Resolver("page").set("state.preloading",false);
+	Resolver.docMethod("seal",function(sealBody) {
+		var essential = this.namespace.essential, doc = this.namespace;
 
-		Resolver(doc).reflectModules();
-		doc.essential.headSealed = true;
-		//?? headSealed,true
+		if (! essential.headSealed) {
+			scanHead(doc);
+			this.reflectModules();
+			for(var n in essential.modules) {
+				essential.modules[n].queueHead("loading",document.documentElement.lang);
+			}		
+			essential.headSealed = true;
+		}
+		if (sealBody && ! essential.bodySealed) {
+			var scripts = doc.body.getElementsByTagName("script");
+			scanElements(doc,scripts); //TODO use doc.scripts instead?
 
-		var modules = Resolver(doc)("essential.modules");
-		for(var n in modules) {
-			modules[n].queueHead("loading",document.documentElement.lang);
-		}		
-
-		var doc = doc || document, head = doc.head;
-
-		//TODO mark other scripts
-	}
-	essential.set("sealHead",sealHead);
-
-	// consider switch to sealDoc(doc,sealHead,sealBody)
-	// or docExec(doc,["sealHead","sealBody"]) perhaps a general resolver operation extension mechanism with a replay/record thing
-	function sealBody(doc) {
-		if (doc.essential && doc.essential.bodySealed) return;
-		sealHead(doc);
-		var scripts = doc.body.getElementsByTagName("script");
-		scanElements(doc,scripts); //TODO use doc.scripts instead?
-
-		Resolver(doc).reflectModules();
-		doc.essential.bodySealed = true;
-
-		var modules = Resolver(doc)("essential.modules");
-		for(var n in modules) {
-			modules[n].queueHead("loading",document.documentElement.lang);
-		}		
-	}
-	essential.set("sealBody",sealBody);
+			this.reflectModules();
+			for(var n in essential.modules) {
+				essential.modules[n].queueHead("loading",document.documentElement.lang);
+			}		
+			essential.bodySealed = true;
+		}
+	});
 
 	function textSelection(tags) {
 		var pass = {};

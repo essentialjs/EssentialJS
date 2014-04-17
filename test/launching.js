@@ -20,6 +20,9 @@ test("Document Resolver", function() {
 	equal(docResolver("essential.config.launched.charset"),"utf-8");
 	equal(docResolver("essential.config.login.charset"),"utf-8");
 	equal(docResolver("essential.config.logo.charset"),"utf-8");
+
+	ok(Resolver("document::essential.headSealed::"),"Sealed the head before page is loaded");
+	ok(Resolver("document::essential.bodySealed::"),"Sealed the body before page is loaded");
 });
 
 test("Page Resolver",function(){
@@ -126,10 +129,12 @@ test('roles are enhanced when no page state is preset',function() {
 	DescriptorQuery(div).queue(); // queue for enhancement
 
 	// DescriptorQuery(div)[0]._init();
-	pageResolver.set("state.livepage",true);
+	// debugger;
+	// pageResolver.set("state.livepage",true);
+	Resolver("document")._load();
 
 	equal(div.getAttribute("test321"),"321");
-	ok(! pageResolver("state.loading"), "loading is done on livepage by default");
+	ok(! pageResolver("state.loading"), "loading is done on document load by default");
 	ok(pageResolver("state.launching"), "after loading launching is automatically entered");
 	ok(! pageResolver("state.launched"), "it is up to the application to flag launching complete");
 	// ok(pageResolver("state.livepage"));

@@ -651,17 +651,14 @@
 
 	SubPage.prototype.loadedPageDone = function(text,lastModified) {
 		var doc = this.document = importHTMLDocument(text);
-		Resolver(doc);
+		Resolver(doc).seal(true);
 		this.uniquePageID = doc.uniquePageID;
-		// no queueHead, so preloading scripts are ignored
-		essential("sealHead")(doc);
-		essential("sealBody")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
-		this.prepareEnhance(); //TODO essential sealBody
+		this.prepareEnhance();
 		// DescriptorQuery(this.body).withBranch().queue();
 
 		if (this.requiredForLaunch) {
@@ -682,18 +679,15 @@
 	SubPage.prototype.parseHTML = function(text,text2) {
 		var head = (this.options && this.options["track main"])? '<meta name="track main" content="true">' : text2||'';
 		var doc = this.document = importHTMLDocument(head,text);
-		Resolver(doc);
+		Resolver(doc).seal(true);
 		this.uniquePageID = doc.uniquePageID;
-		// no queueHead, so preloading scripts are ignored
-		essential("sealHead")(doc);
-		essential("sealBody")(doc);
 		pageResolver.set(["pagesById",this.uniquePageID],this);
 		this.head = doc.head;
 		this.body = doc.body;
 		this.documentLoaded = true;
 
 		this.resolver.declare("handlers",pageResolver("handlers"));
-		this.prepareEnhance(); //TODO essential sealBody
+		this.prepareEnhance();
 		// DescriptorQuery(this.body).withBranch().queue();
 	};
 

@@ -1222,6 +1222,8 @@
 		if (_readyFired) return;
 		_readyFired = true;
 
+		this.seal(true);
+
 		//TODO only support stored in head, after that immediately load
 		Resolver.loadReadStored();
 
@@ -1236,7 +1238,12 @@
 		}
 	};
 
-	Resolver("document")._load = function() {};
+	Resolver("document")._load = function() {
+		this.seal(true);
+
+		Resolver("page").set("state.livepage",true);
+		this.reflectModules();
+	};
 
 	Resolver("document")._unload = function()
 	{
