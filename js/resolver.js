@@ -1083,6 +1083,7 @@ Resolver._docDefaults = function(resolver) {
 
     esn.inits = esn.inits || []; // init scripts
     esn.modules = esn.modules || {};
+    esn.resources = esn.resources || {};
     esn.templates = esn.templates || {};
     esn.descriptors = esn.descriptors || {};
 

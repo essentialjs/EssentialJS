@@ -100,8 +100,8 @@ var INIT_PAGE_STATE	= {
 	"connected": true,
 	"preloading": false,
 	"loading": true,
-	"loadingConfig": false,
-	"loadingScripts": false,
+	// "loadingConfig": false,
+	// "loadingScripts": false,
 	"configured": true,
 	"launching": false, 
 	"launched": false
@@ -169,8 +169,8 @@ test('Some states can be changed without instantiating ApplicationConfig',functi
 test("ApplicationConfig",function(){
 	// equal(document.body.stateful,undefined);
 
-	var configRequired = Resolver("essential::configRequired::");
-	var configLoaded = Resolver("essential::configLoaded::");
+	// var configRequired = Resolver("essential::configRequired::");
+	// var configLoaded = Resolver("essential::configLoaded::");
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::"),
 		pageResolver = Resolver("page");
 
@@ -203,9 +203,9 @@ test("ApplicationConfig",function(){
 
 
 	// wait for config files
-	configRequired("medic.conf");
+	// configRequired("medic.conf");
 
-	ok(ac.isPageState("loadingConfig"),"state loadingConfig");
+	// ok(ac.isPageState("loadingConfig"),"state loadingConfig");
 
 	equal(ac.state("launching"),false,"not launching");
 	equal(ac.state("launched"),false,"not launched");
@@ -216,10 +216,10 @@ test("ApplicationConfig",function(){
 	equal(ac.state("launched"),false,"not launched after setting authenticated");
 
 	// config file loaded
-	configLoaded("medic.conf");
+	// configLoaded("medic.conf");
 
-	ok(! ac.isPageState("loadingConfig"), "not launchingConfig");
-	ok(! ac.isPageState("loadingScripts"), "not loadingScripts");
+	// ok(! ac.isPageState("loadingConfig"), "not launchingConfig");
+	// ok(! ac.isPageState("loadingScripts"), "not loadingScripts");
 	equal(ac.state("launching"),false,"not launching");
 
 	Resolver("page").set("state.authorised",true);

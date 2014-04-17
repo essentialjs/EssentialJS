@@ -1131,18 +1131,17 @@
 	}
 
 	function flagLoaded() {
-		var name = this.getAttribute("data-module"), 
-			module = Resolver("document")(["essential","modules",name]);
+		var name = this.getAttribute("data-module"); 
 
 		setTimeout(function(){
-			module.setLoaded();
+			Resolver("document").setModuleLoaded(name,true);
 		},0);
 	}
 
 	function Module(name) {this.name=name;}
 
 	Module.prototype.scriptMarkup = function(subpage) {
-		var loaded = "Resolver('document')(['essential','modules',this.getAttribute('data-module')]).setLoaded();",
+		var loaded = "Resolver('document').setModuleLoaded(this.getAttribute('data-module'), true);",
 			attr = subpage? "" : " defer";
 		return '<script src="' + this.attrs.src + '" data-module="'+ this.name +'" onload="'+loaded+'"'+attr+'></'+'script>';
 	};
@@ -1150,7 +1149,7 @@
 	Module.prototype.addScript = function() {
 		document.write(this.scriptMarkup());
 		this.added = true;
-		console.log("added script",this.name);
+		// console.log("added script",this.name);
 	};
 
 	Module.prototype.addScriptAsync = function() {
@@ -1202,28 +1201,42 @@
 		var langOk = (lang && this.link.lang)? (this.link.lang == lang) : true; //TODO test on add script
 		if (this.attrs.stage==stage && langOk) this.addScript();
 	};
-	Module.prototype.setLoaded = function() {
-		this.loaded = true;
-		//TODO update pageResolver
-		Resolver("document").reflectModules();
+
+	Resolver.docMethod("setModuleLoaded",function(name,loaded) {
+		this.set(["essential","modules",name,"loaded"], loaded==undefined? true:loaded);
+		this.reflectModules();
 		if (document.body) essential("instantiatePageSingletons")();
-		console.log("loaded ",this.name);
-		//TODO perhaps more
-	};
+	});
+
+	Resolver.docMethod("setResourceAvailable",function(name,available) {
+		if (this.namespace.essential.resources[name] == undefined) t
+		this.set(["essential","resources",name,"available"], available==undefined? true:available);
+		this.reflectModules();
+		if (document.body) essential("instantiatePageSingletons")();
+	});
 
 	Resolver.docMethod("reflectModules", function() {
-		var modules = this.namespace.essential.modules;
-		var flags = { loadingScripts:false, launchingScripts:false };
+		var modules = this.namespace.essential.modules,
+			resources = this.namespace.essential.resources;
+		var flags = { loadingScripts:false, launchingScripts:false, loadingResources:false };
 		for(var n in modules) {
 			var m = modules[n];
 			if (m.attrs.type == "text/javascript" && m.added && !m.loaded) {
-				if (m.attrs.stage=="preloading") flags.loadingScripts = true;
+				if (m.attrs.stage=="preloading" || m.attrs.stage=="loading") flags.loadingScripts = true;
 				else flags[m.attrs.stage + "Scripts"] = true;
 			}
 			//TODO other types of modules
 		}
+		for(var n in resources) {
+			var r = resources[n];
+			if (r.required && (!r.available || !r.loaded)) {
+				flags.loadingResources = true;
+			}
+		}
 
-		Resolver("page::state").mixin(flags);
+		this.set("essential.loading", flags.loadingScripts || flags.loadingResources);
+		// Maybe/Maybe not, if (!flags.loadingScripts && !flags.loadingResources) this.callInits();
+		//TODO set loading/launching
 	});
 
 	function queueModule(link,attrs) {

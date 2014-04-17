@@ -648,19 +648,6 @@
 		};
 	};
 
-	function configRequired(url)
-	{
-		pageResolver.set(["state","loadingConfig"],true);
-		pageResolver.set(["state","loadingConfigUrl",url],true);
-	}
-	essential.set("configRequired",configRequired);
-
-	function configLoaded(url)
-	{
-		pageResolver.set(["state","loadingConfigUrl",url],false);
-	}
-	essential.set("configLoaded",configLoaded);
-
 
 	function _DialogAction(actionName) {
 		this.actionName = actionName;

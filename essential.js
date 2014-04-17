@@ -1100,6 +1100,7 @@ Resolver._docDefaults = function(resolver) {
 
     esn.inits = esn.inits || []; // init scripts
     esn.modules = esn.modules || {};
+    esn.resources = esn.resources || {};
     esn.templates = esn.templates || {};
     esn.descriptors = esn.descriptors || {};
 
@@ -4311,18 +4312,17 @@ Resolver.config = function(el,script) {
 	}
 
 	function flagLoaded() {
-		var name = this.getAttribute("data-module"), 
-			module = Resolver("document")(["essential","modules",name]);
+		var name = this.getAttribute("data-module"); 
 
 		setTimeout(function(){
-			module.setLoaded();
+			Resolver("document").setModuleLoaded(name,true);
 		},0);
 	}
 
 	function Module(name) {this.name=name;}
 
 	Module.prototype.scriptMarkup = function(subpage) {
-		var loaded = "Resolver('document')(['essential','modules',this.getAttribute('data-module')]).setLoaded();",
+		var loaded = "Resolver('document').setModuleLoaded(this.getAttribute('data-module'), true);",
 			attr = subpage? "" : " defer";
 		return '<script src="' + this.attrs.src + '" data-module="'+ this.name +'" onload="'+loaded+'"'+attr+'></'+'script>';
 	};
@@ -4330,7 +4330,7 @@ Resolver.config = function(el,script) {
 	Module.prototype.addScript = function() {
 		document.write(this.scriptMarkup());
 		this.added = true;
-		console.log("added script",this.name);
+		// console.log("added script",this.name);
 	};
 
 	Module.prototype.addScriptAsync = function() {
@@ -4382,28 +4382,42 @@ Resolver.config = function(el,script) {
 		var langOk = (lang && this.link.lang)? (this.link.lang == lang) : true; //TODO test on add script
 		if (this.attrs.stage==stage && langOk) this.addScript();
 	};
-	Module.prototype.setLoaded = function() {
-		this.loaded = true;
-		//TODO update pageResolver
-		Resolver("document").reflectModules();
+
+	Resolver.docMethod("setModuleLoaded",function(name,loaded) {
+		this.set(["essential","modules",name,"loaded"], loaded==undefined? true:loaded);
+		this.reflectModules();
 		if (document.body) essential("instantiatePageSingletons")();
-		console.log("loaded ",this.name);
-		//TODO perhaps more
-	};
+	});
+
+	Resolver.docMethod("setResourceAvailable",function(name,available) {
+		if (this.namespace.essential.resources[name] == undefined) t
+		this.set(["essential","resources",name,"available"], available==undefined? true:available);
+		this.reflectModules();
+		if (document.body) essential("instantiatePageSingletons")();
+	});
 
 	Resolver.docMethod("reflectModules", function() {
-		var modules = this.namespace.essential.modules;
-		var flags = { loadingScripts:false, launchingScripts:false };
+		var modules = this.namespace.essential.modules,
+			resources = this.namespace.essential.resources;
+		var flags = { loadingScripts:false, launchingScripts:false, loadingResources:false };
 		for(var n in modules) {
 			var m = modules[n];
 			if (m.attrs.type == "text/javascript" && m.added && !m.loaded) {
-				if (m.attrs.stage=="preloading") flags.loadingScripts = true;
+				if (m.attrs.stage=="preloading" || m.attrs.stage=="loading") flags.loadingScripts = true;
 				else flags[m.attrs.stage + "Scripts"] = true;
 			}
 			//TODO other types of modules
 		}
+		for(var n in resources) {
+			var r = resources[n];
+			if (r.required && (!r.available || !r.loaded)) {
+				flags.loadingResources = true;
+			}
+		}
 
-		Resolver("page::state").mixin(flags);
+		this.set("essential.loading", flags.loadingScripts || flags.loadingResources);
+		// Maybe/Maybe not, if (!flags.loadingScripts && !flags.loadingResources) this.callInits();
+		//TODO set loading/launching
 	});
 
 	function queueModule(link,attrs) {
@@ -5304,17 +5318,12 @@ _ElementPlacement.prototype._computeIE = function(style)
 		"online": true, //TODO update
 		"preloading": false,
 		"loading": true,
-		"loadingConfig": false,
-		"loadingScripts": false,
-		"launchingScripts": false,
 		"configured": true,
 		"fullscreen": false,
 		"launching": false, 
 		"launched": false,
 
-		"lang": essentialRef("lang"),
-
-		"loadingConfigUrl": {}
+		"lang": essentialRef("lang")
 		});
 
 	Resolver("document").reflectModules();
@@ -5503,41 +5512,8 @@ _ElementPlacement.prototype._computeIE = function(style)
 		this._prep(this.body,{});
 	};
 
-	//TODO remove
-	function updateScripts(doc,state) {
-		function addScript(rel) {
-			for(var n in state.loadingScriptsUrl) {
-				var link = state.loadingScriptsUrl[n];
-				if (link && link.rel == rel && !link.added) {
-					HTMLScriptElement(link.attrs);
-					link.added = true;
-				}
-			}
-		}
-
-
-		if (! state.loading) { 
-			if (state.authenticated && state.launching) addScript("protected"); 
-		}
-	}
-
 	_Scripted.prototype._queueAssets = function() {
 		//TODO additional links queue in modules
-	};
-
-	pageResolver.on("change","state.loadingConfigUrl",onLoadingConfig);
-
-	function onLoadingConfig(ev) {
-		var loadingConfigUrl = this("state.loadingConfigUrl"), loadingConfig = false;
-			
-		for(var url in loadingConfigUrl) {
-			if (loadingConfigUrl[url]) loadingConfig = true;
-		}
-		this.set("state.loadingConfig",loadingConfig);
-		if (ev.value==false) {
-			// finished loading a config
-			if (document.body) essential("instantiatePageSingletons")();
-		}
 	};
 
 
@@ -7538,19 +7514,6 @@ _ElementPlacement.prototype._computeIE = function(style)
 			renderText: renderSelector
 		};
 	};
-
-	function configRequired(url)
-	{
-		pageResolver.set(["state","loadingConfig"],true);
-		pageResolver.set(["state","loadingConfigUrl",url],true);
-	}
-	essential.set("configRequired",configRequired);
-
-	function configLoaded(url)
-	{
-		pageResolver.set(["state","loadingConfigUrl",url],false);
-	}
-	essential.set("configLoaded",configLoaded);
 
 
 	function _DialogAction(actionName) {

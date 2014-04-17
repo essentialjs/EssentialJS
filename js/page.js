@@ -372,17 +372,12 @@
 		"online": true, //TODO update
 		"preloading": false,
 		"loading": true,
-		"loadingConfig": false,
-		"loadingScripts": false,
-		"launchingScripts": false,
 		"configured": true,
 		"fullscreen": false,
 		"launching": false, 
 		"launched": false,
 
-		"lang": essentialRef("lang"),
-
-		"loadingConfigUrl": {}
+		"lang": essentialRef("lang")
 		});
 
 	Resolver("document").reflectModules();
@@ -571,41 +566,8 @@
 		this._prep(this.body,{});
 	};
 
-	//TODO remove
-	function updateScripts(doc,state) {
-		function addScript(rel) {
-			for(var n in state.loadingScriptsUrl) {
-				var link = state.loadingScriptsUrl[n];
-				if (link && link.rel == rel && !link.added) {
-					HTMLScriptElement(link.attrs);
-					link.added = true;
-				}
-			}
-		}
-
-
-		if (! state.loading) { 
-			if (state.authenticated && state.launching) addScript("protected"); 
-		}
-	}
-
 	_Scripted.prototype._queueAssets = function() {
 		//TODO additional links queue in modules
-	};
-
-	pageResolver.on("change","state.loadingConfigUrl",onLoadingConfig);
-
-	function onLoadingConfig(ev) {
-		var loadingConfigUrl = this("state.loadingConfigUrl"), loadingConfig = false;
-			
-		for(var url in loadingConfigUrl) {
-			if (loadingConfigUrl[url]) loadingConfig = true;
-		}
-		this.set("state.loadingConfig",loadingConfig);
-		if (ev.value==false) {
-			// finished loading a config
-			if (document.body) essential("instantiatePageSingletons")();
-		}
 	};
 
 
