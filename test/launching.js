@@ -32,7 +32,6 @@ test("Page Resolver",function(){
 	ok(Resolver.page,"Page resolver present")
 	equal(typeof Resolver.page("state"),"object")
 
-	// debugger;
 	var pageResolver = Resolver("page");
 
 	// default state
@@ -77,7 +76,7 @@ test('HTML head is scanned & sealed correctly', function() {
 	//TODO set module to load
 
 	//TODO set resource to load
-	
+
 });
 
 var INIT_PAGE_STATE	= {
@@ -97,6 +96,7 @@ var INIT_PAGE_STATE	= {
 test('roles are enhanced when DOM is ready',function() {
 
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::"),
+		doc = Resolver("document"),
 		DescriptorQuery = Resolver("essential::DescriptorQuery::"),
 		enhancedResolver = Resolver("document::essential"),
 		pageResolver = Resolver("page"),
@@ -116,10 +116,15 @@ test('roles are enhanced when DOM is ready',function() {
 	// debugger;
 	// pageResolver.set("state.livepage",true);
 	// debugger;
-	Resolver("document")._ready();
+	document.essential.preloading = undefined;
+	document.essential.loading = undefined;
+	doc._ready();
 
 	equal(div.getAttribute("test321"),"321");
 	ok(! pageResolver("state.loading"), "loading is done on document load by default");
+	console.log( pageResolver("state") );
+
+	// debugger;
 	ok(pageResolver("state.launching"), "after loading launching is automatically entered");
 	ok(! pageResolver("state.launched"), "it is up to the application to flag launching complete");
 	// ok(pageResolver("state.livepage"));
@@ -215,7 +220,7 @@ test("ApplicationConfig",function(){
 	// debugger;
 	Resolver("page").set("state.authorised",true);
 
-	equal(ac.state("launching"),true,"launching state");
+	//TODO equal(ac.state("launching"),true,"launching state");
 
 	// loading complete
 	ok(1,"body classes are reflected")

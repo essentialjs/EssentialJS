@@ -977,6 +977,18 @@
 	}
 	EnhancedDescriptor.enhanceUnfinished = enhanceUnfinishedElements;
 
+	function appInits() {
+		if (document.body) {
+			Generator.instantiateSingletons("page");
+			Resolver.document.callInits();
+		}
+		enhanceUnfinishedElements();
+	}
+
+	Resolver("document").on("change","essential.loading",function(ev) {
+		pageResolver.set("state.loading",ev.value);
+	});
+
 	pageResolver.on("change","state", onStateChange);
 
 	function onStateChange(ev) {
@@ -986,14 +998,9 @@
 				if (ev.value) {
 					var ap = ApplicationConfig();
 
-					if (!b.loadingScripts && !b.loadingConfig) {
-						--ev.inTrigger;
-						this.set("state.loading",false);
-						++ev.inTrigger;
-					} else {
-						ap.doInitScripts();
-						enhanceUnfinishedElements();
-					}
+					Resolver.document.callInits();
+					enhanceUnfinishedElements();
+
 					if (_activeAreaName) {
 						activateArea(_activeAreaName);
 					} else {
@@ -1002,38 +1009,25 @@
 					}
 				}
 				break;
-			case "loadingScripts":
-			case "loadingConfig":
-				//console.log("loading",this("state.loading"),this("state.loadingScripts"),this("state.loadingConfig"))
-				--ev.inTrigger;
-				this.set("state.loading",b.loadingScripts || b.loadingConfig);
-				++ev.inTrigger;
-				break;
-
-			case "preloading":
-				updateScripts(document,b);
-				break;
 
 			case "loading":
 				if (ev.value == false) {
-					updateScripts(document,b);
-					var ap = ApplicationConfig();
-					if (document.body) essential("instantiatePageSingletons")();
-					ap.doInitScripts();	
-					enhanceUnfinishedElements();
+					appInits();
 					if (window.widget) widget.notifyContentIsReady(); // iBooks widget support
 					if (b.configured && b.authenticated 
 						&& b.authorised && b.connected && !b.launched) {
 						this.set("state.launching",true);
 						// do the below as recursion is prohibited
-						if (document.body) essential("instantiatePageSingletons")();
+						if (document.body) Generator.instantiateSingletons("page");
 						enhanceUnfinishedElements();
 					}
 				} 
+				else return; // temp fix for setting loading = true during tests
 				break;
 			case "authenticated":
 				if (b.livepage) {
-					updateScripts(document,b);
+					Resolver("document").reflectModules();
+					// updateScripts(document,b);
 					var ap = ApplicationConfig();
 					if (b.authenticated) activateArea(ap.getAuthenticatedArea());
 					else activateArea(ap.getIntroductionArea());
@@ -1044,40 +1038,47 @@
 				if ( !b.loading && b.configured && b.authenticated 
 					&& b.authorised && b.connected && !b.launched) {
 					this.set("state.launching",true);
-
-					var ap = ApplicationConfig();
-
-					// do the below as recursion is prohibited
-					if (document.body) essential("instantiatePageSingletons")();
-					ap.doInitScripts();	
-					enhanceUnfinishedElements();
+					appInits();
 				}
 				break;			
 			case "launching":
+				if (ev.value == true) {
+					appInits();
+				}
+				break;
+				//TODO autoLaunch on launchingScripts changing
 			case "launched":
 				if (ev.value == true) {
-					var ap = ApplicationConfig();
-
-					if (document.body) essential("instantiatePageSingletons")();
-					ap.doInitScripts();	
-					enhanceUnfinishedElements();
-					if (ev.symbol == "launched" && b.requiredPages == 0) this.set("state.launching",false);
+					appInits();
+					if (b.requiredPages == 0) this.set("state.launching",false);
+				} else {
+					Resolver("essential::EnhancedDescriptor.discardAll::")(); //TODO allow marking elements that survive unlaunch
 				}
 				break;
 			case "requiredPages":
 				if (ev.value == 0 && !b.launching) {
 					this.set("state.launching",false);
 				}
-				break
+				break;
 			case "lang":
 				document.documentElement.lang = ev.value;
 				break;
 			
 			default:
 				if (b.loading==false && b.launching==false && b.launched==false) {
-					if (document.body) essential("instantiatePageSingletons")();
-				}
+					if (document.body) Generator.instantiateSingletons("page");
+				} 
 		}
+
+		if (ev.symbol == "launching" && b.launching && b.authenticated) {
+			//TODO only do if not already done.
+			var modules = essentialRef("modules");
+			for(var n in modules) {
+				modules[n].queueHead("authenticated",document.head.lang);
+			}		
+		}
+
+		//TODO switch to launched when all resources & modules required are loaded
 
 		// should this be configurable in the future?
         if (b.launched && (!b.authorised || !b.authenticated) && b.autoUnlaunch !== false) {

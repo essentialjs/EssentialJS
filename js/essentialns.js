@@ -349,6 +349,7 @@
 	// map of uniqueID referenced (TODO array for performance/memory?)
 	var enhancedElements = essential.declare("enhancedElements",{});
 
+	//TODO Resolver("document::essential.unfinished::")
 	var unfinishedElements = essential.declare("unfinishedElements",{});
 
 	// map of uniqueID referenced
@@ -1215,6 +1216,7 @@
 			//TODO ap config _queueAssets
 			Generator.instantiateSingletons("page");
 			this.prepareDomWithRole();
+			if (!this.namespace.loading) EnhancedDescriptor.enhanceUnfinished();
 			//TODO flag module "dom" as ready
 		}
 		catch(ex) {

@@ -73,22 +73,55 @@
 	}
 
 	function frontend_launching() {
+		//TODO apply secondary templates
 		//TODO you can enable things here just before app is launched
 	}
 
 	// manage the loading of the application
 	pageState.on("change",function(ev){
-		if (ev.symbol == "loading" && ev.value == false) {
-			// finish the loading of the frontend, now that scripts and config is loaded.
-			if (pageState("configured")==false) frontend_post_loading();
-			pageState.set("configured",true);
+		switch(ev.symbol) {
+			case "loading":
+				if (ev.value == false) {
+					// finish the loading of the frontend, now that scripts and config is loaded.
+					if (pageState("configured")==false) frontend_post_loading();
+					pageState.set("configured",true);
+				}
+				break;
+			case "launching":
+				if (ev.value == true) {
+					frontend_launching();
+					// give app and rendering time to settle
+					var awaiting = setInterval(function() {
+						var all = true, modules = Resolver("page::modules::");
+						for(var n in modules) {
+							if (modules[n] === null || modules === false) all = false;
+						}
+						if (all) {
+							pageState.set("launched",true);
+							pageState.set("launching",false);
+							pageConnection.set("status","");
+							pageConnection.set("loadingProgress","");
+							clearInterval(awaiting);
+						}
+					},100);
+					setTimeout(function(){
+					},100);
+				}
+				break;
 		}
-		if (ev.symbol == "launching" && ev.value == true) {
-			frontend_launching();
-			// give app and rendering time to settle
-			setTimeout(function(){
-				pageState.set("launched",true);
-			},100);
+
+	});
+
+	pageModules.on("change",function(ev) {
+		var awaiting = [];
+		for(var n in ev.base) {
+			if (ev.base[n] === false || ev.base[n] === null) {
+				awaiting.push(n);
+			}
+		}
+		if (awaiting.length) {
+			pageConnection.set("status","awaiting");
+			pageConnection.set("loadingProgress","awaiting: "+awaiting.join(" "));
 		}
 	});
 
