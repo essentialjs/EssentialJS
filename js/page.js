@@ -370,7 +370,7 @@
 		"authorised": true,
 		"connected": true,
 		"online": true, //TODO update
-		"preloading": false,
+		//"preloading": false,
 		"loading": true,
 		"configured": true,
 		"fullscreen": false,
