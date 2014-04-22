@@ -8762,7 +8762,6 @@ Resolver("document").on("change","readyState",function(ev) {
 			break;
 
 		case "complete":
-			Resolver("essential::sealBody::")(document);
 			Resolver("document")._load();
 			break;
 	}
