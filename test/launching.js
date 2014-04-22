@@ -56,6 +56,7 @@ function set_cookie(doc,id,value,expires) {
 // sealing head like library does
 test('HTML head is scanned & sealed correctly', function() {
 	var essential = Resolver('essential'),
+		docEssential = Resolver("document::essential::"),
 		enhancedResolver = Resolver("document::essential"),
 		pageResolver = Resolver("page"),
 		translations = Resolver("translations"),
@@ -67,8 +68,16 @@ test('HTML head is scanned & sealed correctly', function() {
 	equal(translations("defaultLocale"),"en-US","Default locale english"); // guess it can't be tested...
 	equal(pageResolver("state.lang"),"en","Page state lang English");
 
+	// debugger;
+	docEssential.preloading = undefined;
+	docEssential.loading = undefined;
 	Resolver("document").seal(false);
 	ok(!pageResolver("state.loading"),"Finished loading after sealing head with no links");
+
+	//TODO set module to load
+
+	//TODO set resource to load
+	
 });
 
 var INIT_PAGE_STATE	= {
@@ -106,7 +115,8 @@ test('roles are enhanced when DOM is ready',function() {
 	// DescriptorQuery(div)[0]._init();
 	// debugger;
 	// pageResolver.set("state.livepage",true);
-	Resolver("document")._load();
+	// debugger;
+	Resolver("document")._ready();
 
 	equal(div.getAttribute("test321"),"321");
 	ok(! pageResolver("state.loading"), "loading is done on document load by default");
@@ -202,6 +212,7 @@ test("ApplicationConfig",function(){
 	// ok(! ac.isPageState("loadingScripts"), "not loadingScripts");
 	equal(ac.state("launching"),false,"not launching");
 
+	// debugger;
 	Resolver("page").set("state.authorised",true);
 
 	equal(ac.state("launching"),true,"launching state");

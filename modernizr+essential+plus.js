@@ -2736,21 +2736,20 @@ Generator.discardRestricted = function()
 		//TODO clearInterval(placement.broadcaster) ?
 	};
 
-	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-	var _readyFired = _essentialTesting;
-
 	Resolver("document")._ready = function()
 	{
-		if (_readyFired) return;
-		_readyFired = true;
+		this._readyFired = true;
+
+		this.seal(true);
 
 		//TODO only support stored in head, after that immediately load
 		Resolver.loadReadStored();
 
 		try {
 			//TODO ap config _queueAssets
-			instantiatePageSingletons();
-			prepareDomWithRole();
+			Generator.instantiateSingletons("page");
+			this.prepareDomWithRole();
+			// if (!this.namespace.loading) unfinished
 			//TODO flag module "dom" as ready
 		}
 		catch(ex) {
@@ -2759,6 +2758,7 @@ Generator.discardRestricted = function()
 	};
 
 	Resolver("document")._load = function() {
+		this._loadFired = true;
 		this.seal(true);
 
 		Resolver("page").set("state.livepage",true);

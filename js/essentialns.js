@@ -1202,13 +1202,9 @@
 		//TODO clearInterval(placement.broadcaster) ?
 	};
 
-	var _essentialTesting = !!document.documentElement.getAttribute("essential-testing");
-	var _readyFired = _essentialTesting;
-
 	Resolver("document")._ready = function()
 	{
-		if (_readyFired) return;
-		_readyFired = true;
+		this._readyFired = true;
 
 		this.seal(true);
 
@@ -1227,6 +1223,7 @@
 	};
 
 	Resolver("document")._load = function() {
+		this._loadFired = true;
 		this.seal(true);
 
 		Resolver("page").set("state.livepage",true);

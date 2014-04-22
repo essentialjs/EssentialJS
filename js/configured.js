@@ -12,7 +12,7 @@ Resolver("document").on("change","readyState",function(ev) {
 			break;
 
 		case "interactive":
-			Resolver("document")._ready();
+			if (! Resolver("document")._readyFired) Resolver("document")._ready();
 
 			var liveTimeout = Resolver("page::liveTimeout","null");
 			if (liveTimeout) {
