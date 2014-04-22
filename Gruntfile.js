@@ -272,7 +272,7 @@ module.exports = function(grunt) {
           // livereload: true,  // use with watch
           protocol: 'http',
           hostname: 'localhost',
-          port: 9000,
+          port: 5000,
           open: true
         } 
       }
