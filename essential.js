@@ -4738,12 +4738,21 @@ Resolver.config = function(el,script) {
 		var modules = this.namespace.essential.modules,
 			resources = this.namespace.essential.resources;
 		var flags = { loadingScripts:false, launchingScripts:false, loadingResources:false };
+		var authenticated = Resolver("page::state.authenticated::");
+
 		for(var n in modules) {
 			var m = modules[n];
-			if (m.attrs.type == "text/javascript" && m.added && !m.loaded) {
-				if (m.attrs.stage=="preloading" || m.attrs.stage=="loading") flags.loadingScripts = true;
-				else flags[m.attrs.stage + "Scripts"] = true;
-			}
+			if (m.attrs.type == "text/javascript") {
+				if (! m.added) {
+					if (m.attrs.stage == "authenticated" && authenticated) {
+						m.addScript();
+					}
+				} else if (!m.loaded) {
+					if (m.attrs.stage=="preloading" || m.attrs.stage=="loading") flags.loadingScripts = true;
+					else flags[m.attrs.stage + "Scripts"] = true;
+				}
+			} 
+
 			//TODO other types of modules
 		}
 		for(var n in resources) {

@@ -1,7 +1,8 @@
 (function(){
 	var essential = Resolver("essential"),
 		pageResolver = Resolver("page"),
-		pageState = pageResolver.reference("state"),
+		pageState = Resolver("page::state"),
+		pageConnection = Resolver("page::connection"),
 		pageModules = pageResolver.reference("modules");
 		templates = pageResolver("templates"),
 		ApplicationConfig = essential("ApplicationConfig"),
