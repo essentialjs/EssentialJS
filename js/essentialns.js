@@ -1331,7 +1331,7 @@
 		};
 	}
 
-	var id8Console = {
+	var ie8Console = {
 		log: _ielog("log"),
 		trace: _ielog("trace"),
 		debug: _ielog("debug"),
