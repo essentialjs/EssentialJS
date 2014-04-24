@@ -271,8 +271,8 @@ module.exports = function(grunt) {
           keepalive: false,
           // livereload: true,  // use with watch
           protocol: 'http',
-          hostname: 'localhost',
-          port: 5000,
+          hostname: '*',
+          port: 9000,
           open: true
         } 
       }
