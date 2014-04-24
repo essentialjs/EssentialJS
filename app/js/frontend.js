@@ -4,7 +4,7 @@
 		pageState = Resolver("page::state"),
 		pageConnection = Resolver("page::connection"),
 		pageModules = pageResolver.reference("modules");
-		templates = pageResolver("templates"),
+		templates = Resolver("document::essential.templates::"),
 		ApplicationConfig = essential("ApplicationConfig"),
 		EnhancedDescriptor = essential("EnhancedDescriptor"),
 		DescriptorQuery = essential("DescriptorQuery"),

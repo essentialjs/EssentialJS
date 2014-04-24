@@ -176,7 +176,7 @@
 
 		// template around the content
 		if (configTemplate) {
-			var template = Resolver("page::templates","null")([configTemplate]);
+			var template = Resolver("document::essential.templates","null")([configTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
@@ -189,7 +189,7 @@
 		var wrap = getChildWithRole(el,"content");
 		// content-template appended to role=content or element
 		if (contentTemplate) {
-			var template = Resolver("page::templates","null")([contentTemplate]);
+			var template = Resolver("document::essential.templates","null")([contentTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
@@ -432,7 +432,7 @@
 	function enhance_application(el,role,config,context) {
 		// template around the content
 		if (config.template) {
-			var template = Resolver("page::templates","null")([config.template]);
+			var template = Resolver("document::essential.templates","null")([config.template]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
@@ -557,7 +557,7 @@
 		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (template.selector) pageResolver.set(["templates",template.selector],template);
+		if (template.selector) Resolver("document").set(["essential","templates",template.selector],template);
 
 		return template;
 	}
@@ -1111,7 +1111,7 @@
 
 		var contentTemplate = config.template;
 		if (contentTemplate) {
-			var template = Resolver("page::templates","null")([contentTemplate]);
+			var template = Resolver("document::essential.templates","null")([contentTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);

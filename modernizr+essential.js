@@ -1,5 +1,5 @@
 /*!
-    Essential JavaScript - v0.5.0 ❀ http://essentialjs.com
+    Essential JavaScript - v0.6.0 ❀ http://essentialjs.com
     Copyright (c) 2011-2014 Henrik Vendelbo
 
     This program is free software: you can redistribute it and/or modify it under the terms of
@@ -5361,7 +5361,6 @@ Resolver.config = function(el,script) {
 
 	pageResolver.declare("enabledRoles",Resolver("document::essential.enabledRoles::"));
 	pageResolver.declare("handlers",Resolver("document::essential.handlers::"));
-	pageResolver.declare("templates",Resolver("document::essential.templates::"));
 
 	// Object.defineProperty(pageResolver.namespace,'handlers',{
 	// 	get: function() { return pageResolver.namespace.__handlers; },
@@ -7785,7 +7784,7 @@ Resolver.config = function(el,script) {
 
 		// template around the content
 		if (configTemplate) {
-			var template = Resolver("page::templates","null")([configTemplate]);
+			var template = Resolver("document::essential.templates","null")([configTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
@@ -7798,7 +7797,7 @@ Resolver.config = function(el,script) {
 		var wrap = getChildWithRole(el,"content");
 		// content-template appended to role=content or element
 		if (contentTemplate) {
-			var template = Resolver("page::templates","null")([contentTemplate]);
+			var template = Resolver("document::essential.templates","null")([contentTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
@@ -8041,7 +8040,7 @@ Resolver.config = function(el,script) {
 	function enhance_application(el,role,config,context) {
 		// template around the content
 		if (config.template) {
-			var template = Resolver("page::templates","null")([config.template]);
+			var template = Resolver("document::essential.templates","null")([config.template]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);
@@ -8166,7 +8165,7 @@ Resolver.config = function(el,script) {
 		var template = new Template(el,config);
 
 		// template can be anonymouse
-		if (template.selector) pageResolver.set(["templates",template.selector],template);
+		if (template.selector) Resolver("document").set(["essential","templates",template.selector],template);
 
 		return template;
 	}
@@ -8720,7 +8719,7 @@ Resolver.config = function(el,script) {
 
 		var contentTemplate = config.template;
 		if (contentTemplate) {
-			var template = Resolver("page::templates","null")([contentTemplate]);
+			var template = Resolver("document::essential.templates","null")([contentTemplate]);
 			if (template == null) return false;
 
 			var content = template.content.cloneNode(true);

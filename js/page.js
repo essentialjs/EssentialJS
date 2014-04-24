@@ -401,7 +401,6 @@
 
 	pageResolver.declare("enabledRoles",Resolver("document::essential.enabledRoles::"));
 	pageResolver.declare("handlers",Resolver("document::essential.handlers::"));
-	pageResolver.declare("templates",Resolver("document::essential.templates::"));
 
 	// Object.defineProperty(pageResolver.namespace,'handlers',{
 	// 	get: function() { return pageResolver.namespace.__handlers; },

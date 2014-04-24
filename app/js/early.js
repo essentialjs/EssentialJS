@@ -1,7 +1,7 @@
 (function(){
 	var essential = Resolver("essential"),
 		pageResolver = Resolver("page"),
-		templates = pageResolver("templates"),
+		templates = Resolver("document::essential.templates::"),
 		Layouter = essential("Layouter"),
 		Laidout = essential("Laidout"),
 		log = essential("console")();

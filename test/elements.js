@@ -797,7 +797,7 @@ test('Render Stream',function() {
 
 test('Template cloneNode',function() {
 
-	equal(typeof Resolver("page::templates::",undefined),"object");
+	equal(typeof Resolver("document::essential.templates::",undefined),"object");
 
 	var ApplicationConfig = Resolver("essential::ApplicationConfig::");
 	var EnhancedDescriptor = Resolver("essential::EnhancedDescriptor::");
@@ -810,9 +810,9 @@ test('Template cloneNode',function() {
 	var div = HTMLElement("div",{},"abc<span>def</span>");
 	var tplAbcNew = enhance_template(div,"template",{ id:"abc" });
 	ok(tplAbcNew);
-	equal(tplAbcNew,Resolver("page")(["templates","#abc"],"undefined"));
+	equal(tplAbcNew,Resolver("document")(["essential","templates","#abc"],"undefined"));
 
-	var tplAbc = Resolver("page")(["templates","#abc"],"undefined"); //TODO Resolver("templates")("#abc"); ?
+	var tplAbc = Resolver("document")(["essential","templates","#abc"],"undefined"); 
 	ok(tplAbc);
 	equal(tplAbc,tplAbcNew);
 
@@ -1044,14 +1044,14 @@ test("Define a list of templates using DescriptorQuery([])",function() {
 
 	ok(templates[0].instance == null);
 	ok(templates[1].instance == null);
-	equal(Resolver("page::templates","null")("#template-1"),null);
-	equal(Resolver("page::templates","null")("@template-2"),null);
+	equal(Resolver("document::essential.templates","null")("#template-1"),null);
+	equal(Resolver("document::essential.templates","null")("@template-2"),null);
 
 	templates.enhance();
 	ok(templates[0].instance);
 	ok(templates[1].instance);
-	equal(Resolver("page::templates","null")("#template-1"),templates[0].instance);
-	equal(Resolver("page::templates","null")("@template-2"),templates[1].instance);
+	equal(Resolver("document::essential.templates","null")("#template-1"),templates[0].instance);
+	equal(Resolver("document::essential.templates","null")("@template-2"),templates[1].instance);
 
 	var templates = DescriptorQuery("[role=template]");
 	equal(templates.length,2,"two templates defined");
