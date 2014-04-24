@@ -2368,7 +2368,7 @@ Generator.discardRestricted = function()
 		}
 
 		if (updateLayout || this.layout.queued) {
-			//proxyConsole.debug("Refresh element","w="+this.layout.width,"h="+this.layout.height, updateLayout?"updateLayout":"",this.layout.queued?"queued":"", this.role, this.uniqueID)
+			//proxyConsole().debug("Refresh element","w="+this.layout.width,"h="+this.layout.height, updateLayout?"updateLayout":"",this.layout.queued?"queued":"", this.role, this.uniqueID)
 			if (this.layoutHandler) this.layoutHandler(this.el,this.layout,this.instance);
 			var layouter = this.layouter, laidout = this.laidout;
 			if (layouter) layouter.layout(this.el,this.layout,this.laidouts()); //TODO pass instance
@@ -2749,7 +2749,7 @@ Generator.discardRestricted = function()
 			//TODO flag module "dom" as ready
 		}
 		catch(ex) {
-			proxyConsole.error("Failed to launch delayed assets and singletons",ex);
+			proxyConsole().error("Failed to launch delayed assets and singletons",ex);
 		}
 	};
 
