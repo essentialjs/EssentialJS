@@ -433,3 +433,37 @@ Laidout.variant("section",Generator(function(key,el,conf,parent) {
 	log.log("frontend.js finished load execution");
 
 })();
+
+function guessLocale() {
+    if (window.XMLHttpRequest) xmlhttp = new XMLHttpRequest();
+    else xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+
+    xmlhttp.open("GET","http://api.hostip.info",false);
+    // xmlhttp.open("GET","http://api.hostip.info/get_html.php",false);
+    xmlhttp.send();
+    // debugger;
+
+    var block = xmlhttp.responseXML.getElementsByTagName("Hostip")[0];
+    var ip = block.getElementsByTagName("ip")[0]; // ip
+    var city = block.getElementsByTagName("name")[0]; // city  gml:name
+    var country = block.getElementsByTagName("countryName")[0]; // SWITZERLAND
+    var countryCode = block.getElementsByTagName("countryAbbrev")[0]; // CH
+
+    //TODO early default language based on remote ip
+    Resolver("document").set("essential.defaultCountry",countryCode.textContent);
+
+    // ip.textContent countryCode.textContent
+
+    /*
+    hostipInfo = xmlhttp.responseText.split("\n");
+
+    for (i=0; hostipInfo.length >= i; i++) {
+        ipAddress = hostipInfo[i].split(":");
+        if ( ipAddress[0] == "IP" ) return ipAddress[1];
+    }
+    */
+
+    return false;
+}
+
+// if (localeChosen) setTimeout(guessLocale,100);
