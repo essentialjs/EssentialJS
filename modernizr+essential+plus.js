@@ -4938,6 +4938,8 @@ Resolver.config = function(el,script) {
 			pass[n.toUpperCase()] = true;
 		}
 
+		var MutableEvent = Resolver("essential::MutableEvent::");
+		
 		//TODO Resolver.enhanceDocument(doc)
 		//TODO test that this works, and register it regardless, just change the config
 		addEventListeners(document.documentElement, {
