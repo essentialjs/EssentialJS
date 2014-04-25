@@ -118,8 +118,8 @@
 			IE_HTML_SHIM = bits.join("");
 		}
 		if (markup.indexOf("</head>") >= 0 || markup.indexOf("</HEAD>") >= 0) {
-			markup = markup.replace("</head>","</head>" + IE_HTML_SHIM);
-			markup = markup.replace("</HEAD>","</HEAD>" + IE_HTML_SHIM);
+			markup = markup.replace("</head>", IE_HTML_SHIM + "</head>");
+			markup = markup.replace("</HEAD>", IE_HTML_SHIM + "</HEAD>");
 		} else {
 			markup = markup.replace("<body",IE_HTML_SHIM + "<body");
 			markup = markup.replace("<BODY",IE_HTML_SHIM + "<BODY");
