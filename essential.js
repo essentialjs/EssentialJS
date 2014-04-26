@@ -3149,7 +3149,21 @@ Generator.discardRestricted = function()
 
 	function _createStandardsDoc(markup) {
 		var doc;
-		if (/Gecko\/20/.test(navigator.userAgent)) {
+		if (/; MSIE /.test(navigator.userAgent)) {
+			markup = markup.replace(/<!doctype [^>]*>/,"").replace(/<!DOCTYPE [^>]*>/,"");
+			try {
+				doc = document.implementation.createHTMLDocument("");
+				doc.documentElement.innerHTML = markup;
+			} catch(ex) {
+				doc = document.implementation.createHTMLDocument("");
+				doc.open();
+				doc.write(markup);
+				doc.close();
+			}
+
+		} 
+		else if (/Gecko\/20/.test(navigator.userAgent)) {
+			markup = markup.replace(/<!doctype [^>]*>/,"").replace(/<!DOCTYPE [^>]*>/,"");
 			doc = document.implementation.createHTMLDocument("");
 			// if (hasDoctype) 
 				doc.documentElement.innerHTML = markup;
@@ -3213,6 +3227,8 @@ Generator.discardRestricted = function()
 	 */
 	function importHTMLDocument(head,body) {
 
+		//TODO callback when document is loaded
+
 		var doc = {}, // perhaps make DocumentFragment instead
 			markup = _combineHeadAndBody(head,body),
 			hasDoctype = markup.substring(0,9).toLowerCase() == "<!doctype";
@@ -3240,7 +3256,7 @@ Generator.discardRestricted = function()
 			doc.documentElement = ext.documentElement;
 			doc.nodeType = ext.nodeType;
 			doc.pseudoDocument = true;
-			doc.head = ext.head;
+			doc.body = _importNode(document,ext.head,true);
 			doc.body = _importNode(document,ext.body,true);
 
 			// markup = markup.replace("<head",'<washead').replace("</head>","</washead>");

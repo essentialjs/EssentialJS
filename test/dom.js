@@ -2,7 +2,6 @@ module("DOM API helpers");
 
 test("Sub Document Creations",function() {
 	var importHTMLDocument = Resolver("essential::importHTMLDocument::");
-
 	var doc = importHTMLDocument('<!DOCTYPE html><html><head id="a1" attr="a1"><meta charset="utf-8"></head><body id="a2" attr="a2"><div id="first-id"></div></body></html>');
 	ok(doc.uniqueID);
 	equal(doc.head.id,"a1");
@@ -18,8 +17,11 @@ test("Sub Document Creations",function() {
 			'<body id="a2" attr="a2"><header><h1></h1></header><article><section>section</section></article><footer>footer<q>q</q></footer></body></html>');
 	ok(doc.uniqueID);
 	equal(doc.body.childNodes[0].tagName.toLowerCase(),"header");	
+	equal(doc.body.childNodes[0].innerHTML.toLowerCase(), "<h1></h1>");
 	equal(doc.body.childNodes[1].tagName.toLowerCase(),"article");	
+	equal(doc.body.childNodes[1].innerHTML.toLowerCase(), "<section>section</section>");
 	equal(doc.body.childNodes[2].tagName.toLowerCase(),"footer");	
+	equal(doc.body.childNodes[2].innerHTML.toLowerCase(), "footer<q>q</q>");
 	equal(doc.body.childNodes.length,3);	
 
 });
