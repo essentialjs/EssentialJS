@@ -2043,6 +2043,8 @@ Generator.discardRestricted = function()
 
 	function EnhancedContext() {
 	}
+	essential.declare("EnhancedContext",EnhancedContext);
+
 	EnhancedContext.prototype.clear = function() {
 		this.instance = null;
 		this.placement = null;
