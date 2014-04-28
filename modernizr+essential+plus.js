@@ -7928,7 +7928,7 @@ Resolver.config = function(el,script) {
 			"click": dialog_button_click
 		},false);
 
-		return {};
+		return { el:el, wrap:wrap };
 	}
 	pageResolver.set("handlers.enhance.dialog",enhance_dialog);
 
