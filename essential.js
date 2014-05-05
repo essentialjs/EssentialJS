@@ -4521,6 +4521,8 @@ Resolver.docMethod("callInits",function() {
 	}
 });
 
+//TODO Resolver.document.essential.elementsWithConfig = [];
+
 /* 
 	Resolver.config(document,'declare(..); declare("..")');
 	var conf = Resolver.config(el)
