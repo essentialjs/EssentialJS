@@ -68,6 +68,30 @@ test("Loading config in html",function(){
 
 	//TODO css like syntax for data-role
 
+test("HEAD and BODY config",function() {
+
+	var forHead = Resolver.config(document.head);
+	ok(forHead == null);
+
+	var forBody = Resolver.config(document.body);
+	// ok(forBody == null);
+
+	Resolver.config(document,
+		'declare("head",{});'+
+		'declare("body",{});'+
+		'set("head.test","test");'+
+		'set("body.test","test");'
+	);
+
+	var forHead = Resolver.config(document.head);
+	ok(forHead);
+	equal(forHead.test, "test");
+
+	var forBody = Resolver.config(document.body);
+	ok(forBody);
+	equal(forBody.test, "test");
+});
+
 test("Application config using data-role",function() {
 	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 

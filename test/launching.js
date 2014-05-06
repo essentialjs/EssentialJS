@@ -112,13 +112,26 @@ test('roles are enhanced when DOM is ready',function() {
 	var div = HTMLElement("div",{ "role":"test321" },'');
 	DescriptorQuery(div).queue(); // queue for enhancement
 
+	window.TestBodyGenerator = sinon.spy();
+
+	Resolver.config(document,
+		'declare("body",{});'+
+		'declare("body.generator","TestBodyGenerator");'
+	);
+
 	// DescriptorQuery(div)[0]._init();
-	// debugger;
 	// pageResolver.set("state.livepage",true);
-	// debugger;
 	document.essential.preloading = undefined;
 	document.essential.loading = undefined;
+	// debugger;
 	doc._ready();
+
+	var bodyDesc = DescriptorQuery(document.body);
+	equal(bodyDesc.length,1);
+	ok(bodyDesc[0].conf);
+	equal(bodyDesc[0].conf.generator,"TestBodyGenerator");
+
+	//TODO enhance should do this by default, ok( TestBodyGenerator.called );
 
 	equal(div.getAttribute("test321"),"321");
 	ok(! pageResolver("state.loading"), "loading is done on document load by default");

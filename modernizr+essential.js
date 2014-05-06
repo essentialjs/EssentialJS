@@ -2755,6 +2755,12 @@ Generator.discardRestricted = function()
 			this.prepareDomWithRole();
 			if (!this.namespace.loading) EnhancedDescriptor.enhanceUnfinished();
 			//TODO flag module "dom" as ready
+
+			// body can now be configured in script
+			var body = this.namespace.body;
+			var conf = Resolver.config(body), role = body.getAttribute("role");
+			if (conf || role) EnhancedDescriptor(body,role,conf);
+
 		}
 		catch(ex) {
 			proxyConsole().error("Failed to launch delayed assets and singletons",ex);
@@ -4590,7 +4596,7 @@ Resolver.config = function(el,script) {
 		try {
 			script.call(context);
 		} catch(ex) {
-			Resolver("essential::console::")().error("Failed to parse application/config",s.text);
+			Resolver("essential::console::")().error("Failed to parse application/config",script.text);
 		}
 
 	} else {
@@ -5818,10 +5824,6 @@ Resolver.config = function(el,script) {
 		pageResolver.reflectStateOn(document.body,false);
 		this.prepareEnhance();
 		// DescriptorQuery(this.body).withBranch().queue();
-
-		// body can now be configured in script
-		var conf = Resolver.config(this.body), role = this.body.getAttribute("role");
-		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
 
 		this._markPermanents(); 
 		this.applied = true; // descriptors are always applied

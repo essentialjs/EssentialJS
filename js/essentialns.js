@@ -1220,6 +1220,12 @@
 			this.prepareDomWithRole();
 			if (!this.namespace.loading) EnhancedDescriptor.enhanceUnfinished();
 			//TODO flag module "dom" as ready
+
+			// body can now be configured in script
+			var body = this.namespace.body;
+			var conf = Resolver.config(body), role = body.getAttribute("role");
+			if (conf || role) EnhancedDescriptor(body,role,conf);
+
 		}
 		catch(ex) {
 			proxyConsole().error("Failed to launch delayed assets and singletons",ex);

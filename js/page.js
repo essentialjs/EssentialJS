@@ -836,10 +836,6 @@
 		this.prepareEnhance();
 		// DescriptorQuery(this.body).withBranch().queue();
 
-		// body can now be configured in script
-		var conf = Resolver.config(this.body), role = this.body.getAttribute("role");
-		if (conf || role)  EnhancedDescriptor(this.body,role,conf,false,this);
-
 		this._markPermanents(); 
 		this.applied = true; // descriptors are always applied
 		var descs = this.resolver("descriptors");

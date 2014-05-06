@@ -86,7 +86,7 @@ Resolver.config = function(el,script) {
 		try {
 			script.call(context);
 		} catch(ex) {
-			Resolver("essential::console::")().error("Failed to parse application/config",s.text);
+			Resolver("essential::console::")().error("Failed to parse application/config",script.text);
 		}
 
 	} else {
