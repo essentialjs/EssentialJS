@@ -8,12 +8,12 @@ function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-    var forDoc = false, forEl = false;
+    var forDoc = false, forEl = false, named = Resolver.nm;
 
 	switch(typeof(name_andor_expr)) {
 	case "undefined":
 		// Resolver()
-		return Resolver["default"];
+		return named["default"];
 		
 	case "string":
         var name_expr = name_andor_expr.split("::");
@@ -25,7 +25,7 @@ function Resolver(name_andor_expr,ns,options)
                 // Resolver("abc",null)
                 // Resolver("abc",{})
                 // Resolver("abc",{},{options})
-                return _resolver(name,ns,options,arguments.length==1 || ns); //TODO return namespace
+                return _resolver(name,ns,options,arguments.length==1 || ns);
 
             case 2: 
                 var _r = _resolver(name,ns,options,arguments.length==1 || ns);
@@ -42,7 +42,7 @@ function Resolver(name_andor_expr,ns,options)
             case 3: 
                 // Resolver("abc::def::")  returns value for expression
                 if (name_expr[2] == "") {
-                    return Resolver[name].get(expr,ns);
+                    return named[name].get(expr,ns);
 
                 // Resolver("abc::def::ghi")
                 } else {
@@ -60,15 +60,15 @@ function Resolver(name_andor_expr,ns,options)
                 case "null":
                 case "undefined":
                 case "throw":
-                    return Resolver[name].get(expr,ns);
+                    return named[name].get(expr,ns);
 
                 default:
                 case "reference":
-                    return Resolver[name].reference(expr)
+                    return named[name].reference(expr)
             }
-            return Resolver[name][call](expr);
+            return named[name][call](expr);
         }
-		return Resolver[name];
+		return named[name];
 
     case "function":
     case "object":
@@ -76,12 +76,12 @@ function Resolver(name_andor_expr,ns,options)
         // Resolver({},{options})
         forDoc = (name_andor_expr.nodeType === 9);
         forEl = (name_andor_expr.nodeType !== undefined && !forDoc);
-        if (name_andor_expr === window && Resolver.window) return Resolver.window;
+        if (name_andor_expr === window && named.window) return named.window;
         else if (forDoc) {
             var existing = Resolver.getByUniqueID(Resolver.forDoc,name_andor_expr);
             if (existing) return existing;
         }
-        //if (name_andor_expr === document && Resolver.document) return Resolver.document;
+        //if (name_andor_expr === document && named.document) return named.document;
         else if (forEl) {
             var existing = Resolver.getByUniqueID(Resolver.forEl,name_andor_expr);
             if (existing) return existing;
@@ -93,12 +93,12 @@ function Resolver(name_andor_expr,ns,options)
 
 
     function _resolver(name,ns,options,auto) {
-        if (Resolver[name] == undefined) {
+        if (named[name] == undefined) {
             if (!auto) return ns;
-            Resolver[name] = Resolver(ns || {},options || {});
-            Resolver[name].named = name;
+            named[name] = Resolver(ns || {},options || {});
+            named[name].named = name;
         }
-        return Resolver[name];
+        return named[name];
     }
 
 
@@ -238,7 +238,7 @@ function Resolver(name_andor_expr,ns,options)
 
     resolver.get = resolver;
     resolver.named = options.name;
-    if (options.name) Resolver[options.name] = resolver;
+    if (options.name) named[options.name] = resolver;
     resolver.namespace = arguments[0]; // should be possible to change to 'ns'
     resolver.references = { };
 
@@ -932,9 +932,9 @@ function Resolver(name_andor_expr,ns,options)
         return this;
 //       options = options || {};
 //       var name = options.name || this.named; 
-		// Resolver[name] = Resolver(ns,options);
-		// Resolver[name].named = name;
-		// return Resolver[name];
+		// named[name] = Resolver(ns,options);
+		// named[name].named = name;
+		// return named[name];
     };
 
     resolver.destroy = function()
@@ -965,6 +965,7 @@ function Resolver(name_andor_expr,ns,options)
     return resolver;
 }
 
+Resolver.nm = {}; // named resolvers
 Resolver.forEl = {}; // for unique elements
 Resolver.forDoc = {}; // for unique documents
 
@@ -1020,7 +1021,7 @@ Resolver.hasGenerator = function(subject) {
 };
 
 Resolver.exists = function(name) {
-    return this[name] != undefined;
+    return this.nm[name] != undefined;
 };
 
 

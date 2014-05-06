@@ -47,9 +47,10 @@ function onPageUnLoad(ev) {
 
 	Resolver("document")._unload();
 
-	for(var n in Resolver) {
-		if (typeof Resolver[n].destroy == "function") Resolver[n].destroy();
+	for(var n in Resolver.nm) {
+		if (typeof Resolver.nm[n].destroy == "function") Resolver.nm[n].destroy();
 	}
+	Resolver.nm = undefined;
 }
 if (window.addEventListener) window.addEventListener("unload",onPageUnLoad,false);
 else if (window.attachEvent) window.attachEvent("onunload",onPageUnLoad);

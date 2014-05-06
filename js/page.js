@@ -979,7 +979,7 @@
 	function appInits() {
 		if (document.body) {
 			Generator.instantiateSingletons("page");
-			Resolver.document.callInits();
+			Resolver.nm.document.callInits();
 		}
 		enhanceUnfinishedElements();
 	}
@@ -997,7 +997,7 @@
 				if (ev.value) {
 					var ap = ApplicationConfig();
 
-					Resolver.document.callInits();
+					Resolver.nm.document.callInits();
 					enhanceUnfinishedElements();
 
 					if (_activeAreaName) {

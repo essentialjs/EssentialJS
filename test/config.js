@@ -19,7 +19,7 @@ test('Config scripts in main HTML page', function() {
 */
 
 test("Loading config in html",function(){
-	ok(Resolver.document && Resolver.document.namespace.essential.config);
+	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	Resolver.config(document,
@@ -69,7 +69,7 @@ test("Loading config in html",function(){
 	//TODO css like syntax for data-role
 
 test("Application config using data-role",function() {
-	ok(Resolver.document && Resolver.document.namespace.essential.config);
+	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
@@ -88,7 +88,7 @@ test("Application config using data-role",function() {
 });
 
 test("Application config using script",function(){
-	ok(Resolver.document && Resolver.document.namespace.essential.config);
+	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	Resolver.config(document,
@@ -108,7 +108,7 @@ test("Application config using script",function(){
 });
 
 test("Application config using script and data-role",function(){
-	ok(Resolver.document && Resolver.document.namespace.essential.config);
+	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
 	Resolver.config(document,
@@ -127,7 +127,7 @@ test("Application config using script and data-role",function(){
 });
 
 test("More complex data-role definitions",function() {
-	ok(Resolver.document && Resolver.document.namespace.essential.config);
+	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
@@ -195,7 +195,7 @@ test("More complex data-role definitions",function() {
 
 
 test("Layout/laidout",function(){
-	ok(Resolver.document && Resolver.document.namespace.essential.config);
+	ok(Resolver.nm.document && Resolver.nm.document.namespace.essential.config);
 	ok(1,"TODO config for unmatched elements skipped");
 
 });

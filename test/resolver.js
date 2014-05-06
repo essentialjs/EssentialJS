@@ -8,7 +8,7 @@ test ("Anonymous resolver",function(){
 
 test ("Default resolver",function() {
 	var d = Resolver();
-	equal(Resolver["default"],d);
+	equal(Resolver.nm["default"],d);
 	equal(Resolver("default"),d);
 
 	equal(Resolver("::"),d.namespace);
@@ -40,7 +40,7 @@ test ("Named resolver",function(){
 
 	var r = Resolver("C"); // create blank one 
 	equal(typeof r, "function");
-	equal(Resolver["default"].named,"default");
+	equal(Resolver.nm["default"].named,"default");
 
 	ok(Resolver.exists("C"))
 })
@@ -150,17 +150,17 @@ test('Namespace and package creation',function(){
 	var tools = Resolver()("my.tools");
 
 	Resolver().set("my.tools.X",5);
-	equal(Resolver["default"].namespace.my.tools.X,5, "Set number worked");
-	equal(Resolver["default"].namespace.my.shapes, shapes, "two level package works");
-	equal(Resolver["default"].namespace.my.tools, tools, "two level package works");
-	equal(typeof Resolver["default"].namespace.my, "object", "top level package created");
+	equal(Resolver.nm["default"].namespace.my.tools.X,5, "Set number worked");
+	equal(Resolver.nm["default"].namespace.my.shapes, shapes, "two level package works");
+	equal(Resolver.nm["default"].namespace.my.tools, tools, "two level package works");
+	equal(typeof Resolver.nm["default"].namespace.my, "object", "top level package created");
 
 	Resolver("default").override({});
-	equal(Resolver["default"].namespace.my, undefined, "namespace replaced");
-	equal(Resolver["default"].named,"default");
+	equal(Resolver.nm["default"].namespace.my, undefined, "namespace replaced");
+	equal(Resolver.nm["default"].named,"default");
 
 	Resolver()("my")
-	notEqual(Resolver["default"].namespace.my, undefined, "namespace replaced");
+	notEqual(Resolver.nm["default"].namespace.my, undefined, "namespace replaced");
 
 })
 

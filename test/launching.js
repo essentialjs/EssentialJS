@@ -13,8 +13,8 @@ module('launching page', {
 //TODO application/init in main page and sub page
 
 test("Document Resolver", function() {
-	ok(Resolver.document,"Document resolver present");
-	equal(Resolver.document.namespace,document,"Document resolver is for document");
+	ok(Resolver.nm.document,"Document resolver present");
+	equal(Resolver.nm.document.namespace,document,"Document resolver is for document");
 
 	var docResolver = Resolver("document");
 	equal(docResolver("essential.config.launched.charset"),"utf-8");
@@ -29,8 +29,8 @@ test("Document Resolver", function() {
 test("Page Resolver",function(){
 	// parts are obsolete
 
-	ok(Resolver.page,"Page resolver present")
-	equal(typeof Resolver.page("state"),"object")
+	ok(Resolver.nm.page,"Page resolver present")
+	equal(typeof Resolver.nm.page("state"),"object")
 
 	var pageResolver = Resolver("page");
 
@@ -312,8 +312,8 @@ if (location.protocol == "http:") asyncTest("Launch in Window",function() {
 	win.focus();
 	win.onload = function(){
 		var doc = win.document;
-		equal(win.Resolver.window.namespace, win, "Launched window");
-		equal(win.Resolver.document.namespace, doc, "Launched document");
+		equal(win.Resolver.nm.window.namespace, win, "Launched window");
+		equal(win.Resolver.nm.document.namespace, doc, "Launched document");
 		ok(win.Resolver("document::essential.headSealed::"),"Sealed the head before page is loaded");
 		ok(win.Resolver("document::essential.bodySealed::"),"Sealed the body before page is loaded");
 
