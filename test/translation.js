@@ -3,7 +3,8 @@ module("Translation tests");
 test("Default locale",function() {
 	var translations = Resolver("translations");
 
-	equal(translations("locale"),navigator.language || navigator.userLanguage);
+	// safari uses default locale in lowercase
+	equal(translations("locale").toLowerCase(),(navigator.language || navigator.userLanguage).toLowerCase());
 
 	translations.setLocales(["en-US","en-GB"]);
 	ok(translations(["locales","en-us"]));

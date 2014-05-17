@@ -2906,7 +2906,12 @@ Generator.discardRestricted = function()
 	essential.declare("htmlEscape",htmlEscape);
 
 	var translations = Resolver("translations",{});
-	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en"
+	var defaultLocale = window.navigator.userLanguage || window.navigator.language || "en-US"
+	var dl = defaultLocale.split("-");
+	if (dl.length>1) {
+		dl[1] = dl[1].toUpperCase();
+		defaultLocale = dl.join("-");
+	}
 	translations.declare("defaultLocale",defaultLocale);
 	translations.declare("locale",defaultLocale);
 
