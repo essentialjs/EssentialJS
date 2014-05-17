@@ -398,7 +398,7 @@ function Resolver(name_andor_expr,ns,options)
                 }
         	} else {
 				var base = _resolve(baseNames,null,onundefinedSet);
-                var oldValue = base[symbol];
+                var oldValue = base[leafName];
 
                 if (_setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value,oldValue);
@@ -433,7 +433,7 @@ function Resolver(name_andor_expr,ns,options)
                 return base[symbol];
         	} else {
                 var base = _resolve(baseNames,null,onundefinedSet);
-                var oldValue = base[symbol];
+                var oldValue = base[leafName];
 
                 if (base[leafName] === undefined) {
                     if (_setValue(value,baseNames,base,leafName)) {

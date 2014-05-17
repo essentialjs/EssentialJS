@@ -440,6 +440,20 @@ test('Resolver reference',function(){
 	equal(num.get(),5);
 	equal(resolver("num"),5);
 
+	var lastEv;
+	resolver.set("x.y","xy");
+	var xy = resolver.reference("x.y");
+	xy.on("change",function(ev) {
+		lastEv = ev;
+	})
+	equal(xy(), "xy");
+	xy.set("222");
+	equal(xy(), "222");
+	equal(lastEv.value,"222");
+	equal(lastEv.oldValue,"xy");
+
+	//TODO test declare oldValue as well
+
 	var r = resolver.reference("r");
 	r.set({});
 	strictEqual(r(),resolver("r"));
