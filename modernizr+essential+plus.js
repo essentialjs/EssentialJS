@@ -2330,7 +2330,8 @@ Generator.discardRestricted = function()
 			this._updateLayouterContext();
 			var varLayouter = Layouter.variants[this.conf.layouter];
 			if (varLayouter) {
-				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent);
+				// future API change parent parameter removed
+				this.layouter = this.el.layouter = varLayouter.generator(key,this.el,this.conf,this.context.layouterParent,this.context);
 				if (this.context.layouterParent) sizingElements[this.uniqueID] = this; //TODO not sure this is needed, adds overhead
 				if (varLayouter.generator.prototype.hasOwnProperty("layout")) {
 					this.layout.enable = true;

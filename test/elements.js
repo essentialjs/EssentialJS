@@ -445,11 +445,13 @@ test('Enhance element with context',function() {
 
 });
 
-function _TestLayouter(key,el,config) {
+function _TestLayouter(key,el,config,parent,context) {
 	this.key = key;
 	this.type = config.layouter;
 	this.el = el;
 	this.config = config;
+	this.parent = parent;
+	this.context = context;
 
 	this.sizing = {};
 }
@@ -522,6 +524,10 @@ test("Enhance layouter element",function() {
 	// ok(desc.layout.queued);
 	
 	equal(_TestLayouter.prototype.sizingElement.callCount,1);
+
+	equal(desc.layouter.context,desc.context);
+	equal(desc.layouter.parent,undefined);
+
 	// var emDesc = page.resolver("descriptors")[page.body.firstChild.nextSibling.firstChild.uniqueID];
 	ok(layouterSpan.firstChild.uniqueID);
 	var emDesc = EnhancedDescriptor.all[layouterSpan.firstChild.uniqueID];
