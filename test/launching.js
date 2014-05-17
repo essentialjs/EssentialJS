@@ -186,7 +186,7 @@ test("ApplicationConfig",function(){
 	pageResolver.reference("state").mixin(INIT_PAGE_STATE);
 
 	var ac = ApplicationConfig();
-	// equal(document.body.stateful,Resolver.page);
+	// equal(document.body.stateful,Resolver.nm.page);
 	equal( Resolver("page")(["pagesById",ac.uniquePageID]), ac );
 
 	// application/config
