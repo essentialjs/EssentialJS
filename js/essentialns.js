@@ -1212,9 +1212,6 @@
 
 		this.seal(true);
 
-		//TODO only support stored in head, after that immediately load
-		Resolver.loadReadStored();
-
 		try {
 			//TODO ap config _queueAssets
 			Generator.instantiateSingletons("page");

@@ -849,43 +849,90 @@ if (window.localStorage) test("Resolver entries locally stored",function(){
 	localStorage.clear(); 
 
 	// load
-	var demoSession = Resolver("::demo-session");
+	var demoSession = Resolver("::demo-local");
 	demoSession.declare(false);
 	demoSession.stored("load change unload","local");
 
-	Resolver.loadReadStored();
 	equal(demoSession(),false,"Entry with no stored value is set to declared value");
 
-	localStorage.setItem("resolver.default#demo-session","true");
-	Resolver.loadReadStored();
+	localStorage.setItem("resolver.default#demo-local","true");
+	equal(demoSession(), false, "There is no listening mechanism on localStorage");
+	demoSession.stored("load","local");
 	equal(demoSession(),true,"Entry with stored value is set to stored value");
 
-	localStorage.setItem("resolver.default#demo-session",'{"a":"A"}');
-	Resolver.loadReadStored();
+	localStorage.setItem("resolver.default#demo-local",'{"a":"A"}');
+	demoSession.stored("load","local");
 	deepEqual(demoSession(),{a:'A'},"Entry with stored value is set to stored value");
 
 	// change
 	demoSession.set("abc");
-	equal(localStorage["resolver.default#demo-session"],'"abc"');
+	equal(localStorage["resolver.default#demo-local"],'"abc"');
 
 	demoSession.set("");
-	equal(localStorage["resolver.default#demo-session"],'""');
+	equal(localStorage["resolver.default#demo-local"],'""');
 
 	demoSession.set(false);
-	equal(localStorage["resolver.default#demo-session"],'false');
+	equal(localStorage["resolver.default#demo-local"],'false');
 
 	demoSession.set({});
-	equal(localStorage["resolver.default#demo-session"],'{}');
+	equal(localStorage["resolver.default#demo-local"],'{}');
 
 	// unload
 	demoSession.set({});
-	localStorage.removeItem("resolver.default#demo-session");
+	localStorage.removeItem("resolver.default#demo-local");
 	Resolver.unloadWriteStored();
-	equal(localStorage["resolver.default#demo-session"],'{}');
+	equal(localStorage["resolver.default#demo-local"],'{}');
 
 	// test options.id, options.name
 
 	//TODO switch off the stored config
+
+	localStorage.clear(); 
+});
+
+if (window.sessionStorage) test("Resolver entries session storage",function(){
+	sessionStorage.clear(); 
+
+	// load
+	var demoSession = Resolver("::demo-session");
+	demoSession.declare(false);
+	demoSession.stored("load change unload","session");
+
+	equal(demoSession(),false,"Entry with no stored value is set to declared value");
+
+	sessionStorage.setItem("resolver.default#demo-session","true");
+	equal(demoSession(), false, "There is no listening mechanism on sessionStorage");
+	demoSession.stored("load","session");
+	equal(demoSession(),true,"Entry with stored value is set to stored value");
+
+	sessionStorage.setItem("resolver.default#demo-session",'{"a":"A"}');
+	demoSession.stored("load","session");
+	deepEqual(demoSession(),{a:'A'},"Entry with stored value is set to stored value");
+
+	// change
+	demoSession.set("abc");
+	equal(sessionStorage["resolver.default#demo-session"],'"abc"');
+
+	demoSession.set("");
+	equal(sessionStorage["resolver.default#demo-session"],'""');
+
+	demoSession.set(false);
+	equal(sessionStorage["resolver.default#demo-session"],'false');
+
+	demoSession.set({});
+	equal(sessionStorage["resolver.default#demo-session"],'{}');
+
+	// unload
+	demoSession.set({});
+	sessionStorage.removeItem("resolver.default#demo-session");
+	Resolver.unloadWriteStored();
+	equal(sessionStorage["resolver.default#demo-session"],'{}');
+
+	// test options.id, options.name
+
+	//TODO switch off the stored config
+
+	sessionStorage.clear(); 
 });
 
 test("Resolver entries server stored",function(){

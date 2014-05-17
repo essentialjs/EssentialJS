@@ -536,158 +536,39 @@ function Resolver(name_andor_expr,ns,options)
 			if (parentRef) parentRef._callListener(type,baseNames,_resolve(baseNames,null),leafName,value);
 	    }
 
-        function read_session(ref) {
-            var v = sessionStorage[this.id];
-            if (v != undefined) {
-                var value;
-                try { value = JSON.parse(v); }
-                catch(ex) {} //TODO consider parse issue
-                ref.set(value);
-            }
-        }
-        function read_local(ref) {
-            var v;
-            if (window.localStorage) v = localStorage[this.id];
-            if (v != undefined) {
-                var value;
-                try { value = JSON.parse(v); }
-                catch(ex) {} //TODO consider parse issue
-                ref.set(value);
-            }
-        }
-        function read_cookie(ref) {
-            function readIt(id) {
-                var wEQ = id + "=";
-                var ca = document.cookie.split(';');
-                for(var i=0;i < ca.length;i++) {
-                    var c = ca[i];
-                    while (c.charAt(0)==' ') c = c.substring(1,c.length);
-                    if (c.indexOf(wEQ) == 0) return c.substring(wEQ.length,c.length);
-                }
-                return undefined;
-            }
-            var value = readIt(this.id);
-            if (value != undefined) {
-                value = decodeURI(value);
-                if (this.options.encoding == "string") {
-                    // just use the string
-                } else {
-                    try { value = JSON.parse(value); }
-                    catch(ex) {} //TODO consider parse issue
-                }
-
-                //TODO type coercion
-                ref._reading_cookie = true;
-                ref.set(value);
-                delete ref._reading_cookie;
-            }
-        }
-
-        function store_session(ref) {
-            //TODO if (ref is defined)
-            try {
-                sessionStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) {} //TODO consider feedback
-        }
-        function store_local(ref) {
-            //TODO if (ref is defined)
-            try {
-                localStorage[this.id] = JSON.stringify(ref());
-            } catch(ex) { Resolver("essential::console::")().warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
-        }
-        function store_cookie(ref) {
-            if (ref._reading_cookie) return; //TODO only if same cookie
-
-            var value;
-            if (this.options.encoding == "string") {
-                // just use the string
-                value = encodeURI(ref());
-            } else {
-                try { value = JSON.stringify(encodeURI(ref())); }
-                catch(ex) {} //TODO consider parse issue
-            }
-            var days = this.options.days;
-
-            if (days) {
-                var date = new Date();
-                date.setTime(date.getTime()+(days*24*60*60*1000));
-                var expires = "; expires="+date.toGMTString();
-            }
-            else var expires = "";
-            document.cookie = this.id+"="+value+expires+"; path=/";
-
-            //TODO force an upload if this is unload
-            if (this.options.touchURL) {
-                //TODO reload script with url / frequency for uploading cookies
-            }
-
-            //TODO different name? reloadResource
-            if (this.options.touchScript) {
-                //TODO swap script with the id. If cachebuster param update timestamp
-                var script = document.getElementById(this.options.touchScript);
-                if (script) {
-                    var newScript = Resolver("essential::HTMLScriptElement::")(script);
-                    try {
-                        //TODO if (! state.unloading)
-                    script.parentNode.replaceChild(newScript,script);
-                    } catch(ex) {} // fails during unload
-                }
-            }
-        }
-
-        //TODO support server remote storage mechanism
-
         // type = change/load/unload
         // dest = local/session/cookie
         function stored(type,dest,options) {
             options = options || {};
+            var id = "resolver." + resolver.named + "#" + name;
+            if (options.id) id = options.id;
+            if (options.name) id = options.name;
+
             if (/change/.test(type)) {
                 if (this.storechanges == undefined) this.storechanges = {};
-                var id = "resolver." + resolver.named + "#" + name;
-                if (options.id) id = options.id;
-                if (options.name) id = options.name;
-                switch(dest) {
-                    case "session": 
-                        this.storechanges.session = { call: store_session, id:id, options: options }; break;
-                    case "local":
-                        this.storechanges.local = { call: store_local, id:id, options: options }; break;
-                    case "cookie":
-                        this.storechanges.cookie = { call: store_cookie, id:id, options: options }; break;
-                }
+                var todo = { storage: Resolver.storages[dest], id:id, options:options };
+                if (todo.storage) { todo.call = todo.storage.store; this.storechanges[dest] = todo; }
             }
             if (/^load| load/.test(type)) {
+                var todo = { storage: Resolver.storages[dest], id:id, options:options };
+                // read it straight away
+                if (todo.storage) { todo.call = todo.storage.read; todo.call(this); }
+
+                /* no load later should be needed
                 if (this.readloads == undefined) {
                     this.readloads = {};
                     Resolver.readloads.push(this);
                 }
-                var id = "resolver." + resolver.named + "#" + name;
-                if (options.id) id = options.id;
-                if (options.name) id = options.name;
-                switch(dest) {
-                    case "session": 
-                        this.readloads.session = { call: read_session, id:id, options: options }; break;
-                    case "local":
-                        this.readloads.local = { call: read_local, id:id, options: options }; break;
-                    case "cookie":
-                        this.readloads.cookie = { call: read_cookie, id:id, options: options }; break;
-                }
+                if (todo.storage) this.readloads[dest] = todo;
+                */
             }
             if (/unload/.test(type)) {
                 if (this.storeunloads == undefined) {
                     this.storeunloads = {};
                     Resolver.storeunloads.push(this);
                 }
-                var id = "resolver." + resolver.named + "#" + name;
-                if (options.id) id = options.id;
-                if (options.name) id = options.name;
-                switch(dest) {
-                    case "session": 
-                        this.storeunloads.session = { call: store_session, id:id, options: options || {} }; break;
-                    case "local":
-                        this.storeunloads.local = { call: store_local, id:id, options: options || {} }; break;
-                    case "cookie":
-                        this.storeunloads.cookie = { call: store_cookie, id:id, options: options || {} }; break;
-                }
+                var todo = { storage: Resolver.storages[dest], id:id, options:options };
+                if (todo.storage) { todo.call = todo.storage.store; this.storeunloads[dest] = todo; }
             }
         }    
 
@@ -1011,16 +892,7 @@ Resolver.setByUniqueID = function(map,el,value) {
 };
 
 
-Resolver.readloads = [];
 Resolver.storeunloads = [];
-
-Resolver.loadReadStored = function() {
-    for(var i=0,ref; ref = Resolver.readloads[i]; ++i) {
-        for(var n in ref.readloads) {
-            ref.readloads[n].call(ref);
-        }
-    }
-};
 
 Resolver.unloadWriteStored = function() {
 
@@ -1111,6 +983,120 @@ Resolver._docDefaults = function(resolver) {
 
 // Resolver._setDocMethods = function(resolver) {
 // };
+
+Resolver.storages = {};
+
+Resolver.storages.session = {
+    read: function(ref) {
+        var v = sessionStorage[this.id];
+        if (v != undefined) {
+            var value;
+            try { value = JSON.parse(v); }
+            catch(ex) {} //TODO consider parse issue
+            ref.set(value);
+        }
+    },
+    store: function(ref) {
+        //TODO if (ref is defined)
+        try {
+            sessionStorage[this.id] = JSON.stringify(ref());
+        } catch(ex) {} //TODO consider feedback
+    }
+};
+
+
+Resolver.storages.local = {
+    read: function(ref) {
+        var v;
+        if (window.localStorage) v = localStorage[this.id];
+        if (v != undefined) {
+            var value;
+            try { value = JSON.parse(v); }
+            catch(ex) {} //TODO consider parse issue
+            ref.set(value);
+        }
+    },
+
+    store: function(ref) {
+        //TODO if (ref is defined)
+        try {
+            localStorage[this.id] = JSON.stringify(ref());
+        } catch(ex) { Resolver("essential::console::")().warn("Failed to read store_local = ",this.id,ex); } //TODO consider feedback
+    }
+};
+
+Resolver.storages.cookie = {
+    read: function(ref) {
+        function readIt(id) {
+            var wEQ = id + "=";
+            var ca = document.cookie.split(';');
+            for(var i=0;i < ca.length;i++) {
+                var c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(wEQ) == 0) return c.substring(wEQ.length,c.length);
+            }
+            return undefined;
+        }
+        var value = readIt(this.id);
+        if (value != undefined) {
+            value = decodeURI(value);
+            if (this.options.encoding == "string") {
+                // just use the string
+            } else {
+                try { value = JSON.parse(value); }
+                catch(ex) {} //TODO consider parse issue
+            }
+
+            //TODO type coercion
+            ref._reading_cookie = true;
+            ref.set(value);
+            delete ref._reading_cookie;
+        }
+    },
+
+    store: function(ref) {
+        if (ref._reading_cookie) return; //TODO only if same cookie
+
+        var value;
+        if (this.options.encoding == "string") {
+            // just use the string
+            value = encodeURI(ref());
+        } else {
+            try { value = JSON.stringify(encodeURI(ref())); }
+            catch(ex) {} //TODO consider parse issue
+        }
+        var days = this.options.days;
+
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime()+(days*24*60*60*1000));
+            var expires = "; expires="+date.toGMTString();
+        }
+        else var expires = "";
+        document.cookie = this.id+"="+value+expires+"; path=/";
+
+        //TODO force an upload if this is unload
+        if (this.options.touchURL) {
+            //TODO reload script with url / frequency for uploading cookies
+        }
+
+        //TODO different name? reloadResource
+        if (this.options.touchScript) {
+            //TODO swap script with the id. If cachebuster param update timestamp
+            var script = document.getElementById(this.options.touchScript);
+            if (script) {
+                var newScript = Resolver("essential::HTMLScriptElement::")(script);
+                try {
+                    //TODO if (! state.unloading)
+                script.parentNode.replaceChild(newScript,script);
+                } catch(ex) {} // fails during unload
+            }
+        }
+    }
+};
+
+//TODO support server remote storage mechanism
+
 
 Resolver({},{ name:"default" });
 Resolver(window, {name:"window"});
@@ -2741,9 +2727,6 @@ Generator.discardRestricted = function()
 		this._readyFired = true;
 
 		this.seal(true);
-
-		//TODO only support stored in head, after that immediately load
-		Resolver.loadReadStored();
 
 		try {
 			//TODO ap config _queueAssets
