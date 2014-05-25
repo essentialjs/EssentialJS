@@ -1010,10 +1010,6 @@ test("describe attributes",function() {
 
 	var HTMLElement = Resolver("essential::HTMLElement::");
 
-	var div = HTMLElement("div",{
-		"data-resolve":"text:a.b.c; text2:page::d.e; text3 : x.y; text4:    page::q.j;translate-prefix: com.data."
-	});
-
 	var policy = {
 		DECORATORS: {
 			"data-resolve": {
@@ -1021,6 +1017,23 @@ test("describe attributes",function() {
 			}
 		}
 	};
+	var div = HTMLElement("div", {
+		"data-resolve":"''"
+	});
+	var attrs = HTMLElement.fn.describeAttributes(div,policy);
+	ok(attrs["data-resolve"]);
+	ok(attrs["data-resolve"].error != undefined,"Quotes leading with invalid JSON flags error");
+
+	var div = HTMLElement("div", {
+		"data-resolve":"abc"
+	});
+	var attrs = HTMLElement.fn.describeAttributes(div,policy);
+	ok(attrs["data-resolve"]);
+	ok(attrs["data-resolve"].error != undefined,"No Quotes leading with invalid config flags error");
+
+	var div = HTMLElement("div",{
+		"data-resolve":"text:a.b.c; text2:page::d.e; text3 : x.y; text4:    page::q.j;translate-prefix: com.data."
+	});
 
 	var attrs = HTMLElement.fn.describeAttributes(div,policy);
 	ok(attrs["data-resolve"]);
@@ -1029,6 +1042,17 @@ test("describe attributes",function() {
 	equal(attrs["data-resolve"].props.text3,"x.y");
 	equal(attrs["data-resolve"].props.text4,"page::q.j");
 	equal(attrs["data-resolve"].props["translate-prefix"],"com.data.");
+
+	var div = HTMLElement("div", {
+		"data-resolve":"'text':'a.b.c', 'text2':'page::d.e','text3':'x.y'"
+	})
+	var attrs = HTMLElement.fn.describeAttributes(div,policy);
+	ok(attrs["data-resolve"]);
+	ok(attrs["data-resolve"].error == undefined,attrs["data-resolve"].error);
+	ok(attrs["data-resolve"].props,"JSON format parses without errors");
+	equal(attrs["data-resolve"].props.text,"a.b.c");
+	equal(attrs["data-resolve"].props.text2,"page::d.e");
+	equal(attrs["data-resolve"].props.text3,"x.y");
 });
 
 

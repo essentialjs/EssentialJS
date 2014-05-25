@@ -4562,10 +4562,10 @@ Resolver.config = function(el,script) {
 		// mixin the data-role
 		var dataRole = el.getAttribute("data-role");
 		if (dataRole) try {
-			config = config || {};
-			//TODO alternate CSS like syntax
-			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			for(var n in map) config[n] = map[n];
+				config = config || {};
+				//TODO alternate CSS like syntax
+				var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+				for(var n in map) config[n] = map[n];
 		} catch(ex) {
 			log.debug("Invalid config: ",dataRole,ex);
 			config["invalid-config"] = dataRole;
@@ -7291,10 +7291,13 @@ Resolver.config = function(el,script) {
 		var parts = value.split(";"), props = {};
 		for(var i=0,prop,part; part = parts[i]; ++i) {
 			prop = part.split(":");
+			if (prop.length<2) throw Error("Configuration definitions must be divided by colon.");
 			props[ prop.shift().replace(/ /g,"") ] = prop.join(":").replace(/^ +/,"");
 		}
 		return props;
 	}
+
+	var _singleQuotesRe = new RegExp("'","g");
 
 	/**
 	 * @param el Template Element with attributes
@@ -7318,7 +7321,15 @@ Resolver.config = function(el,script) {
 	        	
 	        	if (decorators[name].props) {
 	        		//TODO catch parse failure and flag it in mAttributes
-	        		mAttribute.props = parseProps(value);
+	        		try {
+		        		if (value.charAt(0) == "'" || value.charAt(0) == '"') {
+							mAttribute.props = JSON.parse("{" + value.replace(_singleQuotesRe,'"') + "}");
+		        		} else {
+			        		mAttribute.props = parseProps(value);
+		        		}
+	        		} catch(ex) {
+	        			mAttribute.error = ex.message;
+	        		}
 	        	}
 
 	        	// *entry:mapping references decoding

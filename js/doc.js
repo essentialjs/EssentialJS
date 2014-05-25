@@ -63,10 +63,10 @@ Resolver.config = function(el,script) {
 		// mixin the data-role
 		var dataRole = el.getAttribute("data-role");
 		if (dataRole) try {
-			config = config || {};
-			//TODO alternate CSS like syntax
-			var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-			for(var n in map) config[n] = map[n];
+				config = config || {};
+				//TODO alternate CSS like syntax
+				var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
+				for(var n in map) config[n] = map[n];
 		} catch(ex) {
 			log.debug("Invalid config: ",dataRole,ex);
 			config["invalid-config"] = dataRole;

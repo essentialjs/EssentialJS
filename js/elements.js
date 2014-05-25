@@ -404,10 +404,13 @@
 		var parts = value.split(";"), props = {};
 		for(var i=0,prop,part; part = parts[i]; ++i) {
 			prop = part.split(":");
+			if (prop.length<2) throw Error("Configuration definitions must be divided by colon.");
 			props[ prop.shift().replace(/ /g,"") ] = prop.join(":").replace(/^ +/,"");
 		}
 		return props;
 	}
+
+	var _singleQuotesRe = new RegExp("'","g");
 
 	/**
 	 * @param el Template Element with attributes
@@ -431,7 +434,15 @@
 	        	
 	        	if (decorators[name].props) {
 	        		//TODO catch parse failure and flag it in mAttributes
-	        		mAttribute.props = parseProps(value);
+	        		try {
+		        		if (value.charAt(0) == "'" || value.charAt(0) == '"') {
+							mAttribute.props = JSON.parse("{" + value.replace(_singleQuotesRe,'"') + "}");
+		        		} else {
+			        		mAttribute.props = parseProps(value);
+		        		}
+	        		} catch(ex) {
+	        			mAttribute.error = ex.message;
+	        		}
 	        	}
 
 	        	// *entry:mapping references decoding
