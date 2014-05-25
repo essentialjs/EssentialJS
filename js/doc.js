@@ -30,7 +30,8 @@ Resolver.docMethod("callInits",function() {
 	var conf = Resolver.config(el)
 */
 Resolver.config = function(el,script) {
-	var log = Resolver("essential::console::")();
+	var log = Resolver("essential::console::")(),
+		HTMLElement = Resolver("essential::HTMLElement::");
 	var _singleQuotesRe = new RegExp("'","g");
 
 
@@ -61,15 +62,14 @@ Resolver.config = function(el,script) {
 		if (el.nodeName == "HEAD" || el.nodeName == "BODY") config = mixinConfig(config,el.nodeName.toLowerCase());
 
 		// mixin the data-role
-		var dataRole = el.getAttribute("data-role");
-		if (dataRole) try {
-				config = config || {};
-				//TODO alternate CSS like syntax
-				var map = JSON.parse("{" + dataRole.replace(_singleQuotesRe,'"') + "}");
-				for(var n in map) config[n] = map[n];
-		} catch(ex) {
-			log.debug("Invalid config: ",dataRole,ex);
-			config["invalid-config"] = dataRole;
+		var dataRole = HTMLElement.fn.describeAttributes(el,Resolver.config.ROLE_POLICY)["data-role"];
+		if (dataRole) {
+			config = config || {};
+			if (dataRole.error) {
+				log.debug("Invalid config: ",dataRole);
+				config["invalid-config"] = dataRole.error;
+			}
+			else for(var n in dataRole.props) config[n] = dataRole.props[n];
 		}
 
 		return config;
@@ -110,6 +110,14 @@ Resolver.config = function(el,script) {
 			} 
 		}
 		return _getRoleConfig(docResolver, el);
+	}
+};
+
+Resolver.config.ROLE_POLICY = {
+	DECORATORS: {
+		"data-role": {
+			props: true
+		}
 	}
 };
 
