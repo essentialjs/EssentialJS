@@ -587,6 +587,10 @@ function Resolver(name_andor_expr,ns,options)
         get.trigger = trigger;
         get.stored = stored;
 
+        for(var n in Resolver.method.fn) {
+            get[n] = Resolver.method.fn[n];
+        }
+
         get.listeners = listeners || _makeListeners();
 
 	    function _callListener(type,names,base,symbol,value,oldValue) {
@@ -803,7 +807,13 @@ function Resolver(name_andor_expr,ns,options)
         }
     	var ref = onundefined? name+":"+onundefined : name;
     	var entry = this.references[ref];
-    	if (entry) return entry;
+    	if (entry) {
+            //TODO track the version number of the API and update if higher
+            for(var n in Resolver.method.fn) {
+                if (entry[n] === undefined) entry[n] = Resolver.method.fn[n];
+            }
+            return entry;
+        }
 
     	// make the default reference first
     	var defaultRef = this.references[name];
@@ -849,6 +859,10 @@ function Resolver(name_andor_expr,ns,options)
     	if (options.mixinto.reference==null) options.mixinto.reference = resolver.reference;
     	if (options.mixinto.override==null) options.mixinto.override = resolver.override;
     	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
+    }
+
+    for(var n in Resolver.method.fn) {
+        resolver[n] = Resolver.method.fn[n];
     }
 
     if (forDoc) {
@@ -913,6 +927,11 @@ Resolver.exists = function(name) {
     return this.nm[name] != undefined;
 };
 
+Resolver.method = function(name,fn) {
+    Resolver.method.fn[name] = fn;
+    //TODO fix up named/known resolver references
+};
+Resolver.method.fn = {};
 
 Resolver.docMethod = function(name,fn) {
     Resolver.docMethod.fn[name] = fn;
