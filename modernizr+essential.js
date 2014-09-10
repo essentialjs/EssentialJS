@@ -932,6 +932,11 @@ Resolver.exists = function(name) {
     return this.nm[name] != undefined;
 };
 
+Resolver.method = function(name,fn) {
+    Resolver.method.fn[name] = fn;
+    //TODO fix up named/known resolver references
+};
+Resolver.method.fn = {};
 
 Resolver.docMethod = function(name,fn) {
     Resolver.docMethod.fn[name] = fn;
@@ -3697,7 +3702,7 @@ Generator.discardRestricted = function()
 
 
 	function MutableEvent_withActionInfo() {
-		var element = this.target;
+		var element = this._original? this._original.target : this.target;
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		

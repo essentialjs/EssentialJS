@@ -3697,7 +3697,7 @@ Generator.discardRestricted = function()
 
 
 	function MutableEvent_withActionInfo() {
-		var element = this.target;
+		var element = this._original? this._original.target : this.target;
 		// role of element or ancestor
 		// TODO minor tags are traversed; Stop at document, header, aside etc
 		
