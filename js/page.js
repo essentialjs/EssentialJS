@@ -806,11 +806,12 @@
 
 	function updateOnlineStatus(ev) {
 		//log.log("online status",navigator.onLine,ev);
-		var online = navigator.onLine;
+		var online = window.navigator? window.navigator.onLine : true;
 		if (online != undefined) {
 			pageResolver.set(["state","online"],online);	
 		}
 	}
+	updateOnlineStatus.frequency = 0; // set this to 5000 to check it every 5 seconds
 	essential.set("updateOnlineStatus",updateOnlineStatus);
 
 	function _ApplicationConfig() {
