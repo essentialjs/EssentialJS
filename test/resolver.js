@@ -224,8 +224,17 @@ test('Resolver set/declare value',function(){
 	var resolver = Resolver({});
 
 	// trying to blow up oldValue
+	resolver.set("d.e",null);
 	resolver.set("d.e.f","f");
 	resolver.remove("d.e.f");
+
+	resolver.set(["e","f"],null);
+	resolver.set(["e","f","g"],{});
+	resolver.remove(["e","f"]);
+
+	resolver.declare("f.g",null);
+	resolver.declare("f.g.h","h");
+	resolver.remove("f");
 
 	resolver.on("change","a.b",function(){});
 	resolver.on("change","a.b.c",function(){});
@@ -283,8 +292,10 @@ test('Resolver remove value',function(){
 	var resolver = Resolver({});
 
 	// does nothing, no fail on oldValue
+	resolver.set("a.b",null);
 	resolver.remove("a.b.c"); 
 	resolver.reference("a.b").remove("c");
+	resolver.remove("a");
 
 	resolver.set("a.b.c","abc");
 	equal(resolver("a.b.c"), "abc");	
