@@ -353,7 +353,7 @@ function Resolver(name_andor_expr,ns,options)
                 subnames.push(symbol);
 
                 //TODO if typeof base != object 
-                var oldValue = base[symbol];
+                var oldValue = base?base[symbol]:undefined;
                 if (oldValue === undefined) return;
                 delete base[symbol];
 
@@ -365,7 +365,7 @@ function Resolver(name_andor_expr,ns,options)
             } else {
                 var symbol = names[names.length - 1];
                 var base = _resolve(baseNames,null,onundefinedSet);
-                var oldValue = base[symbol];
+                var oldValue = base?base[symbol]:undefined;
                 if (oldValue === undefined) return;
                 delete base[symbol];
 
@@ -398,7 +398,7 @@ function Resolver(name_andor_expr,ns,options)
                 }
         	} else {
 				var base = _resolve(baseNames,null,onundefinedSet);
-                var oldValue = base[leafName];
+                var oldValue = base?base[leafName]:undefined;
 
                 if (_setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value,oldValue);
@@ -420,7 +420,7 @@ function Resolver(name_andor_expr,ns,options)
                 var parentName = combined.join(".");
                 subnames.push(symbol);
                 value = arguments[1];
-                var oldValue = base[symbol];
+                var oldValue = base?base[symbol]:undefined;
 
                 if (base[symbol] === undefined) {
                     if (_setValue(value,combined,base,symbol)) {
@@ -433,7 +433,7 @@ function Resolver(name_andor_expr,ns,options)
                 return base[symbol];
         	} else {
                 var base = _resolve(baseNames,null,onundefinedSet);
-                var oldValue = base[leafName];
+                var oldValue = base?base[leafName]:undefined;
 
                 if (base[leafName] === undefined) {
                     if (_setValue(value,baseNames,base,leafName)) {
@@ -472,7 +472,7 @@ function Resolver(name_andor_expr,ns,options)
         function setEntry(key,value) {
             var symbol = names.pop();
         	var base = _resolve(names,null,onundefined);
-            var oldValue = base[symbol];
+            var oldValue = base?base[symbol]:undefined;
         	names.push(symbol);
         	if (base[symbol] === undefined) _setValue({},names,base,symbol);
         	
@@ -681,7 +681,7 @@ function Resolver(name_andor_expr,ns,options)
             names = name.split(".");
         }
         var symbol = names.pop();
-        var base = _resolve(names,null,onundefined), oldValue = base[symbol];
+        var base = _resolve(names,null,onundefined), oldValue = base?base[symbol]:undefined;
         if (oldValue === undefined) return;
         delete base[symbol];
 
@@ -747,7 +747,7 @@ function Resolver(name_andor_expr,ns,options)
             names.push(leaf);
             base = _resolve(names,null,onundefined);
         }
-        var oldValue = base[symbol];
+        var oldValue = base?base[symbol]:undefined;
 		if (_setValue(value,names,base,symbol)) {
 			var ref = resolver.references[name];
 			if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
