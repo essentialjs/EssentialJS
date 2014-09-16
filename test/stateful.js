@@ -38,7 +38,30 @@ test("Stateful element initial class",function(){
 	equal(el.classList[0],"a");
 	equal(el.classList[1],"b");
 	equal(el.classList[2],"c");
-})
+});
+
+test("Getting resolver in parent chain", function() {
+
+	var StatefulResolver = Resolver("essential::StatefulResolver::"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+
+	var top = HTMLElement("div",{id:"top","make stateful":true});
+	var one = HTMLElement("div",{id:"one","make stateful":true,"append to":top});
+	var oneChild = HTMLElement("div",{"append to":one});
+	var two = HTMLElement("div",{id:"two","make stateful":true,"append to":oneChild});
+	var twoChild = HTMLElement("div",{"append to":two});
+	var twoChild2 = HTMLElement("div",{"append to":twoChild});
+	var three = HTMLElement("div",{id:"three","make stateful":true,"append to":twoChild2});
+	var four = HTMLElement("div",{id:"four","make stateful":true,"append to":three});
+
+	equal(Resolver.resolverFromElement(four,null),four.stateful);
+	equal(Resolver.resolverFromElement(four,"stateful(0)"),four.stateful);
+	equal(Resolver.resolverFromElement(four,"stateful(1)"),three.stateful);
+	equal(Resolver.resolverFromElement(four,"stateful(2)"),two.stateful);
+	equal(Resolver.resolverFromElement(four,"stateful(3)"),one.stateful);
+	equal(Resolver.resolverFromElement(four,"stateful(4)"),top.stateful);
+	equal(Resolver.resolverFromElement(four,"stateful(5)"), four.stateful);
+});
 
 test("Initial stateful element state",function() {
 	var StatefulResolver = Resolver("essential::StatefulResolver::");

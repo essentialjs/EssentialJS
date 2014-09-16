@@ -121,6 +121,53 @@ Resolver.config.ROLE_POLICY = {
 	}
 };
 
+Resolver.resolverFromElement = function(el,expr) {
+	if (!expr) expr = "stateful(0)";
+
+	//TODO consider optional force flag and support el(..)
+
+	if (expr.substring(0,9) == "stateful(") {
+		for(var jumps = parseFloat(expr.substring(9,expr.length-1)), sel = el; sel && jumps>0;--jumps) { 
+
+			do { sel = sel.parentNode; } while(sel && sel.stateful == undefined);
+		}
+		return sel? sel.stateful : el.stateful;
+	} else {
+		return Resolver(expr);
+	}
+
+	return resolver;
+};
+
+Resolver.exec = function(resolver,expr,onundefined,cmd,value) {
+	//TODO resolver.exec(expr,onundefined,cmd,value);
+	switch(cmd) {
+		case "toggle":
+			resolver.toggle(expr);
+			break;
+		case "true":
+			resolver.set(expr,true);
+			break;
+		case "false":
+			resolver.set(expr,false);
+			break;
+		case "blank":
+			resolver.set(expr,"");
+			break;
+		case "remove":
+			resolver.remove(expr);
+			break;
+		case "=":
+		case "set":
+			resolver.set(expr,value);
+			break;
+		case "declare":
+			resolver.declare(expr,value);
+			break;
+	}
+
+};
+
 !function() {
 	var essential = Resolver("essential"),
 		HTMLElement = essential("HTMLElement"),

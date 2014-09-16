@@ -945,6 +945,31 @@ test('Role navigation action',function(){
 	Resolver("page").set("enabledRoles",{});
 });
 
+test("Default actions", function() {
+
+	var StatefulResolver = Resolver("essential::StatefulResolver::"),
+		HTMLElement = Resolver("essential::HTMLElement::");
+	var fireAction = Resolver("essential::fireAction::");
+
+	var top = HTMLElement("div",{id:"top","make stateful":true});
+	var one = HTMLElement("div",{id:"one","make stateful":true,"append to":top});
+	var oneChild = HTMLElement("div",{"append to":one});
+	var two = HTMLElement("div",{id:"two","make stateful":true,"append to":oneChild});
+	var twoChild = HTMLElement("div",{"append to":two});
+	var twoChild2 = HTMLElement("div",{"append to":twoChild});
+	var three = HTMLElement("div",{id:"three","make stateful":true,"append to":twoChild2});
+	var four = HTMLElement("div",{id:"four","make stateful":true,"append to":three});
+
+	ok(! four.stateful("state.hidden"));
+	fireAction({commandElement: four, commandName: "state.hidden::toggle"});
+	ok(four.stateful("state.hidden"));
+	fireAction({commandElement: four, commandName: "state.hidden::false"});
+	ok(! four.stateful("state.hidden"));
+	fireAction({commandElement: four, commandName: "state.hidden::true"});
+	ok(four.stateful("state.hidden"));
+	fireAction({commandElement: four, commandName: "state.hidden::blank"});
+	equal(four.stateful("state.hidden"),"");
+});
 
 test("Language choice",function(){
 	var pager = Resolver("page");

@@ -707,22 +707,31 @@
 			}
 		} 
 		else {
-			el = HTMLElement.getEnhancedParent(ev.commandElement);
+			var parts = ev.commandName.split("::"), cmd = parts.pop(),
+				parent = HTMLElement.getEnhancedParent(ev.commandElement);
+			var resolver = Resolver.resolverFromElement(ev.commandElement,parts.length==2? parts[0] : null);
 
-			switch(ev.commandName) {
+			switch(cmd) {
 			//TODO other builtin commands
 			case "parent.toggle-expanded":
 			// if (el == null) el = ancestor enhanced
-				StatefulResolver(el.parentNode,true).toggle("state.expanded");
+				StatefulResolver(parent.parentNode,true).toggle("state.expanded");
 				break;
 
 			case "toggle-expanded":
-				StatefulResolver(el,true).toggle("state.expanded");
+				StatefulResolver(parent,true).toggle("state.expanded");
 				break;
 
 			case "close":
 				//TODO close up shop
 				if (ev.submitElement) HTMLElement.discard(ev.submitElement);
+				break;
+			default:
+				if (parts.length) {
+					var expr = parts.pop();
+					var value; //TODO value for cmd
+					Resolver.exec(resolver, expr, "fill",cmd.charAt(0) == "="? "=" : cmd, value);
+				} 
 				break;
 			}
 		}

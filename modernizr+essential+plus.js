@@ -4639,6 +4639,53 @@ Resolver.config.ROLE_POLICY = {
 	}
 };
 
+Resolver.resolverFromElement = function(el,expr) {
+	if (!expr) expr = "stateful(0)";
+
+	//TODO consider optional force flag and support el(..)
+
+	if (expr.substring(0,9) == "stateful(") {
+		for(var jumps = parseFloat(expr.substring(9,expr.length-1)), sel = el; sel && jumps>0;--jumps) { 
+
+			do { sel = sel.parentNode; } while(sel && sel.stateful == undefined);
+		}
+		return sel? sel.stateful : el.stateful;
+	} else {
+		return Resolver(expr);
+	}
+
+	return resolver;
+};
+
+Resolver.exec = function(resolver,expr,onundefined,cmd,value) {
+	//TODO resolver.exec(expr,onundefined,cmd,value);
+	switch(cmd) {
+		case "toggle":
+			resolver.toggle(expr);
+			break;
+		case "true":
+			resolver.set(expr,true);
+			break;
+		case "false":
+			resolver.set(expr,false);
+			break;
+		case "blank":
+			resolver.set(expr,"");
+			break;
+		case "remove":
+			resolver.remove(expr);
+			break;
+		case "=":
+		case "set":
+			resolver.set(expr,value);
+			break;
+		case "declare":
+			resolver.declare(expr,value);
+			break;
+	}
+
+};
+
 !function() {
 	var essential = Resolver("essential"),
 		HTMLElement = essential("HTMLElement"),
@@ -7622,22 +7669,31 @@ Resolver.config.ROLE_POLICY = {
 			}
 		} 
 		else {
-			el = HTMLElement.getEnhancedParent(ev.commandElement);
+			var parts = ev.commandName.split("::"), cmd = parts.pop(),
+				parent = HTMLElement.getEnhancedParent(ev.commandElement);
+			var resolver = Resolver.resolverFromElement(ev.commandElement,parts.length==2? parts[0] : null);
 
-			switch(ev.commandName) {
+			switch(cmd) {
 			//TODO other builtin commands
 			case "parent.toggle-expanded":
 			// if (el == null) el = ancestor enhanced
-				StatefulResolver(el.parentNode,true).toggle("state.expanded");
+				StatefulResolver(parent.parentNode,true).toggle("state.expanded");
 				break;
 
 			case "toggle-expanded":
-				StatefulResolver(el,true).toggle("state.expanded");
+				StatefulResolver(parent,true).toggle("state.expanded");
 				break;
 
 			case "close":
 				//TODO close up shop
 				if (ev.submitElement) HTMLElement.discard(ev.submitElement);
+				break;
+			default:
+				if (parts.length) {
+					var expr = parts.pop();
+					var value; //TODO value for cmd
+					Resolver.exec(resolver, expr, "fill",cmd.charAt(0) == "="? "=" : cmd, value);
+				} 
 				break;
 			}
 		}
