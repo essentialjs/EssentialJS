@@ -223,6 +223,10 @@ test('Resolve defined and undefined reference',function(){
 test('Resolver set/declare value',function(){
 	var resolver = Resolver({});
 
+	// trying to blow up oldValue
+	resolver.set("d.e.f","f");
+	resolver.remove("d.e.f");
+
 	resolver.on("change","a.b",function(){});
 	resolver.on("change","a.b.c",function(){});
 	resolver.on("change","d.e",function(){});
@@ -277,6 +281,10 @@ test('Resolver set/declare value',function(){
 
 test('Resolver remove value',function(){
 	var resolver = Resolver({});
+
+	// does nothing, no fail on oldValue
+	resolver.remove("a.b.c"); 
+	resolver.reference("a.b").remove("c");
 
 	resolver.set("a.b.c","abc");
 	equal(resolver("a.b.c"), "abc");	
