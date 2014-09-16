@@ -1017,7 +1017,7 @@ Resolver.storages.session = {
             var value;
             try { value = JSON.parse(v); }
             catch(ex) {} //TODO consider parse issue
-            ref.set(value);
+            ref.set(value); //TODO call internal version that doesn't store
         }
     },
     store: function(ref) {
@@ -1037,7 +1037,7 @@ Resolver.storages.local = {
             var value;
             try { value = JSON.parse(v); }
             catch(ex) {} //TODO consider parse issue
-            ref.set(value);
+            ref.set(value);//TODO call internal version that doesn't store
         }
     },
 
@@ -1073,7 +1073,7 @@ Resolver.storages.cookie = {
 
             //TODO type coercion
             ref._reading_cookie = true;
-            ref.set(value);
+            ref.set(value);//TODO call internal version that doesn't store
             delete ref._reading_cookie;
         }
     },
