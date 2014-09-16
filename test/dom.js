@@ -392,7 +392,7 @@ asyncTest("Element Placement",function() {
 		// equal(typeof noBounds.style.breakBefore,"string");
 		// equal(typeof noBounds.style.breakAfter,"string");
 
-		div.setAttribute("style",'page-break-before:always;'); //TODO "column"
+		div.style.cssText = 'page-break-before:always;'; //TODO "column"
 		noBounds.compute();
 		equal(noBounds.style.breakBefore,"always","get the inline break style");
 
