@@ -25,12 +25,20 @@ function Resolver(name_andor_expr,ns,options)
 {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
 
-    var forDoc = false, forEl = false, named = Resolver.nm;
+    var forDoc = false, forEl = false;
+
+    function _resolver(name,ns,options,auto) {
+        if (Resolver.nm[name] == undefined) {
+            if (!auto) return ns;
+            Resolver.nm[name] = Resolver.create(name, ns || {},options || {});
+        }
+        return Resolver.nm[name];
+    }
 
 	switch(typeof(name_andor_expr)) {
 	case "undefined":
 		// Resolver()
-		return named["default"];
+		return Resolver.nm["default"];
 		
 	case "string":
         var name_expr = name_andor_expr.split("::");
@@ -53,13 +61,12 @@ function Resolver(name_andor_expr,ns,options)
                 // Resolver("abc::def") returns reference for expression
                 } else {
                     return _r.reference(expr,ns);
-
                 }
                 break;
             case 3: 
                 // Resolver("abc::def::")  returns value for expression
                 if (name_expr[2] == "") {
-                    return named[name].get(expr,ns);
+                    return Resolver.nm[name].get(expr,ns);
 
                 // Resolver("abc::def::ghi")
                 } else {
@@ -77,15 +84,15 @@ function Resolver(name_andor_expr,ns,options)
                 case "null":
                 case "undefined":
                 case "throw":
-                    return named[name].get(expr,ns);
+                    return Resolver.nm[name].get(expr,ns);
 
                 default:
                 case "reference":
-                    return named[name].reference(expr)
+                    return Resolver.nm[name].reference(expr)
             }
-            return named[name][call](expr);
+            return Resolver.nm[name][call](expr);
         }
-		return named[name];
+		return Resolver.nm[name];
 
     case "function":
     case "object":
@@ -93,115 +100,23 @@ function Resolver(name_andor_expr,ns,options)
         // Resolver({},{options})
         forDoc = (name_andor_expr.nodeType === 9);
         forEl = (name_andor_expr.nodeType !== undefined && !forDoc);
-        if (name_andor_expr === window && named.window) return named.window;
+        if (name_andor_expr === window && Resolver.nm.window) return Resolver.nm.window;
         else if (forDoc) {
             var existing = Resolver.getByUniqueID(Resolver.forDoc,name_andor_expr);
             if (existing) return existing;
         }
-        //if (name_andor_expr === document && named.document) return named.document;
+        //if (name_andor_expr === document && Resolver.nm.document) return Resolver.nm.document;
         else if (forEl) {
             var existing = Resolver.getByUniqueID(Resolver.forEl,name_andor_expr);
             if (existing) return existing;
         }
-        options = ns || {};
-        ns = name_andor_expr;
-        break;
+
+        //TODO consider name
+        return Resolver.create(null,name_andor_expr,ns);
 	}
 
+///////////////
 
-    function _resolver(name,ns,options,auto) {
-        if (named[name] == undefined) {
-            if (!auto) return ns;
-            named[name] = Resolver(ns || {},options || {});
-            named[name].named = name;
-        }
-        return named[name];
-    }
-
-
-	function _resolve(names,subnames,onundefined) {
-        // var top = ns; TODO passed namespace negates override
-        var top = resolver.namespace;
-
-        for (var j = 0, n; j<names.length; ++j) {
-            n = names[j];
-            var prev_top = top;
-            top = top[n];
-            if (top == undefined) { // catching null as well (not sure if it's desirable)
-                switch(onundefined) {
-                case undefined:
-                case "force":
-                case "generate":
-                	if (top === undefined) {
-	                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
-	                    continue; // go to next now that we filled in an object
-                	}
-                //TODO use map to determine return
-                case "false":
-                    if (top === undefined) return false;
-                    break;
-                case "null":
-                	if (top === undefined) return null;
-                	break;
-                case "undefined":
-                	if (top === undefined) return undefined;
-                	break;
-                case "0":
-                    if (top === undefined) return 0;
-                    break;
-                }
-                if (j < names.length-1) {
-	            	throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
-                }
-            }
-        }
-        if (subnames) {
-        	for(var i=0,n; n = subnames[i]; ++i) {
-	            var prev_top = top;
-	            top = top[n];
-	            if (top == undefined) { 
-	                switch(onundefined) {
-	                case undefined:
-	                case "generate":
-	                	if (top === undefined) {
-		                    top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
-		                    continue; // go to next now that we filled in an object
-	                	}
-                    case "false":
-                        if (top === undefined) return false;
-                        break;
-	                case "null":
-	                	if (top === undefined) return null;
-	                	break;
-	                case "undefined":
-	                	if (top === undefined) return undefined;
-	                	break;
-                    case "0":
-                        if (top === undefined) return 0;
-                        break;
-	                }
-	                if (j < names.length-1) {
-		            	throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
-	                }
-	            }
-        	}
-        }
-        return top;
-	}
-	
-    function _setValue(value,names,base,symbol)
-    {
-    	if (base[symbol] === value) return false;
-
-    	base[symbol] = value;
-		if (typeof value == "object" && value !== null && value.__generator__ == value) {
-    		value.info.symbol = symbol;
-    		value.info["package"] = names.join(".");
-    		value.info.within = base;
-    	}
-
-    	return true;
-    }
 
     function nopCall() {}
 
@@ -230,34 +145,6 @@ function Resolver(name_andor_expr,ns,options)
     	return e;
     }
 
-    /**
-     * Function returned by the Resolver call.
-     * @param name To resolve
-     * @param onundefined What to do for undefined symbols ("generate","null","throw")
-     */
-    function resolver(name,onundefined) {
-        if (typeof name == "object") {
-            // name is array
-            if (name.length != undefined) return _resolve(name,null,onundefined);
-            // {} call
-            return _resolve(name.name.split("."),null,name.onundefined);
-        }
-        else {
-            var parts = name.split("::");
-            if (parts.length > 1) {
-                // name = parts[1];
-                if (parts.length == 2) name += "::"; // return value by default not ref
-                return Resolver(name,onundefined);
-            }
-            return _resolve(name.split("."),null,onundefined);
-        }
-    };
-
-    resolver.get = resolver;
-    resolver.named = options.name;
-    if (options.name) named[options.name] = resolver;
-    resolver.namespace = arguments[0]; // should be possible to change to 'ns'
-    resolver.references = { };
 
     var VALID_LISTENERS = {
         "true": true, // change to true value
@@ -279,7 +166,7 @@ function Resolver(name_andor_expr,ns,options)
 
 
     // relies of resolver
-    function makeReference(name,onundefined,listeners)
+    function makeReference(resolver, name,onundefined,listeners)
     {
         var names = [], leafName, baseRefName = "", baseNames = [];
         if (name!=="" && name!=null) {
@@ -295,11 +182,11 @@ function Resolver(name_andor_expr,ns,options)
     	function get() {
     		if (arguments.length==1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-	        	var r = _resolve(names,subnames,onundefined);
+	        	var r = resolver._resolve(names,subnames,onundefined);
     			//TODO onundefined for the arg
 	        	return r;
     		} else {
-	        	var base = _resolve(names,null,onundefined);
+	        	var base = resolver._resolve(names,null,onundefined);
 	        	return base;
     		}
         }
@@ -308,25 +195,25 @@ function Resolver(name_andor_expr,ns,options)
             if (arguments.length > 1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
                 var symbol = subnames.pop();
-                var base = _resolve(names,subnames,onundefinedSet);
+                var base = resolver._resolve(names,subnames,onundefinedSet);
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
                 var oldValue = arguments[1];
                 value = !oldValue; //TODO configurable toggle
 
-                if (_setValue(value,combined,base,symbol)) {
+                if (resolver._setValue(value,combined,base,symbol)) {
                     var childRef = resolver.references[parentName + "." + symbol];
                     if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                     var parentRef = resolver.references[parentName];
                     if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                 }
             } else {
-                var base = _resolve(baseNames,null,onundefinedSet),
+                var base = resolver._resolve(baseNames,null,onundefinedSet),
                     oldValue = arguments[0];
                 value = !oldValue; //TODO configurable toggle
 
-                if (_setValue(value,baseNames,base,leafName)) {
+                if (resolver._setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value,oldValue);
                     //TODO test for triggering specific listeners
                     if (baseRefName) {
@@ -342,7 +229,7 @@ function Resolver(name_andor_expr,ns,options)
             if (arguments.length > 0) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
                 var symbol = subnames.pop();
-                var base = _resolve(names,subnames,onundefinedSet);
+                var base = resolver._resolve(names,subnames,onundefinedSet);
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
@@ -359,7 +246,7 @@ function Resolver(name_andor_expr,ns,options)
 
             } else {
                 var symbol = names[names.length - 1];
-                var base = _resolve(baseNames,null,onundefinedSet);
+                var base = resolver._resolve(baseNames,null,onundefinedSet);
                 var oldValue = base?base[symbol]:undefined;
                 if (oldValue === undefined) return;
                 delete base[symbol];
@@ -378,24 +265,24 @@ function Resolver(name_andor_expr,ns,options)
         	if (arguments.length > 1) {
         		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 				var symbol = subnames.pop();
-	        	var base = _resolve(names,subnames,onundefinedSet);
+	        	var base = resolver._resolve(names,subnames,onundefinedSet);
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
 	        	value = arguments[1];
                 var oldValue = base[symbol];
 
-                if (_setValue(value,combined,base,symbol)) {
+                if (resolver._setValue(value,combined,base,symbol)) {
                     var childRef = resolver.references[parentName + "." + symbol];
                     if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                     var parentRef = resolver.references[parentName];
                     if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
                 }
         	} else {
-				var base = _resolve(baseNames,null,onundefinedSet);
+				var base = resolver._resolve(baseNames,null,onundefinedSet);
                 var oldValue = base?base[leafName]:undefined;
 
-                if (_setValue(value,baseNames,base,leafName)) {
+                if (resolver._setValue(value,baseNames,base,leafName)) {
                     this._callListener("change",baseNames,base,leafName,value,oldValue);
                     //TODO test for triggering specific listeners
                     if (baseRefName) {
@@ -410,7 +297,7 @@ function Resolver(name_andor_expr,ns,options)
         	if (arguments.length > 1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
                 var symbol = subnames.pop();
-                var base = _resolve(names,subnames,onundefinedSet);
+                var base = resolver._resolve(names,subnames,onundefinedSet);
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
@@ -418,7 +305,7 @@ function Resolver(name_andor_expr,ns,options)
                 var oldValue = base?base[symbol]:undefined;
 
                 if (base[symbol] === undefined) {
-                    if (_setValue(value,combined,base,symbol)) {
+                    if (resolver._setValue(value,combined,base,symbol)) {
                         var childRef = resolver.references[parentName + "." + symbol];
                         if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
                         var parentRef = resolver.references[parentName];
@@ -427,11 +314,11 @@ function Resolver(name_andor_expr,ns,options)
                 }
                 return base[symbol];
         	} else {
-                var base = _resolve(baseNames,null,onundefinedSet);
+                var base = resolver._resolve(baseNames,null,onundefinedSet);
                 var oldValue = base?base[leafName]:undefined;
 
                 if (base[leafName] === undefined) {
-                    if (_setValue(value,baseNames,base,leafName)) {
+                    if (resolver._setValue(value,baseNames,base,leafName)) {
                         this._callListener("change",baseNames,base,leafName,value,oldValue);
                         //TODO test for triggering specific listeners
                         if (baseRefName) {
@@ -444,20 +331,20 @@ function Resolver(name_andor_expr,ns,options)
         	}
         }
     	function getEntry(key) {
-        	var base = _resolve(names,null,onundefined);
+        	var base = resolver._resolve(names,null,onundefined);
         	if (arguments.length) return base[key];
         	return base;
         }
         function declareEntry(key,value) {
             var symbol = names.pop();
-        	var base = _resolve(names,null,onundefined);
+        	var base = resolver._resolve(names,null,onundefined);
             var oldValue = base[symbol];
         	names.push(symbol);
-        	if (base[symbol] === undefined) _setValue({},names,base,symbol);
+        	if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
         	
         	if (base[symbol][key] === undefined) {
         		names.push(key);
-        		if (_setValue(value,names,base[symbol],key)) {
+        		if (resolver._setValue(value,names,base[symbol],key)) {
 			    	this._callListener("change",names,base,key,value,oldValue);
 	    	//TODO parent listeners
         		}
@@ -466,13 +353,13 @@ function Resolver(name_andor_expr,ns,options)
         }
         function setEntry(key,value) {
             var symbol = names.pop();
-        	var base = _resolve(names,null,onundefined);
+        	var base = resolver._resolve(names,null,onundefined);
             var oldValue = base?base[symbol]:undefined;
         	names.push(symbol);
-        	if (base[symbol] === undefined) _setValue({},names,base,symbol);
+        	if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
         	
     		names.push(key);
-    		if (_setValue(value,names,base[symbol],key)) {
+    		if (resolver._setValue(value,names,base[symbol],key)) {
 		    	this._callListener("change",names,base,key,value,oldValue);
 	    	//TODO parent listeners
     		}
@@ -480,14 +367,14 @@ function Resolver(name_andor_expr,ns,options)
         }
         function mixin(map) {
             var symbol = names.pop();
-        	var base = _resolve(names,null,onundefined);
+        	var base = resolver._resolve(names,null,onundefined);
         	names.push(symbol);
-        	if (base[symbol] === undefined) _setValue({},names,base,symbol);
+        	if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
         	var ni = names.length;
         	var mods = {};
         	for(var n in map) {
         		names[ni] = n;
-        		if (_setValue(map[n],names,base[symbol],n)) {
+        		if (resolver._setValue(map[n],names,base[symbol],n)) {
         			mods[n] = map[n];
         		}
         	}
@@ -497,16 +384,16 @@ function Resolver(name_andor_expr,ns,options)
         }
         function unmix(map) {
             var symbol = names.pop();
-            var base = _resolve(names,null,onundefined);
+            var base = resolver._resolve(names,null,onundefined);
             names.push(symbol);
 
-            if (base[symbol] === undefined) _setValue({},names,base,symbol);
+            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
             var ni = names.length;
             var mods = {};
 
             for(var n in map) {
                 names[ni] = n;
-                if (_setValue(undefined,names,base[symbol],n)) {
+                if (resolver._setValue(undefined,names,base[symbol],n)) {
                     mods[n] = undefined;
                 }
             }
@@ -515,7 +402,7 @@ function Resolver(name_andor_expr,ns,options)
             this._callListener("change",names,base[symbol],null,mods);
         }
         function mixinto(target) {
-            var base = _resolve(names,null,onundefined);
+            var base = resolver._resolve(names,null,onundefined);
             for(var n in base) {
                 target[n] = base[n];
             }
@@ -525,14 +412,14 @@ function Resolver(name_andor_expr,ns,options)
             if (arguments.length > 0) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
                 var symbol = subnames.pop();
-                var base = _resolve(names,subnames,onundefinedSet);
+                var base = resolver._resolve(names,subnames,onundefinedSet);
                 var combined = names.concat(subnames);
                 var parentName = combined.join(".");
                 subnames.push(symbol);
 
                 //TODO if typeof base != object 
                 // var oldValue = base?base[symbol]:undefined;
-                _setValue({},names,base,symbol);
+                resolver._setValue({},names,base,symbol);
 
                 var childRef = resolver.references[parentName + "." + symbol];
                 if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
@@ -541,10 +428,10 @@ function Resolver(name_andor_expr,ns,options)
 
             } else {
                  var symbol = names.pop();
-                var base = _resolve(names,null,onundefined);
+                var base = resolver._resolve(names,null,onundefined);
                 names.push(symbol);
 
-                _setValue({},names,base,symbol);
+                resolver._setValue({},names,base,symbol);
                 this._callListener("change",names,base[symbol],null,mods);
                 //TODO parent listeners
            }
@@ -558,7 +445,7 @@ function Resolver(name_andor_expr,ns,options)
 	    }
 
 	    function trigger(type) {
-	    	var base = _resolve(baseNames,null,onundefined);
+	    	var base = resolver._resolve(baseNames,null,onundefined);
             var value = base[leafName];
 
 	    	this._callListener(type,baseNames,base,leafName,value);
@@ -657,7 +544,7 @@ function Resolver(name_andor_expr,ns,options)
 
                 var baseNames = selector.split(".");
                 var leafName = baseNames.pop();
-                var base = _resolve(baseNames,null,"undefined");
+                var base = resolver._resolve(baseNames,null,"undefined");
                 var ev = _makeResolverEvent(resolver,type,selector,data,callback);
                 ev.binding = true;
                 ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
@@ -691,123 +578,6 @@ function Resolver(name_andor_expr,ns,options)
 		    	this.reference(selector).on(type,data,callback);
     			break;
     	}
-    };
-
-    resolver.remove = function(name,onundefined)
-    {
-        var names;
-        if (typeof name == "object" && name.join) {
-            names = name;
-            name = name.join(".");
-        } else {
-            names = name.split("::");
-            if (names.length > 1) {
-                return Resolver(names.shift()).remove(names[0],onundefined);
-            }
-            names = name.split(".");
-        }
-        var symbol = names.pop();
-        var base = _resolve(names,null,onundefined), oldValue = base?base[symbol]:undefined;
-        if (oldValue === undefined) return;
-        delete base[symbol];
-
-        var ref = resolver.references[name];
-        if (ref) ref._callListener("change",names,base,symbol,undefined);
-        var parentName = names.join(".");
-        var parentRef = resolver.references[parentName];
-        if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
-        return oldValue;
-    };
-    
-    /*
-        name = string/array
-    */
-    resolver.declare = function(name,value,onundefined) 
-    {
-        var names;
-        if (typeof name == "object" && name.join) {
-            names = name;
-            name = name.join(".");
-        } else {
-            names = name.split("::");
-            if (names.length > 1) {
-                return Resolver(names.shift()).declare(names[0],value,onundefined);
-            }
-            names = name.split(".");
-        }
-        var symbol = names.pop();
-    	var base = _resolve(names,null,onundefined);
-    	if (base[symbol] === undefined) { 
-    		if (_setValue(value,names,base,symbol)) {
-	    		var ref = resolver.references[name];
-	    		if (ref) ref._callListener("change",names,base,symbol,value);
-				var parentName = names.join(".");
-				var parentRef = resolver.references[parentName];
-				if (parentRef) parentRef._callListener("change",names,base,symbol,value);
-    		}
-    		return value;
-    	} else return base[symbol];
-    };
-
-    /*
-        name = string/array
-    */
-    resolver.set = function(name,value,onundefined) 
-    {
-        var names;
-        if (typeof name == "object" && name.join) {
-            names = name;
-            name = name.join(".");
-        } else {
-            names = name.split("::");
-            if (names.length > 1) {
-                return Resolver(names.shift()).set(names[0],value,onundefined);
-            }
-            names = name.split(".");
-        }
-		var symbol = names.pop();
-		var base = _resolve(names,null,onundefined);
-        if (onundefined=="force" && (typeof base != "object" || typeof base != "function")) {
-            var leaf = names.pop();
-            _resolve(names,null,onundefined)[leaf] = {};
-            names.push(leaf);
-            base = _resolve(names,null,onundefined);
-        }
-        var oldValue = base?base[symbol]:undefined;
-		if (_setValue(value,names,base,symbol)) {
-			var ref = resolver.references[name];
-			if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
-			var parentName = names.join(".");
-			var parentRef = resolver.references[parentName];
-			if (parentRef) parentRef._callListener("change",names,base,symbol,value,oldValue);
-		}
-		return value;
-    };
-
-    resolver.toggle = function(name,onundefined)
-    {
-        var names;
-        if (typeof name == "object" && name.join) {
-            names = name;
-            name = name.join(".");
-        } else {
-            names = name.split("::");
-            if (names.length > 1) {
-                return Resolver(names.shift()).toggle(names[0],value,onundefined);
-            }
-            names = name.split(".");
-        }
-        var symbol = names.pop();
-        var base = _resolve(names,null,onundefined);
-        var value = ! base[symbol]; //TODO configurable toggle
-        if (_setValue(value,names,base,symbol)) {
-            var ref = resolver.references[name];
-            if (ref) ref._callListener("change",names,base,symbol,value,!value);
-            var parentName = names.join(".");
-            var parentRef = resolver.references[parentName];
-            if (parentRef) parentRef._callListener("change",names,base,symbol,value,!value);
-        }
-        return value;
     };
 
     function clone(src) {
@@ -849,11 +619,11 @@ function Resolver(name_andor_expr,ns,options)
     	// make the default reference first
     	var defaultRef = this.references[name];
     	if (defaultRef == undefined) {
-    		defaultRef = this.references[name] = makeReference(name,onundefined);
+    		defaultRef = this.references[name] = makeReference(this, name,onundefined);
     		if (ref == name) return defaultRef;
     	}
     	// if requested reference is different return that one
-    	return this.references[ref] = makeReference(name,onundefined,defaultRef.listeners);
+    	return this.references[ref] = makeReference(this, name,onundefined,defaultRef.listeners);
     };
 
     resolver.proxy = function(dest,other,src) {
@@ -869,11 +639,6 @@ function Resolver(name_andor_expr,ns,options)
         this.namespace = ns;
         //TODO options
         return this;
-//       options = options || {};
-//       var name = options.name || this.named; 
-		// named[name] = Resolver(ns,options);
-		// named[name].named = name;
-		// return named[name];
     };
 
     resolver.destroy = function()
@@ -890,10 +655,6 @@ function Resolver(name_andor_expr,ns,options)
     	if (options.mixinto.reference==null) options.mixinto.reference = resolver.reference;
     	if (options.mixinto.override==null) options.mixinto.override = resolver.override;
     	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
-    }
-
-    for(var n in Resolver.method.fn) {
-        resolver[n] = Resolver.method.fn[n];
     }
 
     if (forDoc) {
@@ -936,6 +697,132 @@ Resolver.setByUniqueID = function(map,el,value) {
     }
 };
 
+    // unnamed resolvers name=null
+Resolver.create = function(name,ns,options,auto) {
+    options = options || {};
+    
+    /**
+     * Function returned by the Resolver call.
+     * @param name To resolve
+     * @param method Optional method to do
+     * @param onundefined What to do for undefined symbols ("generate","null","throw")
+     */
+    function resolver(path,method,onundefined) {
+        var parts;
+        if (arguments.length==2) { onundefined=method; method="get"; }
+        if (typeof path == "object") {
+            parts = (path.length != undefined)? path : path.name.split(".");
+            if (path.length != undefined) { parts=path; } 
+            else { parts = path.name.split("."); onundefined = path.onundefined || onundefined; }
+        }
+        else {
+            var parts = path.split("::");
+            if (parts.length > 1) {
+                // path = parts[1];
+                if (parts.length == 2) path += "::"; // return value by default not ref
+                return Resolver(path,onundefined);
+            }
+        }
+
+        return _resolve(parts,null,onundefined);
+    };
+    resolver.named = name || options==undefined? name : options.name;
+    resolver.namespace = ns;
+    resolver.references = { }; // on references perhaps ref this as well
+
+    function _resolve(names,subnames,onundefined) {
+        
+        var top = resolver.namespace; // passed namespace negates override
+
+        for (var j = 0, n; j<names.length; ++j) {
+            n = names[j];
+            var prev_top = top;
+            top = top[n];
+            if (top == undefined) { // catching null as well (not sure if it's desirable)
+                switch(onundefined) {
+                case undefined:
+                case "force":
+                case "generate":
+                    if (top === undefined) {
+                        top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+                        continue; // go to next now that we filled in an object
+                    }
+                //TODO use map to determine return
+                case "false":
+                    if (top === undefined) return false;
+                    break;
+                case "null":
+                    if (top === undefined) return null;
+                    break;
+                case "undefined":
+                    if (top === undefined) return undefined;
+                    break;
+                case "0":
+                    if (top === undefined) return 0;
+                    break;
+                }
+                if (j < names.length-1) {
+                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                }
+            }
+        }
+        if (subnames) {
+            for(var i=0,n; n = subnames[i]; ++i) {
+                var prev_top = top;
+                top = top[n];
+                if (top == undefined) { 
+                    switch(onundefined) {
+                    case undefined:
+                    case "generate":
+                        if (top === undefined) {
+                            top = prev_top[n] = (options.generator || Generator.ObjectGenerator)();
+                            continue; // go to next now that we filled in an object
+                        }
+                    case "false":
+                        if (top === undefined) return false;
+                        break;
+                    case "null":
+                        if (top === undefined) return null;
+                        break;
+                    case "undefined":
+                        if (top === undefined) return undefined;
+                        break;
+                    case "0":
+                        if (top === undefined) return 0;
+                        break;
+                    }
+                    if (j < names.length-1) {
+                        throw new Error("The '" + n + "' part of '" + subnames.join(".") + "' in '"+names.join(".")+"' couldn't be resolved.");
+                    }
+                }
+            }
+        }
+        return top;
+    }
+    resolver._resolve = _resolve;
+
+    function _setValue(value,names,base,symbol)
+    {
+        if (base[symbol] === value) return false;
+
+        base[symbol] = value;
+        if (typeof value == "object" && value !== null && value.__generator__ == value) {
+            value.info.symbol = symbol;
+            value.info["package"] = names.join(".");
+            value.info.within = base;
+        }
+
+        return true;
+    }
+    resolver._setValue = _setValue;    
+
+    for(var n in Resolver.method.fn) {
+        resolver[n] = Resolver.method.fn[n];
+    }
+
+    return resolver;
+};
+
 
 Resolver.storeunloads = [];
 
@@ -963,6 +850,129 @@ Resolver.method = function(name,fn) {
     //TODO fix up named/known resolver references
 };
 Resolver.method.fn = {};
+
+Resolver.method.fn.get = function(name,onundefined) {
+    return this(name,'get',onundefined);
+};
+
+/*
+    name = string/array
+*/
+Resolver.method.fn.declare = function(name,value,onundefined) 
+{
+    var names;
+    if (typeof name == "object" && name.join) {
+        names = name;
+        name = name.join(".");
+    } else {
+        names = name.split("::");
+        if (names.length > 1) {
+            return Resolver(names.shift()).declare(names[0],value,onundefined);
+        }
+        names = name.split(".");
+    }
+    var symbol = names.pop();
+    var base = this._resolve(names,null,onundefined);
+    if (base[symbol] === undefined) { 
+        if (this._setValue(value,names,base,symbol)) {
+            var ref = resolver.references[name];
+            if (ref) ref._callListener("change",names,base,symbol,value);
+            var parentName = names.join(".");
+            var parentRef = resolver.references[parentName];
+            if (parentRef) parentRef._callListener("change",names,base,symbol,value);
+        }
+        return value;
+    } else return base[symbol];
+};
+
+/*
+    name = string/array
+*/
+Resolver.method.fn.set = function(name,value,onundefined) 
+{
+    var names;
+    if (typeof name == "object" && name.join) {
+        names = name;
+        name = name.join(".");
+    } else {
+        names = name.split("::");
+        if (names.length > 1) {
+            return Resolver(names.shift()).set(names[0],value,onundefined);
+        }
+        names = name.split(".");
+    }
+    var symbol = names.pop();
+    var base = this._resolve(names,null,onundefined);
+    if (onundefined=="force" && (typeof base != "object" || typeof base != "function")) {
+        var leaf = names.pop();
+        this._resolve(names,null,onundefined)[leaf] = {};
+        names.push(leaf);
+        base = this._resolve(names,null,onundefined);
+    }
+    var oldValue = base?base[symbol]:undefined;
+    if (this._setValue(value,names,base,symbol)) {
+        var ref = this.references[name];
+        if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
+        var parentName = names.join(".");
+        var parentRef = this.references[parentName];
+        if (parentRef) parentRef._callListener("change",names,base,symbol,value,oldValue);
+    }
+    return value;
+};
+
+Resolver.method.fn.toggle = function(name,onundefined)
+{
+    var names;
+    if (typeof name == "object" && name.join) {
+        names = name;
+        name = name.join(".");
+    } else {
+        names = name.split("::");
+        if (names.length > 1) {
+            return Resolver(names.shift()).toggle(names[0],value,onundefined);
+        }
+        names = name.split(".");
+    }
+    var symbol = names.pop();
+    var base = this._resolve(names,null,onundefined);
+    var value = ! base[symbol]; //TODO configurable toggle
+    if (this._setValue(value,names,base,symbol)) {
+        var ref = resolver.references[name];
+        if (ref) ref._callListener("change",names,base,symbol,value,!value);
+        var parentName = names.join(".");
+        var parentRef = resolver.references[parentName];
+        if (parentRef) parentRef._callListener("change",names,base,symbol,value,!value);
+    }
+    return value;
+};
+
+Resolver.method.fn.remove = function(name,onundefined)
+{
+    var names;
+    if (typeof name == "object" && name.join) {
+        names = name;
+        name = name.join(".");
+    } else {
+        names = name.split("::");
+        if (names.length > 1) {
+            return Resolver(names.shift()).remove(names[0],onundefined);
+        }
+        names = name.split(".");
+    }
+    var symbol = names.pop();
+    var base = this._resolve(names,null,onundefined), oldValue = base?base[symbol]:undefined;
+    if (oldValue === undefined) return;
+    delete base[symbol];
+
+    var ref = resolver.references[name];
+    if (ref) ref._callListener("change",names,base,symbol,undefined);
+    var parentName = names.join(".");
+    var parentRef = resolver.references[parentName];
+    if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
+    return oldValue;
+};
+    
+
 
 Resolver.docMethod = function(name,fn) {
     Resolver.docMethod.fn[name] = fn;
@@ -1148,9 +1158,10 @@ Resolver.storages.cookie = {
 //TODO support server remote storage mechanism
 
 
-Resolver({},{ name:"default" });
-Resolver(window, {name:"window"});
-Resolver(document, {name:"document"}).declare("essential.appliedConfig",{});
+Resolver.nm["default"] = Resolver.create("default",{});
+Resolver.nm.window = Resolver.create("window", window);
+Resolver.nm.document = Resolver.create("document",document);
+Resolver.nm.document.declare("essential.appliedConfig",{});
 
 
 function Generator(mainConstr,options)
