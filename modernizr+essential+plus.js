@@ -525,6 +525,36 @@ function Resolver(name_andor_expr,ns,options)
                 target[n] = base[n];
             }
         }
+        function empty(key) {
+            var oldValue;
+            if (arguments.length > 0) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = _resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+
+                //TODO if typeof base != object 
+                // var oldValue = base?base[symbol]:undefined;
+                _setValue({},names,base,symbol);
+
+                var childRef = resolver.references[parentName + "." + symbol];
+                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
+                var parentRef = resolver.references[parentName];
+                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
+
+            } else {
+                 var symbol = names.pop();
+                var base = _resolve(names,null,onundefined);
+                names.push(symbol);
+
+                _setValue({},names,base,symbol);
+                this._callListener("change",names,base[symbol],null,mods);
+                //TODO parent listeners
+           }
+            // return oldValue;
+        }
 	    function on(type,data,callback) {
 	    	switch(arguments.length) {
 	    		case 2: this._addListener(type,name,null,arguments[1]); break;
@@ -585,6 +615,7 @@ function Resolver(name_andor_expr,ns,options)
         get.mixin = mixin;
         get.unmix = unmix;
         get.mixinto = mixinto;
+        get.empty = empty;
         get.getEntry = getEntry;
         get.declareEntry = declareEntry;
         get.setEntry = setEntry;
