@@ -706,7 +706,9 @@
 				//TODO else dev_note("Submit of " submitName " unknown to DialogAction " action)
 			}
 		} 
-		else {
+
+		//TODO withAactionInfo perhaps decode commandName from href, or negotiate with router
+		else if (ev.commandName) {
 			var parts = ev.commandName.split("::"), cmd = parts.pop(),
 				parent = HTMLElement.getEnhancedParent(ev.commandElement);
 			var resolver = Resolver.resolverFromElement(ev.commandElement,parts.length==2? parts[0] : null);
