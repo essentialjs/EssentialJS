@@ -35,7 +35,7 @@ function Resolver(name_andor_expr,ns,options)
     function _resolver(name,ns,options,auto) {
         if (Resolver.nm[name]) return Resolver.nm[name];
         if (!auto) return ns;
-        Resolver.create(name, ns || {},options);
+        return Resolver.create(name, ns,options);
     }
 
 	switch(typeof(name_andor_expr)) {
@@ -101,17 +101,16 @@ function Resolver(name_andor_expr,ns,options)
     case "object":
         // Resolver({})
         // Resolver({},{options})
-        forDoc = (name_andor_expr.nodeType === 9);
-        forEl = (name_andor_expr.nodeType !== undefined && !forDoc);
         if (name_andor_expr === window && Resolver.nm.window) return Resolver.nm.window;
-        else if (forDoc) {
-            var existing = Resolver.getByUniqueID(Resolver.forDoc,name_andor_expr);
+        else if (name_andor_expr.nodeType !== undefined) {
+            forDoc = (name_andor_expr.nodeType === 9);
+            forEl = !forDoc;
+            var map = forDoc? Resolver.forDoc:Resolver.forEl;
+            var existing = Resolver.getByUniqueID(map,name_andor_expr);
             if (existing) return existing;
-        }
-        //if (name_andor_expr === document && Resolver.nm.document) return Resolver.nm.document;
-        else if (forEl) {
-            var existing = Resolver.getByUniqueID(Resolver.forEl,name_andor_expr);
-            if (existing) return existing;
+
+            var resolver = Resolver.create(null,name_andor_expr,ns);
+            return resolver;
         }
 
         return Resolver.create(null,name_andor_expr,ns);
@@ -168,15 +167,6 @@ function Resolver(name_andor_expr,ns,options)
     	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
     }
 
-    if (forDoc) {
-        Resolver._docDefaults(resolver);
-        Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
-        resolver.uniquePageID = ns.uniquePageID;
-    } else if (forEl) {
-        Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
-        resolver.uniqueID = ns.uniqueID;
-    }
-
     return resolver;
 }
 
@@ -210,6 +200,7 @@ Resolver.setByUniqueID = function(map,el,value) {
 
     // unnamed resolvers name=null
 Resolver.create = function(name,ns,options,auto) {
+    ns = ns || {};
     options = options || {};
     name = name || options.name;
     
@@ -238,8 +229,9 @@ Resolver.create = function(name,ns,options,auto) {
 
         return _resolve(parts,null,onundefined);
     };
-    Resolver.nm[name] = resolver;
-    resolver.named = name || options.name;
+    //TODO forEl, forDoc byId
+    if (name) Resolver.nm[name] = resolver;
+    resolver.named = name;
     resolver.namespace = ns;
     resolver.references = { }; // on references perhaps ref this as well
 
@@ -332,6 +324,20 @@ Resolver.create = function(name,ns,options,auto) {
     for(var n in Resolver.method.fn) {
         resolver[n] = Resolver.method.fn[n];
     }
+
+    if (typeof ns.nodeType == "number") {
+        var ownerDoc = ns.ownerDocument;
+        if (ownerDoc == null) {
+            Resolver._docDefaults(resolver); //TODO move in here ?
+            Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
+            resolver.uniquePageID = ns.uniquePageID;
+        }
+        else {
+            //TODO maintain map on the ownerDocument
+            Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
+            resolver.uniqueID = ns.uniqueID;
+        }
+    } 
 
     return resolver;
 };
@@ -1165,7 +1171,7 @@ Resolver.storages.cookie = {
 //TODO support server remote storage mechanism
 
 
-Resolver.create("default",{});
+Resolver.create("default");
 Resolver.create("window", window);
 Resolver.create("document",document);
 
