@@ -12,7 +12,7 @@ modules :
     - js/resolver.js
     - js/config.js
     - js/generator.js
-    - js/essentialns.js
+    - js/coretypes.js
     - js/dom.js
     - js/page.js
     - js/xhr.js
