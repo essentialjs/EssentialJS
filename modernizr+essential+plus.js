@@ -33,11 +33,9 @@ function Resolver(name_andor_expr,ns,options)
     var forDoc = false, forEl = false;
 
     function _resolver(name,ns,options,auto) {
-        if (Resolver.nm[name] == undefined) {
-            if (!auto) return ns;
-            Resolver.nm[name] = Resolver.create(name, ns || {},options || {});
-        }
-        return Resolver.nm[name];
+        if (Resolver.nm[name]) return Resolver.nm[name];
+        if (!auto) return ns;
+        Resolver.create(name, ns || {},options);
     }
 
 	switch(typeof(name_andor_expr)) {
@@ -116,474 +114,11 @@ function Resolver(name_andor_expr,ns,options)
             if (existing) return existing;
         }
 
-        //TODO consider name
         return Resolver.create(null,name_andor_expr,ns);
 	}
 
 ///////////////
 
-
-    function nopCall() {}
-
-    function _makeResolverEvent(resolver,type,selector,data,callback) {
-    	var e = {};
-
-        e.resolver = resolver;
-    	e.type = type;
-    	e.selector = selector;
-    	e.data = data;
-    	e.callback = callback;
-        e.inTrigger = 0;
-
-    	function trigger(base,symbol,value,oldValue) {
-            if (this.inTrigger) return;
-            ++this.inTrigger;
-            this.base = base;
-    		this.symbol = symbol;
-    		this.value = value;
-            this.oldValue = oldValue;
-    		this.callback.call(resolver,this);
-            --this.inTrigger;
-    	}
-    	e.trigger = callback? trigger : nopCall;
-
-    	return e;
-    }
-
-
-    var VALID_LISTENERS = {
-        "true": true, // change to true value
-        "false": true, // change to false value
-        "reflect": true, // allows forcing reflection of current value
-    	"get": true, // allows for switching in alternate lookups
-    	"change": true, // allows reflecting changes elsewhere
-    	"undefined": true // allow filling in unfound entries
-    };
-
-    function _makeListeners() {
-    	var listeners = {};
-	    // listeners.get.<list of callbacks>
-	    // listeners.change.<list of callbacks>
-	    // ..
-	    for(var n in VALID_LISTENERS) listeners[n] = [];
-	    return listeners;
-    }
-
-
-    // relies of resolver
-    function makeReference(resolver, name,onundefined,listeners)
-    {
-        var names = [], leafName, baseRefName = "", baseNames = [];
-        if (name!=="" && name!=null) {
-            names = name.split(".");
-            leafName = names.pop();
-            baseRefName = names.join(".");
-            baseNames = names.slice(0);
-            names.push(leafName);
-        }
-
-        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
-
-    	function get() {
-    		if (arguments.length==1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-	        	var r = resolver._resolve(names,subnames,onundefined);
-    			//TODO onundefined for the arg
-	        	return r;
-    		} else {
-	        	var base = resolver._resolve(names,null,onundefined);
-	        	return base;
-    		}
-        }
-        function toggle() {
-            var value; //TODO
-            if (arguments.length > 1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-                var oldValue = arguments[1];
-                value = !oldValue; //TODO configurable toggle
-
-                if (resolver._setValue(value,combined,base,symbol)) {
-                    var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
-                    var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
-                }
-            } else {
-                var base = resolver._resolve(baseNames,null,onundefinedSet),
-                    oldValue = arguments[0];
-                value = !oldValue; //TODO configurable toggle
-
-                if (resolver._setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value,oldValue);
-                    //TODO test for triggering specific listeners
-                    if (baseRefName) {
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
-                    }
-                }
-            }
-            return value;
-        }
-
-        function remove() {
-            if (arguments.length > 0) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-
-                //TODO if typeof base != object 
-                var oldValue = base?base[symbol]:undefined;
-                if (oldValue === undefined) return;
-                delete base[symbol];
-
-                var childRef = resolver.references[parentName + "." + symbol];
-                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
-                var parentRef = resolver.references[parentName];
-                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
-
-            } else {
-                var symbol = names[names.length - 1];
-                var base = resolver._resolve(baseNames,null,onundefinedSet);
-                var oldValue = base?base[symbol]:undefined;
-                if (oldValue === undefined) return;
-                delete base[symbol];
-
-                this._callListener("change",baseNames,base,leafName,undefined,oldValue);
-                //TODO test for triggering specific listeners
-                if (baseRefName) {
-                    var parentRef = resolver.references[baseRefName];
-                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,undefined,oldValue);
-                }
-            }
-            return oldValue;
-        }
-
-        function set(value) {
-        	if (arguments.length > 1) {
-        		var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-				var symbol = subnames.pop();
-	        	var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-	        	value = arguments[1];
-                var oldValue = base[symbol];
-
-                if (resolver._setValue(value,combined,base,symbol)) {
-                    var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
-                    var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
-                }
-        	} else {
-				var base = resolver._resolve(baseNames,null,onundefinedSet);
-                var oldValue = base?base[leafName]:undefined;
-
-                if (resolver._setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value,oldValue);
-                    //TODO test for triggering specific listeners
-                    if (baseRefName) {
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
-                    }
-                }
-        	}
-			return value;
-        }
-        function declare(value) {
-        	if (arguments.length > 1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-                value = arguments[1];
-                var oldValue = base?base[symbol]:undefined;
-
-                if (base[symbol] === undefined) {
-                    if (resolver._setValue(value,combined,base,symbol)) {
-                        var childRef = resolver.references[parentName + "." + symbol];
-                        if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
-                        var parentRef = resolver.references[parentName];
-                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
-                    }
-                }
-                return base[symbol];
-        	} else {
-                var base = resolver._resolve(baseNames,null,onundefinedSet);
-                var oldValue = base?base[leafName]:undefined;
-
-                if (base[leafName] === undefined) {
-                    if (resolver._setValue(value,baseNames,base,leafName)) {
-                        this._callListener("change",baseNames,base,leafName,value,oldValue);
-                        //TODO test for triggering specific listeners
-                        if (baseRefName) {
-                            var parentRef = resolver.references[baseRefName];
-                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
-                        }
-                    }
-                }
-                return base[leafName];
-        	}
-        }
-    	function getEntry(key) {
-        	var base = resolver._resolve(names,null,onundefined);
-        	if (arguments.length) return base[key];
-        	return base;
-        }
-        function declareEntry(key,value) {
-            var symbol = names.pop();
-        	var base = resolver._resolve(names,null,onundefined);
-            var oldValue = base[symbol];
-        	names.push(symbol);
-        	if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-        	
-        	if (base[symbol][key] === undefined) {
-        		names.push(key);
-        		if (resolver._setValue(value,names,base[symbol],key)) {
-			    	this._callListener("change",names,base,key,value,oldValue);
-	    	//TODO parent listeners
-        		}
-	    		names.pop(); // return names to unchanged
-        	}
-        }
-        function setEntry(key,value) {
-            var symbol = names.pop();
-        	var base = resolver._resolve(names,null,onundefined);
-            var oldValue = base?base[symbol]:undefined;
-        	names.push(symbol);
-        	if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-        	
-    		names.push(key);
-    		if (resolver._setValue(value,names,base[symbol],key)) {
-		    	this._callListener("change",names,base,key,value,oldValue);
-	    	//TODO parent listeners
-    		}
-    		names.pop(); // return names to unchanged
-        }
-        function mixin(map) {
-            var symbol = names.pop();
-        	var base = resolver._resolve(names,null,onundefined);
-        	names.push(symbol);
-        	if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-        	var ni = names.length;
-        	var mods = {};
-        	for(var n in map) {
-        		names[ni] = n;
-        		if (resolver._setValue(map[n],names,base[symbol],n)) {
-        			mods[n] = map[n];
-        		}
-        	}
-        	names.pop(); // return names to unchanged
-	    	this._callListener("change",names,base[symbol],null,mods);
-	    	//TODO parent listeners
-        }
-        function unmix(map) {
-            var symbol = names.pop();
-            var base = resolver._resolve(names,null,onundefined);
-            names.push(symbol);
-
-            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-            var ni = names.length;
-            var mods = {};
-
-            for(var n in map) {
-                names[ni] = n;
-                if (resolver._setValue(undefined,names,base[symbol],n)) {
-                    mods[n] = undefined;
-                }
-            }
-
-            names.pop(); // return names to unchanged
-            this._callListener("change",names,base[symbol],null,mods);
-        }
-        function mixinto(target) {
-            var base = resolver._resolve(names,null,onundefined);
-            for(var n in base) {
-                target[n] = base[n];
-            }
-        }
-        function empty(key) {
-            var oldValue;
-            if (arguments.length > 0) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-
-                //TODO if typeof base != object 
-                // var oldValue = base?base[symbol]:undefined;
-                resolver._setValue({},names,base,symbol);
-
-                var childRef = resolver.references[parentName + "." + symbol];
-                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
-                var parentRef = resolver.references[parentName];
-                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
-
-            } else {
-                 var symbol = names.pop();
-                var base = resolver._resolve(names,null,onundefined);
-                names.push(symbol);
-
-                resolver._setValue({},names,base,symbol);
-                this._callListener("change",names,base[symbol],null,mods);
-                //TODO parent listeners
-           }
-            // return oldValue;
-        }
-	    function on(type,data,callback) {
-	    	switch(arguments.length) {
-	    		case 2: this._addListener(type,name,null,arguments[1]); break;
-	    		case 3: this._addListener(type,name,data,callback); break;
-	    	};
-	    }
-
-	    function trigger(type) {
-	    	var base = resolver._resolve(baseNames,null,onundefined);
-            var value = base[leafName];
-
-	    	this._callListener(type,baseNames,base,leafName,value);
-			var parentRef = resolver.references[baseRefName];
-			if (parentRef) parentRef._callListener(type,baseNames,_resolve(baseNames,null),leafName,value);
-	    }
-
-        // type = change/load/unload
-        // dest = local/session/cookie
-        function stored(type,dest,options) {
-            options = options || {};
-            var id = "resolver." + resolver.named + "#" + name;
-            if (options.id) id = options.id;
-            if (options.name) id = options.name;
-
-            if (/change/.test(type)) {
-                if (this.storechanges == undefined) this.storechanges = {};
-                var todo = { storage: Resolver.storages[dest], id:id, options:options };
-                if (todo.storage) { todo.call = todo.storage.store; this.storechanges[dest] = todo; }
-            }
-            if (/^load| load/.test(type)) {
-                var todo = { storage: Resolver.storages[dest], id:id, options:options };
-                // read it straight away
-                if (todo.storage) { todo.call = todo.storage.read; todo.call(this); }
-
-                /* no load later should be needed
-                if (this.readloads == undefined) {
-                    this.readloads = {};
-                    Resolver.readloads.push(this);
-                }
-                if (todo.storage) this.readloads[dest] = todo;
-                */
-            }
-            if (/unload/.test(type)) {
-                if (this.storeunloads == undefined) {
-                    this.storeunloads = {};
-                    Resolver.storeunloads.push(this);
-                }
-                var todo = { storage: Resolver.storages[dest], id:id, options:options };
-                if (todo.storage) { todo.call = todo.storage.store; this.storeunloads[dest] = todo; }
-            }
-        }    
-
-        get.remove = remove;
-        get.set = set;
-        get.toggle = toggle;
-        get.get = get;
-        get.declare = declare;
-        get.mixin = mixin;
-        get.unmix = unmix;
-        get.mixinto = mixinto;
-        get.empty = empty;
-        get.getEntry = getEntry;
-        get.declareEntry = declareEntry;
-        get.setEntry = setEntry;
-        get.on = on;
-        get.trigger = trigger;
-        get.stored = stored;
-
-        for(var n in Resolver.method.fn) {
-            get[n] = Resolver.method.fn[n];
-        }
-
-        get.listeners = listeners || _makeListeners();
-
-	    function _callListener(type,names,base,symbol,value,oldValue) {
-            if (type == "change" && value === false) {
-                for(var i=0,event; event = this.listeners["false"][i]; ++i) {
-                    event.trigger(base,symbol,value,oldValue);
-                }
-            }
-            if (type == "change" && value === true) {
-                for(var i=0,event; event = this.listeners["true"][i]; ++i) {
-                    event.trigger(base,symbol,value,oldValue);
-                }
-            }
-	    	for(var i=0,event; event = this.listeners[type][i]; ++i) {
-	    		event.trigger(base,symbol,value,oldValue);
-	    	}
-            if (this.storechanges && type == "change") {
-                for(var n in this.storechanges) this.storechanges[n].call(this);
-            }
-	    }
-	    get._callListener = _callListener;
-	    
-        function _addListener(type,selector,data,callback) {
-	    	/*
-	    		selector
-	    		*
-	    		a
-	    		a.b
-	    		a.b.c
-	    	*/
-            if (/^bind | bind | bind$|^bind$/.test(type)) {
-                type = type.replace(" bind "," ").replace("bind ","").replace(" bind","");
-
-                var baseNames = selector.split(".");
-                var leafName = baseNames.pop();
-                var base = resolver._resolve(baseNames,null,"undefined");
-                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
-                ev.binding = true;
-                ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
-                ev.binding = false;
-            }
-            var types = type.split(" ");
-            for(var i=0,type; type = types[i]; ++i) {
-                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
-                this.listeners[type].push(ev);
-            }
-	    }
-	    get._addListener = _addListener;
-
-
-        return get;
-    };
-
-    resolver.on = function(type,selector,data,callback) 
-    {
-    	switch(arguments.length) {
-    		case 2: break; //TODO
-    		case 3: if (typeof arguments[1] == "string") {
-                    //TODO reference "undefined" ?
-			    	this.reference(selector).on(type,null,arguments[2]);
-    			} else { // middle param is data
-			    	//TODO this.reference("*").on(type,arguments[1],arguments[2]);
-    			}
-    			break;
-    		case 4:
-                    //TODO reference "undefined" ?
-		    	this.reference(selector).on(type,data,callback);
-    			break;
-    	}
-    };
 
     function clone(src) {
         switch(src) {
@@ -601,35 +136,6 @@ function Resolver(name_andor_expr,ns,options)
         }
     }
 
-
-    resolver.reference = function(name,onundefined) 
-    {
-        name = name || "";
-    	if (typeof name == "object") {
-            onundefined = name.onundefined;
-            name = name.name;
-        } else {
-            if (name.indexOf("::") >= 0) return Resolver(name,onundefined);
-        }
-    	var ref = onundefined? name+":"+onundefined : name;
-    	var entry = this.references[ref];
-    	if (entry) {
-            //TODO track the version number of the API and update if higher
-            for(var n in Resolver.method.fn) {
-                if (entry[n] === undefined) entry[n] = Resolver.method.fn[n];
-            }
-            return entry;
-        }
-
-    	// make the default reference first
-    	var defaultRef = this.references[name];
-    	if (defaultRef == undefined) {
-    		defaultRef = this.references[name] = makeReference(this, name,onundefined);
-    		if (ref == name) return defaultRef;
-    	}
-    	// if requested reference is different return that one
-    	return this.references[ref] = makeReference(this, name,onundefined,defaultRef.listeners);
-    };
 
     resolver.proxy = function(dest,other,src) {
         other.on("change",src,this,function(ev){
@@ -705,6 +211,7 @@ Resolver.setByUniqueID = function(map,el,value) {
     // unnamed resolvers name=null
 Resolver.create = function(name,ns,options,auto) {
     options = options || {};
+    name = name || options.name;
     
     /**
      * Function returned by the Resolver call.
@@ -731,7 +238,8 @@ Resolver.create = function(name,ns,options,auto) {
 
         return _resolve(parts,null,onundefined);
     };
-    resolver.named = name || options==undefined? name : options.name;
+    Resolver.nm[name] = resolver;
+    resolver.named = name || options.name;
     resolver.namespace = ns;
     resolver.references = { }; // on references perhaps ref this as well
 
@@ -976,7 +484,501 @@ Resolver.method.fn.remove = function(name,onundefined)
     if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
     return oldValue;
 };
+
+Resolver.method.fn.on = function(type,selector,data,callback) 
+{
+    switch(arguments.length) {
+        case 2: break; //TODO
+        case 3: if (typeof arguments[1] == "string") {
+                //TODO reference "undefined" ?
+                this.reference(selector).on(type,null,arguments[2]);
+            } else { // middle param is data
+                //TODO this.reference("*").on(type,arguments[1],arguments[2]);
+            }
+            break;
+        case 4:
+                //TODO reference "undefined" ?
+            this.reference(selector).on(type,data,callback);
+            break;
+    }
+};
+
     
+Resolver.method.fn.reference = function(name,onundefined) 
+{
+    name = name || "";
+    if (typeof name == "object") {
+        onundefined = name.onundefined;
+        name = name.name;
+    } else {
+        if (name.indexOf("::") >= 0) return Resolver(name,onundefined);
+    }
+    var ref = onundefined? name+":"+onundefined : name;
+    var entry = this.references[ref];
+    if (entry) {
+        //TODO track the version number of the API and update if higher
+        for(var n in Resolver.method.fn) {
+            if (entry[n] === undefined) entry[n] = Resolver.method.fn[n];
+        }
+        return entry;
+    }
+
+    // make the default reference first
+    var defaultRef = this.references[name];
+    if (defaultRef == undefined) {
+        defaultRef = this.references[name] = this.makeReference(name,onundefined);
+        if (ref == name) return defaultRef;
+    }
+    // if requested reference is different return that one
+    return this.references[ref] = this.makeReference(name,onundefined,defaultRef.listeners);
+};
+
+    // relies of resolver
+Resolver.method.fn.makeReference = function(name,onundefined,listeners)
+{
+    var resolver = this;
+        var names = [], leafName, baseRefName = "", baseNames = [];
+        if (name!=="" && name!=null) {
+            names = name.split(".");
+            leafName = names.pop();
+            baseRefName = names.join(".");
+            baseNames = names.slice(0);
+            names.push(leafName);
+        }
+
+        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
+
+        function get() {
+            if (arguments.length==1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var r = resolver._resolve(names,subnames,onundefined);
+                //TODO onundefined for the arg
+                return r;
+            } else {
+                var base = resolver._resolve(names,null,onundefined);
+                return base;
+            }
+        }
+        function toggle() {
+            var value; //TODO
+            if (arguments.length > 1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = resolver._resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                var oldValue = arguments[1];
+                value = !oldValue; //TODO configurable toggle
+
+                if (resolver._setValue(value,combined,base,symbol)) {
+                    var childRef = resolver.references[parentName + "." + symbol];
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
+                    var parentRef = resolver.references[parentName];
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
+                }
+            } else {
+                var base = resolver._resolve(baseNames,null,onundefinedSet),
+                    oldValue = arguments[0];
+                value = !oldValue; //TODO configurable toggle
+
+                if (resolver._setValue(value,baseNames,base,leafName)) {
+                    this._callListener("change",baseNames,base,leafName,value,oldValue);
+                    //TODO test for triggering specific listeners
+                    if (baseRefName) {
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
+                    }
+                }
+            }
+            return value;
+        }
+
+        function remove() {
+            if (arguments.length > 0) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = resolver._resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+
+                //TODO if typeof base != object 
+                var oldValue = base?base[symbol]:undefined;
+                if (oldValue === undefined) return;
+                delete base[symbol];
+
+                var childRef = resolver.references[parentName + "." + symbol];
+                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
+                var parentRef = resolver.references[parentName];
+                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
+
+            } else {
+                var symbol = names[names.length - 1];
+                var base = resolver._resolve(baseNames,null,onundefinedSet);
+                var oldValue = base?base[symbol]:undefined;
+                if (oldValue === undefined) return;
+                delete base[symbol];
+
+                this._callListener("change",baseNames,base,leafName,undefined,oldValue);
+                //TODO test for triggering specific listeners
+                if (baseRefName) {
+                    var parentRef = resolver.references[baseRefName];
+                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,undefined,oldValue);
+                }
+            }
+            return oldValue;
+        }
+
+        function set(value) {
+            if (arguments.length > 1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = resolver._resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                value = arguments[1];
+                var oldValue = base[symbol];
+
+                if (resolver._setValue(value,combined,base,symbol)) {
+                    var childRef = resolver.references[parentName + "." + symbol];
+                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
+                    var parentRef = resolver.references[parentName];
+                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
+                }
+            } else {
+                var base = resolver._resolve(baseNames,null,onundefinedSet);
+                var oldValue = base?base[leafName]:undefined;
+
+                if (resolver._setValue(value,baseNames,base,leafName)) {
+                    this._callListener("change",baseNames,base,leafName,value,oldValue);
+                    //TODO test for triggering specific listeners
+                    if (baseRefName) {
+                        var parentRef = resolver.references[baseRefName];
+                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
+                    }
+                }
+            }
+            return value;
+        }
+        function declare(value) {
+            if (arguments.length > 1) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = resolver._resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+                value = arguments[1];
+                var oldValue = base?base[symbol]:undefined;
+
+                if (base[symbol] === undefined) {
+                    if (resolver._setValue(value,combined,base,symbol)) {
+                        var childRef = resolver.references[parentName + "." + symbol];
+                        if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
+                        var parentRef = resolver.references[parentName];
+                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
+                    }
+                }
+                return base[symbol];
+            } else {
+                var base = resolver._resolve(baseNames,null,onundefinedSet);
+                var oldValue = base?base[leafName]:undefined;
+
+                if (base[leafName] === undefined) {
+                    if (resolver._setValue(value,baseNames,base,leafName)) {
+                        this._callListener("change",baseNames,base,leafName,value,oldValue);
+                        //TODO test for triggering specific listeners
+                        if (baseRefName) {
+                            var parentRef = resolver.references[baseRefName];
+                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
+                        }
+                    }
+                }
+                return base[leafName];
+            }
+        }
+        function getEntry(key) {
+            var base = resolver._resolve(names,null,onundefined);
+            if (arguments.length) return base[key];
+            return base;
+        }
+        function declareEntry(key,value) {
+            var symbol = names.pop();
+            var base = resolver._resolve(names,null,onundefined);
+            var oldValue = base[symbol];
+            names.push(symbol);
+            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
+            
+            if (base[symbol][key] === undefined) {
+                names.push(key);
+                if (resolver._setValue(value,names,base[symbol],key)) {
+                    this._callListener("change",names,base,key,value,oldValue);
+            //TODO parent listeners
+                }
+                names.pop(); // return names to unchanged
+            }
+        }
+        function setEntry(key,value) {
+            var symbol = names.pop();
+            var base = resolver._resolve(names,null,onundefined);
+            var oldValue = base?base[symbol]:undefined;
+            names.push(symbol);
+            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
+            
+            names.push(key);
+            if (resolver._setValue(value,names,base[symbol],key)) {
+                this._callListener("change",names,base,key,value,oldValue);
+            //TODO parent listeners
+            }
+            names.pop(); // return names to unchanged
+        }
+        function mixin(map) {
+            var symbol = names.pop();
+            var base = resolver._resolve(names,null,onundefined);
+            names.push(symbol);
+            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
+            var ni = names.length;
+            var mods = {};
+            for(var n in map) {
+                names[ni] = n;
+                if (resolver._setValue(map[n],names,base[symbol],n)) {
+                    mods[n] = map[n];
+                }
+            }
+            names.pop(); // return names to unchanged
+            this._callListener("change",names,base[symbol],null,mods);
+            //TODO parent listeners
+        }
+        function unmix(map) {
+            var symbol = names.pop();
+            var base = resolver._resolve(names,null,onundefined);
+            names.push(symbol);
+
+            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
+            var ni = names.length;
+            var mods = {};
+
+            for(var n in map) {
+                names[ni] = n;
+                if (resolver._setValue(undefined,names,base[symbol],n)) {
+                    mods[n] = undefined;
+                }
+            }
+
+            names.pop(); // return names to unchanged
+            this._callListener("change",names,base[symbol],null,mods);
+        }
+        function mixinto(target) {
+            var base = resolver._resolve(names,null,onundefined);
+            for(var n in base) {
+                target[n] = base[n];
+            }
+        }
+        function empty(key) {
+            var oldValue;
+            if (arguments.length > 0) {
+                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
+                var symbol = subnames.pop();
+                var base = resolver._resolve(names,subnames,onundefinedSet);
+                var combined = names.concat(subnames);
+                var parentName = combined.join(".");
+                subnames.push(symbol);
+
+                //TODO if typeof base != object 
+                // var oldValue = base?base[symbol]:undefined;
+                resolver._setValue({},names,base,symbol);
+
+                var childRef = resolver.references[parentName + "." + symbol];
+                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
+                var parentRef = resolver.references[parentName];
+                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
+
+            } else {
+                 var symbol = names.pop();
+                var base = resolver._resolve(names,null,onundefined);
+                names.push(symbol);
+
+                resolver._setValue({},names,base,symbol);
+                this._callListener("change",names,base[symbol],null,mods);
+                //TODO parent listeners
+           }
+            // return oldValue;
+        }
+        function on(type,data,callback) {
+            switch(arguments.length) {
+                case 2: this._addListener(type,name,null,arguments[1]); break;
+                case 3: this._addListener(type,name,data,callback); break;
+            };
+        }
+
+        function trigger(type) {
+            var base = resolver._resolve(baseNames,null,onundefined);
+            var value = base[leafName];
+
+            this._callListener(type,baseNames,base,leafName,value);
+            var parentRef = resolver.references[baseRefName];
+            if (parentRef) parentRef._callListener(type,baseNames,_resolve(baseNames,null),leafName,value);
+        }
+
+        // type = change/load/unload
+        // dest = local/session/cookie
+        function stored(type,dest,options) {
+            options = options || {};
+            var id = "resolver." + resolver.named + "#" + name;
+            if (options.id) id = options.id;
+            if (options.name) id = options.name;
+
+            if (/change/.test(type)) {
+                if (this.storechanges == undefined) this.storechanges = {};
+                var todo = { storage: Resolver.storages[dest], id:id, options:options };
+                if (todo.storage) { todo.call = todo.storage.store; this.storechanges[dest] = todo; }
+            }
+            if (/^load| load/.test(type)) {
+                var todo = { storage: Resolver.storages[dest], id:id, options:options };
+                // read it straight away
+                if (todo.storage) { todo.call = todo.storage.read; todo.call(this); }
+
+                /* no load later should be needed
+                if (this.readloads == undefined) {
+                    this.readloads = {};
+                    Resolver.readloads.push(this);
+                }
+                if (todo.storage) this.readloads[dest] = todo;
+                */
+            }
+            if (/unload/.test(type)) {
+                if (this.storeunloads == undefined) {
+                    this.storeunloads = {};
+                    Resolver.storeunloads.push(this);
+                }
+                var todo = { storage: Resolver.storages[dest], id:id, options:options };
+                if (todo.storage) { todo.call = todo.storage.store; this.storeunloads[dest] = todo; }
+            }
+        }    
+
+        get.remove = remove;
+        get.set = set;
+        get.toggle = toggle;
+        get.get = get;
+        get.declare = declare;
+        get.mixin = mixin;
+        get.unmix = unmix;
+        get.mixinto = mixinto;
+        get.empty = empty;
+        get.getEntry = getEntry;
+        get.declareEntry = declareEntry;
+        get.setEntry = setEntry;
+        get.on = on;
+        get.trigger = trigger;
+        get.stored = stored;
+
+        for(var n in Resolver.method.fn) {
+            get[n] = Resolver.method.fn[n];
+        }
+
+    function nopCall() {}
+
+    function _makeResolverEvent(resolver,type,selector,data,callback) {
+        var e = {};
+
+        e.resolver = resolver;
+        e.type = type;
+        e.selector = selector;
+        e.data = data;
+        e.callback = callback;
+        e.inTrigger = 0;
+
+        function trigger(base,symbol,value,oldValue) {
+            if (this.inTrigger) return;
+            ++this.inTrigger;
+            this.base = base;
+            this.symbol = symbol;
+            this.value = value;
+            this.oldValue = oldValue;
+            this.callback.call(resolver,this);
+            --this.inTrigger;
+        }
+        e.trigger = callback? trigger : nopCall;
+
+        return e;
+    }
+
+
+
+    var VALID_LISTENERS = {
+        "true": true, // change to true value
+        "false": true, // change to false value
+        "reflect": true, // allows forcing reflection of current value
+        "get": true, // allows for switching in alternate lookups
+        "change": true, // allows reflecting changes elsewhere
+        "undefined": true // allow filling in unfound entries
+    };
+
+    function _makeListeners() {
+        var listeners = {};
+        // listeners.get.<list of callbacks>
+        // listeners.change.<list of callbacks>
+        // ..
+        for(var n in VALID_LISTENERS) listeners[n] = [];
+        return listeners;
+    }
+
+
+        get.listeners = listeners || _makeListeners();
+
+        function _callListener(type,names,base,symbol,value,oldValue) {
+            if (type == "change" && value === false) {
+                for(var i=0,event; event = this.listeners["false"][i]; ++i) {
+                    event.trigger(base,symbol,value,oldValue);
+                }
+            }
+            if (type == "change" && value === true) {
+                for(var i=0,event; event = this.listeners["true"][i]; ++i) {
+                    event.trigger(base,symbol,value,oldValue);
+                }
+            }
+            for(var i=0,event; event = this.listeners[type][i]; ++i) {
+                event.trigger(base,symbol,value,oldValue);
+            }
+            if (this.storechanges && type == "change") {
+                for(var n in this.storechanges) this.storechanges[n].call(this);
+            }
+        }
+        get._callListener = _callListener;
+        
+        function _addListener(type,selector,data,callback) {
+            /*
+                selector
+                *
+                a
+                a.b
+                a.b.c
+            */
+            if (/^bind | bind | bind$|^bind$/.test(type)) {
+                type = type.replace(" bind "," ").replace("bind ","").replace(" bind","");
+
+                var baseNames = selector.split(".");
+                var leafName = baseNames.pop();
+                var base = resolver._resolve(baseNames,null,"undefined");
+                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
+                ev.binding = true;
+                ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
+                ev.binding = false;
+            }
+            var types = type.split(" ");
+            for(var i=0,type; type = types[i]; ++i) {
+                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
+                this.listeners[type].push(ev);
+            }
+        }
+        get._addListener = _addListener;
+
+
+        return get;
+};
+
 
 
 Resolver.docMethod = function(name,fn) {
@@ -1163,10 +1165,9 @@ Resolver.storages.cookie = {
 //TODO support server remote storage mechanism
 
 
-Resolver.nm["default"] = Resolver.create("default",{});
-Resolver.nm.window = Resolver.create("window", window);
-Resolver.nm.document = Resolver.create("document",document);
-Resolver.nm.document.declare("essential.appliedConfig",{});
+Resolver.create("default",{});
+Resolver.create("window", window);
+Resolver.create("document",document);
 
 
 function Generator(mainConstr,options)
@@ -1581,6 +1582,9 @@ Generator.discardRestricted = function()
 };
 
 
+Resolver.nm.document.declare("essential.appliedConfig",{});
+
+/*jslint white: true */
 // types for describing generator arguments and generated properties
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
