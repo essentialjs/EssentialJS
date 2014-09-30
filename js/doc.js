@@ -532,3 +532,6 @@ Resolver.exec = function(resolver,expr,onundefined,cmd,value) {
 
 }();
 
+Resolver.create("document",document);
+Resolver.nm.document.declare("essential.appliedConfig",{});
+

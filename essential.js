@@ -194,10 +194,12 @@ Resolver.setByUniqueID = function(map,el,value) {
 };
 
     // unnamed resolvers name=null
-Resolver.create = function(name,ns,options,auto) {
+Resolver.create = function(name,ns,options,parent) {
     ns = ns || {};
     options = options || {};
     name = name || options.name;
+
+    //TODO parent scope
     
     /**
      * Function returned by the Resolver call.
@@ -389,6 +391,7 @@ Resolver.method.fn.declare = function(name,value,onundefined)
     var base = this._resolve(names,null,onundefined);
     if (base[symbol] === undefined) { 
         if (this._setValue(value,names,base,symbol)) {
+            //TODO references of resolver from reference or tree of references?
             var ref = resolver.references[name];
             if (ref) ref._callListener("change",names,base,symbol,value);
             var parentName = names.join(".");
@@ -1168,7 +1171,6 @@ Resolver.storages.cookie = {
 
 Resolver.create("default");
 Resolver.create("window", window);
-Resolver.create("document",document);
 
 
 function Generator(mainConstr,options)
@@ -1583,9 +1585,6 @@ Generator.discardRestricted = function()
 };
 
 
-Resolver.nm.document.declare("essential.appliedConfig",{});
-
-/*jslint white: true */
 // types for describing generator arguments and generated properties
 !function (win) {
 	"use strict"; // Enable ECMAScript "strict" operation for this function. See more: http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
@@ -5096,6 +5095,9 @@ Resolver.exec = function(resolver,expr,onundefined,cmd,value) {
 
 
 }();
+
+Resolver.create("document",document);
+Resolver.nm.document.declare("essential.appliedConfig",{});
 
 
 /*

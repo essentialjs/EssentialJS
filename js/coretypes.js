@@ -1,5 +1,3 @@
-Resolver.nm.document.declare("essential.appliedConfig",{});
-
 /*jslint white: true */
 // types for describing generator arguments and generated properties
 !function (win) {
