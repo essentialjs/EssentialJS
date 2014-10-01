@@ -103,6 +103,8 @@ test("Document resolver",function(){
 	equal(doc.namespace,document);
 	equal(doc("all"),document.all);
 	equal(doc("forms"),document.forms);
+	equal(doc(["body"]),document.body);
+	equal(doc(["body","className"]), document.body.className);
 
 	doc.set("global_api.a.b.func",function(){ return "return"});
 	equal(document.global_api.a.b.func(),"return");

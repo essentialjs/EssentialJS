@@ -1,3 +1,6 @@
+Resolver.create("default");
+Resolver.create("window", window);
+
 /*jslint white: true */
 // types for describing generator arguments and generated properties
 !function (win) {
