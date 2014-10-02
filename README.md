@@ -59,6 +59,13 @@ The demos are intended to remain as such and are therefore covered by an AGPL li
 
 Recent releases
 
+### 1.0
+
+Default resolver get behavior is to return null if undefined is found while resolving the expression.
+
+References to object graph nodes in resolver namespaces are resolvers.
+
+
 ### 0.6.0
 
 Resolver("document") used to track document loading,modules,resources

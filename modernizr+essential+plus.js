@@ -32,12 +32,6 @@ function Resolver(name_andor_expr,ns,options)
 
     var forDoc = false, forEl = false;
 
-    function _resolver(name,ns,options,auto) {
-        if (Resolver.nm[name]) return Resolver.nm[name];
-        if (!auto) return ns;
-        return Resolver.create(name, ns,options);
-    }
-
 	switch(typeof(name_andor_expr)) {
 	case "undefined":
 		// Resolver()
@@ -53,10 +47,10 @@ function Resolver(name_andor_expr,ns,options)
                 // Resolver("abc",null)
                 // Resolver("abc",{})
                 // Resolver("abc",{},{options})
-                return _resolver(name,ns,options,arguments.length==1 || ns);
+                return Resolver.get(name,ns,options,arguments.length==1 || ns);
 
             case 2: 
-                var _r = _resolver(name,ns,options,arguments.length==1 || ns);
+                var _r = Resolver.get(name,ns,options,arguments.length==1 || ns);
                 // Resolver("abc::") returns the namespace of resolver 
                 if (expr == "") {
                     return _r.namespace;
@@ -136,28 +130,6 @@ function Resolver(name_andor_expr,ns,options)
     }
 
 
-    resolver.proxy = function(dest,other,src) {
-        other.on("change",src,this,function(ev){
-            ev.data.set(dest,ev.value);
-        });
-
-        //TODO make proxy removable
-    };
-
-    resolver.override = function(ns,options)
-    {
-        this.namespace = ns;
-        //TODO options
-        return this;
-    };
-
-    resolver.destroy = function()
-    {
-        //TODO break down listeners
-        //TODO clean up references
-        for(var n in this.references) delete this.references[n];
-    };
-
     if (options.mixinto) {
     	if (options.mixinto.get==null) options.mixinto.get = resolver;
     	if (options.mixinto.declare==null) options.mixinto.declare = resolver.declare;
@@ -222,7 +194,7 @@ Resolver.create = function(name,ns,options,parent) {
             case 0: 
                 return resolver.namespace; //TODO default undefined?
             case 1:
-                return resolver._noval(path,"null"); //TODO default undefined?
+                return resolver._noval(path, path.onundefined||"null"); //TODO default undefined?
             case 2:
                 return resolver._noval(path,method);
             default:
@@ -238,19 +210,24 @@ Resolver.create = function(name,ns,options,parent) {
     resolver.root = parent? (parent.root || parent) : null;
 
     resolver._noval = function(path, cmd) {
-        var parts;
-        if (typeof path == "object") {
-            parts = (path.length != undefined)? path : path.name.split(".");
-            if (path.length != undefined) { parts=path; } 
-            else { parts = path.name.split("."); onundefined = path.onundefined || onundefined; }
-        }
-        else {
-            var parts = path.split("::");
-            if (parts.length > 1) {
-                // path = parts[1];
-                if (parts.length == 2) path += "::"; // return value by default not ref
-                return Resolver(path,onundefined);
+        var parts, names, ref=false, src = resolver;
+        if (typeof path == "string") {
+            parts = path.split("::");
+            if(parts.length == 1) {
+                names = path.split(".");
+            } else if (parts.length == 2 && parts[1].length == 0) {
+                ref = true;
+            } else if (parts.length >= 2) {
+                src = Resolver.get(parts[0]);
+                names = parts[1].split(".");
+            } 
+
+            if (parts.length == 3 && parts[2].length == 0) {
+                ref = true;
             }
+        } else {
+            if (path.length != undefined) { names=path; } 
+            else { names = path.name.split("."); /*onundefined = path.onundefined || onundefined;*/ }
         }
 
         switch(cmd) {
@@ -266,57 +243,71 @@ Resolver.create = function(name,ns,options,parent) {
             case "store":
                 break;            
 
+            case "throw":
+                if (ref) resolver._reference(names);
+                return resolver._throw(names);
+
             case "generate":
             case "force":
-                return resolver._generate(parts);
+                if (ref) resolver._reference(names);
+                return resolver._generate(names);
 
             case "get": // which is default?
             case "null":
-                return resolver._get(parts,null);
+                if (ref) resolver._reference(names);
+                return resolver._get(names,null);
             case "undefined":
-                return resolver._get(parts,undefined);
+                if (ref) resolver._reference(names);
+                return resolver._get(names,undefined);
             case "false":
-                return resolver._get(parts,false);
+                if (ref) resolver._reference(names);
+                return resolver._get(names,false);
             case "0":
-                return resolver._get(parts,0);
+                if (ref) resolver._reference(names);
+                return resolver._get(names,0);
         }
 
     };
 
     resolver._exec = function(path, cmd, value, trigger) {
-        var parts;
-        if (typeof path == "object") {
-            parts = (path.length != undefined)? path : path.name.split(".");
-            if (path.length != undefined) { parts=path; } 
-            else { parts = path.name.split("."); onundefined = path.onundefined || onundefined; }
-        }
-        else {
-            var parts = path.split("::");
-            if (parts.length > 1) {
-                // path = parts[1];
-                if (parts.length == 2) path += "::"; // return value by default not ref
-                return Resolver(path,onundefined);
+        var parts, names, ref=false, src = resolver;
+        if (typeof path == "string") {
+            parts = path.split("::");
+            if(parts.length == 1) {
+                names = path.split(".");
+            } else if (parts.length == 2 && parts[1].length == 0) {
+                ref = true;
+            } else if (parts.length >= 2) {
+                src = Resolver.get(parts[0]);
+                names = parts[1].split(".");
+            } 
+
+            if (parts.length == 3 && parts[2].length == 0) {
+                ref = true;
             }
+        } else {
+            if (path.length != undefined) { names=path; } 
+            else { names = path.name.split("."); /*onundefined = path.onundefined || onundefined;*/ }
         }
 
         switch(cmd) {
             case "declare":
-                var base = resolver._base(parts),
-                    symbol = parts[parts.length - 1],
+                var base = resolver._base(names),
+                    symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old === undefined) {
                     base[symbol] = value;
-                    if (trigger) trigger.call(resolver, "change", parts, base, symbol, value); //TODO standard params
+                    if (trigger) trigger.call(resolver, "change", names, base, symbol, value); //TODO standard params
                 }
                 return base[symbol];
 
             case "set":
-                var base = resolver._base(parts),
-                    symbol = parts[parts.length - 1],
+                var base = resolver._base(names),
+                    symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old !== value) {
                     base[symbol] = value;
-                    if (trigger) trigger.call(resolver, "change", parts, base, symbol, value); //TODO standard params
+                    if (trigger) trigger.call(resolver, "change", names, base, symbol, value); //TODO standard params
                 }
                 return base[symbol];
 
@@ -353,12 +344,16 @@ Resolver.create = function(name,ns,options,parent) {
         
         var node = resolver.namespace; // passed namespace negates override
 
-        for (var j = 0, n; j<names.length; ++j) {
+        for (var j = 0, n; j<names.length-1; ++j) {
             n = names[j];
             var prev = node;
             node = node[n];
             if (node == undefined) node = prev[n] = generator();
         }
+        n = names[j];
+        var prev = node;
+        node = node[n];
+        if (node === undefined) node = prev[n] = generator();
 
         return node;
     };
@@ -369,11 +364,33 @@ Resolver.create = function(name,ns,options,parent) {
         
         var node = resolver.namespace; // passed namespace negates override
 
-        for (var j = 0, n; j<names.length; ++j) {
+        for (var j = 0, n; j<names.length-1; ++j) {
             n = names[j];
             node = node[n];
             if (node == undefined) return undef;
         }
+        n = names[j];
+        node = node[n];
+
+        return node === undefined? undef : node;
+    };
+
+    resolver._throw = function(names) {
+
+        //TODO if root&parent get from root first
+        
+        var node = resolver.namespace; // passed namespace negates override
+
+        for (var j = 0, n; j<names.length; ++j) {
+            n = names[j];
+            node = node[n];
+            if (node === undefined) {
+                if (j < names.length-1) {
+                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                }
+            }
+        }
+        //TODO test like _get _generate
 
         return node;
     };
@@ -533,6 +550,11 @@ Resolver.create = function(name,ns,options,parent) {
     return resolver;
 };
 
+Resolver.get = function(name,ns,options,auto) {
+    if (this.nm[name]) return this.nm[name];
+    if (!auto) return ns;
+    return this.create(name, ns,options);
+};
 
 Resolver.storeunloads = [];
 
@@ -1181,6 +1203,28 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
 
 
         return get;
+};
+
+Resolver.method.fn.proxy = function(dest,other,src) {
+    other.on("change",src,this,function(ev){
+        ev.data.set(dest,ev.value);
+    });
+
+    //TODO make proxy removable
+};
+
+Resolver.method.fn.override = function(ns,options)
+{
+    this.namespace = ns;
+    //TODO options
+    return this;
+};
+
+Resolver.method.fn.destroy = function()
+{
+    //TODO break down listeners
+    //TODO clean up references
+    for(var n in this.references) delete this.references[n];
 };
 
 

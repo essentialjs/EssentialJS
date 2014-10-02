@@ -148,8 +148,8 @@ test("Custom Document Resolver",function() {
 
 test('Namespace and package creation',function(){
   	expect(7);
-	var shapes = Resolver()("my.shapes");
-	var tools = Resolver()("my.tools");
+	var shapes = Resolver()("my.shapes","generate");
+	var tools = Resolver()("my.tools","generate");
 
 	Resolver().set("my.tools.X",5);
 	equal(Resolver.nm["default"].namespace.my.tools.X,5, "Set number worked");
@@ -161,7 +161,7 @@ test('Namespace and package creation',function(){
 	equal(Resolver.nm["default"].namespace.my, undefined, "namespace replaced");
 	equal(Resolver.nm["default"].named,"default");
 
-	Resolver()("my")
+	Resolver()("my","force")
 	notEqual(Resolver.nm["default"].namespace.my, undefined, "namespace replaced");
 
 })
