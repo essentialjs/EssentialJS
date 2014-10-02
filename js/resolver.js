@@ -438,9 +438,9 @@ Resolver.create = function(name,ns,options,parent) {
     }
     resolver._callListener = _callListener;
 
-    resolver._notifies = function(evName, parts, base, symbol, value) {
-        this._callListener(this, evName, parts, base, symbol, value);
-        if (parent) parent._callListener(this, evName, parts, base, symbol, value);
+    resolver._notifies = function(evName, parts, base, symbol, value, old) {
+        this._callListener(this, evName, parts, base, symbol, value, old);
+        if (parent) parent._callListener(this, evName, parts, base, symbol, value, old);
     };
 
 
