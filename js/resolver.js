@@ -187,7 +187,7 @@ Resolver.create = function(name,ns,options,parent) {
     resolver.references = { }; // on references perhaps ref this as well
     resolver.root = parent? (parent.root || parent) : null;
 
-    resolver._noval = function(path, cmd) {
+    resolver._noval = function(path, cmd, trigger, onundefined) {
         var parts, names, ref=false, src = resolver;
         if (typeof path == "string") {
             parts = path.split("::");
@@ -210,7 +210,13 @@ Resolver.create = function(name,ns,options,parent) {
 
         switch(cmd) {
             case "toggle":
-                break;
+                var base = resolver._base(names,onundefined),
+                    symbol = names[names.length - 1],
+                    old = base[symbol];
+                base[symbol] = !old;
+                if (trigger) trigger.call(resolver, "change", names, base, symbol, !old, old); //TODO standard params
+                return base[symbol];
+
             case "empty":
                 break;
             case "blank":
@@ -280,7 +286,6 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[symbol];
 
             case "set":
-                //TODO onundefined
                 var base = resolver._base(names,onundefined),
                     symbol = names[names.length - 1],
                     old = base[symbol];
@@ -660,7 +665,7 @@ Resolver.method.fn.set = function(name,value,onundefined)
 
 Resolver.method.fn.toggle = function(name,onundefined)
 {
-    return this._exec(name,"toggle",0,this._notifies,onundefined);
+    return this._noval(name,"toggle",this._notifies,onundefined);
 
     // var names;
     // if (typeof name == "object" && name.join) {
