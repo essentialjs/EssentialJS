@@ -222,26 +222,26 @@ Resolver.create = function(name,ns,options,parent) {
                 break;            
 
             case "throw":
-                if (ref) resolver._reference(names);
+                if (ref) return resolver._reference(names);
                 return resolver._throw(names);
 
             case "generate":
             case "force":
-                if (ref) resolver._reference(names);
+                if (ref) return resolver._reference(names);
                 return resolver._generate(names);
 
             case "get": // which is default?
             case "null":
-                if (ref) resolver._reference(names);
+                if (ref) return resolver._reference(names);
                 return resolver._get(names,null);
             case "undefined":
-                if (ref) resolver._reference(names);
+                if (ref) return resolver._reference(names);
                 return resolver._get(names,undefined);
             case "false":
-                if (ref) resolver._reference(names);
+                if (ref) return resolver._reference(names);
                 return resolver._get(names,false);
             case "0":
-                if (ref) resolver._reference(names);
+                if (ref) return resolver._reference(names);
                 return resolver._get(names,0);
         }
 
@@ -326,7 +326,12 @@ Resolver.create = function(name,ns,options,parent) {
             n = names[j];
             var prev = node;
             node = node[n];
-            if (node == undefined) node = prev[n] = generator();
+            if (node == undefined) {
+                if (node === null) {
+                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                }
+                node = prev[n] = generator();
+            }
         }
         n = names[j];
         var prev = node;
@@ -359,16 +364,18 @@ Resolver.create = function(name,ns,options,parent) {
         
         var node = resolver.namespace; // passed namespace negates override
 
-        for (var j = 0, n; j<names.length; ++j) {
+        for (var j = 0, n; j<names.length-1; ++j) {
             n = names[j];
             node = node[n];
-            if (node === undefined) {
-                if (j < names.length-1) {
-                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
-                }
+            if (node == undefined) {
+                throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
             }
         }
-        //TODO test like _get _generate
+        n = names[j];
+        node = node[n];
+        if (node === undefined) {
+            throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+        }
 
         return node;
     };

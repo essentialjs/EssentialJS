@@ -184,14 +184,23 @@ test('Resolve defined and undefined',function(){
 
 	resolver.set("m.n",null);
 	strictEqual(resolver("m.n"), null);
+	resolver.set("m.n",null);
 	strictEqual(resolver("m.n","undefined"), null);
+	resolver.set("m.n",null);
 	strictEqual(resolver("m.n","null"), null);
+	resolver.set("m.n",null);
 	strictEqual(resolver("m.n","generate"), null);
+	resolver.set("m.n",null);
 	strictEqual(resolver("m.n","throw"), null);
-	throws(function(){ resolver("m.n.o") },"The 'o' part of 'm.n.o' couldn't be resolved.");
-	throws(function(){ resolver("m.n.o","undefined") },"The 'o' part of 'm.n.o' couldn't be resolved.");
-	throws(function(){ resolver("m.n.o","null") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	resolver.set("m.n",null);
+	throws(function(){ resolver("m.n.o","throw") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	resolver.set("m.n",null);
+	// throws(function(){ resolver("m.n.o","throw undefined") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	resolver.set("m.n",null);
+	// throws(function(){ resolver("m.n.o","throw null") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	resolver.set("m.n",null);
 	throws(function(){ resolver("m.n.o","generate") },"The 'o' part of 'm.n.o' couldn't be resolved.");
+	resolver.set("m.n",null);
 	throws(function(){ resolver("m.n.o","throw") },"The 'o' part of 'm.n.o' couldn't be resolved.");
 })
 
