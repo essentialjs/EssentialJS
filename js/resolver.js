@@ -275,7 +275,7 @@ Resolver.create = function(name,ns,options,parent) {
                     old = base[symbol];
                 if (old === undefined) {
                     base[symbol] = value;
-                    if (trigger) trigger.call(resolver, "change", names, base, symbol, value); //TODO standard params
+                    if (trigger) trigger.call(resolver, "change", names, base, symbol, value, old); //TODO standard params
                 }
                 return base[symbol];
 
@@ -285,7 +285,7 @@ Resolver.create = function(name,ns,options,parent) {
                     old = base[symbol];
                 if (old !== value) {
                     base[symbol] = value;
-                    if (trigger) trigger.call(resolver, "change", names, base, symbol, value); //TODO standard params
+                    if (trigger) trigger.call(resolver, "change", names, base, symbol, value, old); //TODO standard params
                 }
                 return base[symbol];
 
@@ -293,8 +293,17 @@ Resolver.create = function(name,ns,options,parent) {
             case "setEntry":
             case "mixin":
             case "unmix":
-            case "remove":
                 break;
+
+            case "remove":
+                var base = resolver._base(names),
+                    symbol = names[names.length - 1],
+                    old = base[symbol];
+                if (old !== undefined) {
+                    delete base[symbol];
+                    if (trigger) trigger.call(resolver, "change", names, base, symbol, undefined, old); //TODO standard params & remove flag
+                }
+                return;
         }
     };
 
@@ -672,28 +681,30 @@ Resolver.method.fn.toggle = function(name,onundefined)
 
 Resolver.method.fn.remove = function(name,onundefined)
 {
-    var names;
-    if (typeof name == "object" && name.join) {
-        names = name;
-        name = name.join(".");
-    } else {
-        names = name.split("::");
-        if (names.length > 1) {
-            return Resolver(names.shift()).remove(names[0],onundefined);
-        }
-        names = name.split(".");
-    }
-    var symbol = names.pop();
-    var base = this._resolve(names,null,onundefined), oldValue = base?base[symbol]:undefined;
-    if (oldValue === undefined) return;
-    delete base[symbol];
+    return this._exec(name,"remove",0,this._notifies,onundefined);
 
-    var ref = resolver.references[name];
-    if (ref) ref._callListener("change",names,base,symbol,undefined);
-    var parentName = names.join(".");
-    var parentRef = resolver.references[parentName];
-    if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
-    return oldValue;
+    // var names;
+    // if (typeof name == "object" && name.join) {
+    //     names = name;
+    //     name = name.join(".");
+    // } else {
+    //     names = name.split("::");
+    //     if (names.length > 1) {
+    //         return Resolver(names.shift()).remove(names[0],onundefined);
+    //     }
+    //     names = name.split(".");
+    // }
+    // var symbol = names.pop();
+    // var base = this._resolve(names,null,onundefined), oldValue = base?base[symbol]:undefined;
+    // if (oldValue === undefined) return;
+    // delete base[symbol];
+
+    // var ref = resolver.references[name];
+    // if (ref) ref._callListener("change",names,base,symbol,undefined);
+    // var parentName = names.join(".");
+    // var parentRef = resolver.references[parentName];
+    // if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
+    // return oldValue;
 };
 
 Resolver.method.fn.on = function(type,selector,data,callback) 
