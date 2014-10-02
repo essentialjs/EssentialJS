@@ -269,7 +269,7 @@ Resolver.create = function(name,ns,options,parent) {
 
     };
 
-    resolver._exec = function(path, cmd, value, trigger) {
+    resolver._exec = function(path, cmd, value, trigger, onundefined) {
         var parts, names, ref=false, src = resolver;
         if (typeof path == "string") {
             parts = path.split("::");
@@ -292,7 +292,7 @@ Resolver.create = function(name,ns,options,parent) {
 
         switch(cmd) {
             case "declare":
-                var base = resolver._base(names),
+                var base = resolver._base(names,onundefined),
                     symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old === undefined) {
@@ -302,7 +302,8 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[symbol];
 
             case "set":
-                var base = resolver._base(names),
+                //TODO onundefined
+                var base = resolver._base(names,onundefined),
                     symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old !== value) {
@@ -331,7 +332,7 @@ Resolver.create = function(name,ns,options,parent) {
 
     var generator = options.generator || Generator.ObjectGenerator; // pre-plan object generator
 
-    resolver._base = function(names) {
+    resolver._base = function(names,onundefined) {
 
         //TODO if root&parent get from root first
 
@@ -341,7 +342,13 @@ Resolver.create = function(name,ns,options,parent) {
             n = names[j];
             var prev = node;
             node = node[n];
-            if (node == undefined) node = prev[n] = generator();
+            if (node == undefined) switch(onundefined) {
+                case "throw":
+                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                default:
+                    node = prev[n] = generator();
+                    break;
+            }
         }
 
         return node;

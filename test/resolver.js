@@ -284,10 +284,10 @@ test('Resolver set/declare value',function(){
 	resolver.set("a.b",null);
 	strictEqual(resolver("a.b"),null);
 	throws(function() {
-		resolver("a.b.c");
+		resolver("a.b.c","throw");
 	});
 	throws(function() {
-		resolver.set("a.b.c",false);
+		resolver.set("a.b.c",false,"throw");
 	});
 
 	resolver.set("a.b.c",false,"force");
