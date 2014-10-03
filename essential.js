@@ -281,7 +281,7 @@ Resolver.create = function(name,ns,options,parent) {
             case "force":
             //TODO names == undefined
                 if (ref) return resolver._reference(names);
-                return resolver._get(names,"generate","generate");
+                return resolver._get(names,"generate","generate"); 
 
             case "get": // which is default?
             case "null":
@@ -364,11 +364,11 @@ Resolver.create = function(name,ns,options,parent) {
     var generator = options.generator || Generator.ObjectGenerator; // pre-plan object generator
     var notObject = new Error("Unresolved");
 
-    // next non null node
+    // next non null node, can fill undefined
     function nextObject(node,name,names,fill) {
+        if (fill && node[name]===undefined) return (node[name] = generator());
         var n = node[name], t = typeof n;
         if ((t==="object" && n!==null) || t==="function") return n;
-        if (fill) return (node[name] = generator());
         return new Error("The '" + name + "' part of '" + names.join(".") + "' couldn't be resolved.");
     }
 
@@ -403,7 +403,10 @@ Resolver.create = function(name,ns,options,parent) {
                     }
                     break;
                 default:
-                    for (var j = 0; j<l; ++j) node = nextObject(node,names[j],names,true);
+                    for (var j = 0; j<l; ++j) {
+                        node = nextObject(node,names[j],names,true);
+                        if (node instanceof Error) throw node;
+                    }
                     break;
             }
             switch(leafu) {
