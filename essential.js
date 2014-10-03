@@ -332,8 +332,8 @@ Resolver.create = function(name,ns,options,parent) {
 
     var generator = options.generator || Generator.ObjectGenerator; // pre-plan object generator
 
-    resolver._base = function(names,onundefined) {
-
+    resolver._base = function(names,onundefined,value) {
+        //TODO names == undefined, return namespace
         //TODO if root&parent get from root first
 
         var node = resolver.namespace; // passed namespace negates override
@@ -355,23 +355,12 @@ Resolver.create = function(name,ns,options,parent) {
     };
 
     resolver._generate = function(names) {
-
+        //TODO names == undefined, return namespace
         //TODO if root&parent get from root first
         
-        var node = resolver.namespace; // passed namespace negates override
+        var node = resolver._base(names,"generate");
 
-        for (var j = 0, n; j<names.length-1; ++j) {
-            n = names[j];
-            var prev = node;
-            node = node[n];
-            if (node == undefined) {
-                if (node === null) {
-                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
-                }
-                node = prev[n] = generator();
-            }
-        }
-        n = names[j];
+        n = names[names.length-1];
         var prev = node;
         node = node[n];
         if (node === undefined) node = prev[n] = generator();
@@ -380,36 +369,22 @@ Resolver.create = function(name,ns,options,parent) {
     };
 
     resolver._get = function(names,undef) {
-
+        //TODO names == undefined, return namespace
         //TODO if root&parent get from root first
         
-        var node = resolver.namespace; // passed namespace negates override
-
-        for (var j = 0, n; j<names.length-1; ++j) {
-            n = names[j];
-            node = node[n];
-            if (node == undefined) return undef;
-        }
-        n = names[j];
+        var node = resolver._base(names,"value",undef);
+        n = names[names.length-1];
         node = node[n];
 
         return node === undefined? undef : node;
     };
 
     resolver._throw = function(names) {
-
+        //TODO names == undefined, return namespace
         //TODO if root&parent get from root first
         
-        var node = resolver.namespace; // passed namespace negates override
-
-        for (var j = 0, n; j<names.length-1; ++j) {
-            n = names[j];
-            node = node[n];
-            if (node == undefined) {
-                throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
-            }
-        }
-        n = names[j];
+        var node = resolver._base(names,"throw");
+        n = names[names.length-1];
         node = node[n];
         if (node === undefined) {
             throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
