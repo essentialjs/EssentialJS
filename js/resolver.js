@@ -150,12 +150,35 @@ Resolver.setByUniqueID = function(map,el,value) {
 
     // unnamed resolvers name=null
 Resolver.create = function(name,ns,options,parent) {
-    ns = ns || {};
-    options = options || {};
-    name = name || options.name;
+    if (parent) {
+        resolver.root = parent.root || parent;
+    } else {
+        ns = ns || {};
+        options = options || {};
+        name = name || options.name;
+        //TODO forEl, forDoc byId
+        if (name) Resolver.nm[name] = resolver;
+        resolver.named = name;
+        resolver.namespace = ns;
+        resolver.root = null;
 
-    //TODO parent scope
-    
+        // Namespace is el/doc
+        if (typeof ns.nodeType == "number") {
+            var ownerDoc = ns.ownerDocument;
+            if (ownerDoc == null) {
+                Resolver._docDefaults(resolver); //TODO move in here ?
+                Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
+                resolver.uniquePageID = ns.uniquePageID;
+            }
+            else {
+                //TODO maintain map on the ownerDocument
+                Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
+                resolver.uniqueID = ns.uniqueID;
+            }
+        } 
+    }
+    resolver.references = { }; // on references perhaps ref this as well
+
     /**
      * Function returned by the Resolver call.
      * @param path To resolve
@@ -180,12 +203,6 @@ Resolver.create = function(name,ns,options,parent) {
         }
     }
 
-    //TODO forEl, forDoc byId
-    if (name) Resolver.nm[name] = resolver;
-    resolver.named = name;
-    resolver.namespace = ns;
-    resolver.references = { }; // on references perhaps ref this as well
-    resolver.root = parent? (parent.root || parent) : null;
 
     resolver._noval = function(path, cmd, trigger, onundefined) {
         var parts, names, ref=false, src = resolver;
@@ -203,7 +220,7 @@ Resolver.create = function(name,ns,options,parent) {
             if (parts.length == 3 && parts[2].length == 0) {
                 ref = true;
             }
-        } else {
+        } else if (path) { // if "" / null leave undefined
             if (path.length != undefined) { names=path; } 
             else { names = path.name.split("."); /*onundefined = path.onundefined || onundefined;*/ }
         }
@@ -227,26 +244,43 @@ Resolver.create = function(name,ns,options,parent) {
             case "store":
                 break;            
 
+            case "resolver":
+                if (path == null) {
+                    //TODO get onundefined variant
+                    return this;
+                } else {
+                    //TODO fill out default resolver
+                    return resolver._reference(names);
+                }
+                break;
+
+
             case "throw":
+            //TODO names == undefined
                 if (ref) return resolver._reference(names);
                 return resolver._throw(names);
 
             case "generate":
             case "force":
+            //TODO names == undefined
                 if (ref) return resolver._reference(names);
                 return resolver._generate(names);
 
             case "get": // which is default?
             case "null":
+            //TODO names == undefined
                 if (ref) return resolver._reference(names);
                 return resolver._get(names,null);
             case "undefined":
+            //TODO names == undefined
                 if (ref) return resolver._reference(names);
                 return resolver._get(names,undefined);
             case "false":
+            //TODO names == undefined
                 if (ref) return resolver._reference(names);
                 return resolver._get(names,false);
             case "0":
+            //TODO names == undefined
                 if (ref) return resolver._reference(names);
                 return resolver._get(names,0);
         }
@@ -269,13 +303,14 @@ Resolver.create = function(name,ns,options,parent) {
             if (parts.length == 3 && parts[2].length == 0) {
                 ref = true;
             }
-        } else {
+        } else if (path) { // if "" / null leave undefined
             if (path.length != undefined) { names=path; } 
             else { names = path.name.split("."); /*onundefined = path.onundefined || onundefined;*/ }
         }
 
         switch(cmd) {
             case "declare":
+            //TODO names == undefined
                 var base = resolver._base(names,onundefined),
                     symbol = names[names.length - 1],
                     old = base[symbol];
@@ -286,6 +321,7 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[symbol];
 
             case "set":
+            //TODO names == undefined
                 var base = resolver._base(names,onundefined),
                     symbol = names[names.length - 1],
                     old = base[symbol];
@@ -299,9 +335,11 @@ Resolver.create = function(name,ns,options,parent) {
             case "setEntry":
             case "mixin":
             case "unmix":
+            //TODO names == undefined
                 break;
 
             case "remove":
+            //TODO names == undefined
                 var base = resolver._base(names),
                     symbol = names[names.length - 1],
                     old = base[symbol];
@@ -326,6 +364,8 @@ Resolver.create = function(name,ns,options,parent) {
             var prev = node;
             node = node[n];
             if (node == undefined) switch(onundefined) {
+                case "value":
+                    return value;
                 case "throw":
                     throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
                 default:
@@ -376,6 +416,17 @@ Resolver.create = function(name,ns,options,parent) {
         return node;
     };
 
+    resolver._reference = function(names) {
+        var ref = resolver;
+        for(var i=0,n; n = names[i]; ++i) {
+            if (ref.references[n] == undefined) {
+                ref.references[n] = Resolver.create(n,undefined,{},ref);    
+            }
+            ref = ref.references[n];
+        }
+        return ref;
+    };
+
     var VALID_LISTENERS = {
         "true": true, // change to true value
         "false": true, // change to false value
@@ -424,6 +475,7 @@ Resolver.create = function(name,ns,options,parent) {
     };
 
 
+    // obsolete
     function _resolve(names,subnames,onundefined) {
         
         var top = resolver.namespace; // passed namespace negates override
@@ -495,6 +547,7 @@ Resolver.create = function(name,ns,options,parent) {
     }
     resolver._resolve = _resolve;
 
+    // obsolete
     function _setValue(value,names,base,symbol)
     {
         if (base[symbol] === value) return false;
@@ -513,20 +566,6 @@ Resolver.create = function(name,ns,options,parent) {
     for(var n in Resolver.method.fn) {
         resolver[n] = Resolver.method.fn[n];
     }
-
-    if (typeof ns.nodeType == "number") {
-        var ownerDoc = ns.ownerDocument;
-        if (ownerDoc == null) {
-            Resolver._docDefaults(resolver); //TODO move in here ?
-            Resolver.setByUniqueID(Resolver.forDoc,ns,resolver);
-            resolver.uniquePageID = ns.uniquePageID;
-        }
-        else {
-            //TODO maintain map on the ownerDocument
-            Resolver.setByUniqueID(Resolver.forEl,ns,resolver);
-            resolver.uniqueID = ns.uniqueID;
-        }
-    } 
 
     return resolver;
 };
@@ -715,13 +754,19 @@ Resolver.method.fn.on = function(type,selector,data,callback)
     
 Resolver.method.fn.reference = function(name,onundefined) 
 {
-    name = name || "";
-    if (typeof name == "object") {
-        onundefined = name.onundefined;
-        name = name.name;
-    } else {
-        if (name.indexOf("::") >= 0) return Resolver(name,onundefined);
-    }
+    var ref = this._noval(name,"resolver"); //,0,onundefined);
+
+    return ref._noval(null,"resolver",0,onundefined);
+
+    // obsolete
+
+    // name = name || "";
+    // if (typeof name == "object") {
+    //     onundefined = name.onundefined;
+    //     name = name.name;
+    // } else {
+    //     if (name.indexOf("::") >= 0) return Resolver(name,onundefined);
+    // }
     var ref = onundefined? name+":"+onundefined : name;
     var entry = this.references[ref];
     if (entry) {
