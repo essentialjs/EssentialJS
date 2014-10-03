@@ -249,7 +249,7 @@ Resolver.create = function(name,ns,options,parent) {
 
         switch(cmd) {
             case "toggle":
-                var base = resolver._base(names,onundefined),
+                var base = resolver._get(names,onundefined,-1),
                     symbol = names[names.length - 1],
                     old = base[symbol];
                 base[symbol] = !old;
@@ -280,34 +280,27 @@ Resolver.create = function(name,ns,options,parent) {
             case "throw":
             //TODO names == undefined
                 if (ref) return resolver._reference(names);
-                return resolver._throw(names);
+                return resolver._get(names,"throw","throw");
 
             case "generate":
             case "force":
             //TODO names == undefined
                 if (ref) return resolver._reference(names);
-                return resolver._generate(names);
+                return resolver._get(names,"generate","generate");
 
             case "get": // which is default?
             case "null":
-            //TODO names == undefined
-                if (ref) return resolver._reference(names);
-                return resolver._get(names,null);
             case "undefined":
-            //TODO names == undefined
-                if (ref) return resolver._reference(names);
-                return resolver._get(names,undefined);
             case "false":
-            //TODO names == undefined
-                if (ref) return resolver._reference(names);
-                return resolver._get(names,false);
             case "0":
             //TODO names == undefined
                 if (ref) return resolver._reference(names);
-                return resolver._get(names,0);
+                return resolver._get(names,"value","value",UNDEF[cmd]);
         }
 
     };
+
+    var UNDEF = { "get":null, "null":null, "undefined":undefined, "false":false, "0":0 };
 
     resolver._exec = function(path, cmd, value, trigger, onundefined) {
         var parts, names, ref=false, src = resolver;
@@ -333,7 +326,7 @@ Resolver.create = function(name,ns,options,parent) {
         switch(cmd) {
             case "declare":
             //TODO names == undefined
-                var base = resolver._base(names,onundefined),
+                var base = resolver._get(names,onundefined,-1),
                     symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old === undefined) {
@@ -344,7 +337,7 @@ Resolver.create = function(name,ns,options,parent) {
 
             case "set":
             //TODO names == undefined
-                var base = resolver._base(names,onundefined),
+                var base = resolver._get(names,onundefined,-1),
                     symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old !== value) {
@@ -362,7 +355,7 @@ Resolver.create = function(name,ns,options,parent) {
 
             case "remove":
             //TODO names == undefined
-                var base = resolver._base(names),
+                var base = resolver._get(names,onundefined,-1),
                     symbol = names[names.length - 1],
                     old = base[symbol];
                 if (old !== undefined) {
@@ -374,68 +367,64 @@ Resolver.create = function(name,ns,options,parent) {
     };
 
     var generator = options.generator || Generator.ObjectGenerator; // pre-plan object generator
+    var notObject = new Error("Unresolved");
 
-    resolver._base = function(names,onundefined,value) {
+    // next non null node
+    function nextObject(node,name,names,fill) {
+        var n = node[name], t = typeof n;
+        if ((t==="object" && n!==null) || t==="function") return n;
+        if (fill) return (node[name] = generator());
+        return new Error("The '" + name + "' part of '" + names.join(".") + "' couldn't be resolved.");
+    }
+
+    // might not need it
+    function getValue(node,name,names,fill) {
+        var n = node[name], t = typeof n;
+        if (n !== undefined) return n;
+        if (fill) return (node[name] = generator());
+        return new Error("The '" + name + "' part of '" + names.join(".") + "' couldn't be resolved.");
+    }
+
+    // leafu == -1 returns base
+    resolver._get = function(names,baseu,leafu,dflt) {
         //TODO names == undefined, return namespace
         //TODO if root&parent get from root first
 
         var node = resolver.namespace; // passed namespace negates override
 
-        for (var j = 0, n; j<names.length - 1; ++j) {
-            n = names[j];
-            var prev = node;
-            node = node[n];
-            if (node == undefined) switch(onundefined) {
+        if (names) {
+            var l = names.length - 1, n;
+            switch(baseu) {
                 case "value":
-                    return value;
+                    for (var j = 0; j<l; ++j)  {
+                        node = nextObject(node,names[j],names,false);
+                        if (node instanceof Error) return dflt;
+                    }
+                    break;
                 case "throw":
-                    throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
+                    for (var j = 0; j<l; ++j) {
+                        node = nextObject(node,names[j],names,false);
+                        if (node instanceof Error) throw node;
+                    }
+                    break;
                 default:
-                    node = prev[n] = generator();
+                    for (var j = 0; j<l; ++j) node = nextObject(node,names[j],names,true);
                     break;
             }
+            switch(leafu) {
+                case -1: return node;
+                case "value":
+                    node = node[names[j]];
+                    return node===undefined? dflt:node;
+                case "throw":
+                    node = getValue(node,names[j],names,false);
+                    if (node instanceof Error) throw node;
+                    return node;
+                default:
+                    var leaf = node[names[j]];
+                    return leaf===undefined? (node[names[j]] = generator()):leaf;
+            }
         }
-
-        return node;
-    };
-
-    resolver._generate = function(names) {
-        //TODO names == undefined, return namespace
-        //TODO if root&parent get from root first
-        
-        var node = resolver._base(names,"generate");
-
-        n = names[names.length-1];
-        var prev = node;
-        node = node[n];
-        if (node === undefined) node = prev[n] = generator();
-
-        return node;
-    };
-
-    resolver._get = function(names,undef) {
-        //TODO names == undefined, return namespace
-        //TODO if root&parent get from root first
-        
-        var node = resolver._base(names,"value",undef);
-        n = names[names.length-1];
-        node = node[n];
-
-        return node === undefined? undef : node;
-    };
-
-    resolver._throw = function(names) {
-        //TODO names == undefined, return namespace
-        //TODO if root&parent get from root first
-        
-        var node = resolver._base(names,"throw");
-        n = names[names.length-1];
-        node = node[n];
-        if (node === undefined) {
-            throw new Error("The '" + n + "' part of '" + names.join(".") + "' couldn't be resolved.");
-        }
-
-        return node;
     };
 
     resolver._reference = function(names) {
