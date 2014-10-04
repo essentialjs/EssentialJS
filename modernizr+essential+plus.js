@@ -398,7 +398,7 @@ Resolver.create = function(name,ns,options,parent) {
     resolver._get = function(names,baseu,leafu,dflt) {
         //TODO names == undefined, return namespace
 
-        var node = resolver.root? resolver.root._get(resolver.prefix,baseu) : resolver.namespace; // passed namespace negates override
+        var node = resolver.root? resolver.root._get(resolver.prefix,baseu,baseu) : resolver.namespace; // passed namespace negates override
         if (names == undefined) return node;
         var l = names.length - 1, n;
         switch(baseu) {
@@ -432,6 +432,10 @@ Resolver.create = function(name,ns,options,parent) {
             case "value":
                 node = node[names[j]];
                 return node===undefined? dflt:node;
+            case "error":
+                node = getValue(node,names[j],names,false);
+                if (node instanceof Error) return node;
+                return node;
             case "throw":
                 node = getValue(node,names[j],names,false);
                 if (node instanceof Error) throw node;
