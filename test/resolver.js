@@ -834,6 +834,37 @@ test('Resolver bind + change listener',function() {
 //TODO test recursive triggers stopped
 
 test("Resolver mixinto",function() {
+
+	// existing resolver call mixinto target
+	var r = Resolver({});
+	var mixtarget = {};
+	r.mixinto(mixtarget);
+	equal(Object.keys(mixtarget).length,0,"The target is empty when the source namespace is");
+
+	r.set("a","a");
+	r.set("b","b");
+	equal(Object.keys(mixtarget).length,0,"modifying source doesn't affect previous target");
+	r.mixinto(mixtarget);
+	equal(Object.keys(mixtarget).length,2,"The target is what was in source");
+	equal(mixtarget.a,"a");
+	equal(mixtarget.b,"b");
+
+	r.set("ns.a","aa");
+	r.set("ns.b","bb");
+	r.mixinto("ns",mixtarget);
+	equal(Object.keys(mixtarget).length,2,"The target is what was in source");
+	equal(mixtarget.a,"aa","overwrote value of 'a'");
+	equal(mixtarget.b,"bb","overwrote value of 'b'");
+
+	var r2 = r.reference("ns");
+	var mixtarget = {};
+	r2.mixinto(mixtarget);
+	equal(Object.keys(mixtarget).length,2,"The target is what was in source");
+	equal(mixtarget.a,"aa","overwrote value of 'a'");
+	equal(mixtarget.b,"bb","overwrote value of 'b'");
+
+
+	// mixinto option into target
 	var mixtarget = {};
 	Resolver({},{ mixinto: mixtarget });
 	ok(mixtarget.get);

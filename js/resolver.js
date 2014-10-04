@@ -108,14 +108,6 @@ function Resolver(name_andor_expr,ns,options)
     }
 
 
-    if (options.mixinto) {
-    	if (options.mixinto.get==null) options.mixinto.get = resolver;
-    	if (options.mixinto.declare==null) options.mixinto.declare = resolver.declare;
-    	if (options.mixinto.set==null) options.mixinto.set = resolver.set;
-    	if (options.mixinto.reference==null) options.mixinto.reference = resolver.reference;
-    	if (options.mixinto.override==null) options.mixinto.override = resolver.override;
-    	if (options.mixinto.on==null) options.mixinto.on = resolver.on;
-    }
 
     return resolver;
 }
@@ -181,6 +173,13 @@ Resolver.create = function(name,ns,options,parent) {
                 resolver.uniqueID = ns.uniqueID;
             }
         } 
+
+        if (options.mixinto) {
+            for(var n in Resolver.method.fn) {
+                options.mixinto[n] = Resolver.method.fn[n].bind(resolver);
+                //?? more ?
+            }
+        }
     }
     resolver.references = { }; // on references perhaps ref this as well
 
@@ -333,6 +332,11 @@ Resolver.create = function(name,ns,options,parent) {
             case "mixin":
             case "unmix":
             //TODO names == undefined
+                break;
+
+            case "mixinto":
+                var src = resolver._get(names);
+                for(var n in src) value[n] = src[n];
                 break;
 
             case "remove":
@@ -725,6 +729,12 @@ Resolver.method.fn.remove = function(name,onundefined)
     // if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
     // return oldValue;
 };
+
+Resolver.method.fn.mixinto = function(target) {
+    if (arguments.length==1) return this._exec(null,"mixinto",target);
+    return this._exec(arguments[0],"mixinto",arguments[1]);
+};
+
 
 Resolver.method.fn.on = function(type,selector,data,callback) 
 {
