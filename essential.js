@@ -1275,6 +1275,9 @@ Resolver.method.fn.override = function(ns,options)
 
 Resolver.method.fn.destroy = function()
 {
+    this.root = undefined;
+    this.parent = undefined;
+
     //TODO break down listeners
     //TODO clean up references
     for(var n in this.references) delete this.references[n];
