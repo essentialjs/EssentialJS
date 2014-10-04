@@ -644,31 +644,6 @@ Resolver.method.fn.declare = function(name,value,onundefined)
 {
     if (arguments.length==1) return this._exec(null,"declare",arguments[0],this._notifies);
     return this._exec(name,"declare",value,this._notifies,onundefined);
-
-    // var names;
-    // if (typeof name == "object" && name.join) {
-    //     names = name;
-    //     name = name.join(".");
-    // } else {
-    //     names = name.split("::");
-    //     if (names.length > 1) {
-    //         return Resolver(names.shift()).declare(names[0],value,onundefined);
-    //     }
-    //     names = name.split(".");
-    // }
-    // var symbol = names.pop();
-    // var base = this._resolve(names,null,onundefined);
-    // if (base[symbol] === undefined) { 
-    //     if (this._setValue(value,names,base,symbol)) {
-    //         //TODO references of resolver from reference or tree of references?
-    //         var ref = resolver.references[name];
-    //         if (ref) ref._callListener("change",names,base,symbol,value);
-    //         var parentName = names.join(".");
-    //         var parentRef = resolver.references[parentName];
-    //         if (parentRef) parentRef._callListener("change",names,base,symbol,value);
-    //     }
-    //     return value;
-    // } else return base[symbol];
 };
 
 /*
@@ -678,91 +653,16 @@ Resolver.method.fn.set = function(name,value,onundefined)
 {
     if (arguments.length==1) return this._exec(null,"set",arguments[0],this._notifies);
     return this._exec(name,"set",value,this._notifies,onundefined);
-
-    // var names;
-    // if (typeof name == "object" && name.join) {
-    //     names = name;
-    //     name = name.join(".");
-    // } else {
-    //     names = name.split("::");
-    //     if (names.length > 1) {
-    //         return Resolver(names.shift()).set(names[0],value,onundefined);
-    //     }
-    //     names = name.split(".");
-    // }
-    // var symbol = names.pop();
-    // var base = this._resolve(names,null,onundefined);
-    // if (onundefined=="force" && (typeof base != "object" || typeof base != "function")) {
-    //     var leaf = names.pop();
-    //     this._resolve(names,null,onundefined)[leaf] = {};
-    //     names.push(leaf);
-    //     base = this._resolve(names,null,onundefined);
-    // }
-    // var oldValue = base?base[symbol]:undefined;
-    // if (this._setValue(value,names,base,symbol)) {
-    //     var ref = this.references[name];
-    //     if (ref) ref._callListener("change",names,base,symbol,value,oldValue);
-    //     var parentName = names.join(".");
-    //     var parentRef = this.references[parentName];
-    //     if (parentRef) parentRef._callListener("change",names,base,symbol,value,oldValue);
-    // }
-    // return value;
 };
 
 Resolver.method.fn.toggle = function(name,onundefined)
 {
     return this._noval(name,"toggle",this._notifies,onundefined);
-
-    // var names;
-    // if (typeof name == "object" && name.join) {
-    //     names = name;
-    //     name = name.join(".");
-    // } else {
-    //     names = name.split("::");
-    //     if (names.length > 1) {
-    //         return Resolver(names.shift()).toggle(names[0],value,onundefined);
-    //     }
-    //     names = name.split(".");
-    // }
-    // var symbol = names.pop();
-    // var base = this._resolve(names,null,onundefined);
-    // var value = ! base[symbol]; //TODO configurable toggle
-    // if (this._setValue(value,names,base,symbol)) {
-    //     var ref = resolver.references[name];
-    //     if (ref) ref._callListener("change",names,base,symbol,value,!value);
-    //     var parentName = names.join(".");
-    //     var parentRef = resolver.references[parentName];
-    //     if (parentRef) parentRef._callListener("change",names,base,symbol,value,!value);
-    // }
-    // return value;
 };
 
 Resolver.method.fn.remove = function(name,onundefined)
 {
     return this._exec(name,"remove",0,this._notifies,onundefined);
-
-    // var names;
-    // if (typeof name == "object" && name.join) {
-    //     names = name;
-    //     name = name.join(".");
-    // } else {
-    //     names = name.split("::");
-    //     if (names.length > 1) {
-    //         return Resolver(names.shift()).remove(names[0],onundefined);
-    //     }
-    //     names = name.split(".");
-    // }
-    // var symbol = names.pop();
-    // var base = this._resolve(names,null,onundefined), oldValue = base?base[symbol]:undefined;
-    // if (oldValue === undefined) return;
-    // delete base[symbol];
-
-    // var ref = resolver.references[name];
-    // if (ref) ref._callListener("change",names,base,symbol,undefined);
-    // var parentName = names.join(".");
-    // var parentRef = resolver.references[parentName];
-    // if (parentRef) parentRef._callListener("change",names,base,symbol,undefined);
-    // return oldValue;
 };
 
 Resolver.method.fn.mixinto = function(target) {
@@ -840,17 +740,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
 
-        function get() {
-            if (arguments.length==1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var r = resolver._resolve(names,subnames,onundefined);
-                //TODO onundefined for the arg
-                return r;
-            } else {
-                var base = resolver._resolve(names,null,onundefined);
-                return base;
-            }
-        }
         function toggle() {
             var value; //TODO
             if (arguments.length > 1) {
@@ -886,111 +775,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
             return value;
         }
 
-        function remove() {
-            if (arguments.length > 0) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-
-                //TODO if typeof base != object 
-                var oldValue = base?base[symbol]:undefined;
-                if (oldValue === undefined) return;
-                delete base[symbol];
-
-                var childRef = resolver.references[parentName + "." + symbol];
-                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
-                var parentRef = resolver.references[parentName];
-                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
-
-            } else {
-                var symbol = names[names.length - 1];
-                var base = resolver._resolve(baseNames,null,onundefinedSet);
-                var oldValue = base?base[symbol]:undefined;
-                if (oldValue === undefined) return;
-                delete base[symbol];
-
-                this._callListener("change",baseNames,base,leafName,undefined,oldValue);
-                //TODO test for triggering specific listeners
-                if (baseRefName) {
-                    var parentRef = resolver.references[baseRefName];
-                    if (parentRef) parentRef._callListener("change",baseNames,base,leafName,undefined,oldValue);
-                }
-            }
-            return oldValue;
-        }
-
-        function set(value) {
-            if (arguments.length > 1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-                value = arguments[1];
-                var oldValue = base[symbol];
-
-                if (resolver._setValue(value,combined,base,symbol)) {
-                    var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
-                    var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
-                }
-            } else {
-                var base = resolver._resolve(baseNames,null,onundefinedSet);
-                var oldValue = base?base[leafName]:undefined;
-
-                if (resolver._setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value,oldValue);
-                    //TODO test for triggering specific listeners
-                    if (baseRefName) {
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
-                    }
-                }
-            }
-            return value;
-        }
-        function declare(value) {
-            if (arguments.length > 1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-                value = arguments[1];
-                var oldValue = base?base[symbol]:undefined;
-
-                if (base[symbol] === undefined) {
-                    if (resolver._setValue(value,combined,base,symbol)) {
-                        var childRef = resolver.references[parentName + "." + symbol];
-                        if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
-                        var parentRef = resolver.references[parentName];
-                        if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
-                    }
-                }
-                return base[symbol];
-            } else {
-                var base = resolver._resolve(baseNames,null,onundefinedSet);
-                var oldValue = base?base[leafName]:undefined;
-
-                if (base[leafName] === undefined) {
-                    if (resolver._setValue(value,baseNames,base,leafName)) {
-                        this._callListener("change",baseNames,base,leafName,value,oldValue);
-                        //TODO test for triggering specific listeners
-                        if (baseRefName) {
-                            var parentRef = resolver.references[baseRefName];
-                            if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
-                        }
-                    }
-                }
-                return base[leafName];
-            }
-        }
         function getEntry(key) {
             var base = resolver._resolve(names,null,onundefined);
             if (arguments.length) return base[key];
