@@ -173,7 +173,10 @@ Resolver.setByUniqueID = function(map,el,value) {
     // unnamed resolvers name=null
 Resolver.create = function(name,ns,options,parent) {
     if (parent) {
+        resolver.prefix = parent.prefix? parent.prefix.slice(0) : [];
+        resolver.prefix.push(name);
         resolver.root = parent.root || parent;
+        resolver.namespace = resolver.root.namespace;
     } else {
         ns = ns || {};
         options = options || {};
@@ -224,7 +227,6 @@ Resolver.create = function(name,ns,options,parent) {
                 return resolver._exec.apply(resolver,arguments);
         }
     }
-
 
     resolver._noval = function(path, cmd, trigger, onundefined) {
         var parts, names, ref=false, src = resolver;
@@ -388,45 +390,42 @@ Resolver.create = function(name,ns,options,parent) {
     // leafu == -1 returns base
     resolver._get = function(names,baseu,leafu,dflt) {
         //TODO names == undefined, return namespace
-        //TODO if root&parent get from root first
 
-        var node = resolver.namespace; // passed namespace negates override
-
-        if (names) {
-            var l = names.length - 1, n;
-            switch(baseu) {
-                case "value":
-                    for (var j = 0; j<l; ++j)  {
-                        node = nextObject(node,names[j],names,false);
-                        if (node instanceof Error) return dflt;
-                    }
-                    break;
-                case "throw":
-                    for (var j = 0; j<l; ++j) {
-                        node = nextObject(node,names[j],names,false);
-                        if (node instanceof Error) throw node;
-                    }
-                    break;
-                default:
-                    for (var j = 0; j<l; ++j) {
-                        node = nextObject(node,names[j],names,true);
-                        if (node instanceof Error) throw node;
-                    }
-                    break;
-            }
-            switch(leafu) {
-                case -1: return node;
-                case "value":
-                    node = node[names[j]];
-                    return node===undefined? dflt:node;
-                case "throw":
-                    node = getValue(node,names[j],names,false);
+        var node = resolver.root? resolver.root._get(resolver.prefix,baseu) : resolver.namespace; // passed namespace negates override
+        if (names == undefined) return node;
+        var l = names.length - 1, n;
+        switch(baseu) {
+            case "value":
+                for (var j = 0; j<l; ++j)  {
+                    node = nextObject(node,names[j],names,false);
+                    if (node instanceof Error) return dflt;
+                }
+                break;
+            case "throw":
+                for (var j = 0; j<l; ++j) {
+                    node = nextObject(node,names[j],names,false);
                     if (node instanceof Error) throw node;
-                    return node;
-                default:
-                    var leaf = node[names[j]];
-                    return leaf===undefined? (node[names[j]] = generator()):leaf;
-            }
+                }
+                break;
+            default:
+                for (var j = 0; j<l; ++j) {
+                    node = nextObject(node,names[j],names,true);
+                    if (node instanceof Error) throw node;
+                }
+                break;
+        }
+        switch(leafu) {
+            case -1: return node;
+            case "value":
+                node = node[names[j]];
+                return node===undefined? dflt:node;
+            case "throw":
+                node = getValue(node,names[j],names,false);
+                if (node instanceof Error) throw node;
+                return node;
+            default:
+                var leaf = node[names[j]];
+                return leaf===undefined? (node[names[j]] = generator()):leaf;
         }
     };
 
