@@ -637,6 +637,7 @@ Resolver.method.fn.get = function(name,onundefined) {
 */
 Resolver.method.fn.declare = function(name,value,onundefined) 
 {
+    if (arguments.length==1) return this._exec(null,"declare",arguments[0],this._notifies);
     return this._exec(name,"declare",value,this._notifies,onundefined);
 
     // var names;
@@ -670,6 +671,7 @@ Resolver.method.fn.declare = function(name,value,onundefined)
 */
 Resolver.method.fn.set = function(name,value,onundefined) 
 {
+    if (arguments.length==1) return this._exec(null,"set",arguments[0],this._notifies);
     return this._exec(name,"set",value,this._notifies,onundefined);
 
     // var names;
