@@ -219,7 +219,7 @@ Resolver.create = function(name,ns,options,parent) {
     function resolver(path,method /* or onundefined */) {
         switch(arguments.length) {
             case 0: 
-                return resolver._get(null,Resolver.defaultOnUndefined); 
+                return resolver._noval(null,Resolver.defaultOnUndefined); 
             case 1:
                 return resolver._noval(path, path.onundefined||Resolver.defaultOnUndefined); 
             case 2:
