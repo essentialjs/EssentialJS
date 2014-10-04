@@ -341,9 +341,10 @@ Resolver.create = function(name,ns,options,parent) {
 
             case "remove":
             //TODO names == undefined
-                var base = resolver._get(names,onundefined,-1),
+                var base = resolver._get(names,"error",-1),
                     symbol = names[names.length - 1],
                     old = base[symbol];
+                if (base instanceof Error) return; // ignore higher being removed already
                 if (old !== undefined) {
                     delete base[symbol];
                     if (trigger) trigger.call(resolver, "change", names, base, symbol, undefined, old); //TODO standard params & remove flag
@@ -356,10 +357,10 @@ Resolver.create = function(name,ns,options,parent) {
     var notObject = new Error("Unresolved");
 
     // next non null node, can fill undefined
-    function nextObject(node,name,names,fill) {
-        if (fill && node[name]===undefined) return (node[name] = generator());
+    function nextObject(node,name,names,fill,force) {
         var n = node[name], t = typeof n;
         if ((t==="object" && n!==null) || t==="function") return n;
+        if (force || (fill && n===undefined)) return (node[name] = generator());
         return new Error("The '" + name + "' part of '" + names.join(".") + "' couldn't be resolved.");
     }
 
@@ -385,6 +386,12 @@ Resolver.create = function(name,ns,options,parent) {
                     if (node instanceof Error) return dflt;
                 }
                 break;
+            case "error":
+                for (var j = 0; j<l; ++j) {
+                    node = nextObject(node,names[j],names,false);
+                    if (node instanceof Error) return node;
+                }
+                break;
             case "throw":
                 for (var j = 0; j<l; ++j) {
                     node = nextObject(node,names[j],names,false);
@@ -393,7 +400,7 @@ Resolver.create = function(name,ns,options,parent) {
                 break;
             default:
                 for (var j = 0; j<l; ++j) {
-                    node = nextObject(node,names[j],names,true);
+                    node = nextObject(node,names[j],names,true, baseu=="force");
                     if (node instanceof Error) throw node;
                 }
                 break;

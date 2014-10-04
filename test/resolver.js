@@ -236,15 +236,15 @@ test('Resolver set/declare value',function(){
 
 	// trying to blow up oldValue
 	resolver.set("d.e",null);
-	resolver.set("d.e.f","f");
+	resolver.set("d.e.f","f","force");
 	resolver.remove("d.e.f");
 
 	resolver.set(["e","f"],null);
-	resolver.set(["e","f","g"],{});
+	resolver.set(["e","f","g"],{},"force");
 	resolver.remove(["e","f"]);
 
 	resolver.declare("f.g",null);
-	resolver.declare("f.g.h","h");
+	resolver.declare("f.g.h","h","force");
 	resolver.remove("f");
 
 	resolver.on("change","a.b",function(){});
