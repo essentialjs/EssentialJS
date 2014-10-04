@@ -165,6 +165,8 @@ Resolver.setByUniqueID = function(map,el,value) {
     }
 };
 
+Resolver.defaultOnUndefined = "null";
+
     // unnamed resolvers name=null
 Resolver.create = function(name,ns,options,parent) {
     if (parent) {
@@ -213,9 +215,9 @@ Resolver.create = function(name,ns,options,parent) {
     function resolver(path,method /* or onundefined */) {
         switch(arguments.length) {
             case 0: 
-                return resolver.namespace; //TODO default undefined?
+                return resolver._get(null,Resolver.defaultOnUndefined); 
             case 1:
-                return resolver._noval(path, path.onundefined||"null"); //TODO default undefined?
+                return resolver._noval(path, path.onundefined||Resolver.defaultOnUndefined); 
             case 2:
                 return resolver._noval(path,method);
             default:
