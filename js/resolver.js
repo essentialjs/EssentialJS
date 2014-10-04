@@ -308,7 +308,7 @@ Resolver.create = function(name,ns,options,parent) {
             case "declare":
             //TODO names == undefined
                 var base = resolver._get(names,onundefined,-1),
-                    symbol = names[names.length - 1],
+                    symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
                     old = base[symbol];
                 if (old === undefined) {
                     base[symbol] = value;
@@ -319,7 +319,7 @@ Resolver.create = function(name,ns,options,parent) {
             case "set":
             //TODO names == undefined
                 var base = resolver._get(names,onundefined,-1),
-                    symbol = names[names.length - 1],
+                    symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
                     old = base[symbol];
                 if (old !== value) {
                     base[symbol] = value;
@@ -342,14 +342,14 @@ Resolver.create = function(name,ns,options,parent) {
             case "remove":
             //TODO names == undefined
                 var base = resolver._get(names,"error",-1),
-                    symbol = names[names.length - 1],
-                    old = base[symbol];
-                if (base instanceof Error) return; // ignore higher being removed already
+                    symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1];
+                if (base == null || base instanceof Error) return; // ignore higher being removed already
+                var old = base[symbol];
                 if (old !== undefined) {
                     delete base[symbol];
                     if (trigger) trigger.call(resolver, "change", names, base, symbol, undefined, old); //TODO standard params & remove flag
                 }
-                return;
+                return old;
         }
     };
 
@@ -376,8 +376,8 @@ Resolver.create = function(name,ns,options,parent) {
     resolver._get = function(names,baseu,leafu,dflt) {
         //TODO names == undefined, return namespace
 
-        var node = resolver.root? resolver.root._get(resolver.prefix,baseu,baseu) : resolver.namespace; // passed namespace negates override
-        if (names == undefined) return node;
+        var node = resolver.root? resolver.root._get(resolver.prefix,baseu,names==undefined? leafu:baseu) : resolver.namespace; // passed namespace negates override
+        if (node == null || names == undefined) return node;
         var l = names.length - 1, n;
         switch(baseu) {
             case "value":
