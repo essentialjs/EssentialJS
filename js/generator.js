@@ -125,7 +125,7 @@ function Generator(mainConstr,options)
 	function presetMembersInfo() {
 		//TODO presets should be set on the reference. the reference should insert this function in the 
 		// chain when the first preset is declared
-		generator.presets.reference("").mixinto(this);
+		generator.presets.mixinto(this);
 	}
 
 	function presetMembersArgs() {
