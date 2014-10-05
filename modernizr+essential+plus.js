@@ -434,7 +434,6 @@ Resolver.create = function(name,ns,options,parent) {
                 return node===undefined? dflt:node;
             case "error":
                 node = getValue(node,names[j],names,false);
-                if (node instanceof Error) return node;
                 return node;
             case "throw":
                 node = getValue(node,names[j],names,false);
