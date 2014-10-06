@@ -274,6 +274,10 @@ Resolver.create = function(name,ns,options,parent) {
                 }
                 break;
 
+            case "getEntry":
+                var base = resolver._get(null,"force");
+                if (path) return base[path];
+                return base;
 
             case "throw":
             //TODO names == undefined
@@ -344,8 +348,23 @@ Resolver.create = function(name,ns,options,parent) {
                 }
                 return base[symbol];
 
-            // case "declareEntry":
+            case "declareEntry":
+                var base = resolver._get(null,"force"), old = base[path];
+                
+                if (old === undefined) {
+                    base[path] = value;
+                    if (trigger) trigger.call(resolver, "change", [path], base, path, value, old); //TODO standard params
+                }
+                return base[path];
             case "setEntry":
+                var base = resolver._get(null,"force"), old = base[path];
+                
+                if (old !== value) {
+                    base[path] = value;
+                    if (trigger) trigger.call(resolver, "change", [path], base, path, value, old); //TODO standard params
+                }
+                return base[path];
+
             case "mixin":
             case "unmix":
             //TODO names == undefined
@@ -474,6 +493,7 @@ Resolver.create = function(name,ns,options,parent) {
 
 
     function _callListener(sourceResolver, type,names,base,symbol,value,oldValue) {
+        //TODO adjust names with prefix ?
         if (type == "change" && value === false) {
             for(var i=0,event; event = this.listeners["false"][i]; ++i) {
                 event.trigger(base,symbol,value,oldValue);
@@ -654,6 +674,18 @@ Resolver.method.fn.toggle = function(name,onundefined)
     return this._noval(name,"toggle",this._notifies,onundefined);
 };
 
+Resolver.method.fn.getEntry = function(name) {
+    return this._noval(name,"getEntry");
+};
+
+Resolver.method.fn.setEntry = function(name,value) {
+    return this._exec(name,"setEntry",value);
+};
+
+Resolver.method.fn.declareEntry = function(name,value) {
+    return this._exec(name,"declareEntry",value);
+};
+
 Resolver.method.fn.remove = function(name,onundefined)
 {
     return this._exec(name,"remove",0,this._notifies,onundefined);
@@ -826,41 +858,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
             return value;
         }
 
-        function getEntry(key) {
-            var base = resolver._resolve(names,null,onundefined);
-            if (arguments.length) return base[key];
-            return base;
-        }
-        function declareEntry(key,value) {
-            var symbol = names.pop();
-            var base = resolver._resolve(names,null,onundefined);
-            var oldValue = base[symbol];
-            names.push(symbol);
-            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-            
-            if (base[symbol][key] === undefined) {
-                names.push(key);
-                if (resolver._setValue(value,names,base[symbol],key)) {
-                    this._callListener("change",names,base,key,value,oldValue);
-            //TODO parent listeners
-                }
-                names.pop(); // return names to unchanged
-            }
-        }
-        function setEntry(key,value) {
-            var symbol = names.pop();
-            var base = resolver._resolve(names,null,onundefined);
-            var oldValue = base?base[symbol]:undefined;
-            names.push(symbol);
-            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-            
-            names.push(key);
-            if (resolver._setValue(value,names,base[symbol],key)) {
-                this._callListener("change",names,base,key,value,oldValue);
-            //TODO parent listeners
-            }
-            names.pop(); // return names to unchanged
-        }
         function mixin(map) {
             var symbol = names.pop();
             var base = resolver._resolve(names,null,onundefined);
