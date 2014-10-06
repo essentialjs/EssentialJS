@@ -611,7 +611,7 @@ Resolver.method = function(name,fn) {
 Resolver.method.fn = {};
 
 Resolver.method.fn.get = function(name,onundefined) {
-    return this._noval(name,onundefined);
+    return this._noval(name,onundefined || Resolver.defaultOnUndefined);
 };
 
 /*
