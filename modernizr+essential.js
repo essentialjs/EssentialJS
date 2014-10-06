@@ -354,7 +354,7 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[symbol];
 
             case "declareEntry":
-                var base = resolver._get(null,"force"), old = base[path];
+                var base = resolver._get(null,"force","force"), old = base[path];
                 
                 if (old === undefined) {
                     base[path] = value;
@@ -362,7 +362,7 @@ Resolver.create = function(name,ns,options,parent) {
                 }
                 return base[path];
             case "setEntry":
-                var base = resolver._get(null,"force"), old = base[path];
+                var base = resolver._get(null,"force","force"), old = base[path];
                 
                 if (old !== value) {
                     base[path] = value;
@@ -699,11 +699,11 @@ Resolver.method.fn.getEntry = function(name) {
 };
 
 Resolver.method.fn.setEntry = function(name,value) {
-    return this._exec(name,"setEntry",value);
+    return this._exec(name,"setEntry",value,this._notifies);
 };
 
 Resolver.method.fn.declareEntry = function(name,value) {
-    return this._exec(name,"declareEntry",value);
+    return this._exec(name,"declareEntry",value,this._notifies);
 };
 
 Resolver.method.fn.remove = function(name,onundefined)
