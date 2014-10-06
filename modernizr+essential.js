@@ -726,6 +726,15 @@ Resolver.method.fn.unmix = function(name,map) {
     return this._exec(name,"unmix",this._notifies)
 };
 
+Resolver.method.fn.trigger = function(type) {
+    var base = this._get(null,"force",-1),
+        symbol = this.prefix? this.prefix[this.prefix.length - 1] : null,
+        value = base[symbol],
+        old = undefined;
+
+    this._notifies(type, this.prefix, base, symbol, value, old);
+};
+
 
 Resolver.method.fn.on = function(type,selector,data,callback) 
 {
@@ -882,15 +891,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
                 //TODO parent listeners
            }
             // return oldValue;
-        }
-
-        function trigger(type) {
-            var base = resolver._resolve(baseNames,null,onundefined);
-            var value = base[leafName];
-
-            this._callListener(type,baseNames,base,leafName,value);
-            var parentRef = resolver.references[baseRefName];
-            if (parentRef) parentRef._callListener(type,baseNames,_resolve(baseNames,null),leafName,value);
         }
 
         // type = change/load/unload
