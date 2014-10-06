@@ -349,9 +349,24 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[path];
 
             case "mixin":
+                onundefined = onundefined || "force";
+                var base = resolver._get(names,onundefined,onundefined),
+                    mods = {};
+                for(var n in value) if (base[n] !== value[n]) {
+                    base[n] = mods[n] = value[n];
+                }
+                if (trigger) trigger.call(resolver, "change", names, base, null, mods);
+                return base;
+
             case "unmix":
-            //TODO names == undefined
-                break;
+                onundefined = onundefined || "force";
+                var base = resolver._get(names,onundefined,onundefined),
+                    mods = {};
+                for(var n in value) if (base[n] !== undefined) {
+                    base[n] = mods[n] = undefined;
+                }
+                if (trigger) trigger.call(resolver, "change", names, base, null, mods);
+                return base;
 
             case "mixinto":
                 var src = resolver._get(names);
@@ -679,6 +694,16 @@ Resolver.method.fn.mixinto = function(target) {
     return this._exec(arguments[0],"mixinto",arguments[1]);
 };
 
+Resolver.method.fn.mixin = function(name,map) {
+    if (arguments.length==1) return this._exec(null,"mixin",arguments[0],this._notifies);
+    return this._exec(name,"mixin",this._notifies)
+};
+
+Resolver.method.fn.unmix = function(name,map) {
+    if (arguments.length==1) return this._exec(null,"unmix",arguments[0],this._notifies);
+    return this._exec(name,"unmix",this._notifies)
+};
+
 
 Resolver.method.fn.on = function(type,selector,data,callback) 
 {
@@ -806,77 +831,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
 
-        function toggle() {
-            var value; //TODO
-            if (arguments.length > 1) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-                var oldValue = arguments[1];
-                value = !oldValue; //TODO configurable toggle
-
-                if (resolver._setValue(value,combined,base,symbol)) {
-                    var childRef = resolver.references[parentName + "." + symbol];
-                    if (childRef) childRef._callListener("change",combined,base,symbol,value,oldValue);
-                    var parentRef = resolver.references[parentName];
-                    if (parentRef) parentRef._callListener("change",combined,base,symbol,value,oldValue);
-                }
-            } else {
-                var base = resolver._resolve(baseNames,null,onundefinedSet),
-                    oldValue = arguments[0];
-                value = !oldValue; //TODO configurable toggle
-
-                if (resolver._setValue(value,baseNames,base,leafName)) {
-                    this._callListener("change",baseNames,base,leafName,value,oldValue);
-                    //TODO test for triggering specific listeners
-                    if (baseRefName) {
-                        var parentRef = resolver.references[baseRefName];
-                        if (parentRef) parentRef._callListener("change",baseNames,base,leafName,value,oldValue);
-                    }
-                }
-            }
-            return value;
-        }
-
-        function mixin(map) {
-            var symbol = names.pop();
-            var base = resolver._resolve(names,null,onundefined);
-            names.push(symbol);
-            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-            var ni = names.length;
-            var mods = {};
-            for(var n in map) {
-                names[ni] = n;
-                if (resolver._setValue(map[n],names,base[symbol],n)) {
-                    mods[n] = map[n];
-                }
-            }
-            names.pop(); // return names to unchanged
-            this._callListener("change",names,base[symbol],null,mods);
-            //TODO parent listeners
-        }
-        function unmix(map) {
-            var symbol = names.pop();
-            var base = resolver._resolve(names,null,onundefined);
-            names.push(symbol);
-
-            if (base[symbol] === undefined) resolver._setValue({},names,base,symbol);
-            var ni = names.length;
-            var mods = {};
-
-            for(var n in map) {
-                names[ni] = n;
-                if (resolver._setValue(undefined,names,base[symbol],n)) {
-                    mods[n] = undefined;
-                }
-            }
-
-            names.pop(); // return names to unchanged
-            this._callListener("change",names,base[symbol],null,mods);
-        }
         function empty(key) {
             var oldValue;
             if (arguments.length > 0) {
@@ -952,50 +906,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
                 if (todo.storage) { todo.call = todo.storage.store; this.storeunloads[dest] = todo; }
             }
         }    
-
-        get.remove = remove;
-        get.set = set;
-        get.toggle = toggle;
-        get.get = get;
-        get.declare = declare;
-        get.mixin = mixin;
-        get.unmix = unmix;
-        get.mixinto = mixinto;
-        get.empty = empty;
-        get.getEntry = getEntry;
-        get.declareEntry = declareEntry;
-        get.setEntry = setEntry;
-        get.on = on;
-        get.trigger = trigger;
-        get.stored = stored;
-
-        for(var n in Resolver.method.fn) {
-            get[n] = Resolver.method.fn[n];
-        }
-
-        function _callListener(type,names,base,symbol,value,oldValue) {
-            if (type == "change" && value === false) {
-                for(var i=0,event; event = this.listeners["false"][i]; ++i) {
-                    event.trigger(base,symbol,value,oldValue);
-                }
-            }
-            if (type == "change" && value === true) {
-                for(var i=0,event; event = this.listeners["true"][i]; ++i) {
-                    event.trigger(base,symbol,value,oldValue);
-                }
-            }
-            for(var i=0,event; event = this.listeners[type][i]; ++i) {
-                event.trigger(base,symbol,value,oldValue);
-            }
-            if (this.storechanges && type == "change") {
-                for(var n in this.storechanges) this.storechanges[n].call(this);
-            }
-        }
-        get._callListener = _callListener;
-        
-
-
-        return get;
 };
 
 Resolver.method.fn.proxy = function(dest,other,src) {
