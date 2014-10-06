@@ -667,22 +667,79 @@ Resolver.method.fn.mixinto = function(target) {
 
 Resolver.method.fn.on = function(type,selector,data,callback) 
 {
+    var ref = this;
     switch(arguments.length) {
-        case 2: break; //TODO
+        case 2:
+            callback = selector; data = null; 
+            break;
+
         case 3: if (typeof arguments[1] == "string") {
-                //TODO reference "undefined" ?
-                this.reference(selector).on(type,null,arguments[2]);
+                ref = this.reference(selector);
+                data = null;
             } else { // middle param is data
                 //TODO this.reference("*").on(type,arguments[1],arguments[2]);
+                data = arguments[1];
             }
+            callback = arguments[2];
             break;
         case 4:
-                //TODO reference "undefined" ?
-            this.reference(selector).on(type,data,callback);
+            ref = this.reference(selector);
             break;
+    }
+
+    ref._addListener(type,data,callback);
+};
+
+// called on the leaf
+Resolver.method.fn._addListener = function (type,data,callback) {
+
+    function nopCall() {}
+
+    function _makeResolverEvent(resolver,type,selector,data,callback) {
+        var e = {};
+
+        e.resolver = resolver;
+        e.type = type;
+        e.selector = selector;
+        e.data = data;
+        e.callback = callback;
+        e.inTrigger = 0;
+
+        function trigger(base,symbol,value,oldValue) {
+            if (this.inTrigger) return;
+            ++this.inTrigger;
+            this.base = base;
+            this.symbol = symbol;
+            this.value = value;
+            this.oldValue = oldValue;
+            this.callback.call(resolver,this);
+            --this.inTrigger;
+        }
+        e.trigger = callback? trigger : nopCall;
+
+        return e;
+    }
+
+    var selector = this.prefix.join("."), leafName = this.prefix[this.prefix.length - 1];
+
+    if (/^bind | bind | bind$|^bind$/.test(type)) {
+        type = type.replace(" bind "," ").replace("bind ","").replace(" bind","");
+
+        var base = this._get(null,"undefined",-1);
+        var ev = _makeResolverEvent(this.root,type,selector,data,callback);
+        ev.binding = true;
+        ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
+        ev.binding = false;
+    }
+    var types = type.split(" ");
+    for(var i=0,type; type = types[i]; ++i) {
+        var ev = _makeResolverEvent(this.root,type,selector,data,callback);
+        this.listeners[type].push(ev);
     }
 };
 
+// Resolver.method.fn._removeListener
+// Resolver.method.fn.off
     
 Resolver.method.fn.reference = function(name,onundefined) 
 {
@@ -870,12 +927,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
            }
             // return oldValue;
         }
-        function on(type,data,callback) {
-            switch(arguments.length) {
-                case 2: this._addListener(type,name,null,arguments[1]); break;
-                case 3: this._addListener(type,name,data,callback); break;
-            };
-        }
 
         function trigger(type) {
             var base = resolver._resolve(baseNames,null,onundefined);
@@ -942,56 +993,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
             get[n] = Resolver.method.fn[n];
         }
 
-    function nopCall() {}
-
-    function _makeResolverEvent(resolver,type,selector,data,callback) {
-        var e = {};
-
-        e.resolver = resolver;
-        e.type = type;
-        e.selector = selector;
-        e.data = data;
-        e.callback = callback;
-        e.inTrigger = 0;
-
-        function trigger(base,symbol,value,oldValue) {
-            if (this.inTrigger) return;
-            ++this.inTrigger;
-            this.base = base;
-            this.symbol = symbol;
-            this.value = value;
-            this.oldValue = oldValue;
-            this.callback.call(resolver,this);
-            --this.inTrigger;
-        }
-        e.trigger = callback? trigger : nopCall;
-
-        return e;
-    }
-
-
-
-    var VALID_LISTENERS = {
-        "true": true, // change to true value
-        "false": true, // change to false value
-        "reflect": true, // allows forcing reflection of current value
-        "get": true, // allows for switching in alternate lookups
-        "change": true, // allows reflecting changes elsewhere
-        "undefined": true // allow filling in unfound entries
-    };
-
-    function _makeListeners() {
-        var listeners = {};
-        // listeners.get.<list of callbacks>
-        // listeners.change.<list of callbacks>
-        // ..
-        for(var n in VALID_LISTENERS) listeners[n] = [];
-        return listeners;
-    }
-
-
-        get.listeners = listeners || _makeListeners();
-
         function _callListener(type,names,base,symbol,value,oldValue) {
             if (type == "change" && value === false) {
                 for(var i=0,event; event = this.listeners["false"][i]; ++i) {
@@ -1012,32 +1013,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
         }
         get._callListener = _callListener;
         
-        function _addListener(type,selector,data,callback) {
-            /*
-                selector
-                *
-                a
-                a.b
-                a.b.c
-            */
-            if (/^bind | bind | bind$|^bind$/.test(type)) {
-                type = type.replace(" bind "," ").replace("bind ","").replace(" bind","");
-
-                var baseNames = selector.split(".");
-                var leafName = baseNames.pop();
-                var base = resolver._resolve(baseNames,null,"undefined");
-                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
-                ev.binding = true;
-                ev.trigger(base,leafName,base == undefined? undefined : base[leafName]);
-                ev.binding = false;
-            }
-            var types = type.split(" ");
-            for(var i=0,type; type = types[i]; ++i) {
-                var ev = _makeResolverEvent(resolver,type,selector,data,callback);
-                this.listeners[type].push(ev);
-            }
-        }
-        get._addListener = _addListener;
 
 
         return get;

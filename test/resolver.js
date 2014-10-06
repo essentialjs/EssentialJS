@@ -451,7 +451,7 @@ test('Resolver reference',function(){
 
 	var resolver = Resolver({});
 
-	resolver("my")
+	resolver("my","force");
 	var my = resolver.reference("my");
 	notEqual(my(), undefined, "namespace replaced");
 	notEqual(my.get(), undefined, "namespace replaced");
