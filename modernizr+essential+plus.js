@@ -110,27 +110,6 @@ function Resolver(name_andor_expr,ns,options)
         return Resolver.create(null,name_andor_expr,ns);
 	}
 
-///////////////
-
-
-    function clone(src) {
-        switch(src) {
-            case "function":
-                // if (src is reference) src()
-                return src;
-            case "object":
-                var r = {};
-                for(var n in src) r[n] = src[n];
-                return r;
-
-            // "undefined"   "boolean"  "number"  case "string"
-            default:
-                return src;
-        }
-    }
-
-
-
     return resolver;
 }
 
@@ -159,6 +138,22 @@ Resolver.setByUniqueID = function(map,el,value) {
     } else {
         if (el.uniqueID === undefined) el.uniqueID = ++Resolver.__lastUniqueID;
         map[el.uniqueID] = value;
+    }
+};
+
+Resolver.clone = function(src) { // old compat, might be removed
+    switch(src) {
+        case "function":
+            // if (src is reference) src()
+            return src;
+        case "object":
+            var r = {};
+            for(var n in src) r[n] = src[n];
+            return r;
+
+        // "undefined"   "boolean"  "number"  case "string"
+        default:
+            return src;
     }
 };
 
