@@ -161,14 +161,16 @@ Resolver.defaultOnUndefined = "null";
 
     // unnamed resolvers name=null
 Resolver.create = function(name,ns,options,parent) {
+    options = options || {};
     if (parent) {
         resolver.prefix = parent.prefix? parent.prefix.slice(0) : [];
         resolver.prefix.push(name);
         resolver.root = parent.root || parent;
         resolver.namespace = resolver.root.namespace;
+        resolver.onundefined = options.onundefined; // perhaps diff name
+        // listeners
     } else {
         ns = ns || {};
-        options = options || {};
         name = name || options.name;
         //TODO forEl, forDoc byId
         if (name) Resolver.nm[name] = resolver;
@@ -214,9 +216,9 @@ Resolver.create = function(name,ns,options,parent) {
     function resolver(path,method /* or onundefined */) {
         switch(arguments.length) {
             case 0: 
-                return resolver._noval(null,Resolver.defaultOnUndefined); 
+                return resolver._noval(null,resolver.onundefined || Resolver.defaultOnUndefined); 
             case 1:
-                return resolver._noval(path, path.onundefined||Resolver.defaultOnUndefined); 
+                return resolver._noval(path, path.onundefined||resolver.onundefined||Resolver.defaultOnUndefined); 
             case 2:
                 return resolver._noval(path,method);
             default:
@@ -248,7 +250,7 @@ Resolver.create = function(name,ns,options,parent) {
 
         switch(cmd) {
             case "toggle":
-                var base = resolver._get(names,onundefined,-1),
+                var base = resolver._get(names,onundefined||resolver.onundefined,-1),
                     symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
                     old = base[symbol];
                 base[symbol] = !old;
@@ -256,7 +258,7 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[symbol];
 
             case "empty":
-                var base = resolver._get(names,onundefined,-1),
+                var base = resolver._get(names,onundefined||resolver.onundefined,-1),
                     symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
                     old = base[symbol],
                     mods = {};
@@ -266,7 +268,7 @@ Resolver.create = function(name,ns,options,parent) {
                 return base[symbol];
 
             case "blank":
-                var base = resolver._get(names,onundefined,-1),
+                var base = resolver._get(names,onundefined||resolver.onundefined,-1),
                     symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
                     old = base[symbol];
                 base[symbol] = "";
@@ -437,6 +439,7 @@ Resolver.create = function(name,ns,options,parent) {
         //TODO names == undefined, return namespace
 
         var node = resolver.root? resolver.root._get(resolver.prefix,baseu,names==undefined? leafu:baseu) : resolver.namespace; // passed namespace negates override
+        if (node === undefined && baseu=="value") return dflt;
         if (node == null || names == undefined) return node;
         var l = names.length - 1, n;
         switch(baseu) {
@@ -592,7 +595,7 @@ Resolver.method = function(name,fn) {
 Resolver.method.fn = {};
 
 Resolver.method.fn.get = function(name,onundefined) {
-    return this._noval(name,onundefined || Resolver.defaultOnUndefined);
+    return this._noval(name,onundefined || this.onundefined || Resolver.defaultOnUndefined);
 };
 
 /*
@@ -779,6 +782,11 @@ Resolver.method.fn._addListener = function (type,data,callback) {
     
 Resolver.method.fn.reference = function(name,onundefined) 
 {
+    switch(typeof name) {
+        case "object":
+        case "function":
+            if (name) return this._noval(name.name,"resolver",0,name.onundefined);
+    }
     return this._noval(name,"resolver",0,onundefined);
 };
 

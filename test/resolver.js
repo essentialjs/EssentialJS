@@ -207,7 +207,7 @@ test('Resolve defined and undefined',function(){
 test('Resolve defined and undefined reference',function(){
 	var resolver = Resolver({});
 
-	equal(typeof resolver.reference("a.b.c")(),"object");
+	equal(resolver.reference("a.b.c")(),null);
 	equal(typeof resolver.reference("d.e.f","generate")(),"object");
 	equal(resolver.reference("g.h.i","null")(),null);
 	equal(resolver.reference("g.h.i","undefined")(),undefined);
