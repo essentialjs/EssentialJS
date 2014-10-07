@@ -275,13 +275,7 @@ Resolver.create = function(name,ns,options,parent) {
                 break;            
 
             case "resolver":
-                if (path == null) {
-                    //TODO get onundefined variant
-                    return this;
-                } else {
-                    //TODO fill out default resolver
-                    return resolver._reference(names);
-                }
+                return resolver._reference(names,onundefined);
                 break;
 
             case "getEntry":
@@ -291,13 +285,13 @@ Resolver.create = function(name,ns,options,parent) {
 
             case "throw":
             //TODO names == undefined
-                if (ref) return resolver._reference(names);
+                if (ref) return resolver._reference(names,onundefined);
                 return resolver._get(names,"throw","throw");
 
             case "generate":
             case "force":
             //TODO names == undefined
-                if (ref) return resolver._reference(names);
+                if (ref) return resolver._reference(names,onundefined);
                 return resolver._get(names,"generate","generate"); 
 
             case "get": // which is default?
@@ -306,7 +300,7 @@ Resolver.create = function(name,ns,options,parent) {
             case "false":
             case "0":
             //TODO names == undefined
-                if (ref) return resolver._reference(names);
+                if (ref) return resolver._reference(names,onundefined);
                 return resolver._get(names,"value","value",UNDEF[cmd]);
         }
 
@@ -484,11 +478,20 @@ Resolver.create = function(name,ns,options,parent) {
         }
     };
 
-    resolver._reference = function(names) {
+    resolver._reference = function(names,onundefined) {
+        //TODO track the version number of the API and update if higher
         var ref = resolver;
-        for(var i=0,n; n = names[i]; ++i) {
+        for(var i=0,last=names.length-1,n; n = names[i]; ++i) {
             if (ref.references[n] == undefined) {
                 ref.references[n] = Resolver.create(n,undefined,{},ref);    
+            }
+            // variant created to share listeners
+            if (i == last && onundefined) {
+                var rname = n+":"+onundefined;
+                if (ref.references[rname] == undefined) {
+                    ref.references[rname] = Resolver.create(n,undefined,{ onundefined:onundefined, listeners: ref.references[n].listeners },ref);    
+                }
+                return ref.references[rname];
             }
             ref = ref.references[n];
         }
@@ -657,6 +660,42 @@ Resolver.method.fn.trigger = function(type) {
 };
 
 
+// type = change/load/unload
+// dest = local/session/cookie
+Resolver.method.fn.stored = function(type,dest,options) {
+    options = options || {};
+    var id = "resolver." + resolver.named + "#" + name;
+    if (options.id) id = options.id;
+    if (options.name) id = options.name;
+
+    if (/change/.test(type)) {
+        if (this.storechanges == undefined) this.storechanges = {};
+        var todo = { storage: Resolver.storages[dest], id:id, options:options };
+        if (todo.storage) { todo.call = todo.storage.store; this.storechanges[dest] = todo; }
+    }
+    if (/^load| load/.test(type)) {
+        var todo = { storage: Resolver.storages[dest], id:id, options:options };
+        // read it straight away
+        if (todo.storage) { todo.call = todo.storage.read; todo.call(this); }
+
+        /* no load later should be needed
+        if (this.readloads == undefined) {
+            this.readloads = {};
+            Resolver.readloads.push(this);
+        }
+        if (todo.storage) this.readloads[dest] = todo;
+        */
+    }
+    if (/unload/.test(type)) {
+        if (this.storeunloads == undefined) {
+            this.storeunloads = {};
+            Resolver.storeunloads.push(this);
+        }
+        var todo = { storage: Resolver.storages[dest], id:id, options:options };
+        if (todo.storage) { todo.call = todo.storage.store; this.storeunloads[dest] = todo; }
+    }
+};    
+
 Resolver.method.fn.on = function(type,selector,data,callback) 
 {
     var ref = this;
@@ -735,89 +774,7 @@ Resolver.method.fn._addListener = function (type,data,callback) {
     
 Resolver.method.fn.reference = function(name,onundefined) 
 {
-    var ref = this._noval(name,"resolver"); //,0,onundefined);
-
-    return ref._noval(null,"resolver",0,onundefined);
-
-    // obsolete
-
-    // name = name || "";
-    // if (typeof name == "object") {
-    //     onundefined = name.onundefined;
-    //     name = name.name;
-    // } else {
-    //     if (name.indexOf("::") >= 0) return Resolver(name,onundefined);
-    // }
-    var ref = onundefined? name+":"+onundefined : name;
-    var entry = this.references[ref];
-    if (entry) {
-        //TODO track the version number of the API and update if higher
-        for(var n in Resolver.method.fn) {
-            if (entry[n] === undefined) entry[n] = Resolver.method.fn[n];
-        }
-        return entry;
-    }
-
-    // make the default reference first
-    var defaultRef = this.references[name];
-    if (defaultRef == undefined) {
-        defaultRef = this.references[name] = this.makeReference(name,onundefined);
-        if (ref == name) return defaultRef;
-    }
-    // if requested reference is different return that one
-    return this.references[ref] = this.makeReference(name,onundefined,defaultRef.listeners);
-};
-
-    // relies of resolver
-Resolver.method.fn.makeReference = function(name,onundefined,listeners)
-{
-    var resolver = this;
-        var names = [], leafName, baseRefName = "", baseNames = [];
-        if (name!=="" && name!=null) {
-            names = name.split(".");
-            leafName = names.pop();
-            baseRefName = names.join(".");
-            baseNames = names.slice(0);
-            names.push(leafName);
-        }
-
-        var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
-
-        // type = change/load/unload
-        // dest = local/session/cookie
-        function stored(type,dest,options) {
-            options = options || {};
-            var id = "resolver." + resolver.named + "#" + name;
-            if (options.id) id = options.id;
-            if (options.name) id = options.name;
-
-            if (/change/.test(type)) {
-                if (this.storechanges == undefined) this.storechanges = {};
-                var todo = { storage: Resolver.storages[dest], id:id, options:options };
-                if (todo.storage) { todo.call = todo.storage.store; this.storechanges[dest] = todo; }
-            }
-            if (/^load| load/.test(type)) {
-                var todo = { storage: Resolver.storages[dest], id:id, options:options };
-                // read it straight away
-                if (todo.storage) { todo.call = todo.storage.read; todo.call(this); }
-
-                /* no load later should be needed
-                if (this.readloads == undefined) {
-                    this.readloads = {};
-                    Resolver.readloads.push(this);
-                }
-                if (todo.storage) this.readloads[dest] = todo;
-                */
-            }
-            if (/unload/.test(type)) {
-                if (this.storeunloads == undefined) {
-                    this.storeunloads = {};
-                    Resolver.storeunloads.push(this);
-                }
-                var todo = { storage: Resolver.storages[dest], id:id, options:options };
-                if (todo.storage) { todo.call = todo.storage.store; this.storeunloads[dest] = todo; }
-            }
-        }    
+    return this._noval(name,"resolver",0,onundefined);
 };
 
 Resolver.method.fn.proxy = function(dest,other,src) {
