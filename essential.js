@@ -224,6 +224,7 @@ Resolver.create = function(name,ns,options,parent) {
         }
     }
 
+
     resolver._noval = function(path, cmd, trigger, onundefined) {
         var parts, names, ref=false, src = resolver;
         if (typeof path == "string") {
@@ -248,16 +249,30 @@ Resolver.create = function(name,ns,options,parent) {
         switch(cmd) {
             case "toggle":
                 var base = resolver._get(names,onundefined,-1),
-                    symbol = names[names.length - 1],
+                    symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
                     old = base[symbol];
                 base[symbol] = !old;
                 if (trigger) trigger.call(resolver, "change", names, base, symbol, !old, old); //TODO standard params
                 return base[symbol];
 
             case "empty":
-                break;
+                var base = resolver._get(names,onundefined,-1),
+                    symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
+                    old = base[symbol],
+                    mods = {};
+                for(var n in old) mods[n] = old[n];
+                base[symbol] = {};
+                if (trigger) trigger.call(resolver, "change", names, base, symbol, base[symbol], mods); //TODO standard params
+                return base[symbol];
+
             case "blank":
-                break;
+                var base = resolver._get(names,onundefined,-1),
+                    symbol = names? names[names.length - 1] : resolver.prefix[resolver.prefix.length - 1],
+                    old = base[symbol];
+                base[symbol] = "";
+                if (trigger) trigger.call(resolver, "change", names, base, symbol, base[symbol], old); //TODO standard params
+                return base[symbol];
+
             // turnon turnoff
 
             case "read":
@@ -689,6 +704,11 @@ Resolver.method.fn.toggle = function(name,onundefined)
     return this._noval(name,"toggle",this._notifies,onundefined);
 };
 
+Resolver.method.fn.empty = function(name,onundefined)
+{
+    return this._noval(name,"empty",this._notifies,onundefined);
+};
+
 Resolver.method.fn.getEntry = function(name) {
     return this._noval(name,"getEntry");
 };
@@ -856,37 +876,6 @@ Resolver.method.fn.makeReference = function(name,onundefined,listeners)
         }
 
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
-
-        function empty(key) {
-            var oldValue;
-            if (arguments.length > 0) {
-                var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
-                var symbol = subnames.pop();
-                var base = resolver._resolve(names,subnames,onundefinedSet);
-                var combined = names.concat(subnames);
-                var parentName = combined.join(".");
-                subnames.push(symbol);
-
-                //TODO if typeof base != object 
-                // var oldValue = base?base[symbol]:undefined;
-                resolver._setValue({},names,base,symbol);
-
-                var childRef = resolver.references[parentName + "." + symbol];
-                if (childRef) childRef._callListener("change",combined,base,symbol,undefined,oldValue);
-                var parentRef = resolver.references[parentName];
-                if (parentRef) parentRef._callListener("change",combined,base,symbol,undefined,oldValue);
-
-            } else {
-                 var symbol = names.pop();
-                var base = resolver._resolve(names,null,onundefined);
-                names.push(symbol);
-
-                resolver._setValue({},names,base,symbol);
-                this._callListener("change",names,base[symbol],null,mods);
-                //TODO parent listeners
-           }
-            // return oldValue;
-        }
 
         // type = change/load/unload
         // dest = local/session/cookie
