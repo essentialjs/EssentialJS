@@ -1,15 +1,15 @@
 {
-  "curly": true,
-  "eqeqeq": true,
+  "curly": false,
+  "eqeqeq": false,
   "immed": true,
-  "latedef": true,
-  "newcap": true,
+  "latedef": "nofunc",
+  "newcap": false,
   "noarg": true,
   "sub": true,
   "undef": true,
   "unused": true,
-  "boss": true,
+  "boss": false,
   "eqnull": true,
-  "node": true,
+  "es3": true,
   "es5": false
 }

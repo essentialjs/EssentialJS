@@ -1,9 +1,9 @@
 {
-  "curly": true,
-  "eqeqeq": true,
+  "curly": false,
+  "eqeqeq": false,
   "immed": true,
   "latedef": true,
-  "newcap": true,
+  "newcap": false,
   "noarg": true,
   "sub": true,
   "undef": true,
@@ -11,5 +11,6 @@
   "boss": true,
   "eqnull": true,
   "node": true,
+  "es3": true,
   "es5": false
 }

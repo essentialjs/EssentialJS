@@ -47,10 +47,10 @@ function Resolver(name_andor_expr,ns,options)
                 // Resolver("abc",null)
                 // Resolver("abc",{})
                 // Resolver("abc",{},{options})
-                return _resolver(name,ns,options,arguments.length==1 || ns);
+                return _resolver(name,ns,options,arguments.length===1 || ns);
 
             case 2: 
-                var _r = _resolver(name,ns,options,arguments.length==1 || ns);
+                var _r = _resolver(name,ns,options,arguments.length===1 || ns);
                 // Resolver("abc::") returns the namespace of resolver 
                 if (expr == "") {
                     return _r.namespace;
@@ -298,7 +298,7 @@ function Resolver(name_andor_expr,ns,options)
         var onundefinedSet = (onundefined=="null"||onundefined=="undefined")? "throw":onundefined; //TODO what about "false" "0"
 
     	function get() {
-    		if (arguments.length==1) {
+    		if (arguments.length===1) {
                 var subnames = (typeof arguments[0] == "object")? arguments[0] : arguments[0].split(".");
 	        	var r = _resolve(names,subnames,onundefined);
     			//TODO onundefined for the arg

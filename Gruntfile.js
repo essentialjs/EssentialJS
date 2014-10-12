@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 module.exports = function(grunt) {
   // Project configuration.
@@ -141,7 +141,7 @@ module.exports = function(grunt) {
           jshintrc: 'test/.jshintrc'
         },
         src: ['test/**/*.js']
-      },
+      }
     },
 
 
