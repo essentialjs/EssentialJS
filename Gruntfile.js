@@ -144,6 +144,9 @@ module.exports = function(grunt) {
       }
     },
 
+    qunit: {
+      all: ['test/fixture.html']
+    },
 
     less: {
       dev: {
@@ -322,6 +325,7 @@ module.exports = function(grunt) {
   // Default Task
   grunt.registerTask('default', ['connect','open','concurrent']);
   grunt.registerTask('install', ['exec:bowerinstall','modernizr','copy:mediaelement']);
+  grunt.registerTask('test', [/*'jshint',*/ 'qunit']);
   grunt.registerTask('build', ['modernizr','jshint','copy:mediaelement',
     'qunit','concat','uglify','concat:essentialMin']);
   grunt.registerTask('serve', ['jekyll:dev']);
