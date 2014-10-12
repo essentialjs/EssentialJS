@@ -1,7 +1,9 @@
-[EssentialJS](http://essentialjs.com/) - Essential Javascript
+[EssentialJS](http://essentialjs.com/) - Essential Javascript [![Build Status](http://img.shields.io/travis/essentialjs/EssentialJS.svg)](https://travis-ci.org/essentialjs/EssentialJS) [![Build status](https://ci.appveyor.com/api/projects/status/vtxsdfdsfsdf)](https://ci.appveyor.com/project/essentialjs/EssentialJS) [![gittip.com/essentialjs](http://img.shields.io/gittip/essentialjs.svg)](https://www.gittip.com/essentialjs)
 ================================
 
 Essential web page enhancements. It gives you the freedom to scale from fast loading HTML 5 web pages to full blown HTML 5 web applications.
+
+[![NPM](https://nodei.co/npm/essentialjs.png?downloads=true)](https://nodei.co/npm/essentialjs)
 
 ## Resolver and Generator
 

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" essential-testing="yes">
+<head>
+	<meta content="IE=edge" http-equiv="X-UA-Compatible">
+
+	<title>QUnit Tests</title>
+	<link rel="stylesheet" href="qunit/qunit.css" media="screen">
+	<meta charset="utf-8">
+
+<!-- reference your own javascript files here -->
+
+<script type="text/javascript" src="../js/modernizr-prefix.js"></script>
+<script type="text/javascript" src="../js/modernizr.min.js"></script>
+<script type="text/javascript" src="../js/json2.js"></script>
+<script type="text/javascript" src="../js/resolver.js"></script>
+<script type="text/javascript" src="../js/generator.js"></script>
+<script type="text/javascript" src="../js/essentialns.js"></script>
+<script type="text/javascript" src="../js/dom.js"></script>
+<script type="text/javascript" src="../js/doc.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/xhr.js"></script>
+<script type="text/javascript" src="../js/elements.js"></script>
+<script type="text/javascript" src="../js/roles.js"></script>
+<script src="../test/configured.js"></script>
+
+<script type="application/config">
+declare("logo",{"charset": "utf-8","glue":"to-other"});
+declare("login",{"charset": "utf-8","position":"undefined"});
+declare("launched",{"charset": "utf-8"});
+declare("test-scripted",{"abc":"def", "from-script":true, "charset": "utf-8"});
+declare("test-both-ways",{"test":"test", "charset": "utf-8"});
+declare("test-scripted.username",{ "default-value":"123" });
+</script>
+
+<script src="../app/js/jquery-1.7.2.min.js"></script>
+
+<!-- test runner files -->
+	<script src="qunit/qunit.js"></script>
+	<script src="sinon.js"></script>
+	<script src="sinon-ie-1.4.2.js"></script>
+	<!-- // <script src="_utils.js"></script> -->
+	<script src="dom.js"></script>
+	<script src="resolver.js"></script>
+	<script src="generator.js"></script>
+	<script src="types.js"></script>
+	<script src="console.js"></script>
+	<script src="translation.js"></script>
+	<script src="config.js"></script>
+	<script src="pages.js"></script>
+	<script src="launching.js"></script>
+	<script src="elements.js"></script>
+	<script src="stateful.js"></script>
+	<script src="tests.js"></script>
+
+	<style>
+	template { visibility: hidden !important;}
+	br.page { break-after: always; page-break-after: always;}
+	</style>
+
+
+</head>
+<body class="flora">
+	<h1 id="qunit-header">QUnit Test Suite</h1>
+	<h2 id="qunit-banner"></h2>
+	<div id="qunit-testrunner-toolbar"></div>
+	<h2 id="qunit-userAgent"></h2>
+	<ol id="qunit-tests"></ol>
+	<div id="qunit-fixture">test markup</div>
+
+	<div id="logo"></div>
+	<div id="login"></div>
+	<div id="launched"></div>
+	<template id="abcd">hello<span>there</span>how<b>are</b>you doing</template>
+	</body>
+</html>
